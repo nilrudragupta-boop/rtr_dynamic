@@ -547,6 +547,20 @@ app.delete('/api/custom-fields/:id', async (req, res) => {
     }
 });
 
+app.post('/api/custom-fields/reorder', async (req, res) => {
+    try {
+        const updates = req.body; // Expecting array of [{_id, order}]
+        const bulkOps = updates.map(update => ({
+            updateOne: {
+                filter: { _id: update._id },
+                update: { $set: { order: update.order } }
+            }
+        }));
+        await CustomField.bulkWrite(bulkOps);
+        res.json({ success: true, message: 'Order updated successfully.' });
+    } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+});
+
 // --- Generic Custom Records Routes (For entirely new UI Pages) ---
 app.get('/api/custom-records/:module', async (req, res) => {
     try {
