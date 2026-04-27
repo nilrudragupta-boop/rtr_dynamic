@@ -172,6 +172,10 @@
             color: #666;
             margin-top: 5px;
         }
+
+        #customFieldsTableBody tr[draggable="true"] { cursor: grab; }
+        #customFieldsTableBody tr.dragging { opacity: 0.5; background: #e9ecef; }
+        #customFieldsTableBody tr.drag-over { border-top: 2px solid #8e44ad; }
     </style>
 </head>
 
@@ -1646,13 +1650,27 @@ function createResponse(obj) {
                         if (result.success) {
                             customFieldsCache = result.data;
                             localStorage.setItem('CUSTOM_FIELDS', JSON.stringify(customFieldsCache));
+                            populateCfModuleFilter();
                             renderCustomFieldsTable();
                         }
                     } catch (e) {
                         console.warn('Failed to fetch custom fields via API, using local cache', e);
                         customFieldsCache = JSON.parse(localStorage.getItem('CUSTOM_FIELDS')) || [];
+                        populateCfModuleFilter();
                         renderCustomFieldsTable();
                     }
+                }
+
+                function populateCfModuleFilter() {
+                    const filter = document.getElementById('cfModuleFilter');
+                    if (!filter) return;
+                    const currentVal = filter.value;
+                    filter.innerHTML = '<option value="">All Modules</option>';
+                    const modules = [...new Set(customFieldsCache.map(f => f.moduleName))].filter(Boolean).sort();
+                    modules.forEach(m => {
+                        filter.innerHTML += `<option value="${m}">${m}</option>`;
+                    });
+                    if (modules.includes(currentVal)) filter.value = currentVal;
                 }
 
                 function renderCustomFieldsTable() {
@@ -1660,13 +1678,36 @@ function createResponse(obj) {
                     if (!tbody) return;
                     tbody.innerHTML = '';
 
-                    if (customFieldsCache.length === 0) {
-                        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px;">No custom fields created yet.</td></tr>';
+                    const searchInput = document.getElementById('cfSearch');
+                    const searchTerm = searchInput ? searchInput.value.trim().toLowerCase() : '';
+                    const moduleFilter = document.getElementById('cfModuleFilter');
+                    const selectedModule = moduleFilter ? moduleFilter.value : '';
+
+                    let fieldsToRender = customFieldsCache;
+                    if (selectedModule) {
+                        fieldsToRender = fieldsToRender.filter(f => f.moduleName === selectedModule);
+                    }
+                    if (searchTerm) {
+                        fieldsToRender = fieldsToRender.filter(f => 
+                            (f.fieldLabel || '').toLowerCase().includes(searchTerm) ||
+                            (f.fieldName || '').toLowerCase().includes(searchTerm)
+                        );
+                    }
+
+                    if (fieldsToRender.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px;">No custom fields found.</td></tr>';
                         return;
                     }
 
-                    customFieldsCache.forEach(field => {
+                    // Sort by order before rendering
+                    fieldsToRender.sort((a, b) => (a.order || 0) - (b.order || 0));
+
+                    fieldsToRender.forEach(field => {
                         const tr = document.createElement('tr');
+                        if (!searchTerm) {
+                            tr.draggable = true;
+                            tr.dataset.fieldId = field._id;
+                        }
                         tr.innerHTML = `
                             <td style="padding:8px; border-bottom:1px solid #ddd; font-weight:bold;">${field.moduleName}</td>
                             <td style="padding:8px; border-bottom:1px solid #ddd;">${field.fieldLabel}<br><small style="color:#7f8c8d;">${field.fieldName}</small></td>
@@ -1682,6 +1723,10 @@ function createResponse(obj) {
                         `;
                         tbody.appendChild(tr);
                     });
+
+                    if (!searchTerm) {
+                        addDragAndDropListeners(tbody);
+                    }
                 }
 
                 async function saveCustomField() {
@@ -1777,6 +1822,73 @@ function createResponse(obj) {
                     document.getElementById('cfActive').checked = true;
                     document.getElementById('cfOrder').value = '0';
                     toggleCfOptions();
+                }
+
+                // --- Drag and Drop Reordering ---
+                let draggedFieldItem = null;
+
+                function addDragAndDropListeners(tbody) {
+                    const rows = tbody.querySelectorAll('tr[draggable="true"]');
+                    rows.forEach(row => {
+                        row.addEventListener('dragstart', handleDragStart);
+                        row.addEventListener('dragenter', handleDragEnter);
+                        row.addEventListener('dragover', handleDragOver);
+                        row.addEventListener('dragleave', handleDragLeave);
+                        row.addEventListener('drop', handleDrop);
+                        row.addEventListener('dragend', handleDragEnd);
+                    });
+                }
+
+                function handleDragStart(e) {
+                    draggedFieldItem = this;
+                    e.dataTransfer.effectAllowed = 'move';
+                    e.dataTransfer.setData('text/html', this.innerHTML);
+                    setTimeout(() => { this.classList.add('dragging'); }, 0);
+                }
+
+                function handleDragOver(e) {
+                    e.preventDefault();
+                    return false;
+                }
+
+                function handleDragEnter(e) { this.classList.add('drag-over'); }
+                function handleDragLeave(e) { this.classList.remove('drag-over'); }
+
+                function handleDrop(e) {
+                    e.preventDefault();
+                    if (draggedFieldItem !== this) {
+                        const fromId = draggedFieldItem.dataset.fieldId;
+                        const toId = this.dataset.fieldId;
+
+                        const fromIndex = customFieldsCache.findIndex(f => f._id === fromId);
+                        const toIndex = customFieldsCache.findIndex(f => f._id === toId);
+
+                        const [movedItem] = customFieldsCache.splice(fromIndex, 1);
+                        customFieldsCache.splice(toIndex, 0, movedItem);
+
+                        customFieldsCache.forEach((field, index) => { field.order = index; });
+
+                        renderCustomFieldsTable();
+                        saveFieldOrder();
+                    }
+                    this.classList.remove('drag-over');
+                }
+
+                function handleDragEnd(e) {
+                    this.classList.remove('dragging');
+                    document.querySelectorAll('#customFieldsTableBody tr').forEach(row => row.classList.remove('drag-over'));
+                }
+
+                async function saveFieldOrder() {
+                    const orderPayload = customFieldsCache.map((field, index) => ({ _id: field._id, order: index }));
+                    try {
+                        const res = await fetch('http://localhost:5000/api/custom-fields/reorder', {
+                            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(orderPayload)
+                        });
+                        const result = await res.json();
+                        if (result.success) localStorage.setItem('CUSTOM_FIELDS', JSON.stringify(customFieldsCache));
+                        else console.error("Failed to save field order:", result.message);
+                    } catch (e) { console.error("Error saving field order:", e); }
                 }
             </script>
 

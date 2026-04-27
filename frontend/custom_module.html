@@ -6,6 +6,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="apiClient.js"></script>
     <script src="settings.js"></script>
+    <script src="brand.service.js"></script>
+    <script src="brandLoader.js"></script>
     <style>
         body { font-family: 'Segoe UI', sans-serif; padding: 20px; background: #f8f9fa; color: #333; }
         h2 { margin-bottom: 20px; color: #2c3e50; }
@@ -134,7 +136,7 @@
             moduleFields.forEach(field => {
                 tr.innerHTML += `<th>${field.fieldLabel}</th>`;
             });
-            tr.innerHTML += '<th style="width: 120px;">Actions</th>';
+            tr.innerHTML += '<th style="width: 150px; text-align: center;">Actions</th>';
         }
 
         async function fetchData() {
@@ -167,9 +169,10 @@
                     tdHtml += `<td>${val}</td>`;
                 });
                 tdHtml += `
-                    <td style="text-align:center;">
-                        <button class="btn-warning" style="padding:4px 8px; font-size:12px;" onclick="editRecord('${row._id}')"><i class="fas fa-edit"></i></button>
-                        <button class="btn-danger" style="padding:4px 8px; font-size:12px;" onclick="deleteRecord('${row._id}')"><i class="fas fa-trash"></i></button>
+                    <td style="text-align:center; white-space: nowrap;">
+                        <button class="btn-primary" style="padding:4px 8px; font-size:12px; background:#17a2b8; margin-right:3px;" onclick="printRecord('${row._id}')" title="Print"><i class="fas fa-print"></i></button>
+                        <button class="btn-warning" style="padding:4px 8px; font-size:12px; margin-right:3px;" onclick="editRecord('${row._id}')" title="Edit"><i class="fas fa-edit"></i></button>
+                        <button class="btn-danger" style="padding:4px 8px; font-size:12px;" onclick="deleteRecord('${row._id}')" title="Delete"><i class="fas fa-trash"></i></button>
                     </td>`;
                 
                 const tr = document.createElement('tr');
@@ -223,6 +226,75 @@
             document.querySelectorAll('.dynamic-input').forEach(input => {
                 if(input.type==='checkbox') input.checked = false; else input.value = '';
             });
+        }
+
+        function printRecord(id) {
+            const record = moduleData.find(r => r._id === id);
+            if (!record) return;
+
+            let companyName = "Your Company Name";
+            let companyAddress = "";
+            let logoHtml = "";
+            
+            if (typeof getBrandSettings === 'function') {
+                const brand = getBrandSettings() || {};
+                companyName = brand.companyName || companyName;
+                let addr = [];
+                if (brand.addressLine1) addr.push(brand.addressLine1);
+                if (brand.addressLine2) addr.push(brand.addressLine2);
+                if (brand.contactNumber) addr.push("Ph: " + brand.contactNumber);
+                if (brand.companyGstin) addr.push("GSTIN: " + brand.companyGstin);
+                companyAddress = addr.join(" | ");
+                
+                if (brand.logoPath) {
+                    logoHtml = `<img src="${brand.logoPath}" style="max-height: 60px; max-width: 150px; display: block; margin: 0 auto 10px auto;">`;
+                }
+            }
+
+            let printContent = `
+                <html>
+                <head>
+                    <title>Print ${moduleName} Record</title>
+                    <style>
+                        body { font-family: 'Segoe UI', sans-serif; padding: 30px; color: #333; max-width: 800px; margin: auto; }
+                        .brand-header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #333; padding-bottom: 15px; }
+                        .brand-header h1 { margin: 0 0 5px 0; color: #2c3e50; font-size: 24px; }
+                        .brand-header p { margin: 0; color: #555; font-size: 13px; }
+                        h2 { text-align: center; text-transform: uppercase; color: #2c3e50; margin-top: 0; font-size: 18px; }
+                        table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 14px; }
+                        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+                        th { background-color: #f8f9fa; width: 35%; color: #555; }
+                        @media print {
+                            button, .no-print { display: none !important; }
+                            body { padding: 0; }
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="brand-header">
+                        ${logoHtml}
+                        <h1>${companyName}</h1>
+                        <p>${companyAddress}</p>
+                    </div>
+                    <h2>${moduleName} Details</h2>
+                    <div style="text-align: right; font-size: 12px; color: #777; margin-bottom: 10px;" class="no-print">System ID: ${record._id}</div>
+                    <table>
+                        <tbody>
+            `;
+
+            moduleFields.forEach(field => {
+                let val = record[field.fieldName];
+                if (val === undefined || val === null || val === '') val = '-';
+                if (field.fieldType === 'boolean') val = val ? '✅ Yes' : '❌ No';
+                printContent += `<tr><th>${field.fieldLabel}</th><td>${val}</td></tr>`;
+            });
+
+            printContent += `</tbody></table><div style="text-align: center; margin-top: 30px;" class="no-print"><button onclick="window.print()" style="padding: 10px 20px; font-size: 14px; cursor: pointer; background: #0d6efd; color: white; border: none; border-radius: 4px; font-weight: bold;">🖨️ Print Document</button></div></body></html>`;
+
+            const printWin = window.open('', '', 'width=800,height=800');
+            printWin.document.write(printContent);
+            printWin.document.close();
+            printWin.focus();
         }
 
         init();
