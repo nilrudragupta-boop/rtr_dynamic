@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Custom Module</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="apiClient.js"></script>
+    <script src="settings.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; padding: 20px; background: #f8f9fa; color: #333; }
+        h2 { margin-bottom: 20px; color: #2c3e50; }
+        .card { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        
+        .form-grid { display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 15px; }
+        .form-group { flex: 1; min-width: 250px; display: flex; flex-direction: column; gap: 5px; }
+        label { font-weight: 600; font-size: 13px; color: #555; }
+        input, select { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; width: 100%; box-sizing: border-box; }
+        
+        button { padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; color: white; transition: 0.2s; }
+        button:hover { opacity: 0.9; }
+        .btn-primary { background: #0d6efd; }
+        .btn-danger { background: #dc3545; }
+        .btn-secondary { background: #6c757d; }
+        .btn-warning { background: #f39c12; color: #000; }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
+        th, td { border: 1px solid #eee; padding: 10px; text-align: left; }
+        th { background: #2c3e50; color: white; position: sticky; top: 0; }
+        tr:nth-child(even) { background: #f9f9f9; }
+    </style>
+</head>
+<body>
+
+    <h2 id="pageTitle">Custom Module</h2>
+
+    <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <h3 style="margin: 0;">Add / Edit Record</h3>
+            <button class="btn-primary" onclick="location.reload()" style="background:#17a2b8;">🔄 Refresh</button>
+        </div>
+        <input type="hidden" id="recordId">
+        
+        <div class="form-grid" id="dynamicFormContainer">
+            <!-- Form inputs injected here based on custom fields -->
+        </div>
+
+        <div style="text-align: right;">
+            <button class="btn-secondary" onclick="clearForm()">Clear</button>
+            <button class="btn-primary" onclick="saveRecord()">Save Record</button>
+        </div>
+    </div>
+
+    <div class="card" style="overflow-x: auto;">
+        <table id="dataTable">
+            <thead>
+                <tr id="tableHeaders">
+                    <!-- Headers injected here -->
+                </tr>
+            </thead>
+            <tbody id="tableBody">
+                <tr><td colspan="100%" style="text-align:center;">Loading...</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const moduleName = urlParams.get('module') || 'Custom';
+        document.getElementById('pageTitle').innerHTML = `<i class="fas fa-folder"></i> Manage ${moduleName}`;
+        document.title = moduleName + " - Module";
+
+        let moduleFields = [];
+        let moduleData = [];
+
+        async function init() {
+            // 1. Get Fields definition
+            const allFields = JSON.parse(localStorage.getItem('CUSTOM_FIELDS')) || [];
+            moduleFields = allFields.filter(f => f.moduleName === moduleName && f.isActive);
+            moduleFields.sort((a, b) => a.order - b.order);
+
+            if (moduleFields.length === 0) {
+                document.getElementById('dynamicFormContainer').innerHTML = `<p style="color:red;">No active fields found for module '${moduleName}'. Please configure them in Settings -> Custom Fields.</p>`;
+                return;
+            }
+
+            renderForm();
+            renderTableHeaders();
+            await fetchData();
+        }
+
+        function renderForm() {
+            const container = document.getElementById('dynamicFormContainer');
+            container.innerHTML = '';
+
+            moduleFields.forEach(field => {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'form-group';
+
+                const label = document.createElement('label');
+                label.innerText = field.fieldLabel + (field.isRequired ? ' *' : '');
+                
+                let input;
+                if (field.fieldType === 'select') {
+                    input = document.createElement('select');
+                    input.innerHTML = '<option value="">Select...</option>';
+                    (field.options || []).forEach(opt => {
+                        input.innerHTML += `<option value="${opt}">${opt}</option>`;
+                    });
+                } else if (field.fieldType === 'boolean') {
+                    input = document.createElement('input');
+                    input.type = 'checkbox';
+                    input.style.width = 'auto';
+                    wrapper.style.flexDirection = 'row';
+                    wrapper.style.alignItems = 'center';
+                } else {
+                    input = document.createElement('input');
+                    input.type = field.fieldType; // text, number, date
+                }
+
+                input.id = 'input_' + field.fieldName;
+                input.className = 'dynamic-input';
+                input.dataset.fieldName = field.fieldName;
+                if(field.isRequired) input.required = true;
+
+                wrapper.appendChild(label);
+                wrapper.appendChild(input);
+                container.appendChild(wrapper);
+            });
+        }
+
+        function renderTableHeaders() {
+            const tr = document.getElementById('tableHeaders');
+            tr.innerHTML = '<th>Sl No</th>';
+            moduleFields.forEach(field => {
+                tr.innerHTML += `<th>${field.fieldLabel}</th>`;
+            });
+            tr.innerHTML += '<th style="width: 120px;">Actions</th>';
+        }
+
+        async function fetchData() {
+            try {
+                const res = await fetch(`http://localhost:5000/api/custom-records/${moduleName}`);
+                const result = await res.json();
+                if (result.success) {
+                    moduleData = result.data;
+                    renderTableData();
+                }
+            } catch (e) {
+                console.error("Failed to fetch data", e);
+            }
+        }
+
+        function renderTableData() {
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
+            if (moduleData.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="${moduleFields.length + 2}" style="text-align:center;">No records found.</td></tr>`;
+                return;
+            }
+
+            moduleData.forEach((row, i) => {
+                let tdHtml = `<td>${i + 1}</td>`;
+                moduleFields.forEach(field => {
+                    let val = row[field.fieldName];
+                    if (val === undefined || val === null) val = '-';
+                    if (field.fieldType === 'boolean') val = val ? '✅ Yes' : '❌ No';
+                    tdHtml += `<td>${val}</td>`;
+                });
+                tdHtml += `
+                    <td style="text-align:center;">
+                        <button class="btn-warning" style="padding:4px 8px; font-size:12px;" onclick="editRecord('${row._id}')"><i class="fas fa-edit"></i></button>
+                        <button class="btn-danger" style="padding:4px 8px; font-size:12px;" onclick="deleteRecord('${row._id}')"><i class="fas fa-trash"></i></button>
+                    </td>`;
+                
+                const tr = document.createElement('tr');
+                tr.innerHTML = tdHtml;
+                tbody.appendChild(tr);
+            });
+        }
+
+        async function saveRecord() {
+            const payload = { moduleName: moduleName };
+            const id = document.getElementById('recordId').value;
+            if (id) payload._id = id;
+
+            document.querySelectorAll('.dynamic-input').forEach(input => {
+                const key = input.dataset.fieldName;
+                payload[key] = input.type === 'checkbox' ? input.checked : input.value;
+            });
+
+            try {
+                const res = await fetch('http://localhost:5000/api/custom-records', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+                });
+                const result = await res.json();
+                if (result.success) {
+                    clearForm();
+                    fetchData();
+                }
+            } catch(e) { console.error(e); }
+        }
+
+        function editRecord(id) {
+            const record = moduleData.find(r => r._id === id);
+            if (!record) return;
+            document.getElementById('recordId').value = record._id;
+            document.querySelectorAll('.dynamic-input').forEach(input => {
+                const key = input.dataset.fieldName;
+                if (input.type === 'checkbox') input.checked = record[key] === true;
+                else input.value = record[key] || '';
+            });
+            window.scrollTo(0,0);
+        }
+
+        async function deleteRecord(id) {
+            if(!confirm("Delete this record?")) return;
+            await fetch(`http://localhost:5000/api/custom-records/${id}`, { method: 'DELETE' });
+            fetchData();
+        }
+
+        function clearForm() {
+            document.getElementById('recordId').value = '';
+            document.querySelectorAll('.dynamic-input').forEach(input => {
+                if(input.type==='checkbox') input.checked = false; else input.value = '';
+            });
+        }
+
+        init();
+    </script>
+</body>
+</html>

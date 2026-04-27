@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Quick Daily Entry</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="apiClient.js"></script>
+    <script src="settings.js"></script>
+    <script src="brandLoader.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f6f9;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .header h2 {
+            color: #2c3e50;
+            margin: 0;
+            font-weight: 800;
+        }
+
+        .header p {
+            color: #6c757d;
+            margin: 5px 0 0 0;
+            font-size: 14px;
+        }
+
+        .card {
+            background: #fff;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .date-picker {
+            width: 100%;
+            max-width: 250px;
+            padding: 12px;
+            border: 2px solid #e3e6f0;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            color: #4e73df;
+            text-align: center;
+            margin-bottom: 20px;
+            outline: none;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .amount-box {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .amount-box i {
+            position: absolute;
+            left: 20px;
+            font-size: 24px;
+        }
+
+        .amount-box input {
+            width: 100%;
+            padding: 20px 20px 20px 60px;
+            font-size: 28px;
+            font-weight: bold;
+            border: 2px solid #e3e6f0;
+            border-radius: 12px;
+            box-sizing: border-box;
+            outline: none;
+            transition: 0.2s;
+        }
+
+        .amount-box.sales input {
+            color: #1cc88a;
+        }
+
+        .amount-box.sales input:focus {
+            border-color: #1cc88a;
+            box-shadow: 0 0 0 4px rgba(28, 200, 138, 0.1);
+        }
+
+        .amount-box.sales i {
+            color: #1cc88a;
+        }
+
+        .amount-box.expenses input {
+            color: #e74a3b;
+        }
+
+        .amount-box.expenses input:focus {
+            border-color: #e74a3b;
+            box-shadow: 0 0 0 4px rgba(231, 74, 59, 0.1);
+        }
+
+        .amount-box.expenses i {
+            color: #e74a3b;
+        }
+
+        .amount-box.purchases input {
+            color: #f6c23e;
+        }
+
+        .amount-box.purchases input:focus {
+            border-color: #f6c23e;
+            box-shadow: 0 0 0 4px rgba(246, 194, 62, 0.1);
+        }
+
+        .amount-box.purchases i {
+            color: #f6c23e;
+        }
+
+        .btn-save {
+            background: #4e73df;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+            transition: 0.2s;
+            box-shadow: 0 4px 6px rgba(78, 115, 223, 0.2);
+        }
+
+        .btn-save:hover {
+            background: #2e59d9;
+            transform: translateY(-2px);
+        }
+
+        .btn-save:active {
+            transform: translateY(0);
+        }
+
+        /* Table Styles */
+        .table-container {
+            background: #fff;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            margin-top: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        th,
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #e3e6f0;
+            text-align: center;
+        }
+
+        th {
+            background: #4e73df;
+            color: white;
+            font-weight: 600;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 15px;
+        }
+
+        .pagination button {
+            padding: 6px 12px;
+            border: 1px solid #ccc;
+            background: #fff;
+            border-radius: 4px;
+            cursor: pointer;
+            color: #333;
+            font-weight: bold;
+        }
+
+        .pagination button:disabled {
+            background: #eee;
+            cursor: not-allowed;
+            color: #aaa;
+            border-color: #eee;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>⚡ Quick Daily Entry</h2>
+            <p>Fastest way to record end-of-day totals.</p>
+        </div>
+
+        <div class="card">
+            <label style="font-weight: bold; color: #5a5c69; display: block; margin-bottom: 10px;">Select Date</label>
+            <input type="date" id="entryDate" class="date-picker">
+
+            <div class="input-group">
+                <div style="text-align: left;">
+                    <label style="font-weight: bold; color: #1cc88a; margin-bottom: 5px; display: block;">Total Daily
+                        Sales (Cash In)</label>
+                    <div class="amount-box sales">
+                        <i class="fas fa-rupee-sign"></i>
+                        <input type="number" id="dailySales" placeholder="0.00" min="0" step="any">
+                    </div>
+                </div>
+
+                <div style="text-align: left;">
+                    <label style="font-weight: bold; color: #f6c23e; margin-bottom: 5px; display: block;">Total Daily
+                        Purchases (Cash Out)</label>
+                    <div class="amount-box purchases">
+                        <i class="fas fa-rupee-sign"></i>
+                        <input type="number" id="dailyPurchases" placeholder="0.00" min="0" step="any">
+                    </div>
+                </div>
+
+                <div style="text-align: left;">
+                    <label style="font-weight: bold; color: #e74a3b; margin-bottom: 5px; display: block;">Total Daily
+                        Expenses (Cash Out)</label>
+                    <div class="amount-box expenses">
+                        <i class="fas fa-rupee-sign"></i>
+                        <input type="number" id="dailyExpenses" placeholder="0.00" min="0" step="any">
+                    </div>
+                    <div style="display:flex; align-items:center; gap:5px; margin-top: 8px;">
+                        <input type="text" id="dailyExpensesNote" placeholder="Add a note for this expense..."
+                            style="flex:1; padding:10px; border:2px solid #e3e6f0; border-radius:8px; outline:none; font-size:14px; transition:0.2s;">
+                        <button type="button" onclick="toggleNoteLock('dailyExpensesNote', this)"
+                            style="background:none; border:none; cursor:pointer; font-size:20px;"
+                            title="Lock/Unlock">🔓</button>
+                    </div>
+                </div>
+            </div>
+
+            <button class="btn-save" onclick="saveQuickEntry()"><i class="fas fa-check-circle"></i> Save Daily
+                Record</button>
+        </div>
+
+        <!-- Tracking Table -->
+        <div class="table-container">
+            <div
+                style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                <h3 style="margin: 0; color: #2c3e50;">📊 Recent Quick Entries</h3>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <label style="font-weight: bold; color: #5a5c69; margin: 0;">Filter Date:</label>
+                    <input type="date" id="filterDate" class="date-picker"
+                        style="margin: 0; padding: 6px; font-size: 14px; max-width: 150px;"
+                        onchange="currentPage=1; loadTableData();">
+                    <button
+                        style="background: #858796; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: bold;"
+                        onclick="document.getElementById('filterDate').value=''; currentPage=1; loadTableData();">Clear</button>
+                </div>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Total Sales</th>
+                        <th>Total Purchases</th>
+                        <th>Total Expenses</th>
+                        <th>Notes</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="logTableBody">
+                </tbody>
+            </table>
+            <div class="pagination">
+                <button id="prevBtn" onclick="changePage(-1)">Previous</button>
+                <span id="pageInfo" style="font-weight: bold; color: #5a5c69;">Page 1</span>
+                <button id="nextBtn" onclick="changePage(1)">Next</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('entryDate').valueAsDate = new Date();
+            loadTableData();
+        });
+
+        function saveQuickEntry() {
+            const date = document.getElementById('entryDate').value;
+            const salesAmt = parseFloat(document.getElementById('dailySales').value) || 0;
+            const expAmt = parseFloat(document.getElementById('dailyExpenses').value) || 0;
+            const purAmt = parseFloat(document.getElementById('dailyPurchases').value) || 0;
+            const expNote = document.getElementById('dailyExpensesNote').value.trim();
+
+            if (salesAmt === 0 && expAmt === 0 && purAmt === 0) {
+                alert("Please enter an amount in Sales, Purchases or Expenses.");
+                return;
+            }
+
+            const timestamp = Date.now();
+
+            // Remove old quick entries for this date to avoid duplicates (acts as an Update)
+            let existingInvoices = JSON.parse(localStorage.getItem('invoices')) || [];
+            let oldInv = existingInvoices.find(inv => (inv.remarks === 'Quick Daily Entry' && (inv.invoice_date === date || inv.date === date)));
+            let invId = oldInv ? oldInv.id : 'inv_qd_' + timestamp;
+            existingInvoices = existingInvoices.filter(inv => inv.id !== invId);
+            localStorage.setItem('invoices', JSON.stringify(existingInvoices));
+            if (oldInv && salesAmt === 0 && typeof apiClient !== 'undefined' && apiClient.deleteInvoice) apiClient.deleteInvoice(oldInv.id).catch(console.warn);
+
+            let existingPurchases = JSON.parse(localStorage.getItem('purchases')) || [];
+            let oldPur = existingPurchases.find(p => (p.remarks === 'Quick Daily Entry' && p.date === date));
+            let purId = oldPur ? oldPur.id : 'pur_qd_' + timestamp;
+            existingPurchases = existingPurchases.filter(p => p.id !== purId);
+            localStorage.setItem('purchases', JSON.stringify(existingPurchases));
+            if (oldPur && purAmt === 0 && typeof apiClient !== 'undefined' && apiClient.deletePurchase) apiClient.deletePurchase(oldPur.id).catch(console.warn);
+
+            let existingExpenses = JSON.parse(localStorage.getItem('expenses')) || [];
+            let oldExp = existingExpenses.find(e => (e.remarks && e.remarks.startsWith('Quick Daily Entry') && (e.expense_date === date || e.date === date)));
+            let expId = oldExp ? (oldExp.expense_id || oldExp.id) : 'exp_qd_' + timestamp;
+            existingExpenses = existingExpenses.filter(e => e.expense_id !== expId && e.id !== expId);
+            localStorage.setItem('expenses', JSON.stringify(existingExpenses));
+            if (oldExp && expAmt === 0 && typeof apiClient !== 'undefined' && apiClient.deleteExpense) apiClient.deleteExpense(oldExp.expense_id || oldExp.id).catch(console.warn);
+
+            // 1.5 Process Purchases
+            if (purAmt > 0) {
+                let purchases = JSON.parse(localStorage.getItem('purchases')) || [];
+                const dummyPurchase = {
+                    id: purId,
+                    date: date,
+                    supplierName: 'Cash Supplier (Daily)',
+                    supplierInv: 'QD-' + timestamp,
+                    itemName: 'Quick Daily Entry Item',
+                    qty: 1,
+                    uom: 'Nos',
+                    price: purAmt,
+                    discount: 0,
+                    discType: '%',
+                    salePrice: 0,
+                    margin: 0,
+                    paid: purAmt,
+                    paid_cash: purAmt,
+                    paid_bank: 0,
+                    gst: 0,
+                    freightCharges: 0,
+                    packingCharges: 0,
+                    loadingCharges: 0,
+                    roundOff: 0,
+                    remarks: 'Quick Daily Entry',
+                    createdAt: new Date().toISOString()
+                };
+                purchases.push(dummyPurchase);
+                localStorage.setItem('purchases', JSON.stringify(purchases));
+                if (typeof apiClient !== 'undefined' && apiClient.savePurchase) apiClient.savePurchase(dummyPurchase).catch(console.warn);
+            }
+
+            // 1. Process Sales (Create a dummy consolidated invoice)
+            if (salesAmt > 0) {
+                let invoices = JSON.parse(localStorage.getItem('invoices')) || [];
+
+                // Find the next invoice number safely
+                let max = 0;
+                invoices.forEach(inv => {
+                    if (inv.invoice_no) {
+                        const num = parseInt(inv.invoice_no.replace(/\D/g, ''));
+                        if (!isNaN(num) && num > max) max = num;
+                    }
+                });
+                const nextInvNo = `INV-${String(max + 1).padStart(4, '0')}`;
+
+                const dummyInvoice = {
+                    id: invId,
+                    invoice_no: nextInvNo,
+                    invoice_date: date,
+                    customer_name: 'Cash Walk-in (Daily)',
+                    invoiceType: 'SALE INVOICE',
+                    items: [{
+                        item: 'Quick Daily Entry Item',
+                        qty: 1,
+                        uom: 'Nos',
+                        price: salesAmt,
+                        total: salesAmt,
+                        gst: 0,
+                        disc: 0,
+                        discType: '%'
+                    }],
+                    invoice_total: salesAmt,
+                    total_paid: salesAmt,
+                    paid_cash: salesAmt,
+                    paid_bank: 0,
+                    total_due: 0,
+                    freightCharges: 0,
+                    packingCharges: 0,
+                    customCharges: 0,
+                    freightBeforeGst: 0,
+                    roundOffAmount: 0,
+                    remarks: 'Quick Daily Entry',
+                    createdAt: new Date().toISOString()
+                };
+                invoices.push(dummyInvoice);
+                localStorage.setItem('invoices', JSON.stringify(invoices));
+                if (typeof apiClient !== 'undefined' && apiClient.saveInvoice) apiClient.saveInvoice(dummyInvoice).catch(console.warn);
+            }
+
+            // 2. Process Expenses
+            if (expAmt > 0) {
+                let expenses = JSON.parse(localStorage.getItem('expenses')) || [];
+                const dummyExpense = {
+                    expense_id: expId,
+                    expense_date: date,
+                    expense_category: 'Daily Miscellaneous Expense',
+                    expense_sub_category: '',
+                    vendor_name: 'Cash Expense',
+                    payment_mode: 'Cash',
+                    accountId: '',
+                    invoice_number: 'QD-' + timestamp,
+                    debit_amount: expAmt,
+                    gst_amount: 0,
+                    total_amount: expAmt,
+                    remarks: expNote ? 'Quick Daily Entry: ' + expNote : 'Quick Daily Entry',
+                    created_at: new Date().toISOString()
+                };
+                expenses.push(dummyExpense);
+                localStorage.setItem('expenses', JSON.stringify(expenses));
+                if (typeof apiClient !== 'undefined' && apiClient.saveExpense) apiClient.saveExpense(dummyExpense).catch(console.warn);
+            }
+
+            // Success & Reset
+            alert("✅ Daily record saved successfully! Data has been pushed to your Reports & Dashboard.");
+            document.getElementById('dailySales').value = '';
+            document.getElementById('dailyPurchases').value = '';
+            document.getElementById('dailyExpenses').value = '';
+            const noteInput = document.getElementById('dailyExpensesNote');
+            noteInput.value = '';
+            noteInput.removeAttribute('readonly');
+            noteInput.style.backgroundColor = '#fff';
+            noteInput.nextElementSibling.innerHTML = '🔓';
+
+            // Reload tracking table
+            loadTableData();
+        }
+
+        function toggleNoteLock(id, btn) {
+            const input = document.getElementById(id);
+            if (input.hasAttribute('readonly')) {
+                input.removeAttribute('readonly');
+                input.style.backgroundColor = '#fff';
+                btn.innerHTML = '🔓';
+            } else {
+                input.setAttribute('readonly', 'true');
+                input.style.backgroundColor = '#e9ecef';
+                btn.innerHTML = '🔒';
+            }
+        }
+
+        function editQuickEntry(date) {
+            if (!window.currentQuickEntries) return;
+            const item = window.currentQuickEntries.find(i => i.date === date);
+            if (!item) return;
+
+            document.getElementById('entryDate').value = item.date;
+            document.getElementById('dailySales').value = item.sales || '';
+            document.getElementById('dailyPurchases').value = item.purchases || '';
+            document.getElementById('dailyExpenses').value = item.expenses || '';
+
+            const noteInput = document.getElementById('dailyExpensesNote');
+            noteInput.value = item.notes || '';
+            noteInput.removeAttribute('readonly');
+            noteInput.style.backgroundColor = '#fff';
+            noteInput.nextElementSibling.innerHTML = '🔓';
+
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function deleteQuickEntry(date) {
+            if (!confirm(`Are you sure you want to delete the quick entry for ${new Date(date).toLocaleDateString('en-GB')}?`)) return;
+
+            let existingInvoices = JSON.parse(localStorage.getItem('invoices')) || [];
+            let invToDelete = existingInvoices.find(inv => (inv.remarks === 'Quick Daily Entry' && (inv.invoice_date === date || inv.date === date)));
+            if (invToDelete && typeof apiClient !== 'undefined' && apiClient.deleteInvoice) apiClient.deleteInvoice(invToDelete.id).catch(console.warn);
+            localStorage.setItem('invoices', JSON.stringify(existingInvoices.filter(inv => inv !== invToDelete)));
+
+            let existingPurchases = JSON.parse(localStorage.getItem('purchases')) || [];
+            let purToDelete = existingPurchases.find(p => (p.remarks === 'Quick Daily Entry' && p.date === date));
+            if (purToDelete && typeof apiClient !== 'undefined' && apiClient.deletePurchase) apiClient.deletePurchase(purToDelete.id).catch(console.warn);
+            localStorage.setItem('purchases', JSON.stringify(existingPurchases.filter(p => p !== purToDelete)));
+
+            let existingExpenses = JSON.parse(localStorage.getItem('expenses')) || [];
+            let expToDelete = existingExpenses.find(e => (e.remarks && e.remarks.startsWith('Quick Daily Entry') && (e.expense_date === date || e.date === date)));
+            if (expToDelete && typeof apiClient !== 'undefined' && apiClient.deleteExpense) apiClient.deleteExpense(expToDelete.expense_id || expToDelete.id).catch(console.warn);
+            localStorage.setItem('expenses', JSON.stringify(existingExpenses.filter(e => e !== expToDelete)));
+
+            loadTableData();
+        }
+
+        // --- Table Tracking Logic ---
+        let currentPage = 1;
+        const rowsPerPage = 5;
+
+        function loadTableData() {
+            const filterDate = document.getElementById('filterDate').value;
+            const invoices = JSON.parse(localStorage.getItem('invoices')) || [];
+            const purchases = JSON.parse(localStorage.getItem('purchases')) || [];
+            const expenses = JSON.parse(localStorage.getItem('expenses')) || [];
+
+            const aggregated = {};
+
+            invoices.forEach(inv => {
+                if (inv.remarks === 'Quick Daily Entry') {
+                    const d = inv.invoice_date || inv.date;
+                    if (!aggregated[d]) aggregated[d] = { sales: 0, purchases: 0, expenses: 0, notes: [] };
+                    aggregated[d].sales += (parseFloat(inv.invoice_total) || 0);
+                }
+            });
+
+            purchases.forEach(p => {
+                if (p.remarks === 'Quick Daily Entry') {
+                    const d = p.date;
+                    if (!aggregated[d]) aggregated[d] = { sales: 0, purchases: 0, expenses: 0, notes: [] };
+                    const amt = (parseFloat(p.qty) || 0) * (parseFloat(p.price) || 0);
+                    aggregated[d].purchases += amt;
+                }
+            });
+
+            expenses.forEach(e => {
+                if (e.remarks && e.remarks.startsWith('Quick Daily Entry')) {
+                    const d = e.expense_date || e.date;
+                    if (!aggregated[d]) aggregated[d] = { sales: 0, purchases: 0, expenses: 0, notes: [] };
+                    aggregated[d].expenses += (parseFloat(e.total_amount) || parseFloat(e.debit_amount) || 0);
+                    if (e.remarks !== 'Quick Daily Entry') {
+                        aggregated[d].notes.push(e.remarks.replace('Quick Daily Entry: ', ''));
+                    }
+                }
+            });
+
+            let dataArr = Object.keys(aggregated).map(date => ({
+                date,
+                sales: aggregated[date].sales,
+                purchases: aggregated[date].purchases,
+                expenses: aggregated[date].expenses,
+                notes: aggregated[date].notes.join(' | ')
+            }));
+
+            if (filterDate) {
+                dataArr = dataArr.filter(item => item.date === filterDate);
+            }
+            dataArr.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            renderTable(dataArr);
+        }
+
+        function renderTable(dataArr) {
+            window.currentQuickEntries = dataArr;
+            const tbody = document.getElementById('logTableBody');
+            tbody.innerHTML = '';
+
+            const totalItems = dataArr.length;
+            const totalPages = Math.ceil(totalItems / rowsPerPage) || 1;
+            if (currentPage > totalPages) currentPage = totalPages;
+            if (currentPage < 1) currentPage = 1;
+
+            const start = (currentPage - 1) * rowsPerPage;
+            const paginatedData = dataArr.slice(start, start + rowsPerPage);
+
+            if (paginatedData.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="color: #666; padding: 15px;">No quick entries found.</td></tr>';
+            } else {
+                paginatedData.forEach(item => {
+                    const tr = document.createElement('tr');
+                    const hasNote = item.notes && item.notes.trim() !== '';
+                    if (hasNote) tr.style.backgroundColor = '#fff3cd';
+
+                    tr.innerHTML = `
+                        <td style="font-weight: bold; color: #5a5c69;">${new Date(item.date).toLocaleDateString('en-GB')}</td>
+                        <td style="color: #1cc88a; font-weight: bold;">₹ ${item.sales.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                        <td style="color: #f6c23e; font-weight: bold;">₹ ${item.purchases.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                        <td style="color: #e74a3b; font-weight: bold;">₹ ${item.expenses.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                        <td style="color: #6c757d; font-size: 13px;">${item.notes || '-'}</td>
+                        <td>
+                            <button onclick="editQuickEntry('${item.date}')" style="background:#f6c23e; color:#fff; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-weight:bold; margin-right:5px;">Edit</button>
+                            <button onclick="deleteQuickEntry('${item.date}')" style="background:#e74a3b; color:#fff; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-weight:bold;">Delete</button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+
+            document.getElementById('pageInfo').innerText = `Page ${currentPage} of ${totalPages}`;
+            document.getElementById('prevBtn').disabled = currentPage === 1;
+            document.getElementById('nextBtn').disabled = currentPage === totalPages;
+        }
+
+        function changePage(dir) {
+            currentPage += dir;
+            loadTableData();
+        }
+    </script>
+</body>
+
+</html>

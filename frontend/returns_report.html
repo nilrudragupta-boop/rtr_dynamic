@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Returns Report</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="settings.js"></script>
+    <script src="brand.service.js"></script>
+    <script src="brandLoader.js"></script>
+
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            padding: 20px;
+            background: #f4f6f8;
+        }
+
+        h2 {
+            color: #2c3e50;
+            text-align: center;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            justify-content: center;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+
+        th,
+        td {
+            padding: 10px;
+            border: 1px solid #ddd;
+            text-align: center;
+        }
+
+        th {
+            background: #2c3e50;
+            color: white;
+        }
+
+        .btn {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            color: white;
+            font-weight: bold;
+        }
+
+        .btn-primary {
+            background: #3498db;
+        }
+
+        .btn-success {
+            background: #27ae60;
+        }
+
+        .btn-danger {
+            background: #e74c3c;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h2><span id="brandName" data-brand="name"></span> - 📊 Returns Report </h2>
+
+    <div class="controls">
+        <input type="date" id="fromDate">
+        <input type="date" id="toDate">
+        <select id="typeFilter">
+            <option value="">All Types</option>
+            <option value="Sales Return">Sales Return</option>
+            <option value="Purchase Return">Purchase Return</option>
+            <option value="Damage">Damage</option>
+        </select>
+        <button class="btn btn-primary" onclick="currentPage=1; renderTable()">Filter</button>
+        <button class="btn btn-success" onclick="exportExcel()">Export Excel</button>
+    </div>
+
+    <!-- Pagination Controls -->
+    <div class="pagination-container"
+        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding: 10px; background: #fff; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
+        <div style="display: flex; align-items: center; gap: 5px;">
+            <span id="totalReturnsDisplay" style="font-weight: bold; color: #2c3e50; margin-right: 8px;"></span>
+            <select id="rowsPerPageSelect" onchange="changeRowsPerPage()"
+                style="width: auto; padding: 4px; border: 1px solid #ccc; border-radius: 4px; margin: 0;">
+                <option value="10">10 rows</option>
+                <option value="20" selected>20 rows</option>
+                <option value="50">50 rows</option>
+            </select>
+            <input type="number" id="goToPageInput"
+                style="width: 60px; padding: 4px; border: 1px solid #ccc; border-radius: 4px;" placeholder="Go to"
+                min="1" onchange="goToPage()">
+        </div>
+        <div id="paginationInfo" style="color: #666; font-size: 14px;"></div>
+        <div class="pagination" id="paginationControls" style="display: flex; gap: 5px;"></div>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Type</th>
+                <th>Ref No</th>
+                <th>Party Name</th>
+                <th>Reason</th>
+                <th>Items</th>
+                <th>Amount (₹)</th>
+            </tr>
+        </thead>
+        <tbody id="reportBody"></tbody>
+        <tfoot id="reportFooter"></tfoot>
+    </table>
+
+    <script>
+        let currentPage = 1;
+        let rowsPerPage = 20;
+
+        function changeRowsPerPage() {
+            rowsPerPage = parseInt(document.getElementById('rowsPerPageSelect').value);
+            currentPage = 1;
+            renderTable();
+        }
+
+        function goToPage() {
+            const pageInput = document.getElementById("goToPageInput");
+            const page = parseInt(pageInput.value);
+            if (page >= 1) {
+                currentPage = page;
+                renderTable();
+            }
+            pageInput.value = "";
+        }
+
+        function changePage(page) {
+            currentPage = page;
+            renderTable();
+        }
+
+        function renderPagination(totalItems, start, end, totalPages) {
+            const info = document.getElementById("paginationInfo");
+            const controls = document.getElementById("paginationControls");
+            const totalDisplay = document.getElementById("totalReturnsDisplay");
+
+            if (totalDisplay) totalDisplay.innerText = `Total Returns: ${totalItems}`;
+
+            if (totalItems === 0) {
+                if (info) info.innerText = "No returns found";
+                if (controls) controls.innerHTML = "";
+                return;
+            }
+
+            if (info) info.innerText = `Showing ${start} to ${end} of ${totalItems} entries`;
+
+            let html = "";
+            html += `<button class="btn btn-secondary" onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''} style="padding: 4px 8px; margin: 0 2px;">Prev</button>`;
+
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
+                    const activeStyle = i === currentPage ? 'background: #3498db; color: #fff;' : 'background: #fff; color: #333;';
+                    html += `<button class="btn btn-secondary" onclick="changePage(${i})" style="padding: 4px 8px; margin: 0 2px; ${activeStyle}">${i}</button>`;
+                } else if (i === currentPage - 3 || i === currentPage + 3) {
+                    html += `<span style="padding: 4px 8px;">...</span>`;
+                }
+            }
+
+            html += `<button class="btn btn-secondary" onclick="changePage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''} style="padding: 4px 8px; margin: 0 2px;">Next</button>`;
+
+            if (controls) controls.innerHTML = html;
+        }
+
+        function renderTable() {
+            const returns = JSON.parse(localStorage.getItem('returns')) || [];
+            const tbody = document.getElementById('reportBody');
+            const tfoot = document.getElementById('reportFooter');
+            tbody.innerHTML = '';
+            tfoot.innerHTML = '';
+
+            const fromDate = document.getElementById('fromDate').value;
+            const toDate = document.getElementById('toDate').value;
+            const typeFilter = document.getElementById('typeFilter').value;
+
+            const filtered = returns.filter(r => {
+                if (fromDate && r.return_date < fromDate) return false;
+                if (toDate && r.return_date > toDate) return false;
+                if (typeFilter && r.return_type !== typeFilter) return false;
+                return true;
+            });
+
+            let totalRefund = 0;
+
+            filtered.forEach(r => {
+                totalRefund += parseFloat(r.total_amount) || 0;
+            });
+
+            const totalItems = filtered.length;
+            const totalPages = Math.ceil(totalItems / rowsPerPage) || 1;
+
+            if (currentPage > totalPages) currentPage = totalPages;
+            if (currentPage < 1) currentPage = 1;
+
+            const startIndex = (currentPage - 1) * rowsPerPage;
+            const endIndex = Math.min(startIndex + rowsPerPage, totalItems);
+            const paginatedData = filtered.slice(startIndex, endIndex);
+
+            paginatedData.forEach(r => {
+                const itemsStr = r.items.map(i => `${i.item_name} ${i.itemCode ? '[' + i.itemCode + ']' : ''} (${i.qty}${i.uom ? ' ' + i.uom : ''})`).join(', ');
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${new Date(r.return_date).toLocaleDateString('en-GB')}</td>
+                    <td>${r.return_type}</td>
+                    <td>${r.invoice_no || '-'}</td>
+                    <td>${r.party_name || '-'}</td>
+                    <td>${r.reason}</td>
+                    <td>${itemsStr}</td>
+                    <td style="text-align:right;">${r.total_amount.toFixed(2)}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            if (filtered.length > 0) {
+                tfoot.innerHTML = `
+                    <tr style="font-weight: bold; background-color: #e9ecef;">
+                        <td colspan="6" style="text-align: right;">Total Refund Amount (All Pages):</td>
+                        <td style="text-align: right; color: #c0392b;">₹ ${totalRefund.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                    </tr>
+                `;
+            }
+
+            renderPagination(totalItems, startIndex + 1, endIndex, totalPages);
+        }
+
+        function exportExcel() {
+            const table = document.querySelector('table');
+            const wb = XLSX.utils.table_to_book(table);
+            XLSX.writeFile(wb, 'Returns_Report.xlsx');
+        }
+
+        document.addEventListener('DOMContentLoaded', renderTable);
+    </script>
+</body>
+
+</html>

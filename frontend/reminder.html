@@ -1,0 +1,3822 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Reminder</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <script src="settings.js"></script>
+    <script src="brand.service.js"></script>
+    <script src="brandLoader.js"></script>
+    <script>
+        function openWindow(url, width, height) {
+            const windowName = url.split('?')[0].split('/').pop().replace('.html', '').replace(/[^a-zA-Z0-9]/g, '_');
+            window.open(url, windowName, `width=${width},height=${height},resizable=yes,scrollbars=yes`).focus();
+        }
+    </script>
+
+    <style>
+        body {
+            margin: 0;
+            background: #e6e6e6;
+            font-family: Calibri, Arial, sans-serif;
+        }
+
+        .page {
+            width: 1000px;
+            margin: 22px auto;
+            background: #fff;
+            border: 2px solid #000;
+            padding: 25px;
+            box-sizing: border-box;
+            position: relative;
+        }
+
+        .title {
+            text-align: center;
+            font-size: 26px;
+            font-weight: bold;
+            color: #1f6fd5;
+            margin-bottom: 25px;
+        }
+
+        .section {
+            font-weight: bold;
+            margin: 22px 0 25px 0;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 150px 1fr 150px 1fr;
+            gap: 12px;
+            align-items: center;
+        }
+
+        label {
+            font-size: 16px;
+        }
+
+        input,
+        textarea {
+            border: 2px solid #000;
+            padding: 5px;
+            font-family: inherit;
+            font-size: 18px;
+            box-sizing: border-box;
+        }
+
+        input {
+            height: 32px;
+        }
+
+        textarea {
+            height: 65px;
+            resize: auto;
+        }
+
+        .orange {
+            color: #d35400;
+            font-weight: bold;
+        }
+
+        .green {
+            color: #0a7a34;
+            font-weight: bold;
+        }
+
+        .red {
+            color: #c00000;
+            font-weight: bold;
+        }
+
+        .span-3 {
+            grid-column: span 3;
+        }
+
+
+
+        /* Toast message */
+        #toast {
+            visibility: hidden;
+            min-width: 200px;
+            background-color: #333;
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 10px;
+            position: fixed;
+            z-index: 9999;
+            left: 50%;
+            bottom: 30px;
+            transform: translateX(-50%);
+            font-size: 20px;
+            opacity: 0;
+            transition: opacity 0.4s, bottom 0.4s;
+        }
+
+
+        /* Individual toast colours */
+        .toast-error {
+            background-color: #dc3545;
+            color: #000;
+        }
+
+        /* Red */
+        .toast-success {
+            background-color: #198754;
+            color: #000;
+        }
+
+        /* Green */
+        .toast-warning {
+            background-color: #ffc107;
+            color: #000;
+        }
+
+        /* Yellow */
+
+        .showtoast {
+            visibility: visible;
+            animation: fadein 0.4s, fadeout 0.4s 2.6s;
+        }
+
+        #toast.show {
+            visibility: visible;
+            opacity: 3;
+            bottom: 50px;
+        }
+
+        @keyframes fadein {
+            from {
+                bottom: 0;
+                opacity: 0;
+            }
+
+            to {
+                bottom: 30px;
+                opacity: 1;
+            }
+        }
+
+        @keyframes fadeout {
+            from {
+                bottom: 30px;
+                opacity: 1;
+            }
+
+            to {
+                bottom: 0;
+                opacity: 0;
+            }
+        }
+
+
+
+
+        .logo-wrap {
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .logo-wrap img {
+            max-width: 180px;
+            /* LIMIT EXPANSION */
+            width: 100%;
+            height: auto;
+            object-fit: contain;
+        }
+
+
+        button {
+            padding: 6px 12px;
+            margin: 6px 4px 0 0;
+            cursor: pointer;
+        }
+
+
+        /* Scrollable table - show 10 rows at a time (container scrolls; header stays sticky) */
+        :root {
+            --table-row-height: 44px;
+            --table-row-height-wrapped: 54px;
+            --table-header-height: 48px;
+            --table-visible-rows: 10;
+        }
+
+        .table-container {
+            width: 100%;
+            margin-top: 25px;
+            overflow-x: auto;
+            /* allow horizontal scroll on very small screens */
+            max-height: calc((var(--table-row-height) * var(--table-visible-rows)) + var(--table-header-height));
+            /* 10 rows + header */
+            overflow-y: auto;
+            /* vertical scrolling happens on the container so sticky header can work */
+            text-align: center;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 25px;
+            text-align: center;
+        }
+
+
+        .table-scroll {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: Auto;
+            /* helps columns align */
+            min-width: 100px;
+            /* ensure reasonable layout, allows horizontal scroll below this width */
+            border-spacing: 0;
+            text-align: center;
+        }
+
+        .table-scroll th,
+        .table-scroll td {
+            border: 1px solid #000;
+            padding: 6px 8px;
+            text-align: center;
+            box-sizing: border-box;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: normal;
+            vertical-align: middle;
+        }
+
+        /* Make header sticky and fully visible */
+        .table-scroll thead th {
+            position: sticky;
+            top: 0;
+            z-index: 6;
+            background: #f2f2f2;
+            /* allow header text to wrap so the full header is visible */
+            white-space: normal;
+            overflow: visible;
+            padding: 8px 10px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+            text-align: center;
+        }
+
+        /* Column width distribution (adjusted for clarity) */
+        .table-scroll {
+            min-width: 1140px;
+        }
+
+        .table-scroll th:nth-child(1),
+        .table-scroll td:nth-child(1) {
+            width: 40px;
+            min-width: 40px;
+            text-align: center;
+            padding: 0;
+        }
+
+        .table-scroll th:nth-child(2),
+        .table-scroll td:nth-child(2) {
+            width: 5%;
+            min-width: 40px;
+            text-align: center;
+            padding-left: 10px;
+        }
+
+        .table-scroll th:nth-child(3),
+        .table-scroll td:nth-child(3) {
+            width: 6%;
+            min-width: 220px;
+            text-align: center;
+            padding-left: 10px;
+        }
+
+        .table-scroll th:nth-child(4),
+        .table-scroll td:nth-child(4) {
+            width: 15%;
+            min-width: 80px;
+            text-align: center;
+            padding-left: 10px;
+        }
+
+        .table-scroll th:nth-child(5),
+        .table-scroll td:nth-child(5) {
+            width: 12%;
+            min-width: 110px;
+            text-align: center;
+            padding-left: 10px;
+        }
+
+        .table-scroll th:nth-child(6),
+        .table-scroll td:nth-child(6) {
+            width: 8%;
+            min-width: 240px;
+            text-align: center;
+            padding-left: 10px;
+        }
+
+        .table-scroll th:nth-child(7),
+        .table-scroll td:nth-child(7) {
+            width: 18%;
+            min-width: 90px;
+            text-align: center;
+            padding-left: 10px;
+        }
+
+        .table-scroll th:nth-child(8),
+        .table-scroll td:nth-child(8) {
+            width: 12%;
+            min-width: 100px;
+            text-align: center;
+            padding-left: 10px;
+        }
+
+        .table-scroll th:nth-child(9),
+        .table-scroll td:nth-child(9) {
+            width: 15%;
+            min-width: 120px;
+            white-space: nowrap;
+        }
+
+        .table-scroll th {
+            background: #f2f2f2;
+        }
+
+        /* Make action cell buttons align and wrap if needed */
+        .table-scroll td:nth-child(9) button:nth-child(1) {
+            background-color: #8bafa4;
+            /* Edit */
+            color: #fff;
+        }
+
+        .table-scroll td:nth-child(9) button:nth-child(2) {
+            background-color: #b47272;
+            /* Delete */
+            color: #fff;
+        }
+
+        .table-scroll td:nth-child(9) button:nth-child(3) {
+            background-color: #749e7d;
+            /* View */
+            color: #fff;
+        }
+
+        .table-scroll td:nth-child(9) button:nth-child(4) {
+            background-color: #4b3e45;
+            /* WhatsApp */
+            color: #fff;
+        }
+
+
+        /* Hover effects for action buttons */
+        .table-scroll td:nth-child(9) button:nth-child(1):hover {
+            font-weight: bold;
+            background-color: #0b5ed7;
+            /* Edit hover */
+        }
+
+        .table-scroll td:nth-child(9) button:nth-child(2):hover {
+            font-weight: bold;
+            background-color: #ff0707;
+            color: #eeff00
+                /* Delete hover */
+        }
+
+        .table-scroll td:nth-child(9) button:nth-child(3):hover {
+            font-weight: bold;
+            background-color: #07fdf1;
+            color: #0b5ed7
+                /* View hover */
+        }
+
+        .table-scroll td:nth-child(9) button:nth-child(4):hover {
+            font-weight: bold;
+            background-color: #e94aa5;
+            /* WhatsApp hover */
+        }
+
+        .table-scroll td:nth-child(9) button:nth-child(5) {
+            background-color: #563d7c;
+            /* Completed */
+            color: #fff;
+        }
+
+        .table-scroll td:nth-child(9) button:nth-child(5):hover {
+            font-weight: bold;
+            background-color: #472874;
+        }
+
+        .table-container {
+            box-sizing: border-box;
+            padding-bottom: 6px;
+        }
+
+        /* Action Dropdown Menu */
+        .action-dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .action-btn-main {
+            background-color: #607d8b;
+            color: white;
+            padding: 6px 12px;
+            font-size: 13px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .action-dropdown-content {
+            display: none;
+            position: fixed;
+            background-color: #fff;
+            min-width: 140px;
+            box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
+            z-index: 9999;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 4px 0;
+        }
+
+        .action-dropdown-content button {
+            color: #333 !important;
+            background: none !important;
+            padding: 8px 16px !important;
+            text-decoration: none !important;
+            display: block !important;
+            width: 100% !important;
+            text-align: left !important;
+            border: none !important;
+            border-radius: 0 !important;
+            margin: 0 !important;
+            box-shadow: none !important;
+            font-weight: normal !important;
+            font-size: 13px !important;
+        }
+
+        .action-dropdown-content button:hover {
+            background-color: #f1f1f1 !important;
+            color: #000 !important;
+        }
+
+        .action-dropdown.active .action-dropdown-content {
+            display: block;
+        }
+
+        body.dark-mode .action-dropdown-content {
+            background-color: #2c2c2c;
+            border-color: #444;
+        }
+
+        body.dark-mode .action-dropdown-content button {
+            color: #e0e0e0 !important;
+        }
+
+        body.dark-mode .action-dropdown-content button:hover {
+            background-color: #3a3a3a !important;
+            color: #fff !important;
+        }
+
+        .table-scroll tr {
+            min-height: var(--table-row-height);
+        }
+
+        /* Responsive tweaks */
+        @media (max-width: 1100px) {
+            .table-scroll {
+                min-width: 1120px;
+            }
+
+            .table-scroll th:nth-child(3),
+            .table-scroll td:nth-child(3) {
+                width: 28%;
+            }
+
+            .table-scroll th:nth-child(6),
+            .table-scroll td:nth-child(6) {
+                width: 26%;
+            }
+        }
+
+        @media (max-width: 900px) {
+            .table-scroll {
+                min-width: 820px;
+            }
+
+            .table-scroll th:nth-child(3),
+            .table-scroll td:nth-child(3),
+            .table-scroll th:nth-child(6),
+            .table-scroll td:nth-child(6) {
+                width: 30%;
+            }
+        }
+
+        @media (max-width: 700px) {
+
+            .table-scroll th,
+            .table-scroll td {
+                font-size: 13px;
+            }
+
+            .table-scroll th,
+            .table-scroll td {
+                white-space: normal;
+            }
+
+            .table-container {
+                max-height: calc((var(--table-row-height-wrapped) * var(--table-visible-rows)) + var(--table-header-height));
+            }
+
+            /* allow taller rows when wrapping */
+        }
+
+        @media print {
+            body {
+                background: #fff;
+            }
+
+            .page {
+                margin: 0;
+            }
+        }
+
+        /* Modal for persistent due reminders */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal.hidden {
+            display: none;
+        }
+
+        .modal-content {
+            background: #fff;
+            padding: 20px;
+            border-radius: 6px;
+            width: 90%;
+            max-width: 600px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        #dueList {
+            max-height: 60vh;
+            overflow-y: auto;
+            padding-right: 15px;
+        }
+
+
+        .modal-content h2 {
+            margin-top: 0;
+        }
+
+        .modal-content .reminder-item {
+            border-bottom: 1px solid #ddd;
+            padding: 8px 0;
+        }
+
+        .modal-content .btns {
+            margin-top: 12px;
+            display: flex;
+            gap: 8px;
+        }
+
+        .modal-content button {
+            padding: 6px 10px;
+        }
+
+        #viewModal .modal-content {
+            max-height: 80vh;
+            overflow-y: auto;
+            text-align: left;
+        }
+
+        .snooze-input {
+            width: 70px;
+            margin-left: 8px;
+            padding: 4px;
+        }
+
+        .snooze-btn {
+            margin-left: 6px;
+        }
+
+        .snooze-info {
+            font-size: 12px;
+            color: #888;
+            margin-top: 4px;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            border: none;
+            background: #ad2d2d;
+            font-size: 1.5rem;
+            color: #fff;
+            cursor: pointer;
+            border-radius: 5px;
+            padding: 0 8px;
+        }
+
+        .close-btn:hover {
+            background: #800;
+        }
+
+        /* Dark Mode */
+        body.dark-mode {
+            background: #121212;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .page,
+        body.dark-mode .modal-content,
+        body.dark-mode .modal-box {
+            background: #2c2c2c;
+            color: #e0e0e0;
+            border-color: #444;
+        }
+
+        body.dark-mode input,
+        body.dark-mode select,
+        body.dark-mode textarea {
+            background: #3a3a3a;
+            color: #fff;
+            border: 1px solid #555;
+        }
+
+        body.dark-mode .table-scroll th {
+            background: #333;
+            color: #fff;
+            border-color: #444;
+        }
+
+        body.dark-mode .table-scroll td {
+            border-color: #444;
+        }
+
+        body.dark-mode .title {
+            color: #4e9af1;
+        }
+
+        /* Compact View */
+        .table-scroll.compact-table th,
+        .table-scroll.compact-table td {
+            padding: 4px 5px;
+            font-size: 13px;
+        }
+
+        .table-scroll.compact-table tr {
+            min-height: 30px;
+        }
+
+        .row-overdue {
+            background-color: #ffe6e6;
+        }
+
+        .row-due-today {
+            background-color: #fff9c4;
+        }
+
+        body.dark-mode .row-overdue {
+            background-color: #4d1a1a;
+        }
+
+        body.dark-mode .row-due-today {
+            background-color: #554e05;
+        }
+
+        .party-type-label {
+            font-size: 11px;
+            font-weight: normal;
+        }
+
+        .party-type-customer {
+            color: #007bff;
+            /* Blue for customers */
+        }
+
+        .party-type-supplier {
+            color: #fd7e14;
+            /* Orange for suppliers */
+        }
+
+        body.dark-mode .party-type-customer {
+            color: #58a6ff;
+        }
+
+        body.dark-mode .party-type-supplier {
+            color: #f0883e;
+        }
+
+        /* Grey Mode */
+        body.grey-mode button {
+            background-color: #6c757d !important;
+            color: #fff !important;
+        }
+
+        /* Drag and Drop Styles */
+        #enquiryItemList .dragging {
+            opacity: 0.5;
+        }
+
+        #enquiryItemList .drag-over {
+            border-top: 2px solid #3498db;
+        }
+    </style>
+
+
+
+    <span style="cursor:pointer;color:#25D366;" onclick="openWhatsApp('${r.contact}')">
+        📱
+    </span>
+
+</head>
+
+<body>
+
+    <div class="page">
+        <div class="logo-wrap">
+            <img src="logo.png" alt="">
+        </div>
+
+
+        <!-- Toast Container -->
+        <div id="toast"></div>
+
+        <div class="modal-box">
+            <div style="position: absolute; top: 10px; right: 60px;">
+                <div style="display:flex; align-items:center; gap:5px; margin-bottom: 5px;">
+                    <label style="font-weight:bold; font-size:14px;">Theme:</label>
+                    <select id="themeSelect" onchange="changeTheme()"
+                        style="padding:4px; border-radius:4px; border:1px solid #ccc; font-size:13px;">
+                        <option value="light">Light</option>
+                        <option value="dark">Dark</option>
+                        <option value="system">System Default</option>
+                    </select>
+                </div>
+                <label
+                    style="cursor:pointer; display:flex; align-items:center; gap:5px; font-size:14px; user-select:none;">
+                    <input type="checkbox" id="compactViewToggle" onchange="toggleCompactView()"> Compact View
+                </label>
+            </div>
+
+            <div id="brandName" class="title" data-brand="name">Reminder</div>
+            <p id="brandAddress" style="color: #25425f; line-height: 1.4; text-align: center;" data-brand="address">
+                ===============================================================================================
+            </p>
+            <div id="storageStatus" style="margin-top:8px;font-size:20px;color:#77046d;"></div>
+
+
+            <div class="section">
+                <span id="partySectionLabel">Customer Details:-</span>
+                <select id="partyType" onchange="handlePartyTypeChange()"
+                    style="margin-left: 10px; padding: 4px; font-size: 14px; border-radius: 4px; border: 2px solid #000;">
+                    <option value="Customer">Customer</option>
+                    <option value="Supplier">Supplier</option>
+                </select>
+            </div>
+            <div class="grid">
+                <label id="partyNameLabel">Customer Name 👤*</label>
+                <input id="cname" placeholder="Please put Party Name." class="span-3" list="partyList"
+                    onchange="handlePartyChange()">
+                <datalist id="partyList"></datalist>
+
+                <label>1. Contact No 📞 *</label>
+                <input id="cno1" placeholder="Please put customer contact No.">
+
+                <label>2. Contact No 📞</label>
+                <input id="cno2" placeholder="Please put customer contact No.">
+
+                <label>Address 🏠</label>
+                <textarea id="address" placeholder="Please put customer address" class="span-3"></textarea>
+
+                <label>Pin No. 📍</label>
+                <input id="pin" placeholder="Please put PIN No.">
+
+                <label>Dist 🧭</label>
+                <select id="district"
+                    style="border:2px solid #000; padding:5px; font-family:inherit; font-size:16px; height:32px;">
+                    <option value="">-- Select District --</option>
+                    <option>Purba Bardhaman</option>
+                    <option>Paschim Bardhaman</option>
+                    <option>Hooghly</option>
+                    <option>Howrah</option>
+                    <option>Bankura</option>
+                    <option>Birbhum</option>
+                    <option>North 24 Parganas</option>
+                    <option>South 24 Parganas</option>
+                    <option>Purulia</option>
+                    <option>Nadia</option>
+                    <option>Malda</option>
+                </select>
+
+                <label>State 🗺️</label>
+                <select id="state"
+                    style="border:2px solid #000; padding:5px; font-family:inherit; font-size:16px; height:32px;"></select>
+
+
+                <label>Bill No. 🧾 *</label>
+                <input id="bno" placeholder="Please put customer Bill No." list="billList"
+                    onchange="handleBillChange()">
+                <datalist id="billList"></datalist>
+            </div>
+
+            <div class="section">Enquiry Details:- <button onclick="openEnquiryItemManager()"
+                    style="background:#17a2b8; color:#fff; font-weight:bold; padding:4px 8px; border:none; border-radius:4px; cursor:pointer; font-size:12px; margin-left:10px;">Reorder
+                    Items ↕️</button></div>
+            <div class="grid">
+                <label>Enquiry Type ❓</label>
+                <select id="enquiryType"
+                    style="border:2px solid #000; padding:5px; font-family:inherit; font-size:16px; box-sizing:border-box; height:32px;">
+                    <option value="">-- Select Enquiry Type --</option>
+                    <option value="New Query">New Query</option>
+                    <option value="Payment Reminder">Payment Reminder</option>
+                    <option value="Purchase">Purchase</option>
+                    <option value="Service">Service</option>
+                    <option value="Follow-up">Follow-up</option>
+                    <option value="Complaint">Complaint</option>
+                    <option value="Feedback">Feedback</option>
+                </select>
+
+                <label>Enquiry Date 📅</label>
+                <input id="edate" class="orange" type="date">
+
+                <label>Purchase Date 📅</label>
+                <input id="pdate" class="green" type="date">
+
+                <label>1. Enquiry Item 🎁</label>
+                <input id="item1" list="enquiryItemsData" placeholder="Search Item"
+                    style="border:2px solid #000; padding:5px; font-family:inherit; font-size:16px; box-sizing:border-box; height:32px;">
+
+
+
+                <label>2. Enquiry Item 🎁</label>
+                <input id="item2" list="enquiryItemsData" placeholder="Search Item"
+                    style="border:2px solid #000; padding:5px; font-family:inherit; font-size:16px; box-sizing:border-box; height:32px;">
+
+
+                <label>3. Enquiry Item 🎁</label>
+                <input id="item3" list="enquiryItemsData" placeholder="Search Item"
+                    style="border:2px solid #000; padding:5px; font-family:inherit; font-size:16px; box-sizing:border-box; height:32px;">
+                <datalist id="enquiryItemsData"></datalist>
+            </div>
+
+            <div class="section">Special Note:-</div>
+            <div class="grid">
+                <label>Special Note 📝</label>
+                <textarea id="specialNote"
+                    placeholder="Optional: Add any special note here (you may mention the service technician’s name, for your record)."
+                    class="span-3"></textarea>
+            </div>
+
+            <div class="section">Reminder Details:- <button onclick="openReminderTypeManager()"
+                    style="background:#17a2b8; color:#fff; font-weight:bold; padding:4px 8px; border:none; border-radius:4px; cursor:pointer; font-size:12px; margin-left:10px;">Manage
+                    Types ⚙️</button></div>
+            <div class="grid">
+                <label>Reminder Date & Time * 📅⏰</label>
+                <div style="display: flex; gap: 5px;">
+                    <input id="rdate" class="green" type="date" style="flex: 1;">
+                    <input id="rtime" class="green" type="time" style="flex: 1;">
+                </div>
+
+                <label>Reminder For 🔔 *</label>
+                <select id="reminderFor"
+                    style="border:2px solid #012929; padding:5px; font-family:inherit; font-size:16px; box-sizing:border-box; height:32px; color:#0702ff;">
+                    <option value="">-- Select Main Reminder Type --</option>
+
+                </select>
+            </div>
+
+            <button onclick="initiateSaveReminder()"
+                style="background:#28a745; color:#fff; font-weight:bold; padding:8px 16px; border:none; border-radius:4px; cursor:pointer;"
+                title="Alt+S">Save
+                💾</button>
+            <button onclick="initiateClearForm()"
+                style="background:#f7d9a1; color:#631010; font-weight:bold; padding:8px 16px; border:none; border-radius:4px; cursor:pointer;"
+                title="Alt+C">Clear
+                ♻️</button>
+            <button id="syncNowBtn" onclick="syncNow()"
+                style="background:#ffffff; color:#a14202; font-weight:bold;">Sync
+                Now 🔁</button>
+
+
+            <button id="report" onclick="openWindow('report.html', 1000, 700)" style="background:#1f22fd; color:#ffffff"
+                data-permission-id="perm_invoice_report">📊Invoice Report</button>
+            <button onclick="openHistoryModal()" style="background:#6f42c1; color:#ffffff; font-weight:bold;">📜
+                History</button>
+            <span id="syncStatus" style="margin-left:12px;color:#333;"></span>
+            =======================================================================================================================
+
+            <div style="margin-top:25px;">
+                <label>Search Reminders:🔎</label>
+                <input id="searchBox" oninput="liveFilter()"
+                    placeholder="Search by customer, bill no, contact or reminder for"
+                    style="border:2px solid #000; padding:5px; font-family:inherit; font-size:14px; width:360px;">
+                <button onclick="applyFilters()">Search</button>
+
+                <label style="margin-left:12px;">Filter by Date:📅</label>
+                <input id="filterDate" type="date"
+                    style="border:2px solid #000; padding:5px; font-family:inherit; font-size:14px;">
+                <button onclick="applyFilters()">Filter Date</button>
+
+
+
+                <label style="margin-left:12px;">Filter by District:🧭</label>
+                <select id="districtFilter" onchange="applyFilters()"
+                    style="border:2px solid #000; padding:5px; font-family:inherit; font-size:14px; width: 150px;"></select>
+
+
+                <label style="margin-left:12px;">Filter by State:🗺️</label>
+                <select id="stateFilter" onchange="applyFilters()"
+                    style="border:2px solid #000; padding:5px; font-family:inherit; font-size:14px; width: 150px;"></select>
+
+                <label style="margin-left:12px;">Filter by Type:🔔</label>
+                <select id="reminderTypeFilter" onchange="applyFilters()"
+                    style="border:2px solid #000; padding:5px; font-family:inherit; font-size:14px; width: 180px;"></select>
+
+                <label style="margin-left:12px;">Filter by Item:🎁</label>
+                <select id="enquiryItemFilter" onchange="applyFilters()"
+                    style="border:2px solid #000; padding:5px; font-family:inherit; font-size:14px; width: 180px;"></select>
+
+                <label> </label>
+
+            </div>
+
+            <button onclick="resetFilter()"
+                style="background:#f09850; color:#fff; font-weight:bold; padding:8px 16px; border:none; border-radius:4px; cursor:pointer;">Reset
+                🔄</button>
+            <button onclick="location.reload()"
+                style="background:#17a2b8; color:#fff; font-weight:bold; padding:8px 16px; border:none; border-radius:4px; cursor:pointer;">Refresh
+                Page 🔄</button>
+
+            <button onclick="deleteSelected()"
+                style="background:#dc3545; color:#fff; font-weight:bold; padding:8px 16px; border:none; border-radius:4px; cursor:pointer;"
+                data-permission-id="perm_delete_action">Delete
+                Selected 🗑️</button>
+            <button onclick="openSettingsModal()"
+                style="background:#607d8b; color:#fff; font-weight:bold; padding:8px 16px; border:none; border-radius:4px; cursor:pointer;">Settings
+                ⚙️</button>
+        </div>
+
+        <!-- Pagination Controls -->
+        <div class="pagination-container"
+            style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px; margin-bottom: 10px;">
+            <div style="display: flex; align-items: center; gap: 5px;">
+                <select id="rowsPerPageSelect" onchange="changeRowsPerPage()"
+                    style="width: auto; padding: 4px; border: 1px solid #ccc; border-radius: 4px; margin: 0;">
+                    <option value="10">10 rows</option>
+                    <option value="20">20 rows</option>
+                    <option value="50">50 rows</option>
+                </select>
+                <input type="number" id="goToPageInput"
+                    style="width: 80px; padding: 4px; border: 1px solid #999; border-radius: 4px;" placeholder="Go to"
+                    min="1" onchange="goToPage()">
+            </div>
+            <div id="paginationInfo" style="color: #666;"></div>
+            <div class="pagination" id="paginationControls" style="display: flex; gap: 5px;"></div>
+        </div>
+
+        <div class="table-container">
+            <table class="table-scroll" id="mainTable">
+
+                <thead>
+                    <tr>
+                        <th><input type="checkbox" id="selectAll" onclick="toggleSelectAll()"></th>
+                        <th>S.No🔢</th>
+                        <th style="cursor:pointer;" onclick="handleSort('cname')">Party👤 <span
+                                id="sort-icon-cname"></span></th>
+                        <th style="cursor:pointer;" onclick="handleSort('billNo')">Bill No.🧾 <span
+                                id="sort-icon-billNo"></span></th>
+                        <th style="cursor:pointer;" onclick="handleSort('contact')">Contact📱 <span
+                                id="sort-icon-contact"></span></th>
+                        <th style="cursor:pointer;" onclick="handleSort('reminderFor')">Reminder for🔔 <span
+                                id="sort-icon-reminderFor"></span></th>
+                        <th style="cursor:pointer;" onclick="handleSort('reminderDate')">Reminder Date & Time📅⏰ <span
+                                id="sort-icon-reminderDate"></span></th>
+                        <th>District🧭</th>
+                        <th>State🗺️</th>
+                        <th>Action⚡</th>
+                    </tr>
+                </thead>
+                <tbody id="list"></tbody>
+            </table>
+        </div>
+
+    </div>
+
+    <!-- Enquiry Item Manager Modal -->
+    <div id="enquiryItemModal" class="modal hidden" aria-hidden="true" role="dialog">
+        <div class="modal-content" style="width: 450px;">
+            <h2 style="margin-top:0; color:#17a2b8;">Reorder Enquiry Items</h2>
+            <p style="font-size:14px; color:#666; margin-top:-10px; margin-bottom:15px;">Drag and drop items to change
+                their order in the dropdowns.</p>
+            <div id="enquiryItemList"
+                style="max-height:300px; overflow-y:auto; border:1px solid #eee; border-radius:4px; margin-bottom:15px;">
+            </div>
+            <div class="btns" style="justify-content:flex-end;">
+                <button onclick="closeEnquiryItemModal()"
+                    style="background:#6c757d; color:white; border:none; border-radius:4px; padding:8px 16px;">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reminder Type Manager Modal -->
+    <div id="reminderTypeModal" class="modal hidden" aria-hidden="true" role="dialog">
+        <div class="modal-content" style="width: 400px;">
+            <h2 style="margin-top:0; color:#17a2b8;">Manage Reminder Types</h2>
+            <div style="display:flex; gap:5px; margin-bottom:15px;">
+                <input id="newReminderTypeInput" placeholder="Enter new type name"
+                    style="flex:1; padding:8px; border:1px solid #ccc; border-radius:4px;">
+                <button onclick="addReminderType()"
+                    style="background:#28a745; color:white; border:none; border-radius:4px; padding:0 15px;">Add</button>
+            </div>
+            <div id="reminderTypeList"
+                style="max-height:300px; overflow-y:auto; border:1px solid #eee; border-radius:4px; margin-bottom:15px;">
+            </div>
+            <div class="btns" style="justify-content:flex-end;">
+                <button onclick="closeReminderTypeModal()"
+                    style="background:#6c757d; color:white; border:none; border-radius:4px; padding:8px 16px;">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="modal hidden" aria-hidden="true" role="dialog">
+        <div class="modal-content" style="width: 400px;">
+            <h2 style="margin-top:0; color:#607d8b;">⚙️ Table Settings</h2>
+            <label
+                style="cursor:pointer; display:flex; align-items:center; gap:10px; font-weight:bold; margin-bottom: 15px;">
+                <input type="checkbox" id="greyButtonsToggle" onchange="toggleGreyButtons()"> Grey Buttons Mode
+            </label>
+            <label
+                style="cursor:pointer; display:flex; align-items:center; gap:10px; font-weight:bold; margin-bottom: 15px;">
+                <input type="checkbox" id="soundToggle" onchange="toggleSound()"> Enable Sound Notifications 🔊
+            </label>
+            <div id="soundOptions" style="margin-bottom: 15px; display: none;">
+                <label for="soundSelect"
+                    style="font-weight:bold; display:flex; align-items:center; gap:10px; font-size: 14px;">
+                    Notification Sound:
+                    <select id="soundSelect" onchange="saveSoundPreference()" style="flex:1; padding: 6px;">
+                        <option value="sawtooth">Beep</option>
+                        <option value="sine">Sine</option>
+                        <option value="square">Square</option>
+                        <option value="triangle">Triangle</option>
+                    </select>
+                </label>
+            </div>
+            <p style="font-size:14px; color:#666; margin-bottom:10px;">Select columns to display:</p>
+            <div style="margin-bottom: 10px; display: flex; gap: 10px; justify-content: center;">
+                <button onclick="toggleAllColumns(true)"
+                    style="background:#0d6efd; color:white; padding: 6px 12px; font-size: 12px; border:none; border-radius:4px;">Select
+                    All</button>
+                <button onclick="toggleAllColumns(false)"
+                    style="background:#6c757d; color:white; padding: 6px 12px; font-size: 12px; border:none; border-radius:4px;">Deselect
+                    All</button>
+            </div>
+            <div id="columnToggles"
+                style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; text-align:left; max-height:300px; overflow-y:auto; margin-bottom: 15px;">
+                <!-- Checkboxes generated by JS -->
+            </div>
+            <div class="btns" style="justify-content:flex-end;">
+                <button onclick="closeSettingsModal()"
+                    style="background:#6c757d; color:white; border:none; border-radius:4px; padding:8px 16px;">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for due reminders -->
+    <div id="dueModal" class="modal hidden" aria-hidden="true" role="dialog" aria-labelledby="dueModalTitle">
+        <div class="modal-content" role="document">
+            <h2 id="dueModalTitle">Reminder(s) Due Today</h2>
+            <div id="dueList"></div>
+            <div class="btns">
+                <button id="dismissAllBtn">Dismiss All</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- View Modal -->
+    <div id="viewModal" class="modal hidden" aria-hidden="true" role="dialog" aria-labelledby="viewModalTitle">
+        <div class="modal-content" role="document">
+            <h2 id="viewModalTitle">View Reminder</h2>
+            <div id="viewContent"></div>
+            <div class="btns">
+                <button onclick="closeViewModal()">Close</button>
+                <button onclick="editFromView()" style="margin-left:6px;">Edit</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- History Modal -->
+    <div id="historyModal" class="modal hidden" aria-hidden="true" role="dialog">
+        <div class="modal-content" style="width: 95%; max-width: 1000px;">
+            <h2 style="margin-top:0;">📜 Reminder History</h2>
+            <div style="margin-bottom:10px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                <input type="text" id="historySearch" placeholder="Search history..." oninput="filterHistory()"
+                    style="flex:1; padding:8px; border:1px solid #ccc; min-width: 200px;">
+                <label>From:</label> <input type="date" id="historyFrom" onchange="filterHistory()"
+                    style="padding:6px; border:1px solid #ccc;">
+                <label>To:</label> <input type="date" id="historyTo" onchange="filterHistory()"
+                    style="padding:6px; border:1px solid #ccc;">
+                <button onclick="deleteSelectedHistory()" style="background:#dc3545; color:#fff;">Delete
+                    Selected</button>
+                <button onclick="initiateClearHistory()" style="background:#dc3545; color:#fff;">Clear
+                    History</button>
+                <button onclick="closeHistoryModal()">Close</button>
+            </div>
+            <div class="table-container" style="max-height: 60vh;">
+                <table class="table-scroll" id="historyTable">
+                    <thead>
+                        <tr>
+                            <th><input type="checkbox" id="historySelectAll" onclick="toggleHistorySelectAll()">
+                            </th>
+                            <th>S.No</th>
+                            <th>Customer</th>
+                            <th>Bill No</th>
+                            <th>Reminder For</th>
+                            <th>Completed On</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historyList"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Generic Action Confirmation Modal -->
+    <div id="actionConfirmModal" class="modal hidden" aria-hidden="true" role="dialog">
+        <div class="modal-content" style="text-align:center; max-width: 400px;">
+            <h2 id="actionConfirmTitle" style="margin-top:0;">Confirmation</h2>
+            <p id="actionConfirmMsg" style="font-size:18px; margin:20px 0;"></p>
+            <div class="btns" style="justify-content:center;">
+                <button id="actionConfirmBtnYes"
+                    style="background:#28a745; color:#fff; font-weight:bold; padding:8px 24px; border:none; border-radius:4px; cursor:pointer;">Yes</button>
+                <button onclick="closeActionConfirmModal()"
+                    style="background:#6c757d; color:#fff; font-weight:bold; padding:8px 24px; border:none; border-radius:4px; cursor:pointer;">No</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="deleteConfirmModal" class="modal hidden" aria-hidden="true" role="dialog">
+        <div class="modal-content" style="text-align:center;">
+            <h2 style="color:#c00000; margin-top:0;">🗑️ Confirm Deletion</h2>
+            <p id="deleteConfirmMsg" style="font-size:18px; margin:20px 0;">Are you sure you want to delete selected
+                reminders?</p>
+            <div class="btns" style="justify-content:center;">
+                <button onclick="confirmBulkDelete()"
+                    style="background:#dc3545; color:#fff; font-weight:bold; padding:8px 24px; border:none; border-radius:4px; cursor:pointer;">Yes,
+                    Delete</button>
+                <button onclick="closeDeleteConfirmModal()"
+                    style="background:#6c757d; color:#fff; font-weight:bold; padding:8px 24px; border:none; border-radius:4px; cursor:pointer;">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Info Modal (Success/Warning) -->
+    <div id="infoModal" class="modal hidden" aria-hidden="true" role="dialog">
+        <div class="modal-content" style="text-align:center;">
+            <h2 id="infoModalTitle" style="margin-top:0;"></h2>
+            <p id="infoModalMsg" style="font-size:18px; margin:20px 0; line-height:1.5;"></p>
+            <div class="btns" style="justify-content:center;">
+                <button onclick="closeInfoModal()"
+                    style="background:#1f6fd5; color:#fff; font-weight:bold; padding:8px 24px; border:none; border-radius:4px; cursor:pointer;">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Import Success Modal -->
+    <div id="importSuccessModal" class="modal hidden" aria-hidden="true" role="dialog">
+        <div class="modal-content" style="text-align:center;">
+            <h2 style="color:#28a745; margin-top:0;">Import Successful! ✅</h2>
+            <p id="importSuccessMsg" style="font-size:18px; margin:20px 0; line-height:1.5;"></p>
+            <div class="btns" style="justify-content:center;">
+                <button onclick="closeImportSuccessModal()"
+                    style="background:#1f6fd5; color:#fff; font-weight:bold; padding:8px 24px; border:none; border-radius:4px; cursor:pointer;">OK</button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- libs -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+
+    <!-- Firebase SDKs (replace placeholder config in the script below) -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+
+    <script>
+
+        /* ================= GLOBAL DATA ================= */
+        const API = 'http://localhost:9883104847/api';
+
+        const district = document.getElementById('district');
+        const state = document.getElementById('state');
+
+        const { jsPDF } = window.jspdf;
+        let toastTimeout;
+
+
+
+        // --- Sync configuration
+        const SYNC_CONFIG = {
+            baseUrl: API,
+            endpoints: {
+                list: '/reminders',
+                create: '/reminders',
+                update: '/reminders',
+                delete: '/reminders'
+            }
+        };
+
+        // Firestore integration (placeholder config — replace with your Firebase config)
+        /*
+          Setup steps (summary):
+          1) Go to https://console.firebase.google.com and create a new project.
+          2) Add a Web App to the project and copy the client config (apiKey, authDomain, projectId, storageBucket, messagingSenderId, appId).
+          3) In Authentication → Sign-in method, enable **Anonymous** sign-in (for quick setup).
+          4) Enable Firestore (Native mode) OR Realtime Database and apply the sample rules shown in the panel above.
+          5) Replace the values below in FIREBASE_CONFIG with your project config and reload the app.
+        
+          Example Firestore rules (minimal, allows anon users):
+          rules_version = '2';
+          service cloud.firestore {
+            match /databases/{database}/documents {
+              match /reminders/{reminderId} {
+                allow read, write: if request.auth != null;
+              }
+            }
+          }
+        
+          Example Realtime Database rules (minimal):
+          {
+            "rules": {
+              "reminders": {
+                ".read": "auth != null",
+                ".write": "auth != null"
+              }
+            }
+          }
+        */
+        const FIREBASE_CONFIG = {
+            apiKey: 'YOUR_API_KEY',
+            authDomain: 'YOUR_PROJECT.firebaseapp.com',
+            projectId: 'YOUR_PROJECT',
+            storageBucket: 'YOUR_PROJECT.appspot.com',
+            messagingSenderId: 'SENDER_ID',
+            appId: 'APP_ID'
+        };
+
+        const FIRESTORE_RULES_SAMPLE = `rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /reminders/{reminderId} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}`;
+
+        const RTDB_RULES_SAMPLE = `{
+  "rules": {
+    "reminders": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    }
+  }
+}`;
+
+        let firebaseEnabled = false;
+        let db = null;
+
+        function populateFirebaseHelp() {
+            const el = document.getElementById('firebaseHelpPre');
+            if (!el) return;
+            el.textContent = 'PLACEHOLDER: Replace the FIREBASE_CONFIG values with your project config.\n\n--- Firestore rules ---\n' + FIRESTORE_RULES_SAMPLE + '\n\n--- Realtime Database rules ---\n' + RTDB_RULES_SAMPLE;
+        }
+
+        function initFirebase() {
+            if (typeof firebase === 'undefined') return; // SDK not loaded
+            try {
+                firebase.initializeApp(FIREBASE_CONFIG);
+                // optional: anonymous auth so rules can use uid if needed
+                if (firebase.auth) firebase.auth().signInAnonymously().catch(e => console.warn('Auth failed', e));
+                db = firebase.firestore();
+                // enable offline persistence
+                if (db && db.enablePersistence) db.enablePersistence().catch(e => console.warn('Persistence not enabled', e));
+                firebaseEnabled = true;
+                setSyncStatus('Firebase initialized');
+                setupFirestoreListener();
+            } catch (e) { console.error('Firebase init error', e); }
+        }
+
+        async function writeToFirestore(record) {
+            if (!firebaseEnabled || !db) return;
+            try {
+                await db.collection('reminders').doc(record.__localId).set({ ...record, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+                setSyncStatus('Saved to Firestore');
+            } catch (e) { console.error('Firestore write failed', e); setSyncStatus('Firestore write failed', true); }
+        }
+
+        async function deleteFromFirestore(localId) {
+            if (!firebaseEnabled || !db || !localId) return;
+            try { await db.collection('reminders').doc(localId).delete(); setSyncStatus('Deleted from Firestore'); } catch (e) { console.error('Firestore delete failed', e); setSyncStatus('Firestore delete failed', true); }
+        }
+
+        function setupFirestoreListener() {
+            if (!firebaseEnabled || !db) return;
+            db.collection('reminders').onSnapshot(snapshot => {
+                let changed = false;
+                snapshot.docChanges().forEach(change => {
+                    const doc = change.doc.data();
+                    const id = change.doc.id;
+                    const serverRec = {
+                        cname: doc.cname,
+                        billNo: doc.billNo,
+                        contact: doc.contact,
+                        state: doc.state,
+                        reminderFor: doc.reminderFor,
+                        reminderDate: doc.reminderDate,
+                        reminderTime: doc.reminderTime,
+                        enquiryType: doc.enquiryType,
+                        enquiryDate: doc.enquiryDate,
+                        purchaseDate: doc.purchaseDate,
+                        enquiryItems: doc.enquiryItems,
+                        message: doc.message,
+                        specialNote: doc.specialNote || '',
+                        __localId: id,
+                        __remoteId: id,
+                        __lastModified: (doc.updatedAt && doc.updatedAt.toDate) ? doc.updatedAt.toDate().toISOString() : (doc.updatedAt || new Date().toISOString())
+                    };
+                    const localIdx = data.findIndex(d => d.__localId === id);
+                    if (change.type === 'removed') {
+                        if (localIdx > -1) { data.splice(localIdx, 1); changed = true; }
+                    } else {
+                        if (localIdx === -1) { data.push(serverRec); changed = true; }
+                        else { const local = data[localIdx]; const lmod = new Date(local.__lastModified || 0).getTime(); const rmod = new Date(serverRec.__lastModified || 0).getTime(); if (rmod > lmod) { data[localIdx] = { ...local, ...serverRec }; changed = true; } }
+                    }
+                });
+                if (changed) { localStorage.setItem('reminders', JSON.stringify(data)); updateStorageStatus(); loadTable(); }
+            }, err => { console.error('Firestore listen error', err); setSyncStatus('Listener error', true); });
+        }
+
+        // initialize firebase
+        populateFirebaseHelp();
+        initFirebase();
+
+        // Simple IndexedDB-based queue (stores pending ops when offline)
+        function openSyncDB() {
+            return new Promise((resolve, reject) => {
+                const req = indexedDB.open('reminder-sync-db', 1);
+                req.onupgradeneeded = () => {
+                    const db = req.result;
+                    if (!db.objectStoreNames.contains('queue')) db.createObjectStore('queue', { keyPath: 'id' });
+                };
+                req.onsuccess = () => resolve(req.result);
+                req.onerror = () => reject(req.error);
+            });
+        }
+        async function addQueueItem(item) {
+            const db = await openSyncDB();
+            const tx = db.transaction('queue', 'readwrite');
+            tx.objectStore('queue').put(item);
+            return new Promise((res, rej) => {
+                tx.oncomplete = () => { db.close(); res(); };
+                tx.onerror = () => { db.close(); rej(tx.error); };
+            });
+        }
+        async function getQueueItems() {
+            const db = await openSyncDB();
+            const tx = db.transaction('queue', 'readonly');
+            const req = tx.objectStore('queue').getAll();
+            return new Promise((res, rej) => {
+                req.onsuccess = () => { db.close(); res(req.result || []); };
+                req.onerror = () => { db.close(); rej(req.error); };
+            });
+        }
+        async function deleteQueueItem(id) {
+            const db = await openSyncDB();
+            const tx = db.transaction('queue', 'readwrite');
+            tx.objectStore('queue').delete(id);
+            return new Promise((res, rej) => {
+                tx.oncomplete = () => { db.close(); res(); };
+                tx.onerror = () => { db.close(); rej(tx.error); };
+            });
+        }
+
+        function setSyncStatus(msg, isError) {
+            const el = document.getElementById('syncStatus');
+            if (el) { el.textContent = msg; el.style.color = isError ? '#c00000' : '#333'; }
+        }
+
+        async function processQueue() {
+            setSyncStatus('Processing queue...');
+            const items = await getQueueItems();
+            for (const it of items) {
+                try {
+                    if (!navigator.onLine) { setSyncStatus('Offline — queued'); return; }
+                    const op = it.op;
+                    const rec = it.record;
+                    if (op === 'create') {
+                        const res = await fetch(SYNC_CONFIG.baseUrl + SYNC_CONFIG.endpoints.create, {
+                            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(rec)
+                        });
+                        if (res.ok) {
+                            const body = await res.json();
+                            const rid = body.id || body._id || body.remoteId;
+                            if (rid) { const idx = data.findIndex(d => d.__localId === rec.__localId); if (idx > -1) { data[idx].__remoteId = rid; data[idx].__lastModified = new Date().toISOString(); localStorage.setItem('reminders', JSON.stringify(data)); } }
+                            await deleteQueueItem(it.id);
+                        } else { console.error('Failed create', await res.text()); }
+                    } else if (op === 'update') {
+                        const id = rec.__remoteId;
+                        let res;
+                        if (id) {
+                            res = await fetch(SYNC_CONFIG.baseUrl + SYNC_CONFIG.endpoints.update + '/' + encodeURIComponent(id), { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(rec) });
+                        } else {
+                            res = await fetch(SYNC_CONFIG.baseUrl + SYNC_CONFIG.endpoints.create, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(rec) });
+                        }
+                        if (res && res.ok) { const body = await res.json(); const rid = body.id || body._id || body.remoteId; if (rid) { const idx = data.findIndex(d => d.__localId === rec.__localId); if (idx > -1) { data[idx].__remoteId = rid; data[idx].__lastModified = new Date().toISOString(); localStorage.setItem('reminders', JSON.stringify(data)); } } await deleteQueueItem(it.id); } else { console.error('Failed update', res ? await res.text() : 'no response'); }
+                    } else if (op === 'delete') {
+                        const id = rec.__remoteId;
+                        if (id) { const res = await fetch(SYNC_CONFIG.baseUrl + SYNC_CONFIG.endpoints.delete + '/' + encodeURIComponent(id), { method: 'DELETE' }); if (res.ok || res.status === 404) { await deleteQueueItem(it.id); } else { console.error('Failed delete', await res.text()); } } else { await deleteQueueItem(it.id); }
+                    }
+                } catch (e) { console.error('Queue processing error', e); setSyncStatus('Sync error: ' + (e.message || e), true); return; }
+            }
+            setSyncStatus('Queue processed');
+        }
+
+        async function syncNow() {
+            setSyncStatus('Syncing...');
+            try { await processQueue(); await fetchFromServer(); setSyncStatus('Synced ' + new Date().toLocaleString()); loadTable(); } catch (e) { console.error('Sync failed', e); setSyncStatus('Sync failed: ' + (e.message || e), true); }
+        }
+
+        async function fetchFromServer() {
+            if (!navigator.onLine) { setSyncStatus('Offline — cannot fetch'); return; }
+            try {
+                const res = await fetch(SYNC_CONFIG.baseUrl + SYNC_CONFIG.endpoints.list);
+                if (!res.ok) { console.warn('Failed fetching remote', res.status); return; }
+                const serverData = await res.json();
+                if (!Array.isArray(serverData)) return;
+                serverData.forEach(sd => {
+                    const remoteId = sd.id || sd._id || sd.remoteId;
+                    if (!remoteId) return;
+                    const localIdx = data.findIndex(d => d.__remoteId && String(d.__remoteId) === String(remoteId));
+                    const serverRec = {
+                        cname: sd.cname || sd.customerName || sd.name,
+                        billNo: sd.billNo || sd.bill_no,
+                        state: sd.state,
+                        contact: sd.contact || sd.phone,
+                        reminderFor: sd.reminderFor || sd.reminder_for,
+                        reminderDate: sd.reminderDate || sd.reminder_date,
+                        reminderTime: sd.reminderTime || sd.reminder_time,
+                        enquiryType: sd.enquiryType,
+                        enquiryDate: sd.enquiryDate,
+                        purchaseDate: sd.purchaseDate,
+                        enquiryItems: sd.enquiryItems,
+                        message: sd.message,
+                        specialNote: sd.specialNote || '',
+                        __remoteId: remoteId,
+                        __lastModified: sd.updatedAt || sd.lastModified || new Date().toISOString()
+                    };
+                    if (localIdx === -1) { data.push(serverRec); } else { const local = data[localIdx]; const lmod = new Date(local.__lastModified || 0).getTime(); const rmod = new Date(serverRec.__lastModified || 0).getTime(); if (rmod > lmod) { data[localIdx] = { ...local, ...serverRec }; } }
+                });
+                localStorage.setItem('reminders', JSON.stringify(data));
+            } catch (e) { console.error('Failed fetching server data', e); }
+        }
+
+        // Element references (avoid relying on globals)
+        const cname = document.getElementById('cname');
+        const cno1 = document.getElementById('cno1');
+        const cno2 = document.getElementById('cno2');
+        const bno = document.getElementById('bno');
+        const rdate = document.getElementById('rdate');
+        const rtime = document.getElementById('rtime');
+        const reminderFor = document.getElementById('reminderFor');
+        const enquiryType = document.getElementById('enquiryType');
+        const edate = document.getElementById('edate');
+        const pdate = document.getElementById('pdate');
+        const item1 = document.getElementById('item1');
+        const item2 = document.getElementById('item2');
+        const item3 = document.getElementById('item3');
+        const specialNote = document.getElementById('specialNote');
+        const searchBox = document.getElementById('searchBox');
+        const list = document.getElementById('list');
+        const storageStatus = document.getElementById('storageStatus');
+
+        let data = [];
+        let editIndex = null;
+        let currentViewId = null; // id of the record shown in the View modal
+
+        // Safe read from localStorage
+        try {
+            data = JSON.parse(localStorage.getItem("reminders")) || [];
+        } catch (e) {
+            console.error('Failed to parse reminders from localStorage', e);
+            alert('Local storage data corrupted. Starting with empty reminders.');
+            data = [];
+            try { localStorage.setItem("reminders", JSON.stringify(data)); } catch (e2) { console.error('Failed to reset localStorage', e2); }
+        }
+
+        function initiateSaveReminder() {
+            askConfirm("Save Reminder", "Are you sure you want to save this reminder?", () => {
+                saveReminder();
+            });
+        }
+
+        function initiateClearForm() {
+            askConfirm("Clear Form", "Are you sure you want to clear the form? Unsaved changes will be lost.", () => {
+                clearForm();
+            }, '#f7d9a1', '#631010'); // Custom color for clear
+        }
+
+        function initiateClearHistory() {
+            askConfirm("Clear History", "Are you sure you want to clear all history? This cannot be undone.", () => {
+                clearHistory();
+            }, '#dc3545');
+        }
+
+        function askConfirm(title, msg, callback, yesBg = '#28a745', yesColor = '#fff') {
+            const modal = document.getElementById('actionConfirmModal');
+            const titleEl = document.getElementById('actionConfirmTitle');
+            const msgEl = document.getElementById('actionConfirmMsg');
+            const yesBtn = document.getElementById('actionConfirmBtnYes');
+
+            if (!modal || !titleEl || !msgEl || !yesBtn) return;
+
+            titleEl.textContent = title;
+            msgEl.textContent = msg;
+            yesBtn.style.background = yesBg;
+            yesBtn.style.color = yesColor;
+
+            // Clone to remove old listeners
+            const newYesBtn = yesBtn.cloneNode(true);
+            yesBtn.parentNode.replaceChild(newYesBtn, yesBtn);
+
+            newYesBtn.onclick = () => {
+                closeActionConfirmModal();
+                if (callback) callback();
+            };
+
+            modal.classList.remove('hidden');
+        }
+
+        function formatTime(timeStr) {
+            if (!timeStr) return '';
+            const parts = timeStr.split(':');
+            if (parts.length < 2) return timeStr;
+            const h = parseInt(parts[0], 10);
+            const m = parts[1];
+            const ampm = h >= 12 ? 'PM' : 'AM';
+            const formattedH = h % 12 || 12;
+            return `${formattedH}:${m} ${ampm}`;
+        }
+
+        function closeActionConfirmModal() {
+            document.getElementById('actionConfirmModal').classList.add('hidden');
+        }
+
+        async function saveReminder() {
+            if (!cname.value || !cno1.value || !bno.value || !rdate.value || !reminderFor.value) {
+                showInfoModal("Warning ⚠️", "Please fill required fields (*) [Party Name ; Contact No ; Bill No.; Reminder Date ; Reminder For] before saving.", "error");
+                showToast("Please fill required fields (*) before saving.", "error");
+                return;
+            }
+
+
+            // preserve dismissed state and snooze if editing and date unchanged
+            let existingDismissed = null, existingRemDate = null, existingSnoozed = null, existingRemoteId = null;
+            if (editIndex !== null && data[editIndex]) {
+                existingDismissed = data[editIndex].dismissedOn || null;
+                existingRemDate = data[editIndex].reminderDate || null;
+                existingSnoozed = data[editIndex].snoozedUntil || null;
+                existingRemoteId = data[editIndex].__remoteId || null;
+            }
+
+            const record = {
+                partyType: document.getElementById('partyType') ? document.getElementById('partyType').value : 'Customer',
+                cname: cname.value,
+                billNo: bno.value,
+                contact: cno1.value,
+                cno2: cno2.value,
+                address: address.value,
+                pin: pin.value,
+                reminderFor: reminderFor.value,
+                state: state.value,
+                reminderDate: rdate.value,
+                reminderTime: rtime.value,
+                district: district.value,
+
+                // full data (for edit / message)
+                enquiryType: enquiryType.value,
+                enquiryDate: edate.value,
+                purchaseDate: pdate.value,
+                enquiryItems: [item1.value, item2.value, item3.value],
+                message:
+                    `Dear *${cname.value}*,
+This is a *Gentle Reminder* regarding *${reminderFor.value}*.
+Bill No: ${bno.value}
+Please feel free to contact us for any further clarification & assistance.
+
+Thanking You 
+*${APP_SETTINGS.COMPANY_NAME}*`,
+                specialNote: specialNote.value,
+
+                // local sync metadata
+                __localId: (editIndex !== null && data[editIndex] && data[editIndex].__localId) ? data[editIndex].__localId : 'l-' + Date.now(),
+                __lastModified: new Date().toISOString(),
+                __remoteId: existingRemoteId || null
+            };
+
+            // restore previous dismissed flag and snooze only if date hasn't changed
+            if (editIndex !== null && existingRemDate === rdate.value) {
+                record.dismissedOn = existingDismissed;
+                record.snoozedUntil = existingSnoozed;
+            }
+
+            if (editIndex !== null) {
+                data[editIndex] = record;
+                editIndex = null;
+            } else {
+                data.push(record);
+            }
+
+            // Safe write to localStorage
+            try {
+                localStorage.setItem("reminders", JSON.stringify(data));
+                const saved = JSON.parse(localStorage.getItem("reminders") || '[]');
+                if (Array.isArray(saved) && saved.length === data.length) {
+                    updateStorageStatus();
+                    clearForm();
+                    loadTable();
+                    showInfoModal("Success ✅", "Reminder saved successfully!", "success");
+                    showToast('Reminder Data Saved');
+
+                    // write to Firestore if available (Firestore handles offline persistence); fallback to queue if not initialized
+                    if (firebaseEnabled) {
+                        writeToFirestore(record);
+                    } else {
+                        const op = record.__remoteId ? 'update' : 'create';
+                        const opItem = { id: 'op-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8), op, record };
+                        try { await addQueueItem(opItem); setSyncStatus('Queued for sync'); } catch (e) { console.error('Queue add failed', e); setSyncStatus('Queue error', true); }
+                        if (navigator.onLine) syncNow();
+                    }
+
+                    // Schedule a background notification if supported
+                    scheduleBackgroundNotification(record);
+
+                } else {
+                    console.error('Saved value mismatch', saved);
+                    alert('Could not persist reminders to localStorage. Check browser settings.');
+                }
+
+            } catch (e) {
+                console.error('Failed to save reminders', e);
+                alert('Failed to save reminder. Your browser may block localStorage.');
+            }
+        }
+
+        // Pagination Globals
+        let currentPage = 1;
+        let rowsPerPage = 10;
+        let currentDisplayData = [];
+
+        // Sorting Globals
+        let currentSortColumn = null;
+        let currentSortDirection = 'asc';
+
+        function handleSort(column) {
+            if (currentSortColumn === column) {
+                currentSortDirection = currentSortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSortColumn = column;
+                currentSortDirection = 'asc';
+            }
+
+            const icon = document.getElementById(`sort-icon-${column}`);
+            if (icon) icon.innerText = currentSortDirection === 'asc' ? ' ▲' : ' ▼';
+
+            sortData();
+            renderPage();
+        }
+
+        function sortData() {
+            if (!currentSortColumn) return;
+
+            currentDisplayData.sort((a, b) => {
+                let valA = a[currentSortColumn] || "";
+                let valB = b[currentSortColumn] || "";
+
+                if (currentSortColumn === 'reminderDate') {
+                    if (!valA) return 1;
+                    if (!valB) return -1;
+                    return currentSortDirection === 'asc'
+                        ? new Date(valA) - new Date(valB)
+                        : new Date(valB) - new Date(valA);
+                } else {
+                    valA = String(valA).toLowerCase();
+                    valB = String(valB).toLowerCase();
+                    if (valA < valB) return currentSortDirection === 'asc' ? -1 : 1;
+                    if (valA > valB) return currentSortDirection === 'asc' ? 1 : -1;
+                    return 0;
+                }
+            });
+        }
+
+        function loadTable(filteredData = null) {
+            if (filteredData) {
+                currentDisplayData = filteredData;
+                currentPage = 1;
+            } else {
+                if (currentDisplayData !== data) {
+                    currentPage = 1;
+                }
+                currentDisplayData = data;
+            }
+            sortData();
+            renderPage();
+            updateStorageStatus();
+            loadReminderTypes();
+        }
+
+        function renderPage() {
+            list.innerHTML = "";
+            const searchTerm = document.getElementById("searchBox").value.trim();
+            const totalItems = currentDisplayData.length;
+            const totalPages = Math.ceil(totalItems / rowsPerPage) || 1;
+
+            if (currentPage > totalPages) currentPage = totalPages;
+            if (currentPage < 1) currentPage = 1;
+
+            const startIndex = (currentPage - 1) * rowsPerPage;
+            const endIndex = Math.min(startIndex + rowsPerPage, totalItems);
+            const display = currentDisplayData.slice(startIndex, endIndex);
+
+            const now = new Date();
+            const today = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
+
+            display.forEach((r, i) => {
+                // use a stable id: prefer __localId, fallback to __remoteId
+                const id = r.__localId || r.__remoteId || ('gen-' + (startIndex + i));
+                const isChecked = selectedIds.has(id) ? 'checked' : '';
+
+                let rowClass = "";
+                if (r.reminderDate) {
+                    if (r.reminderDate < today) rowClass = "row-overdue";
+                    else if (r.reminderDate === today) rowClass = "row-due-today";
+                }
+
+                let timeDisplay = r.reminderTime ? `<br><span style="font-size:13px;color:#d35400;font-weight:bold;">⏰ ${formatTime(r.reminderTime)}</span>` : "";
+                list.innerHTML += `
+        <tr class="${rowClass}">
+            <td><input type="checkbox" class="selectRow" value="${id}" ${isChecked} onchange="toggleRowSelection('${id}')"></td>
+            <td>${startIndex + i + 1}</td>
+            <td>${highlightMatch(r.cname, searchTerm)} <span class="party-type-label party-type-${(r.partyType || 'Customer').toLowerCase()}">(${r.partyType || 'Customer'})</span></td>
+            <td>${highlightMatch(r.billNo, searchTerm)}</td>
+            <td><a href="javascript:void(0)" onclick="openWhatsApp('${r.contact}')" style="color:#0a7a34;font-weight:bold;text-decoration:none;">${highlightMatch(r.contact, searchTerm)}</a></td>
+            <td>${highlightMatch(r.reminderFor, searchTerm)}</td>
+            <td>${formatDate(r.reminderDate)}${timeDisplay}${r.snoozedUntil ? '<div class="snooze-info">Snoozed until: ' + new Date(r.snoozedUntil).toLocaleString('en-GB') + '</div>' : ''}</td>
+            <td>${r.district || ""}</td>
+            <td>${r.state || ""}</td>
+            <td>
+                <div class="action-dropdown">
+                    <button class="action-btn-main" onclick="toggleActionMenu(this)">Actions ▼</button>
+                    <div class="action-dropdown-content">
+                        <button onclick="viewRec('${id}')">👁️ View</button>
+                        <button onclick="editRecById('${id}')" data-permission-id="perm_reminder">✏️ Edit</button>
+                        <button onclick="copyMsgById('${id}')">📱 WhatsApp/SMS</button>
+                        <button onclick="markCompletedById('${id}')">✅ Done</button>
+                        <button onclick="delRecById('${id}')" data-permission-id="perm_delete_action" style="color: #dc3545 !important;">🗑️ Delete</button>
+                    </div>
+                </div>
+            </td>
+        </tr>`;
+            });
+
+            renderPaginationControls(totalItems, startIndex + 1, endIndex, totalPages);
+
+            updateSelectAllState();
+            applyUIPermissions();
+        }
+
+        // --- Bulk Delete Logic ---
+        let idsToDelete = [];
+        let selectedIds = new Set();
+
+        function toggleSelectAll() {
+            const selectAll = document.getElementById('selectAll');
+            const isChecked = selectAll.checked;
+
+            // Select/Deselect all items in the current filtered list (across all pages)
+            currentDisplayData.forEach(r => {
+                const id = r.__localId || r.__remoteId;
+                if (id) {
+                    if (isChecked) selectedIds.add(id);
+                    else selectedIds.delete(id);
+                }
+            });
+            renderPage();
+        }
+
+        function toggleRowSelection(id) {
+            if (selectedIds.has(id)) selectedIds.delete(id);
+            else selectedIds.add(id);
+            updateSelectAllState();
+        }
+
+        function updateSelectAllState() {
+            const selectAll = document.getElementById('selectAll');
+            if (!selectAll) return;
+
+            if (currentDisplayData.length > 0) {
+                // Check if all items in currentDisplayData are selected
+                const allSelected = currentDisplayData.every(r => {
+                    const id = r.__localId || r.__remoteId;
+                    return selectedIds.has(id);
+                });
+                selectAll.checked = allSelected;
+            } else {
+                selectAll.checked = false;
+            }
+        }
+
+        function deleteSelected() {
+            if (selectedIds.size === 0) {
+                showInfoModal("Warning", "Please select reminders to delete.", "warning");
+                return;
+            }
+            idsToDelete = Array.from(selectedIds);
+            document.getElementById('deleteConfirmMsg').textContent = `Are you sure you want to delete ${idsToDelete.length} selected reminder(s)?`;
+            document.getElementById('deleteConfirmModal').classList.remove('hidden');
+        }
+
+        async function confirmBulkDelete() {
+            if (idsToDelete.length === 0) return;
+
+            showToast("Deleting selected records...", "info");
+
+            // Create a set for faster lookup
+            const idsSet = new Set(idsToDelete);
+
+            // Identify items to delete for server sync
+            const itemsToDelete = data.filter(d => idsSet.has(d.__localId) || idsSet.has(d.__remoteId));
+
+            // Remove from local data
+            data = data.filter(d => !idsSet.has(d.__localId) && !idsSet.has(d.__remoteId));
+
+            // Sync deletions
+            for (const rec of itemsToDelete) {
+                try {
+                    if (firebaseEnabled) {
+                        await deleteFromFirestore(rec.__localId);
+                    } else {
+                        const opItem = { id: 'op-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8), op: 'delete', record: { __remoteId: rec.__remoteId, __localId: rec.__localId } };
+                        await addQueueItem(opItem);
+                    }
+                } catch (e) { console.error('Failed to queue/delete', e); }
+            }
+
+            try { localStorage.setItem("reminders", JSON.stringify(data)); } catch (e) { console.error('Failed to update localStorage', e); }
+
+            selectedIds.clear();
+            loadTable();
+            closeDeleteConfirmModal();
+            showToast(`Deleted ${itemsToDelete.length} records.`, "success");
+
+            if (navigator.onLine && !firebaseEnabled) syncNow();
+        }
+
+        async function markCompletedById(id) {
+            const i = data.findIndex(d => d.__localId === id || d.__remoteId === id);
+            if (i === -1) { alert('Record not found'); return; }
+
+            askConfirm("Mark Completed", "Mark this reminder as completed? It will be moved to history.", async () => {
+                const rec = data[i];
+                const historyRec = { ...rec, completedOn: new Date().toISOString(), status: 'Completed' };
+
+                // 1. Save to History (Local)
+                try {
+                    let history = JSON.parse(localStorage.getItem("reminderHistory")) || [];
+                    history.push(historyRec);
+                    localStorage.setItem("reminderHistory", JSON.stringify(history));
+                } catch (e) {
+                    console.error("Failed to save to local history", e);
+                    alert("Failed to save to history. Storage might be full.");
+                    return;
+                }
+
+                // 2. Save to History (Firestore) if enabled
+                if (firebaseEnabled && db) {
+                    try {
+                        await db.collection('reminderHistory').doc(rec.__localId).set(historyRec);
+                    } catch (e) { console.error("Failed to save history to Firestore", e); }
+                }
+
+                // 3. Remove from Active List
+                try {
+                    if (firebaseEnabled) {
+                        await deleteFromFirestore(rec.__localId);
+                    } else {
+                        const opItem = { id: 'op-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8), op: 'delete', record: { __remoteId: rec.__remoteId, __localId: rec.__localId } };
+                        await addQueueItem(opItem);
+                    }
+                } catch (e) { console.error('Failed to queue/delete', e); }
+
+                data.splice(i, 1);
+                if (rec.__localId) selectedIds.delete(rec.__localId);
+                try { localStorage.setItem("reminders", JSON.stringify(data)); } catch (e) { console.error('Failed to update localStorage', e); }
+
+                loadTable();
+                showToast("Marked as completed", "success");
+
+                if (navigator.onLine && !firebaseEnabled) syncNow();
+            }, '#563d7c');
+        }
+
+        function openHistoryModal() {
+            document.getElementById("historySearch").value = "";
+            document.getElementById("historyFrom").value = "";
+            document.getElementById("historyTo").value = "";
+            filterHistory();
+            document.getElementById("historyModal").classList.remove("hidden");
+        }
+
+        function filterHistory() {
+            const history = JSON.parse(localStorage.getItem("reminderHistory")) || [];
+            const term = document.getElementById("historySearch").value.toLowerCase();
+            const fromDate = document.getElementById("historyFrom").value;
+            const toDate = document.getElementById("historyTo").value;
+
+            const filtered = history.filter(h => {
+                const matchesTerm = (h.cname || "").toLowerCase().includes(term) ||
+                    (h.billNo || "").toLowerCase().includes(term) ||
+                    (h.reminderFor || "").toLowerCase().includes(term) ||
+                    (h.contact || "").toLowerCase().includes(term);
+
+                let matchesDate = true;
+                if (h.completedOn) {
+                    const cDate = new Date(h.completedOn).toISOString().split('T')[0];
+                    if (fromDate && cDate < fromDate) matchesDate = false;
+                    if (toDate && cDate > toDate) matchesDate = false;
+                }
+                return matchesTerm && matchesDate;
+            });
+            renderHistoryTable(filtered);
+        }
+
+        function renderHistoryTable(list) {
+            const tbody = document.getElementById("historyList");
+            tbody.innerHTML = "";
+            if (list.length === 0) {
+                tbody.innerHTML = "<tr><td colspan='6'>No records found</td></tr>";
+                tbody.innerHTML = "<tr><td colspan='7'>No records found</td></tr>";
+                return;
+            }
+            list.forEach((h, i) => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td><input type="checkbox" class="historySelectRow" value="${h.__localId}"></td>
+                        <td>${i + 1}</td>
+                        <td>${h.cname}</td>
+                        <td>${h.billNo}</td>
+                        <td>${h.reminderFor}</td>
+                        <td>${new Date(h.completedOn).toLocaleString()}</td>
+                        <td><button onclick="restoreHistoryItem('${h.__localId}')">Restore</button></td>
+                    </tr>
+                `;
+            });
+            const selectAll = document.getElementById('historySelectAll');
+            if (selectAll) selectAll.checked = false;
+        }
+
+        function closeHistoryModal() {
+            document.getElementById("historyModal").classList.add("hidden");
+        }
+
+        function clearHistory() {
+            localStorage.removeItem("reminderHistory");
+            openHistoryModal(); // refresh
+        }
+
+        function restoreHistoryItem(id) {
+            askConfirm("Restore Reminder", "Are you sure you want to restore this reminder from history?", () => {
+                let history = JSON.parse(localStorage.getItem("reminderHistory")) || [];
+                const index = history.findIndex(h => h.__localId === id);
+                if (index === -1) return;
+
+                const rec = history[index];
+                delete rec.completedOn;
+                delete rec.status;
+
+                // Add back to active
+                data.push(rec);
+                localStorage.setItem("reminders", JSON.stringify(data));
+
+                // Remove from history
+                history.splice(index, 1);
+                localStorage.setItem("reminderHistory", JSON.stringify(history));
+
+                // Sync creation
+                if (firebaseEnabled) {
+                    writeToFirestore(rec);
+                } else {
+                    // queue create
+                    const opItem = { id: 'op-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8), op: 'create', record: rec };
+                    addQueueItem(opItem);
+                }
+
+                filterHistory();
+                loadTable();
+                showToast("Reminder restored", "success");
+            }, '#6f42c1');
+        }
+
+        function toggleHistorySelectAll() {
+            const selectAll = document.getElementById('historySelectAll');
+            const checkboxes = document.querySelectorAll('.historySelectRow');
+            checkboxes.forEach(cb => cb.checked = selectAll.checked);
+        }
+
+        function deleteSelectedHistory() {
+            const checkboxes = document.querySelectorAll('.historySelectRow:checked');
+            if (checkboxes.length === 0) {
+                showInfoModal("Warning", "Please select history items to delete.", "warning");
+                return;
+            }
+
+            askConfirm("Delete History", `Are you sure you want to delete ${checkboxes.length} selected history item(s)?`, () => {
+                const idsToDelete = Array.from(checkboxes).map(cb => cb.value);
+                let history = JSON.parse(localStorage.getItem("reminderHistory")) || [];
+                const newHistory = history.filter(h => !idsToDelete.includes(h.__localId));
+                localStorage.setItem("reminderHistory", JSON.stringify(newHistory));
+
+                if (firebaseEnabled && db) {
+                    idsToDelete.forEach(id => {
+                        db.collection('reminderHistory').doc(id).delete().catch(e => console.error("Failed to delete history from Firestore", e));
+                    });
+                }
+                filterHistory();
+                showToast(`Deleted ${idsToDelete.length} history records.`, "success");
+            }, '#dc3545');
+        }
+
+        function renderPaginationControls(totalItems, start, end, totalPages) {
+            const info = document.getElementById("paginationInfo");
+            const controls = document.getElementById("paginationControls");
+            if (!info || !controls) return;
+
+            if (totalItems === 0) {
+                info.innerText = "No records found";
+                controls.innerHTML = "";
+                return;
+            }
+
+            info.innerText = `Showing ${start} to ${end} of ${totalItems} entries`;
+
+            let html = "";
+            html += `<button onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''} style="padding: 6px 12px; border: 1px solid #ccc; background: #fff; cursor: pointer; border-radius: 4px;">Previous</button>`;
+
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
+                    const activeStyle = i === currentPage ? 'background: #007bff; color: #fff; border-color: #007bff;' : 'background: #fff;';
+                    html += `<button onclick="changePage(${i})" style="padding: 6px 12px; border: 1px solid #ccc; cursor: pointer; border-radius: 4px; ${activeStyle}">${i}</button>`;
+                } else if (i === currentPage - 3 || i === currentPage + 3) {
+                    html += `<span style="padding: 6px 12px;">...</span>`;
+                }
+            }
+
+            html += `<button onclick="changePage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''} style="padding: 6px 12px; border: 1px solid #ccc; background: #fff; cursor: pointer; border-radius: 4px;">Next</button>`;
+            controls.innerHTML = html;
+        }
+
+        function changePage(page) {
+            currentPage = page;
+            renderPage();
+        }
+
+        function changeRowsPerPage() {
+            const select = document.getElementById("rowsPerPageSelect");
+            if (select) {
+                rowsPerPage = parseInt(select.value);
+                currentPage = 1;
+                renderPage();
+            }
+        }
+
+        function goToPage() {
+            const input = document.getElementById("goToPageInput");
+            if (input) {
+                const page = parseInt(input.value);
+                if (page >= 1) {
+                    currentPage = page;
+                    renderPage();
+                }
+                input.value = "";
+            }
+        }
+
+        function closeDeleteConfirmModal() {
+            document.getElementById('deleteConfirmModal').classList.add('hidden');
+            idsToDelete = [];
+        }
+
+
+
+        function updateStorageStatus() {
+            if (storageStatus) {
+                storageStatus.textContent = `Saved reminders: ${data.length}`;
+                storageStatus.style.fontWeight = "bold";
+            }
+        }
+
+        function confirmExportJSON() {
+            askConfirm("Confirm Export", "Are you sure you want to export reminders backup?", () => {
+                exportRemindersJSON();
+            }, '#f305a4', '#fff');
+        }
+
+        // ---------------- CSV Export / Import ----------------
+        function escapeCSV(value) {
+            if (value === null || value === undefined) return '';
+            const s = String(value);
+            if (s.includes('"') || s.includes(',') || s.includes('\n') || s.includes('\r')) {
+                return '"' + s.replace(/"/g, '""') + '"';
+            }
+            return s;
+        }
+
+        function exportRemindersCSV(filename = 'reminders.csv') {
+            if (!data || data.length === 0) { alert('No reminders to export'); return; } showToast("Reminder data exported successfully.", "success");
+            const headers = ['S.No', 'cname', 'billNo', 'contact', 'reminderFor', 'reminderDate', 'reminderTime', 'district', 'enquiryType', 'item1', 'item2', 'item3', 'enquiryDate', 'purchaseDate', 'message', 'specialNote', '__localId', '__remoteId', '__lastModified', 'dismissedOn', 'snoozedUntil'];
+            const rows = data.map((r, i) => {
+                const cols = [
+                    i + 1,
+                    r.cname || '',
+                    r.billNo || '',
+                    r.contact || '',
+                    r.reminderFor || '',
+                    r.reminderDate || '',
+                    r.reminderTime || '',
+                    r.district || '',
+                    r.enquiryType || '',
+                    (r.enquiryItems && r.enquiryItems[0]) || '',
+                    (r.enquiryItems && r.enquiryItems[1]) || '',
+                    (r.enquiryItems && r.enquiryItems[2]) || '',
+                    r.enquiryDate || '',
+                    r.purchaseDate || '',
+                    r.message || '',
+                    r.specialNote || '',
+                    r.__localId || '',
+                    r.__remoteId || '',
+                    r.__lastModified || '',
+                    r.dismissedOn || '',
+                    r.snoozedUntil || ''
+                ];
+                return cols.map(escapeCSV).join(',');
+            });
+            const csv = headers.map(escapeCSV).join(',') + '\r\n' + rows.join('\r\n');
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = filename; document.body.appendChild(a); a.click();
+            URL.revokeObjectURL(url); a.remove();
+        }
+
+        function parseCSV(text) {
+            const rows = [];
+            let i = 0, len = text.length, cur = '', row = [], inQuotes = false;
+            while (i < len) {
+                const ch = text[i];
+                if (inQuotes) {
+                    if (ch === '"') {
+                        if (i + 1 < len && text[i + 1] === '"') { cur += '"'; i += 2; continue; }
+                        inQuotes = false; i++; continue;
+                    } else { cur += ch; i++; continue; }
+                } else {
+                    if (ch === '"') { inQuotes = true; i++; continue; }
+                    if (ch === ',') { row.push(cur); cur = ''; i++; continue; }
+                    if (ch === '\r') { i++; if (i < len && text[i] === '\n') i++; row.push(cur); rows.push(row); row = []; cur = ''; continue; }
+                    if (ch === '\n') { i++; row.push(cur); rows.push(row); row = []; cur = ''; continue; }
+                    cur += ch; i++;
+                }
+            }
+            // flush
+            if (cur !== '' || row.length > 0) { row.push(cur); rows.push(row); }
+            return rows;
+        }
+
+        function handleImportCSVFile(file) {
+            const reader = new FileReader();
+            reader.onload = async function (e) {
+                try {
+                    const text = e.target.result;
+                    const csvRows = parseCSV(text).filter(r => r.length > 0 && !(r.length === 1 && r[0].trim() === ''));
+                    if (csvRows.length < 2) { alert('CSV appears empty or missing header'); return; }
+                    const headers = csvRows[0].map(h => String(h || '').trim());
+                    const lines = csvRows.slice(1);
+                    let added = 0, updated = 0;
+                    const importedRecords = [];
+                    lines.forEach(cols => {
+                        const obj = {};
+                        headers.forEach((h, idx) => { obj[h] = (cols[idx] !== undefined) ? cols[idx] : ''; });
+                        showToast("Reminder data imported successfully.", "success");
+
+                        // Normalize header keys (lowercase, remove non-alphanumeric) so variants like "Special Note", "special_note" or "special note" are handled
+                        const norm = {};
+                        Object.keys(obj).forEach(k => { norm[k.toLowerCase().replace(/[^a-z0-9]+/g, '')] = (obj[k] !== undefined) ? obj[k] : ''; });
+
+                        const loc = obj['__localId'] || obj['__LocalId'] || obj['localId'] || norm['localid'] || '';
+                        const localIdx = loc ? data.findIndex(d => d.__localId === loc) : -1;
+
+                        const record = {
+                            cname: obj['cname'] || obj['Customer'] || obj['Customer👤'] || norm['cname'] || '',
+                            billNo: obj['billNo'] || obj['Bill No.'] || obj['BillNo'] || norm['billno'] || '',
+                            contact: obj['contact'] || obj['Contact'] || norm['contact'] || '',
+                            reminderFor: obj['reminderFor'] || obj['Reminder for'] || norm['reminderfor'] || '',
+                            reminderDate: obj['reminderDate'] || obj['Reminder Date'] || norm['reminderdate'] || '',
+                            reminderTime: obj['reminderTime'] || obj['Reminder Time'] || norm['remindertime'] || '',
+                            district: obj['district'] || norm['district'] || '',
+                            enquiryType: obj['enquiryType'] || norm['enquirytype'] || '',
+                            enquiryDate: obj['enquiryDate'] || norm['enquirydate'] || '',
+                            purchaseDate: obj['purchaseDate'] || norm['purchasedate'] || '',
+                            enquiryItems: [obj['item1'] || obj['item_1'] || norm['item1'] || '', obj['item2'] || norm['item2'] || '', obj['item3'] || norm['item3'] || ''],
+                            message: obj['message'] || norm['message'] || '',
+                            specialNote: obj['specialNote'] || obj['Special Note'] || norm['specialnote'] || '',
+                            __localId: loc || ('l-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8)),
+                            __remoteId: obj['__remoteId'] || obj['__RemoteId'] || obj['remoteId'] || '',
+                            __lastModified: new Date().toISOString(),
+                            dismissedOn: obj['dismissedOn'] || '',
+                            snoozedUntil: obj['snoozedUntil'] || ''
+                        };
+                        if (localIdx > -1) { data[localIdx] = { ...data[localIdx], ...record }; updated++; }
+                        else { data.push(record); added++; }
+                        importedRecords.push(record);
+                    });
+
+                    try { localStorage.setItem('reminders', JSON.stringify(data)); } catch (e) { console.error('Failed to save after import', e); alert('Import failed while saving to localStorage'); return; }
+                    loadTable();
+
+                    // Sync imported records (write to Firestore or queue for REST sync)
+                    if (importedRecords.length > 0) {
+                        if (firebaseEnabled) {
+                            importedRecords.forEach(r => { try { writeToFirestore(r); } catch (e) { console.warn('Firestore write failed', e); } });
+                            setSyncStatus('Imported records pushed to Firestore');
+                        } else {
+                            try {
+                                for (const r of importedRecords) {
+                                    const op = r.__remoteId ? 'update' : 'create';
+                                    const opItem = { id: 'op-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8), op, record: r };
+                                    await addQueueItem(opItem);
+                                }
+                                setSyncStatus('Imported records queued for sync');
+                                if (navigator.onLine) await syncNow();
+                            } catch (e) { console.error('Import sync queue failed', e); setSyncStatus('Import sync error', true); }
+                        }
+                    }
+
+                    alert('Import complete. Added: ' + added + ', Updated: ' + updated);
+                    showImportSuccessModal(added, updated);
+                } catch (e) { console.error('CSV import error', e); alert('Failed to import CSV: ' + (e.message || e)); }
+            };
+            reader.readAsText(file);
+        }
+
+        // wire file input
+        const importInput = document.getElementById('importCsvInput');
+        if (importInput) {
+            importInput.addEventListener('change', function (e) {
+                const f = e.target.files[0];
+                if (!f) return;
+                e.target.value = ''; // Clear immediately to allow re-selection
+                askConfirm("Import CSV", "Import Data will merge/update reminders. Continue?", () => { handleImportCSVFile(f); }, '#3a04ff');
+            });
+        }
+
+        // ---------------- JSON Export / Import ----------------
+        function exportRemindersJSON(filename = 'reminders.json') {
+            if (!data || data.length === 0) {
+                showInfoModal("⚠️ Warning ⚠️", "No reminders data to export!", "error");
+                return;
+            }
+            showToast("Exporting JSON...", "info");
+            const jsonStr = JSON.stringify(data, null, 2);
+            const blob = new Blob([jsonStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = filename; document.body.appendChild(a); a.click();
+            URL.revokeObjectURL(url); a.remove();
+            showToast("Backup data exported successfully.", "success");
+        }
+
+        function handleImportJSONFile(file) {
+            const reader = new FileReader();
+            reader.onload = async function (e) {
+                try {
+                    const text = e.target.result;
+                    const importedData = JSON.parse(text);
+                    if (!Array.isArray(importedData)) { alert('Invalid JSON: Expected an array of reminders.'); return; }
+
+                    let added = 0, updated = 0;
+                    const importedRecords = [];
+
+                    importedData.forEach(obj => {
+                        // Use existing ID or generate new one
+                        const loc = obj.__localId || ('l-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8));
+                        const localIdx = data.findIndex(d => d.__localId === loc);
+
+                        // Create record preserving all fields from JSON, but update modification time
+                        const record = { ...obj, __localId: loc, __lastModified: new Date().toISOString() };
+
+                        // Ensure essential fields exist if missing
+                        if (!record.cname) record.cname = '';
+                        if (!record.reminderDate) record.reminderDate = '';
+
+                        if (localIdx > -1) {
+                            data[localIdx] = { ...data[localIdx], ...record };
+                            updated++;
+                        } else {
+                            data.push(record);
+                            added++;
+                        }
+                        importedRecords.push(record);
+                    });
+
+                    localStorage.setItem('reminders', JSON.stringify(data));
+                    loadTable();
+                    showToast(`JSON Import: Added ${added}, Updated ${updated}`, "success");
+                    showImportSuccessModal(added, updated);
+
+                    // Sync imported records
+                    if (importedRecords.length > 0) {
+                        if (firebaseEnabled) {
+                            importedRecords.forEach(r => { try { writeToFirestore(r); } catch (e) { console.warn('Firestore write failed', e); } });
+                            setSyncStatus('Imported records pushed to Firestore');
+                        } else {
+                            try {
+                                for (const r of importedRecords) {
+                                    const op = r.__remoteId ? 'update' : 'create';
+                                    const opItem = { id: 'op-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8), op, record: r };
+                                    await addQueueItem(opItem);
+                                }
+                                setSyncStatus('Imported records queued for sync');
+                                if (navigator.onLine) await syncNow();
+                            } catch (e) { console.error('Import sync queue failed', e); setSyncStatus('Import sync error', true); }
+                        }
+                    }
+                } catch (e) {
+                    console.error('JSON import error', e);
+                    alert('Failed to parse JSON file: ' + e.message);
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        const importJsonInput = document.getElementById('importJsonInput');
+        if (importJsonInput) {
+            importJsonInput.addEventListener('change', function (e) {
+                const f = e.target.files[0];
+                if (!f) return;
+                e.target.value = ''; // Clear immediately
+                askConfirm("Import Backup", "Import Data will merge/update reminders. Continue?", () => { handleImportJSONFile(f); }, '#b8f3ca', '#3a04ff');
+            });
+        }
+
+        function liveFilter() {
+            const searchTerm = searchBox.value.toLowerCase().trim();
+            if (!searchTerm) {
+                loadTable();
+                return;
+            }
+            const filtered = data.filter(r => {
+                return (r.cname && r.cname.toLowerCase().includes(searchTerm)) ||
+                    (r.reminderFor && r.reminderFor.toLowerCase().includes(searchTerm)) ||
+                    (r.message && r.message.toLowerCase().includes(searchTerm)) ||
+                    (r.billNo && r.billNo.toLowerCase().includes(searchTerm)) ||
+                    (r.contact && r.contact.toLowerCase().includes(searchTerm));
+            });
+            loadTable(filtered);
+        }
+
+        function filterTable() {
+            const searchTerm = searchBox.value.toLowerCase().trim();
+            if (!searchTerm) {
+                alert("Please enter text to search");
+                return;
+            }
+            const filtered = data.filter(r => {
+                return (r.cname && r.cname.toLowerCase().includes(searchTerm)) ||
+                    (r.reminderFor && r.reminderFor.toLowerCase().includes(searchTerm)) ||
+                    (r.message && r.message.toLowerCase().includes(searchTerm)) ||
+                    (r.billNo && r.billNo.toLowerCase().includes(searchTerm)) ||
+                    (r.contact && r.contact.toLowerCase().includes(searchTerm));
+            });
+            if (filtered.length === 0) {
+                alert("No records found for: " + searchBox.value);
+            }
+            loadTable(filtered);
+        }
+
+        function filterByDate() {
+            const fd = document.getElementById('filterDate');
+            if (!fd || !fd.value) {
+                alert('Please select a date to filter');
+                return;
+            }
+            const filtered = data.filter(r => r.reminderDate === fd.value);
+            if (filtered.length === 0) {
+                alert('No records found for: ' + fd.value);
+                loadTable();
+            } else {
+                loadTable(filtered);
+            }
+        }
+
+        function filterByDistrict() {
+            const dist = document.getElementById('districtFilter').value;
+            if (!dist) {
+                loadTable();
+                return;
+            }
+            const filtered = data.filter(r => r.district === dist);
+            if (filtered.length === 0) {
+                alert("No records found for district: " + dist);
+                loadTable();
+            } else {
+                loadTable(filtered);
+            }
+        }
+
+        function applyFilters() {
+            const searchTerm = document.getElementById("searchBox").value.toLowerCase().trim();
+            const filterDate = document.getElementById('filterDate').value;
+            const district = document.getElementById('districtFilter').value;
+            const state = document.getElementById('stateFilter').value;
+            const reminderType = document.getElementById('reminderTypeFilter').value;
+            const enquiryItem = document.getElementById('enquiryItemFilter').value;
+
+            let filtered = data.filter(r => {
+                // Search term filter
+                if (searchTerm && !([r.cname, r.billNo, r.contact, r.reminderFor].map(val => String(val || '').toLowerCase()).join(' ').includes(searchTerm))) return false;
+                // Date filter
+                if (filterDate && r.reminderDate !== filterDate) return false;
+                // District filter
+                if (district && r.district !== district) return false;
+                // State filter
+                if (state && r.state !== state) return false;
+                // Reminder Type filter
+                if (reminderType && r.reminderFor !== reminderType) return false;
+                // Enquiry Item filter
+                if (enquiryItem && (!r.enquiryItems || !r.enquiryItems.includes(enquiryItem))) return false;
+
+                return true;
+            });
+
+            if (filtered.length === 0 && (searchTerm || filterDate || district || reminderType || enquiryItem)) {
+                showToast("No records match the current filter criteria.", "warning");
+            }
+            loadTable(filtered);
+        }
+
+        function resetFilter() {
+            searchBox.value = "";
+            document.getElementById('filterDate').value = "";
+            document.getElementById('districtFilter').value = "";
+            document.getElementById('stateFilter').value = "";
+            document.getElementById('reminderTypeFilter').value = "";
+            document.getElementById('enquiryItemFilter').value = "";
+            loadTable();
+            showToast('Search Fields Cleared');
+        }
+        loadTable();
+
+        function editRec(i) {
+            const r = data[i];
+            if (r.partyType) {
+                const ptEl = document.getElementById('partyType');
+                if (ptEl) {
+                    ptEl.value = r.partyType;
+                    handlePartyTypeChange();
+                }
+            } else {
+                const ptEl = document.getElementById('partyType');
+                if (ptEl) { ptEl.value = 'Customer'; handlePartyTypeChange(); }
+            }
+            cname.value = r.cname || "";
+            bno.value = r.billNo || "";
+            cno1.value = r.contact || "";
+            cno2.value = r.cno2 || "";
+            address.value = r.address || "";
+            pin.value = r.pin || "";
+            reminderFor.value = r.reminderFor || "";
+            rdate.value = r.reminderDate || "";
+            if (rtime) rtime.value = r.reminderTime || "";
+            edate.value = r.enquiryDate || "";
+            pdate.value = r.purchaseDate || "";
+            enquiryType.value = r.enquiryType || "";
+            item1.value = (r.enquiryItems && r.enquiryItems[0]) || "";
+            item2.value = (r.enquiryItems && r.enquiryItems[1]) || "";
+            item3.value = (r.enquiryItems && r.enquiryItems[2]) || "";
+            specialNote.value = r.specialNote || "";
+            state.value = r.state || "West Bengal";
+            populateDistrictDropdown(state.value, r.district);
+            editIndex = i;
+        }
+
+
+        function openWhatsApp(number) {
+            if (!number) return;
+            const cleanNo = number.replace(/\D/g, ''); // remove non-numeric
+            const url = `https://wa.me/91${cleanNo}`;
+            window.open(url, '_blank');
+        }
+
+
+
+        async function delRec(i) {
+            // support passing a __localId / __remoteId string or numeric index
+            if (typeof i === 'string') {
+                i = data.findIndex(d => d.__localId === i || d.__remoteId === i);
+            }
+            if (typeof i !== 'number' || i < 0 || i >= data.length) {
+                console.warn('delRec invalid index', i);
+                alert('Record not found or already deleted');
+                return;
+            }
+            const rec = data[i];
+            if (!rec) { console.warn('delRec no record at index', i); alert('Record not found'); return; }
+            showToast("Deleting record...", "info");
+            // queue delete (server) if needed
+            try {
+                if (firebaseEnabled) {
+                    await deleteFromFirestore(rec.__localId);
+                } else {
+                    const opItem = { id: 'op-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8), op: 'delete', record: { __remoteId: rec.__remoteId, __localId: rec.__localId } };
+                    await addQueueItem(opItem);
+                    setSyncStatus('Delete queued');
+                }
+            } catch (e) { console.error('Failed to queue/delete', e); setSyncStatus('Queue error', true); }
+            showToast("Record deleted successfully.", "success");
+
+            // remove locally
+            data.splice(i, 1);
+            if (rec.__localId) selectedIds.delete(rec.__localId);
+            try { localStorage.setItem("reminders", JSON.stringify(data)); } catch (e) { console.error('Failed to update localStorage', e); }
+            loadTable();
+
+            if (navigator.onLine && !firebaseEnabled) syncNow();
+        }
+
+        // Helpers that locate record by __localId and call core functions
+        function editRecById(id) {
+            const i = data.findIndex(d => d.__localId === id || d.__remoteId === id);
+            if (i === -1) { alert('Record not found'); return; }
+
+            // Check if form has data that might be lost
+            const isDirty = cname.value || cno1.value || bno.value || rdate.value || reminderFor.value || specialNote.value;
+            if (isDirty) {
+                askConfirm("Confirm Edit", "Current form data will be lost. Load record for editing?", () => {
+                    editRec(i);
+                    showToast("Record loaded into form for editing");
+                }, '#8bafa4');
+            } else {
+                editRec(i);
+                showToast("Record loaded into form for editing");
+            }
+        }
+        async function delRecById(id) {
+            const i = data.findIndex(d => d.__localId === id || d.__remoteId === id);
+            if (i === -1) { alert('Record not found'); return; }
+            askConfirm("Delete Record", "Are you sure you want to delete this record?", async () => {
+                await delRec(i);
+            }, '#dc3545');
+        }
+        function copyMsgById(id) {
+            const i = data.findIndex(d => d.__localId === id || d.__remoteId === id);
+            if (i === -1) { alert('Record not found'); return; }
+            copyMsg(i);
+        }
+        // utility to avoid simple HTML injections
+        function safeHtml(s) { if (s === null || s === undefined) return ''; return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+        function highlightMatch(text, term) {
+            if (!text) return "";
+            text = String(text);
+            if (!term) return safeHtml(text);
+            const escapedTerm = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const regex = new RegExp(`(${escapedTerm})`, 'gi');
+            return text.split(regex).map(part => {
+                return part.toLowerCase() === term.toLowerCase()
+                    ? `<span class="highlight">${safeHtml(part)}</span>`
+                    : safeHtml(part);
+            }).join('');
+        }
+
+        function formatDate(d) {
+            if (!d) return '';
+            const parts = d.split('-');
+            if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
+            return d;
+        }
+
+        function editFromView() { if (!currentViewId) { alert('No record selected'); return; } editRecById(currentViewId); closeViewModal(); }
+
+        function viewRec(id) {
+            const rec = data.find(d => d.__localId === id || d.__remoteId === id);
+            if (!rec) { alert('Record not found'); return; }
+
+            const isDirty = cname.value || cno1.value || bno.value || rdate.value || reminderFor.value || specialNote.value;
+            if (isDirty) {
+                askConfirm("Confirm View", "You have unsaved data in the form. View record details?", () => {
+                    renderViewModal(rec, id);
+                }, '#749e7d');
+            } else {
+                renderViewModal(rec, id);
+            }
+        }
+
+        function renderViewModal(rec, id) {
+            currentViewId = id;
+            const vm = document.getElementById('viewModal');
+            const container = document.getElementById('viewContent');
+
+            // Helper to get item safely
+            const items = rec.enquiryItems || [];
+            const item1 = items[0] || '';
+            const item2 = items[1] || '';
+            const item3 = items[2] || '';
+
+            container.innerHTML = `
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; align-items:start;">
+            <div><label style="font-weight:bold">Party Type</label><div><input readonly value="${safeHtml(rec.partyType || 'Customer')}" style="width:100%; padding:6px; box-sizing:border-box;"/></div></div>
+            <div><label style="font-weight:bold">Party Name</label><div><input readonly value="${safeHtml(rec.cname)}" style="width:100%; padding:6px; box-sizing:border-box;"/></div></div>
+            <div><label style="font-weight:bold">Bill No.</label><div><input readonly value="${safeHtml(rec.billNo)}" style="width:100%; padding:6px; box-sizing:border-box;"/></div></div>
+            <div><label style="font-weight:bold">Contact 1</label><div><input readonly value="${safeHtml(rec.contact)}" style="width:100%; padding:6px; box-sizing:border-box;"/></div></div>
+            <div><label style="font-weight:bold">Contact 2</label><div><input readonly value="${safeHtml(rec.cno2 || '')}" style="width:100%; padding:6px; box-sizing:border-box;"/></div></div>
+            <div style="grid-column:1 / -1"><label style="font-weight:bold">Address</label><div><textarea readonly style="width:100%;padding:6px;box-sizing:border-box;min-height:60px">${safeHtml(rec.address || '')}</textarea></div></div>
+            <div><label style="font-weight:bold">Pin</label><div><input readonly value="${safeHtml(rec.pin || '')}" style="width:100%; padding:6px; box-sizing:border-box;"/></div></div>
+            <div><label style="font-weight:bold">District</label><div><input readonly value="${safeHtml(rec.district || '')}" style="width:100%; padding:6px; box-sizing:border-box;"/></div></div>
+            <div><label style="font-weight:bold">State</label><div><input readonly value="${safeHtml(rec.state || '')}" style="width:100%; padding:6px; box-sizing:border-box;"/></div></div>
+            <div><label style="font-weight:bold">Enquiry Type</label><div><input readonly value="${safeHtml(rec.enquiryType || '')}" style="width:100%; padding:6px; box-sizing:border-box;"/></div></div>
+            <div><label style="font-weight:bold">Enquiry Date</label><div><input readonly value="${safeHtml(formatDate(rec.enquiryDate) || '')}" style="width:100%; padding:6px; box-sizing:border-box;"/></div></div>
+            <div><label style="font-weight:bold">Purchase Date</label><div><input readonly value="${safeHtml(formatDate(rec.purchaseDate) || '')}" style="width:100%; padding:6px; box-sizing:border-box;"/></div></div>
+            <div><label style="font-weight:bold">1. Enquiry Item</label><div><input readonly value="${safeHtml(item1)}" style="width:100%; padding:6px; box-sizing:border-box;"/></div></div>
+            <div><label style="font-weight:bold">2. Enquiry Item</label><div><input readonly value="${safeHtml(item2)}" style="width:100%; padding:6px; box-sizing:border-box;"/></div></div>
+            <div><label style="font-weight:bold">3. Enquiry Item</label><div><input readonly value="${safeHtml(item3)}" style="width:100%; padding:6px; box-sizing:border-box;"/></div></div>
+            <div><label style="font-weight:bold">Reminder For</label><div><input readonly value="${safeHtml(rec.reminderFor || '')}" style="width:100%; padding:6px; box-sizing:border-box;"/></div></div>
+            <div><label style="font-weight:bold">Reminder Date & Time</label><div><input readonly value="${safeHtml(formatDate(rec.reminderDate) || '')} ${safeHtml(rec.reminderTime ? formatTime(rec.reminderTime) : '')}" style="width:100%; padding:6px; box-sizing:border-box;"/></div></div>
+            <div style="grid-column:1 / -1"><label style="font-weight:bold">Special Note</label><div><textarea readonly style="width:100%;padding:6px;box-sizing:border-box;min-height:60px">${safeHtml(rec.specialNote || '')}</textarea></div></div>
+            <div style="grid-column:1 / -1"><label style="font-weight:bold">Message</label><div><textarea readonly style="width:100%;padding:6px;box-sizing:border-box;min-height:80px">${safeHtml(rec.message || '')}</textarea></div></div>
+        </div>
+    `;
+            vm.classList.remove('hidden');
+            showToast("View Reminder window opened");
+        }
+        function closeViewModal() {
+            document.getElementById('viewModal').classList.add('hidden');
+            showToast("View Reminder window closed");
+        }
+
+        function showImportSuccessModal(added, updated) {
+            const msg = `Data imported successfully.<br><b>Added:</b> ${added}<br><b>Updated:</b> ${updated}`;
+            document.getElementById('importSuccessMsg').innerHTML = msg;
+            document.getElementById('importSuccessModal').classList.remove('hidden');
+        }
+        function closeImportSuccessModal() {
+            document.getElementById('importSuccessModal').classList.add('hidden');
+        }
+
+        function showInfoModal(title, msg, type) {
+            const m = document.getElementById('infoModal');
+            const t = document.getElementById('infoModalTitle');
+            const b = document.getElementById('infoModalMsg');
+            t.textContent = title;
+            b.innerHTML = msg;
+            if (type === 'success') t.style.color = '#28a745';
+            else if (type === 'error') t.style.color = '#dc3545';
+            else t.style.color = '#333';
+            m.classList.remove('hidden');
+        }
+        function closeInfoModal() {
+            document.getElementById('infoModal').classList.add('hidden');
+        }
+
+        function copyMsg(i) {
+            navigator.clipboard.writeText(data[i].message);
+            alert("WhatsApp / SMS message copied");
+            showToast("Message copied to clipboard");
+        }
+
+        function clearForm() {
+            document.querySelectorAll("input,textarea,select").forEach(e => e.value = "");
+            editIndex = null;
+            showToast("Form cleared");
+        }
+
+        // Setup online/offline handlers and perform initial sync
+        window.addEventListener('online', () => { setSyncStatus('Back online — syncing...'); syncNow(); });
+        window.addEventListener('offline', () => { setSyncStatus('Offline'); });
+
+        (async function initSync() {
+            updateStorageStatus();
+            if (navigator.onLine) {
+                setSyncStatus('Initializing sync...');
+                try {
+                    if (firebaseEnabled) {
+                        // Firestore will sync & listener will merge data
+                        setSyncStatus('( Ready )');
+                    } else {
+                        await processQueue();
+                        await fetchFromServer();
+                        setSyncStatus('Ready');
+                        showToast("Data synced with server");
+                    }
+                    loadTable();
+                } catch (e) { console.error('Init sync failed', e); setSyncStatus('Sync init failed', true); }
+            } else {
+                setSyncStatus('Offline');
+                showToast("App is offline. Some features may be limited.", "error");
+            }
+        })();
+
+        /* AUTO REMINDER POPUP (persistent modal with snooze) */
+        let audioCtx = null;
+        let soundInterval = null;
+
+        function playNotificationSound() {
+            if (!isSoundEnabled) return;
+            if (audioCtx) return;
+            try {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                const soundType = localStorage.getItem("reminderSoundType") || "sawtooth";
+                if (!AudioContext) return;
+                audioCtx = new AudioContext();
+                const playBeep = () => {
+                    if (!audioCtx) return;
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.type = soundType;
+                    osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+                    gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 1.0);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.5);
+                };
+                playBeep();
+                soundInterval = setInterval(playBeep, 1000);
+            } catch (e) { console.error('Sound error', e); }
+        }
+
+        function stopNotificationSound() {
+            if (soundInterval) { clearInterval(soundInterval); soundInterval = null; }
+            if (audioCtx) { audioCtx.close().catch(e => console.error(e)); audioCtx = null; }
+        }
+
+        function showDueReminders() {
+            const now = new Date();
+            const todayStr = now.toISOString().split("T")[0];
+            const due = data.filter(r => {
+                if (!r.reminderDate) return false;
+                // Ignore if dismissed today
+                if (r.dismissedOn === todayStr) return false;
+                // Ignore if snoozed until a future time
+                if (r.snoozedUntil && new Date(r.snoozedUntil) > now) return false;
+
+                const reminderDateTime = new Date(`${r.reminderDate}T${r.reminderTime || '00:00:00'}`);
+                // Show if the reminder time is in the past
+                return reminderDateTime <= now;
+            });
+            if (due.length === 0) { hideModal(); return; }
+
+            // Prevent re-rendering if modal is already open (preserves snooze input)
+            if (!document.getElementById('dueModal').classList.contains('hidden')) return;
+
+            playNotificationSound();
+            const dueList = document.getElementById('dueList');
+            dueList.innerHTML = '';
+            due.forEach(r => {
+                let timeStr = r.reminderTime ? ` (⏰ ${formatTime(r.reminderTime)})` : '';
+                const item = document.createElement('div');
+                item.className = 'reminder-item';
+                item.innerHTML = `<div style="font-weight:bold">${r.cname} - ${r.reminderFor}${timeStr}</div><div style="white-space:pre-wrap;margin-top:6px">${r.message}</div>`;
+                // Dismiss button
+                const dismissBtn = document.createElement('button');
+                dismissBtn.textContent = 'Dismiss';
+                dismissBtn.onclick = () => {
+                    stopNotificationSound();
+                    const idx = data.findIndex(d => d.__localId === r.__localId);
+                    if (idx > -1) {
+                        data[idx].dismissedOn = todayStr;
+                        try { localStorage.setItem('reminders', JSON.stringify(data)); } catch (e) { console.error('Failed to save dismissed state', e); }
+                        updateStorageStatus();
+                        loadTable();
+                        item.remove();
+                        if (!dueList.querySelector('.reminder-item')) hideModal();
+                    }
+                };
+                item.appendChild(dismissBtn);
+
+                // Snooze controls (minutes)
+                const snoozeInput = document.createElement('input');
+                snoozeInput.type = 'number';
+                snoozeInput.min = 1;
+                snoozeInput.value = 10;
+                snoozeInput.className = 'snooze-input';
+                const snoozeBtn = document.createElement('button');
+                snoozeBtn.className = 'snooze-btn';
+                snoozeBtn.textContent = 'Snooze';
+                snoozeBtn.onclick = () => {
+                    stopNotificationSound();
+                    const minutes = parseInt(snoozeInput.value, 10);
+                    if (isNaN(minutes) || minutes < 1) { alert('Enter valid snooze minutes (>=1)'); return; }
+                    const idx = data.findIndex(d => d.__localId === r.__localId);
+                    if (idx > -1) {
+                        data[idx].snoozedUntil = new Date(Date.now() + minutes * 60000).toISOString();
+                        try { localStorage.setItem('reminders', JSON.stringify(data)); } catch (e) { console.error('Failed to save snooze state', e); }
+                        updateStorageStatus();
+                        loadTable();
+                        item.remove();
+                        if (!dueList.querySelector('.reminder-item')) hideModal();
+                        alert(`Snoozed for ${minutes} minute(s)`);
+                        showToast(`Reminder snoozed for ${minutes} minute(s)`, "info");
+                    }
+                };
+                item.appendChild(snoozeInput);
+                item.appendChild(snoozeBtn);
+
+                dueList.appendChild(item);
+            });
+
+            document.getElementById('dueModal').classList.remove('hidden');
+
+            // Dismiss All
+            document.getElementById('dismissAllBtn').onclick = () => {
+                stopNotificationSound();
+                due.forEach(dueReminder => {
+                    const idx = data.findIndex(d => d.__localId === dueReminder.__localId);
+                    if (idx > -1) data[idx].dismissedOn = todayStr;
+                });
+                try { localStorage.setItem('reminders', JSON.stringify(data)); } catch (e) { console.error('Failed to save dismissed state', e); }
+                updateStorageStatus();
+                loadTable();
+                hideModal();
+            };
+        }
+        function hideModal() {
+            stopNotificationSound();
+            const modal = document.getElementById('dueModal');
+            modal.classList.add('hidden');
+            modal.setAttribute('aria-hidden', 'true');
+        }
+
+        setTimeout(showDueReminders, 200); // run shortly after load
+        // also check every minute in case date changes while app is open
+        setInterval(showDueReminders, 60 * 1000);
+
+        // Export CSV hourly reminder (runs immediately and then every hour)
+        function exportCsvHourlyReminder() {
+            try {
+                // Request notification permission once (if neither granted nor denied)
+                if (window.Notification && Notification.permission !== 'granted' && Notification.permission !== 'denied') {
+                    Notification.requestPermission().catch(() => { });
+                    showToast('Notification: Requested for Export Reminder data ', 'info');
+                }
+            } catch (e) { }
+
+            // Show system notification if allowed
+            if (window.Notification && Notification.permission === 'granted') {
+                try {
+                    const n = new Notification('Export CSV Reminder', { body: "It's time to export reminders (Hourly)." });
+                    n.onclick = () => { exportRemindersJSON(); window.focus(); };
+                } catch (e) { /* ignore notification errors */ }
+            }
+
+            // Also show an in-page confirm prompt so users on browsers that block notifications still see the reminder
+            try {
+                if (confirm('Back Up Reminders--  Export Data now ? Click OK to export, Cancel to dismiss.')) { exportRemindersJSON(); }
+            } catch (e) { }
+            showToast('Reminder: Export Data now for Back Up!');
+        }
+
+        // Run shortly after load and then every hour (3600s)
+        setTimeout(() => { exportCsvHourlyReminder(); }, 500);
+        setInterval(exportCsvHourlyReminder, 60 * 60 * 1000);
+
+
+
+
+        function showToast(message, type = "error") {
+            const toast = document.getElementById("toast");
+
+            toast.className = ""; // reset
+            toast.textContent = message;
+
+            if (type === "success") toast.classList.add("toast-success");
+            else if (type === "warning") toast.classList.add("toast-warning");
+            else toast.classList.add("toast-error");
+
+            toast.classList.add("show");
+
+            setTimeout(() => {
+                toast.className = toast.className.replace("show", "");
+            }, 6000);
+        }
+
+        // --- Enquiry Item Manager ---
+        function loadEnquiryItems() {
+            const items = JSON.parse(localStorage.getItem("items")) || [];
+
+            // Calculate Real-Time Stock
+            const purchases = JSON.parse(localStorage.getItem("purchases")) || [];
+            const invoices = JSON.parse(localStorage.getItem("invoices")) || [];
+            const returns = JSON.parse(localStorage.getItem("returns")) || [];
+            const scraps = JSON.parse(localStorage.getItem("scraps")) || [];
+
+            const stockMap = {};
+
+            purchases.forEach(p => {
+                const key = (p.itemName || "").trim().toLowerCase() + "|" + (p.itemCode || "").trim().toLowerCase();
+                stockMap[key] = (stockMap[key] || 0) + (parseFloat(p.qty) || 0);
+            });
+            invoices.forEach(inv => {
+                if (inv.items) inv.items.forEach(it => {
+                    const key = (it.item || "").trim().toLowerCase() + "|" + (it.itemCode || "").trim().toLowerCase();
+                    stockMap[key] = (stockMap[key] || 0) - (parseFloat(it.qty) || 0);
+                });
+            });
+            returns.forEach(ret => {
+                if (ret.items) ret.items.forEach(it => {
+                    const key = (it.item_name || "").trim().toLowerCase() + "|" + (it.itemCode || "").trim().toLowerCase();
+                    if (ret.return_type === 'Sales Return') stockMap[key] = (stockMap[key] || 0) + (parseFloat(it.qty) || 0);
+                    else if (ret.return_type === 'Purchase Return' || ret.return_type === 'Damage') stockMap[key] = (stockMap[key] || 0) - (parseFloat(it.qty) || 0);
+                });
+            });
+            scraps.forEach(s => {
+                const key = (s.itemName || "").trim().toLowerCase() + "|" + (s.itemCode || "").trim().toLowerCase();
+                stockMap[key] = (stockMap[key] || 0) - (parseFloat(s.qty) || 0);
+            });
+
+            const datalist = document.getElementById('enquiryItemsData');
+            if (datalist) {
+                datalist.innerHTML = '';
+                items.forEach(item => {
+                    const key = (item.name || "").trim().toLowerCase() + "|" + (item.itemCode || "").trim().toLowerCase();
+                    const stock = stockMap[key] || 0;
+                    const stockDisplay = stock > 0 ? `Stock: ${stock}` : `Out of Stock`;
+
+                    const opt = document.createElement('option');
+                    let display = item.name;
+                    if (item.itemCode) display += ` [${item.itemCode}]`;
+                    if (item.category) display += ` - ${item.category}`;
+                    opt.value = display;
+                    opt.textContent = stockDisplay; // Appears next to the value in the browser dropdown
+                    datalist.appendChild(opt);
+                });
+            }
+
+            const filterEl = document.getElementById('enquiryItemFilter');
+            if (filterEl) {
+                const currentVal = filterEl.value;
+                filterEl.innerHTML = '<option value="">-- All Items --</option>';
+                items.forEach(item => {
+                    const key = (item.name || "").trim().toLowerCase() + "|" + (item.itemCode || "").trim().toLowerCase();
+                    const stock = stockMap[key] || 0;
+                    const stockDisplay = stock > 0 ? ` (Stock: ${stock})` : ` (Out of Stock)`;
+
+                    const opt = document.createElement('option');
+                    let display = item.name;
+                    if (item.itemCode) display += ` [${item.itemCode}]`;
+                    if (item.category) display += ` - ${item.category}`;
+                    opt.value = display;
+                    opt.textContent = display + stockDisplay;
+                    filterEl.appendChild(opt);
+                });
+                filterEl.value = currentVal;
+            }
+        }
+
+        function openEnquiryItemManager() {
+            renderEnquiryItemList();
+            document.getElementById('enquiryItemModal').classList.remove('hidden');
+        }
+
+        function closeEnquiryItemModal() {
+            document.getElementById('enquiryItemModal').classList.add('hidden');
+            loadEnquiryItems();
+        }
+
+        function populateStateDropdowns() {
+            const select = document.getElementById("state");
+            const filterSelect = document.getElementById("stateFilter");
+
+            select.innerHTML = '<option value="">Select State</option>';
+            filterSelect.innerHTML = '<option value="">-- All States --</option>';
+
+            STATE_MASTER_LIST.forEach(s => {
+                const opt = document.createElement('option');
+                opt.value = s.name;
+                opt.textContent = s.name;
+                select.appendChild(opt);
+
+                const opt2 = document.createElement('option');
+                opt2.value = s.name;
+                opt2.textContent = s.name;
+                filterSelect.appendChild(opt2);
+            });
+
+            select.addEventListener('change', () => {
+                populateDistrictDropdown(select.value);
+            });
+
+            filterSelect.addEventListener('change', () => {
+                populateFilterDistrictDropdown(filterSelect.value);
+                applyFilters();
+            });
+
+            select.value = "West Bengal"; // Default
+            select.dispatchEvent(new Event('change'));
+            // Initialize filter district
+            populateFilterDistrictDropdown("");
+        }
+
+        function populateDistrictDropdown(stateName, selectedDist = "") {
+            const distSelect = document.getElementById("district");
+            distSelect.innerHTML = '<option value="">Select District</option>';
+
+            const districts = DISTRICTS_MASTER_LIST[stateName] || [];
+            districts.sort().forEach(d => {
+                const opt = document.createElement('option');
+                opt.value = d;
+                opt.textContent = d;
+                distSelect.appendChild(opt);
+            });
+
+            if (selectedDist && districts.includes(selectedDist)) {
+                distSelect.value = selectedDist;
+            } else if (selectedDist) {
+                const opt = document.createElement('option');
+                opt.value = selectedDist;
+                opt.textContent = selectedDist;
+                opt.selected = true;
+                distSelect.appendChild(opt);
+            }
+        }
+
+        function populateFilterDistrictDropdown(stateName) {
+            const distSelect = document.getElementById("districtFilter");
+            distSelect.innerHTML = '<option value="">-- All Districts --</option>';
+
+            let districts = [];
+            if (stateName && DISTRICTS_MASTER_LIST[stateName]) {
+                districts = DISTRICTS_MASTER_LIST[stateName];
+            } else {
+                // If no state selected, show districts from existing data + West Bengal defaults
+                const distSet = new Set();
+                if (typeof data !== 'undefined' && Array.isArray(data)) {
+                    data.forEach(r => { if (r.district) distSet.add(r.district); });
+                }
+                if (DISTRICTS_MASTER_LIST["West Bengal"]) {
+                    DISTRICTS_MASTER_LIST["West Bengal"].forEach(d => distSet.add(d));
+                }
+                districts = Array.from(distSet);
+            }
+
+            districts.sort().forEach(d => {
+                const opt = document.createElement('option');
+                opt.value = d;
+                opt.textContent = d;
+                distSelect.appendChild(opt);
+            });
+        }
+
+        function renderEnquiryItemList() {
+            const container = document.getElementById('enquiryItemList');
+            container.innerHTML = '';
+            const items = JSON.parse(localStorage.getItem("items")) || [];
+            if (items.length === 0) {
+                container.innerHTML = '<div style="padding:10px; text-align:center; color:#666;">No items found. Add items in the Item Manager.</div>';
+                return;
+            }
+            items.forEach((item, index) => {
+                const div = document.createElement('div');
+                div.draggable = true;
+                div.dataset.index = index;
+                div.style.cssText = "display:flex; align-items:center; padding:10px; border-bottom:1px solid #eee; cursor:grab; user-select:none;";
+
+                let display = item.name;
+                if (item.itemCode) display += ` [${item.itemCode}]`;
+                if (item.category) display += ` - ${item.category}`;
+
+                div.innerHTML = `
+                        <span style="font-size:18px; margin-right:10px; color:#999; cursor: grab;">&#x2630;</span>
+                        <span style="font-weight:500;">${display}</span>
+                    `;
+                container.appendChild(div);
+            });
+            addDragDropListeners(container);
+        }
+
+        function addDragDropListeners(container) {
+            const items = container.querySelectorAll('[draggable="true"]');
+            items.forEach(item => {
+                item.addEventListener('dragstart', handleDragStart);
+                item.addEventListener('dragover', handleDragOver);
+                item.addEventListener('drop', handleDrop);
+                item.addEventListener('dragend', handleDragEnd);
+                item.addEventListener('dragenter', handleDragEnter);
+                item.addEventListener('dragleave', handleDragLeave);
+            });
+        }
+
+        let dragStartIndex;
+
+        function handleDragStart(e) {
+            dragStartIndex = parseInt(this.dataset.index);
+            this.classList.add('dragging');
+        }
+
+        function handleDragEnd(e) {
+            this.classList.remove('dragging');
+            document.querySelectorAll('#enquiryItemList .drag-over').forEach(el => el.classList.remove('drag-over'));
+        }
+        function handleDragOver(e) {
+            e.preventDefault(); // Necessary to allow drop
+        }
+
+        function handleDragEnter(e) {
+            e.preventDefault();
+            this.classList.add('drag-over');
+        }
+
+        function handleDragLeave(e) {
+            this.classList.remove('drag-over');
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            const dragEndIndex = parseInt(this.dataset.index);
+            this.classList.remove('drag-over');
+            if (dragStartIndex !== dragEndIndex) {
+                swapItems(dragStartIndex, dragEndIndex);
+            }
+        }
+
+        function swapItems(fromIndex, toIndex) {
+            const items = JSON.parse(localStorage.getItem("items")) || [];
+            const [reorderedItem] = items.splice(fromIndex, 1);
+            items.splice(toIndex, 0, reorderedItem);
+            localStorage.setItem("items", JSON.stringify(items));
+            renderEnquiryItemList();
+        }
+
+        // --- Reminder Type Manager ---
+        function loadReminderTypes() {
+            let items = JSON.parse(localStorage.getItem("reminderTypesList"));
+            if (!items || items.length === 0) {
+                items = ["Payment Reminders", "Billing Reminders", "Service Reminders", "Repair Reminders", "Order Reminders", "Delivery Reminders", "Notification"];
+                localStorage.setItem("reminderTypesList", JSON.stringify(items));
+            }
+
+            const counts = {};
+            if (typeof data !== 'undefined' && Array.isArray(data)) {
+                data.forEach(r => {
+                    if (r.reminderFor) {
+                        counts[r.reminderFor] = (counts[r.reminderFor] || 0) + 1;
+                    }
+                });
+            }
+
+            const el = document.getElementById('reminderFor');
+            if (el) {
+                const currentVal = el.value;
+                el.innerHTML = '<option value="">-- Select Main Reminder Type --</option>';
+                items.forEach(item => {
+                    const opt = document.createElement('option');
+                    opt.value = item;
+                    opt.textContent = item;
+                    el.appendChild(opt);
+                });
+                el.value = currentVal;
+            }
+
+            const filterEl = document.getElementById('reminderTypeFilter');
+            if (filterEl) {
+                const currentVal = filterEl.value;
+                filterEl.innerHTML = '<option value="">-- All Types --</option>';
+                items.forEach(item => {
+                    const opt = document.createElement('option');
+                    opt.value = item;
+                    const count = counts[item] || 0;
+                    opt.textContent = `${item} (${count})`;
+                    filterEl.appendChild(opt);
+                });
+                filterEl.value = currentVal;
+            }
+        }
+
+        function openReminderTypeManager() {
+            renderReminderTypeList();
+            document.getElementById('reminderTypeModal').classList.remove('hidden');
+        }
+
+        function closeReminderTypeModal() {
+            document.getElementById('reminderTypeModal').classList.add('hidden');
+            loadReminderTypes();
+        }
+
+        function renderReminderTypeList() {
+            const items = JSON.parse(localStorage.getItem("reminderTypesList")) || [];
+            const container = document.getElementById('reminderTypeList');
+            container.innerHTML = '';
+            if (items.length === 0) {
+                container.innerHTML = '<div style="padding:10px; text-align:center; color:#666;">No types found. Add one above.</div>';
+                return;
+            }
+            items.forEach((item, index) => {
+                const div = document.createElement('div');
+                div.style.cssText = "display:flex; justify-content:space-between; align-items:center; padding:8px; border-bottom:1px solid #eee;";
+
+                const upStyle = index === 0 ? 'opacity:0.5; cursor:not-allowed;' : 'cursor:pointer;';
+                const downStyle = index === items.length - 1 ? 'opacity:0.5; cursor:not-allowed;' : 'cursor:pointer;';
+
+                div.innerHTML = `
+                        <span style="font-weight:500;">${item}</span>
+                        <div style="display:flex; align-items:center;">
+                            <button onclick="moveReminderType(${index}, -1)" style="padding:4px 8px; font-size:12px; background:#6c757d; color:white; border:none; border-radius:4px; margin-right:2px; ${upStyle}" ${index === 0 ? 'disabled' : ''}>↑</button>
+                            <button onclick="moveReminderType(${index}, 1)" style="padding:4px 8px; font-size:12px; background:#6c757d; color:white; border:none; border-radius:4px; margin-right:5px; ${downStyle}" ${index === items.length - 1 ? 'disabled' : ''}>↓</button>
+                            <button onclick="editReminderType(${index})" style="padding:4px 8px; font-size:12px; background:#17a2b8; color:white; border:none; border-radius:4px; margin-right:5px; cursor:pointer;">Edit</button>
+                            <button onclick="deleteReminderType(${index})" style="padding:4px 8px; font-size:12px; background:#dc3545; color:white; border:none; border-radius:4px; cursor:pointer;">Del</button>
+                        </div>
+                    `;
+                container.appendChild(div);
+            });
+        }
+
+        function moveReminderType(index, direction) {
+            const items = JSON.parse(localStorage.getItem("reminderTypesList")) || [];
+            const newIndex = index + direction;
+            if (newIndex >= 0 && newIndex < items.length) {
+                const temp = items[index];
+                items[index] = items[newIndex];
+                items[newIndex] = temp;
+                localStorage.setItem("reminderTypesList", JSON.stringify(items));
+                renderReminderTypeList();
+            }
+        }
+
+        function addReminderType() {
+            const input = document.getElementById('newReminderTypeInput');
+            const val = input.value.trim();
+            if (!val) return;
+            const items = JSON.parse(localStorage.getItem("reminderTypesList")) || [];
+            if (items.some(i => i.toLowerCase() === val.toLowerCase())) {
+                alert('Type already exists');
+                return;
+            }
+            items.push(val);
+            localStorage.setItem("reminderTypesList", JSON.stringify(items));
+            input.value = '';
+            renderReminderTypeList();
+        }
+
+        function deleteReminderType(index) {
+            if (!confirm('Are you sure you want to delete this type?')) return;
+            const items = JSON.parse(localStorage.getItem("reminderTypesList")) || [];
+            items.splice(index, 1);
+            localStorage.setItem("reminderTypesList", JSON.stringify(items));
+            renderReminderTypeList();
+        }
+
+        function editReminderType(index) {
+            const items = JSON.parse(localStorage.getItem("reminderTypesList")) || [];
+            const oldVal = items[index];
+            const newVal = prompt("Edit Type Name:", oldVal);
+            if (newVal !== null && newVal.trim() !== "") {
+                items[index] = newVal.trim();
+                localStorage.setItem("reminderTypesList", JSON.stringify(items));
+                renderReminderTypeList();
+            }
+        }
+
+        // --- Table Settings Logic ---
+        let columnVisibility = JSON.parse(localStorage.getItem("reminderColumnVisibility")) || new Array(10).fill(true);
+        // Ensure length matches current table columns (10)
+        if (columnVisibility.length !== 10) {
+            columnVisibility = new Array(10).fill(true);
+        }
+        let isGreyButtons = localStorage.getItem("reminderGreyButtons") === "true";
+        let isSoundEnabled = localStorage.getItem("reminderSoundEnabled") !== "false"; // default true
+
+        function openSettingsModal() {
+            document.getElementById('settingsModal').classList.remove('hidden');
+            renderColumnToggles();
+            const greyToggle = document.getElementById("greyButtonsToggle");
+            if (greyToggle) greyToggle.checked = isGreyButtons;
+            const sToggle = document.getElementById("soundToggle");
+            if (sToggle) {
+                sToggle.checked = isSoundEnabled;
+                const soundOptions = document.getElementById('soundOptions');
+                if (soundOptions) soundOptions.style.display = isSoundEnabled ? 'block' : 'none';
+                const soundSelect = document.getElementById('soundSelect');
+                if (soundSelect) soundSelect.value = localStorage.getItem("reminderSoundType") || "sawtooth";
+            }
+        }
+
+        function closeSettingsModal() {
+            document.getElementById('settingsModal').classList.add('hidden');
+        }
+
+        function toggleGreyButtons() {
+            isGreyButtons = document.getElementById("greyButtonsToggle").checked;
+            localStorage.setItem("reminderGreyButtons", isGreyButtons);
+            applyGreyButtons();
+        }
+
+        function toggleSound() {
+            isSoundEnabled = document.getElementById("soundToggle").checked;
+            localStorage.setItem("reminderSoundEnabled", isSoundEnabled);
+            if (!isSoundEnabled) stopNotificationSound();
+            const soundOptions = document.getElementById('soundOptions');
+            if (soundOptions) soundOptions.style.display = isSoundEnabled ? 'block' : 'none';
+        }
+
+        function saveSoundPreference() {
+            const soundSelect = document.getElementById('soundSelect');
+            if (soundSelect) {
+                localStorage.setItem("reminderSoundType", soundSelect.value);
+            }
+        }
+
+        function applyGreyButtons() {
+            if (isGreyButtons) document.body.classList.add("grey-mode");
+            else document.body.classList.remove("grey-mode");
+        }
+
+        function renderColumnToggles() {
+            const container = document.getElementById("columnToggles");
+            container.innerHTML = "";
+            const headers = Array.from(document.querySelectorAll("#mainTable thead th"));
+
+            const items = headers.map((th, index) => {
+                let text = th.innerText.trim();
+                // Skip checkbox (0) only
+                if (index === 0) return null;
+                return { index, text };
+            }).filter(item => item !== null);
+
+            items.forEach(item => {
+                const label = document.createElement("label");
+                label.style.cursor = "pointer";
+                label.style.display = "flex";
+                label.style.alignItems = "center";
+                label.style.gap = "5px";
+
+                const cb = document.createElement("input");
+                cb.type = "checkbox";
+                cb.checked = columnVisibility[item.index];
+                cb.style.margin = "0";
+                cb.onchange = () => toggleColumn(item.index, cb.checked);
+
+                label.appendChild(cb);
+                label.appendChild(document.createTextNode(item.text));
+                container.appendChild(label);
+            });
+        }
+
+        function toggleAllColumns(isVisible) {
+            for (let i = 1; i < columnVisibility.length; i++) {
+                columnVisibility[i] = isVisible;
+            }
+            localStorage.setItem("reminderColumnVisibility", JSON.stringify(columnVisibility));
+            updateColumnStyles();
+            renderColumnToggles();
+        }
+
+        function toggleColumn(index, isVisible) {
+            columnVisibility[index] = isVisible;
+            localStorage.setItem("reminderColumnVisibility", JSON.stringify(columnVisibility));
+            updateColumnStyles();
+        }
+
+        function updateColumnStyles() {
+            let style = document.getElementById('dynamicColumnStyles');
+            if (!style) {
+                style = document.createElement('style');
+                style.id = 'dynamicColumnStyles';
+                document.head.appendChild(style);
+            }
+            let css = '';
+            columnVisibility.forEach((visible, i) => {
+                if (!visible) {
+                    css += `#mainTable th:nth-child(${i + 1}), #mainTable td:nth-child(${i + 1}) { display: none; }\n`;
+                }
+            });
+            style.textContent = css;
+        }
+
+        function handlePartyTypeChange() {
+            const partyType = document.getElementById('partyType').value;
+            const label = document.getElementById('partySectionLabel');
+            const nameLabel = document.getElementById('partyNameLabel');
+            if (partyType === 'Customer') {
+                label.innerText = 'Customer Details:-';
+                nameLabel.innerText = 'Customer Name 👤*';
+            } else {
+                label.innerText = 'Supplier Details:-';
+                nameLabel.innerText = 'Supplier Name 👤*';
+            }
+            loadExternalData();
+        }
+
+        // --- Fetch Data from Invoice/Customer Storage ---
+        function loadExternalData() {
+            const partyType = document.getElementById('partyType') ? document.getElementById('partyType').value : 'Customer';
+            const customers = JSON.parse(localStorage.getItem("customers")) || [];
+            const suppliers = JSON.parse(localStorage.getItem("suppliers")) || [];
+            const invoices = JSON.parse(localStorage.getItem("invoices")) || [];
+            const purchases = JSON.parse(localStorage.getItem("purchases")) || [];
+
+
+            // Populate Party Datalist
+            const pList = document.getElementById("partyList");
+            if (pList) {
+                pList.innerHTML = "";
+                const uniqueNames = new Set();
+
+                if (partyType === 'Customer') {
+                    customers.forEach(c => { if (c.name) uniqueNames.add(c.name); });
+                    invoices.forEach(i => {
+                        const name = i.customer_name || i.customerName || (i.customer && i.customer.name);
+                        if (name) uniqueNames.add(name);
+                    });
+                } else {
+                    suppliers.forEach(s => { if (s.name) uniqueNames.add(s.name); });
+                    purchases.forEach(p => {
+                        const name = p.supplierName;
+                        if (name) uniqueNames.add(name);
+                    });
+                }
+
+
+                uniqueNames.forEach(name => {
+                    const opt = document.createElement("option");
+                    opt.value = name;
+                    pList.appendChild(opt);
+                });
+            }
+
+            // Populate Bill No Datalist
+            const bList = document.getElementById("billList");
+            if (bList) {
+                bList.innerHTML = "";
+                if (partyType === 'Customer') {
+                    invoices.forEach(i => {
+                        const bno = i.invoice_no || i.invoiceNo;
+                        if (bno) {
+                            const opt = document.createElement("option");
+                            opt.value = bno;
+                            bList.appendChild(opt);
+                        }
+                    });
+                } else {
+                    const uniqueBills = new Set();
+                    purchases.forEach(p => {
+                        if (p.supplierInv) uniqueBills.add(p.supplierInv);
+                    });
+                    uniqueBills.forEach(bno => {
+                        const opt = document.createElement("option");
+                        opt.value = bno;
+                        bList.appendChild(opt);
+                    });
+                }
+            }
+        }
+
+        function handlePartyChange() {
+            const val = document.getElementById("cname").value;
+            const bList = document.getElementById("billList");
+
+            if (!val) {
+                loadExternalData(); // Restore all bills if empty
+                return;
+            }
+
+            const partyType = document.getElementById('partyType') ? document.getElementById('partyType').value : 'Customer';
+            let party = null;
+
+            if (bList) bList.innerHTML = "";
+
+            if (partyType === 'Customer') {
+                const customers = JSON.parse(localStorage.getItem("customers")) || [];
+                party = customers.find(c => c.name === val);
+
+                const invoices = JSON.parse(localStorage.getItem("invoices")) || [];
+                if (!party) {
+                    const inv = invoices.find(i => (i.customer_name || i.customerName) === val);
+                    if (inv) party = { contact: inv.contact, address: inv.address, pin: inv.pin, state: inv.state, district: inv.district };
+                }
+
+                // Filter Bill No Datalist
+                if (bList) {
+                    invoices.filter(i => (i.customer_name || i.customerName) === val).forEach(i => {
+                        const bno = i.invoice_no || i.invoiceNo;
+                        if (bno) {
+                            const opt = document.createElement("option");
+                            opt.value = bno;
+                            bList.appendChild(opt);
+                        }
+                    });
+                }
+            } else {
+                const suppliers = JSON.parse(localStorage.getItem("suppliers")) || [];
+                party = suppliers.find(s => s.name === val);
+
+                const purchases = JSON.parse(localStorage.getItem("purchases")) || [];
+                if (!party) {
+                    const pur = purchases.find(p => p.supplierName === val);
+                    if (pur) party = { contact: '', address: '', pin: '', state: '', district: '' };
+                }
+
+                // Filter Bill No Datalist
+                if (bList) {
+                    const uniqueBills = new Set();
+                    purchases.filter(p => p.supplierName === val).forEach(p => {
+                        if (p.supplierInv) uniqueBills.add(p.supplierInv);
+                    });
+                    uniqueBills.forEach(bno => {
+                        const opt = document.createElement("option");
+                        opt.value = bno;
+                        bList.appendChild(opt);
+                    });
+                }
+            }
+
+            if (party) {
+                if (party.contact) document.getElementById("cno1").value = party.contact;
+                if (party.address) document.getElementById("address").value = party.address;
+                if (party.pin) document.getElementById("pin").value = party.pin;
+                if (party.state) {
+                    document.getElementById("state").value = party.state;
+                    populateDistrictDropdown(party.state, party.district);
+                }
+            }
+        }
+
+        function handleBillChange() {
+            const val = document.getElementById("bno").value;
+            if (!val) return;
+
+            const partyType = document.getElementById('partyType') ? document.getElementById('partyType').value : 'Customer';
+
+            if (partyType === 'Customer') {
+                const invoices = JSON.parse(localStorage.getItem("invoices")) || [];
+                const inv = invoices.find(i => (i.invoice_no || i.invoiceNo) === val);
+
+                if (inv) {
+                    const name = inv.customer_name || inv.customerName;
+                    if (name) document.getElementById("cname").value = name;
+                    if (inv.contact) document.getElementById("cno1").value = inv.contact;
+                    if (inv.address) document.getElementById("address").value = inv.address;
+                    if (inv.pin) document.getElementById("pin").value = inv.pin;
+                    if (inv.state) {
+                        document.getElementById("state").value = inv.state;
+                        populateDistrictDropdown(inv.state, inv.district);
+                    }
+                    const d = inv.invoice_date || inv.date;
+                    if (d) document.getElementById("pdate").value = d;
+                }
+            } else {
+                const purchases = JSON.parse(localStorage.getItem("purchases")) || [];
+                const pur = purchases.find(p => p.supplierInv === val);
+
+                if (pur) {
+                    if (pur.supplierName) document.getElementById("cname").value = pur.supplierName;
+                    const d = pur.date;
+                    if (d) document.getElementById("pdate").value = d;
+
+                    const suppliers = JSON.parse(localStorage.getItem("suppliers")) || [];
+                    const sup = suppliers.find(s => s.name === pur.supplierName);
+                    if (sup) {
+                        if (sup.contact) document.getElementById("cno1").value = sup.contact;
+                        if (sup.address) document.getElementById("address").value = sup.address;
+                        if (sup.pin) document.getElementById("pin").value = sup.pin;
+                        if (sup.state) {
+                            document.getElementById("state").value = sup.state;
+                            populateDistrictDropdown(sup.state, sup.district);
+                        }
+                    }
+                }
+            }
+        }
+
+        // Dark Mode Logic
+        let currentTheme = localStorage.getItem("appThemeMode") || "system";
+
+        function changeTheme() {
+            currentTheme = document.getElementById("themeSelect").value;
+            localStorage.setItem("appThemeMode", currentTheme);
+            applyDarkMode();
+        }
+
+        function applyTheme() {
+            // Migrate old key
+            if (!localStorage.getItem("appThemeMode") && localStorage.getItem("reminderDarkMode")) {
+                currentTheme = localStorage.getItem("reminderDarkMode") === "true" ? "dark" : "light";
+                localStorage.setItem("appThemeMode", currentTheme);
+            }
+
+            const isDark = currentTheme === "dark" || (currentTheme === "system" && window.matchMedia('(prefers-color-scheme: dark)').matches);
+            if (isDark) document.body.classList.add("dark-mode");
+            else document.body.classList.remove("dark-mode");
+
+            const sel = document.getElementById("themeSelect");
+            if (sel) sel.value = currentTheme;
+        }
+
+        // --- Keyboard Navigation ---
+        function setupKeyboardNavigation() {
+            const inputs = [
+                'cname', 'cno1', 'cno2', 'address', 'pin', 'district', 'state', 'bno',
+                'enquiryType', 'edate', 'pdate', 'item1', 'item2', 'item3', 'specialNote',
+                'rdate', 'rtime', 'reminderFor'
+            ];
+
+            inputs.forEach((id, index) => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.addEventListener('keydown', function (e) {
+                        if (e.key === 'Enter' || e.key === 'Tab') {
+                            if (e.key === 'Tab' && e.shiftKey) {
+                                return; // Let default browser Shift+Tab work (move backwards)
+                            }
+                            if (el.tagName === 'TEXTAREA' && e.shiftKey && e.key === 'Enter') {
+                                return; // Allow newlines in textareas if Shift+Enter
+                            }
+                            if (e.key === 'Tab' || el.tagName !== 'SELECT') {
+                                e.preventDefault(); // Prevent accidental form submission or default tab jumping
+                            }
+                            const nextId = inputs[index + 1];
+                            if (nextId) {
+                                const nextEl = document.getElementById(nextId);
+                                if (nextEl) {
+                                    nextEl.focus();
+                                }
+                            } else {
+                                if (e.key === 'Enter') {
+                                    initiateSaveReminder();
+                                } else {
+                                    const saveBtn = document.querySelector('button[onclick="initiateSaveReminder()"]');
+                                    if (saveBtn) saveBtn.focus();
+                                }
+                            }
+                        }
+                    });
+                }
+            });
+
+            document.addEventListener('keydown', function (e) {
+                if (e.altKey && (e.key === 's' || e.key === 'S')) {
+                    e.preventDefault();
+                    initiateSaveReminder();
+                }
+                if (e.altKey && (e.key === 'c' || e.key === 'C')) {
+                    e.preventDefault();
+                    initiateClearForm();
+                }
+            });
+        }
+
+        // Compact View Logic
+        let isCompactView = localStorage.getItem("reminderCompactView") === "true";
+
+        function toggleCompactView() {
+            isCompactView = document.getElementById("compactViewToggle").checked;
+            localStorage.setItem("reminderCompactView", isCompactView);
+            applyCompactView();
+        }
+
+        function applyCompactView() {
+            const table = document.querySelector(".table-scroll");
+            if (isCompactView) table.classList.add("compact-table");
+            else table.classList.remove("compact-table");
+
+            const toggle = document.getElementById("compactViewToggle");
+            if (toggle) toggle.checked = isCompactView;
+        }
+
+        // Load Brand Details
+
+        // Initialize external data
+        loadExternalData();
+        loadEnquiryItems();
+        populateStateDropdowns();
+        loadReminderTypes();
+        setupKeyboardNavigation();
+        applyTheme();
+        applyCompactView();
+        applyGreyButtons();
+        updateColumnStyles();
+
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+            if (currentTheme === "system") {
+                applyTheme();
+            }
+        });
+
+        function toggleActionMenu(btn) {
+            // Close others
+            document.querySelectorAll('.action-dropdown.active').forEach(d => {
+                if (d !== btn.parentElement) d.classList.remove('active');
+            });
+
+            const dropdown = btn.parentElement;
+            dropdown.classList.toggle('active');
+
+            if (dropdown.classList.contains('active')) {
+                const content = dropdown.querySelector('.action-dropdown-content');
+                content.style.display = 'block'; // Temporarily show to calculate dimensions
+                const rect = btn.getBoundingClientRect();
+
+                let top = rect.bottom;
+                let left = rect.right - content.offsetWidth;
+
+                if (top + content.offsetHeight > window.innerHeight) {
+                    top = rect.top - content.offsetHeight;
+                }
+
+                content.style.top = top + 'px';
+                content.style.left = left + 'px';
+                content.style.display = ''; // Let CSS class handle visibility
+            }
+        }
+
+        document.addEventListener('click', function (e) {
+            if (!e.target.matches('.action-btn-main')) {
+                document.querySelectorAll('.action-dropdown.active').forEach(d => d.classList.remove('active'));
+            }
+        });
+
+        // Close dropdowns on scroll to prevent detaching from row
+        window.addEventListener('scroll', function () {
+            document.querySelectorAll('.action-dropdown.active').forEach(d => d.classList.remove('active'));
+        }, true);
+
+        // --- Service Worker & Background Notifications ---
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                    .then(reg => console.log('Service Worker registered successfully.', reg.scope))
+                    .catch(err => console.error('Service Worker registration failed:', err));
+            });
+        }
+
+        async function scheduleBackgroundNotification(record) {
+            if (!('serviceWorker' in navigator) || !window.Notification) return;
+
+            if (Notification.permission !== 'granted') {
+                const perm = await Notification.requestPermission();
+                if (perm !== 'granted') return;
+            }
+
+            try {
+                const reg = await navigator.serviceWorker.ready;
+                let triggerTime;
+                if (record.reminderDate) {
+                    const timeStr = record.reminderTime || '09:00'; // Default to 9 AM if no time is set
+                    triggerTime = new Date(`${record.reminderDate}T${timeStr}`).getTime();
+                }
+
+                if (triggerTime && triggerTime > Date.now()) {
+                    if ('showTrigger' in Notification.prototype) {
+                        reg.showNotification(`🔔 Due Reminder: ${record.reminderFor}`, {
+                            body: `Customer: ${record.cname}\nBill No: ${record.billNo}`,
+                            icon: 'logo.png',
+                            showTrigger: new TimestampTrigger(triggerTime)
+                        });
+                        console.log('Background notification scheduled for:', new Date(triggerTime));
+                    } else {
+                        console.warn('Notification Triggers API is not supported in this browser. Background alerts require the app to stay open.');
+                    }
+                }
+            } catch (e) {
+                console.error('Failed to schedule notification', e);
+            }
+        }
+
+    </script>
+
+</body>
+
+</html>

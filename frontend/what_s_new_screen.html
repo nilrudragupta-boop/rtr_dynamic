@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>What's New</title>
+
+    <style>
+        body {
+            font-family: Segoe UI, sans-serif;
+            margin: 0;
+            background: #f5f6f8;
+        }
+
+        .header {
+            background: #0d5cab;
+            color: white;
+            padding: 15px 20px;
+            font-size: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .container {
+            padding: 40px 60px;
+        }
+
+        .section {
+            margin-bottom: 35px;
+        }
+
+        .section h2 {
+            font-weight: 500;
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .section ul {
+            padding-left: 20px;
+            color: #555;
+        }
+
+        .section li {
+            margin-bottom: 8px;
+        }
+
+        .footer {
+            background: #e5e7ea;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+        }
+
+        .ok-btn {
+            background: #0d5cab;
+            color: white;
+            border: none;
+            padding: 6px 20px;
+            cursor: pointer;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="header">
+        <div>What's New</div>
+        <div>Version: <span id="version"></span></div>
+    </div>
+
+    <div class="container">
+
+        <div class="section" id="newFeaturesSection">
+            <h2>🚀 New Features</h2>
+            <ul id="newFeaturesList"></ul>
+        </div>
+
+        <div class="section" id="improvementsSection">
+            <h2>⚙ Improvements</h2>
+            <ul id="improvementsList"></ul>
+        </div>
+
+        <div class="section" id="bugfixSection">
+            <h2>🐞 Bug Fixes</h2>
+            <ul id="bugfixList"></ul>
+        </div>
+
+    </div>
+
+    <div class="footer">
+        <div>Released on: <span id="releaseDate"></span></div>
+        <button class="ok-btn" onclick="window.close()">OK</button>
+    </div>
+
+    <script src="config.js"></script>
+
+    <script>
+        document.getElementById("version").innerText = CURRENT_APP_VERSION;
+        document.getElementById("releaseDate").innerText = RELEASE_DATE;
+
+        function populateList(id, items) {
+            const list = document.getElementById(id);
+            if (!items || items.length === 0) {
+                list.parentElement.style.display = "none";
+                return;
+            }
+            items.forEach(item => {
+                const li = document.createElement("li");
+                li.textContent = item;
+                list.appendChild(li);
+            });
+        }
+
+        populateList("newFeaturesList", RELEASE_DATA.newFeatures);
+        populateList("improvementsList", RELEASE_DATA.improvements);
+        populateList("bugfixList", RELEASE_DATA.bugfixes);
+    </script>
+
+</body>
+
+</html>

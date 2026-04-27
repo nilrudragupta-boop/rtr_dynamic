@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Help & Support</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="settings.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            padding: 20px;
+            background: #f4f6f8;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        h2 {
+            color: #2c3e50;
+            margin: 0;
+        }
+
+        .card {
+            background: white;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+            margin-bottom: 20px;
+        }
+
+        .search-container {
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        #helpSearch {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 16px;
+            box-sizing: border-box;
+            transition: border-color 0.3s;
+        }
+
+        #helpSearch:focus {
+            border-color: #3498db;
+            outline: none;
+        }
+
+        .category-header {
+            color: #2c3e50;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 8px;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            font-size: 18px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-danger {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .btn-danger:hover {
+            background: #c0392b;
+        }
+
+        /* Accordion Styles */
+        .accordion {
+            background-color: #fff;
+            color: #2c3e50;
+            cursor: pointer;
+            padding: 15px;
+            width: 100%;
+            border: none;
+            text-align: left;
+            outline: none;
+            font-size: 16px;
+            font-weight: 600;
+            transition: 0.3s;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .active,
+        .accordion:hover {
+            background-color: #f8f9fa;
+            color: #3498db;
+        }
+
+        .accordion:after {
+            content: '\002B';
+            font-size: 20px;
+            color: #777;
+            font-weight: bold;
+        }
+
+        .active:after {
+            content: "\2212";
+        }
+
+        .panel {
+            padding: 0 18px;
+            background-color: white;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.2s ease-out;
+            border-bottom: 1px solid transparent;
+        }
+
+        .panel p {
+            margin: 15px 0;
+            color: #555;
+        }
+
+        .panel ul {
+            margin: 10px 0 15px 20px;
+            color: #555;
+        }
+
+        .panel li {
+            margin-bottom: 5px;
+        }
+
+        /* Contact Section */
+        .contact-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 10px;
+        }
+
+        .contact-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            text-align: center;
+            border: 1px solid #eee;
+        }
+
+        .contact-item strong {
+            display: block;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+
+        /* Dark Mode */
+        body.dark-mode {
+            background: #121212;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .card,
+        body.dark-mode .accordion,
+        body.dark-mode .panel,
+        body.dark-mode .contact-item {
+            background: #2c2c2c;
+            color: #e0e0e0;
+            border-color: #444;
+        }
+
+        body.dark-mode .accordion:hover,
+        body.dark-mode .active {
+            background-color: #3a3a3a;
+            color: #3498db;
+        }
+
+        body.dark-mode .panel p,
+        body.dark-mode .panel ul {
+            color: #ccc;
+        }
+
+        body.dark-mode h2 {
+            color: #fff;
+        }
+
+        body.dark-mode #helpSearch {
+            background: #3a3a3a;
+            color: white;
+            border-color: #555;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            width: 400px;
+            max-width: 90%;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            text-align: left;
+        }
+
+        body.dark-mode .modal-content {
+            background: #2c2c2c;
+            color: #e0e0e0;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            font-size: 13px;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-family: inherit;
+        }
+
+        body.dark-mode .form-group input,
+        body.dark-mode .form-group select,
+        body.dark-mode .form-group textarea {
+            background: #3a3a3a;
+            color: white;
+            border-color: #555;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="header">
+        <h2>❓ Help & Support</h2>
+        <button class="btn-danger" onclick="window.close()">Close</button>
+    </div>
+
+    <div class="card">
+        <div class="search-container">
+            <input type="text" id="helpSearch" onkeyup="filterHelp()"
+                placeholder="🔍 Search for help topics (e.g., 'Invoice', 'Renewal', 'Stock')...">
+        </div>
+
+        <h3 style="margin-top:0; color:#3498db;">📚 Documentation & User Guide</h3>
+
+        <!-- SECTION: GETTING STARTED & LOGIN -->
+        <div class="category-header">🔐 Login & Security</div>
+
+        <button class="accordion">How do I Login?</button>
+        <div class="panel">
+            <p>Launch the application and enter your <strong>Username</strong> and <strong>Password</strong>.</p>
+            <ul>
+                <li>If this is your first time, the default credentials might be provided by your Developer (e.g., <code>Admin</code>).</li>
+                <li>If <strong>Two-Factor Authentication (2FA)</strong> is enabled for your account, you will be prompted to enter a 6-digit code from your Authenticator app after verifying your password.</li>
+                <li>Check "Remember Me" to save your credentials for future sessions.</li>
+            </ul>
+        </div>
+
+        <button class="accordion">How do I reset a forgotten password?</button>
+        <div class="panel">
+            <p>1. On the Login screen, click the <strong>"Forgot Password?"</strong> link.<br>
+                2. Enter the registered <strong>Admin Email</strong> address.<br>
+                3. You will receive a 6-digit <strong>OTP</strong> in your email inbox.<br>
+                4. Enter the OTP to verify your identity and set a new password.</p>
+            <p><em>Note: Contact your system administrator to ensure your Email Provider and App Passwords are configured correctly in <strong>Settings</strong> beforehand.</em></p>
+        </div>
+
+        <!-- SECTION: DASHBOARD & NAVIGATION -->
+        <div class="category-header">🕹️ Dashboard & Navigation</div>
+
+        <button class="accordion">Dashboard Overview & Quick Actions</button>
+        <div class="panel">
+            <p>The Dashboard is your central hub. It displays:</p>
+            <ul>
+                <li><strong>Key Performance Indicators (KPIs):</strong> Total Sales, Purchases, Receivables, and Stock Value for the current month.</li>
+                <li><strong>Chart:</strong> A 6-month visual trend comparing Sales and Purchases.</li>
+                <li><strong>Quick Actions:</strong> Customizable shortcut buttons to frequently used modules. Click the ⚙️ icon to configure which buttons appear here.</li>
+                <li><strong>Low Stock Alerts:</strong> A table highlighting items that have fallen below their minimum stock threshold.</li>
+            </ul>
+            <p><em>Note: Click the "Eye" icon on the top right to hide/blur sensitive financial data when needed.</em></p>
+        </div>
+
+        <button class="accordion">How to use the Sidebar & Favorites</button>
+        <div class="panel">
+            <p>The left sidebar contains links to all modules categorized under <strong>Operations</strong>, <strong>Reports</strong>, and <strong>Tools & Security</strong>.</p>
+            <ul>
+                <li>Use the <strong>Search Box</strong> at the top of the sidebar to quickly find a specific module (e.g., type "Ledger").</li>
+                <li>You can add modules to a <strong>Favorites</strong> section at the top of the sidebar. Click the ⚙️ icon next to "Favorites" to select your most used pages.</li>
+            </ul>
+        </div>
+
+        <button class="accordion">How do I change the Theme (Dark Mode) or Table Views?</button>
+        <div class="panel">
+            <p>Most pages have a top control bar where you can customize your viewing experience:</p>
+            <ul>
+                <li><strong>Theme:</strong> Switch between Light, Dark, or System Default modes.</li>
+                <li><strong>Compact View:</strong> Condenses table rows to fit more data on the screen.</li>
+                <li><strong>Grey Buttons Mode:</strong> Turns colored action buttons into a uniform grey for a cleaner look.</li>
+                <li><strong>Freeze Panes & Columns:</strong> In the Table Settings (⚙️), you can select which columns to hide/show and how many columns to freeze when scrolling horizontally.</li>
+            </ul>
+        </div>
+
+        <button class="accordion">How do I Renew my License?</button>
+        <div class="panel">
+            <p>When your license is nearing expiry (indicated at the bottom of the dashboard):</p>
+            <ol>
+                <li>Click the <strong>Renew</strong> button next to the expiry date.</li>
+                <li>Enter your <strong>Admin ID</strong> and the <strong>Renewal Code</strong> provided by the developer.</li>
+                <li>Enter the <strong>Duration</strong> (days) and <strong>Amount</strong>.</li>
+                <li>Click <strong>Request OTP</strong>. An OTP will be sent to the Developer to authorize the renewal.</li>
+                <li>Make your <strong>Payment</strong> (you can click <strong>Make Payment</strong> to scan a QR code).</li>
+                <li>Enter the OTP received from the developer to instantly extend your license validity.</li>
+            </ol>
+        </div>
+
+        <!-- SECTION: INVOICING & BILLING -->
+        <div class="category-header">📝 Invoicing & Billing</div>
+
+        <button class="accordion">How to create a Sale Invoice?</button>
+        <div class="panel">
+            <p>Go to <strong>Smart Invoice</strong> (or Standard Invoice):</p>
+            <ol>
+                <li>Select the <strong>Invoice Type</strong> (Tax Invoice, Sale Invoice, Proforma, etc.).</li>
+                <li>Select a <strong>Customer</strong>. If they don't exist, typing their name will automatically save them for next time.</li>
+                <li>Add <strong>Items</strong> by searching the dropdown or scanning an Item Code. The HSN, Price, and GST will auto-fill from the Item Master or Previous Sales.</li>
+                <li>Apply any Item-level Discounts or Overall Invoice Discounts.</li>
+                <li>Add <strong>Extra Charges</strong> (Freight, Packing, Loading) if applicable.</li>
+                <li>Click <strong>Save</strong>. The stock will be deducted automatically.</li>
+            </ol>
+            <p><em>Tip: After saving, you can click <strong>Print</strong> to generate a professional PDF, or click the 🧮 <strong>GST Calc</strong> button to reverse-calculate GST from an inclusive price.</em></p>
+        </div>
+
+        <button class="accordion">How to record Cash vs Bank payments on an Invoice?</button>
+        <div class="panel">
+            <p>Once an invoice is saved, go to the <strong>Invoice Report</strong>:</p>
+            <ol>
+                <li>Find the invoice and click the <strong>✏️ (Edit Amount)</strong> icon next to the "Total Paid" column.</li>
+                <li>A Payment Split window will open. Enter the amount received in <strong>Cash</strong> and/or <strong>Bank</strong>.</li>
+                <li>Select the destination <strong>Bank Account</strong>.</li>
+                <li>Click <strong>Save</strong>. This will automatically update the Invoice Due amount and post a <strong>Receipt Voucher</strong> in your Banking module.</li>
+            </ol>
+        </div>
+
+        <button class="accordion">What is the difference between Tax Invoice and Sale Invoice?</button>
+        <div class="panel">
+            <ul>
+                <li><strong>Tax Invoice:</strong> Includes full GST details (CGST/SGST/IGST), E-Way Bill fields, and is meant for B2B or compliant B2C transactions. Columns for GST breakup are visible on the printout.</li>
+                <li><strong>Sale Invoice:</strong> A simplified format (Bill of Supply) often used for small B2C transactions where tax breakup might not be explicitly required on the printout (though calculated internally).</li>
+            </ul>
+        </div>
+
+        <button class="accordion">How do I create a Quotation?</button>
+        <div class="panel">
+            <p>Go to <strong>Quotation</strong> under Operations:</p>
+            <ol>
+                <li>Fill in the Reference No, Customer Name, and Date.</li>
+                <li>Add items, quantities, and rates.</li>
+                <li>Set the Quotation Status (Draft, Sent, Accepted, Rejected).</li>
+                <li>Click <strong>Save</strong> to store it, or <strong>Download PDF</strong> to send it to the client.</li>
+            </ol>
+        </div>
+
+        <!-- SECTION: PURCHASES & SUPPLIERS -->
+        <div class="category-header">🛍️ Purchase & Suppliers</div>
+
+        <button class="accordion">How to add a Supplier?</button>
+        <div class="panel">
+            <p>Go to <strong>Supplier Manager</strong>:</p>
+            <ol>
+                <li>Fill in the Supplier Name, Contact, Email, and GSTIN.</li>
+                <li>You can click the 🔍 icon next to GSTIN to verify their details on the Govt Portal.</li>
+                <li>Set the State and Supplier Type (e.g., Wholesaler, Manufacturer).</li>
+                <li>Click <strong>Save</strong>.</li>
+            </ol>
+        </div>
+
+        <button class="accordion">I forgot my Password. How do I reset it?</button>
+        <div class="panel">
+            <p>1. On the Login screen, click the <strong>"Forgot Password?"</strong> link.<br>
+                2. Enter your registered <strong>Recovery Email</strong>.<br>
+                3. You will receive a 6-digit <strong>OTP</strong> in your email.<br>
+                4. Enter the OTP to verify your identity and set a new password.</p>
+            <p><em>Note: Contact software Developer to configure your Admin Email in <strong>Settings</strong>
+                    beforehand for this to work.</em></p>
+        </div>
+
+        <!-- SECTION: DASHBOARD & RENEWAL -->
+        <div class="category-header">🕹️ Dashboard & License</div>
+
+        <button class="accordion">Dashboard Overview</button>
+        <div class="panel">
+            <p>The Dashboard is your central hub. It displays:</p>
+            <ul>
+                <li><strong>License Status:</strong> Days remaining for renewal.</li>
+                <li><strong>Backup Status:</strong> Date of last local backup.</li>
+                <li><strong>Quick Actions:</strong> Buttons to access Invoices, Stock, Reports, etc.</li>
+                <li><strong>Summary:</strong> Click "EyeIcon" to see "Summary & Chart" for sales, purchases, and stock
+                    value.</li>
+            </ul><em>(This section can be locked by the
+                Admin to hide sensitive financial data from regular users).</em>
+        </div>
+        </ul>
+    </div>
+
+    <button class="accordion">How do I Renew my License?</button>
+    <div class="panel">
+        <p>When your license is nearing expiry:</p>
+        <ol>
+            <li>Click the <strong>Renew</strong> button on the Dashboard ( Below middle After License Expiry).</li>
+            <li>Enter your <strong>Admin ID</strong> and the <strong>Renewal Code</strong> provided by the
+                developer.</li>
+            <li>Enter the <strong>Duration</strong> (days) and <strong>Amount</strong>.</li>
+            <li>Click <strong>Request OTP</strong>. An OTP will be sent to the Developer to authorize the renewal.
+            </li>
+            <li>Make your <strong>Payment</strong>. You can also click <strong>Make Payment</strong> to scan a QR code
+                for the renewal
+                fees to the Developer.</li>
+            <li>Enter the OTP to extend your license validity.</li>
+        </ol>
+    </div>
+
+    <!-- SECTION: BILLING -->
+    <div class="category-header">📝 Billing & Invoices</div>
+
+    <button class="accordion">How to create a Sale Invoice?</button>
+    <div class="panel">
+        <ol>
+            <li>Click <strong>Make Invoice</strong> on the Dashboard.</li>
+            <li>Select a <strong>Customer</strong> (or Create a new name with details in <strong>Customers</strong>
+                section to add one).</li>
+            <li>Choose the <strong>Invoice Type</strong> (Tax Invoice, Sale Invoice, etc.). [Default value is
+                Sale Invoice]</li>
+            <li>Add <strong>Items</strong> by searching in the table. The price and tax will auto-fill if
+                configured. [Have to create <strong>Items</strong> & <strong>Purchase</strong> before processing]</li>
+            <li>Click <strong>Save</strong>. You can then Print, Export to PDF, or Email it from <strong>Invoice
+                    Report</strong> section.</li>
+        </ol>
+    </div>
+
+    <button class="accordion">What is the difference between Tax Invoice and Sale Invoice?</button>
+    <div class="panel">
+        <ul>
+            <li><strong>Tax Invoice:</strong> Includes full GST details (CGST/SGST/IGST), E-Way Bill fields, and is
+                meant for B2B or compliant B2C transactions.</li>
+            <li><strong>Sale Invoice:</strong> A simplified format (Bill of Supply) often used for small B2C
+                transactions where tax breakup might not be explicitly required on the printout (though calculated
+                internally).</li>
+        </ul>
+    </div>
+
+    <button class="accordion">How to handle Sales Returns?</button>
+    <div class="panel">
+        <p>Go to <strong>Returns Management</strong>:</p>
+        <ol>
+            <li>Select <strong>Sales Return</strong>.</li>
+            <li>Enter the original <strong>Invoice No</strong> and click Fetch.</li>
+            <li>Select the items being returned and the quantity.</li>
+            <li>Click <strong>Save</strong>. This will automatically increase your stock and create a Credit Note
+                for the customer.</li>
+        </ol>
+    </div>
+
+    <!-- SECTION: PURCHASE -->
+    <div class="category-header">🛍️ Purchase Management</div>
+
+    <button class="accordion">How to record a Purchase?</button>
+    <div class="panel">
+        <ol>
+            <li>Go to <strong>Purchase Entries</strong>.</li>
+            <li>Select the <strong>Supplier</strong> and enter the <strong>Invoice No</strong>.</li>
+            <li>Add items, quantities, and rates. The stock will be updated automatically.</li>
+            <li>You can also record payments made against this purchase immediately or later via the Ledger.</li>
+        </ol>
+    </div>
+
+    <!-- SECTION: INVENTORY -->
+    <div class="category-header">📦 Inventory & Stock</div>
+
+    <button class="accordion">How is Stock calculated?</button>
+    <div class="panel">
+        <p>Stock is tracked in real-time:</p>
+        <ul>
+            <li><strong>(+) Purchase Entry:</strong> Adds to stock.</li>
+            <li><strong>(-) Sale Invoice:</strong> Deducts from stock.</li>
+            <li><strong>(+) Sales Return:</strong> Adds to stock (if return to inventory is selected).</li>
+            <li><strong>(-) Purchase Return / Scrap:</strong> Deducts from stock.</li>
+        </ul>
+        <p>View the <strong>Stock Report</strong> to see current quantities and valuation.</p>
+    </div>
+
+    <button class="accordion">How to manage Damaged or Scrap items?</button>
+    <div class="panel">
+        <p>Go to <strong>Scrap Inventory</strong>:</p>
+        <ol>
+            <li>Select the Item and enter the Quantity to write off.</li>
+            <li>Select a Reason (Damaged, Expired, etc.).</li>
+            <li>Click <strong>Write Off</strong>. This removes the item from stock and logs it in the Scrap Report.
+            </li>
+        </ol>
+    </div>
+
+    <!-- SECTION: FINANCE -->
+    <div class="category-header">💰 Finance & Accounting</div>
+
+    <button class="accordion">How to view Customer/Supplier Ledger?</button>
+    <div class="panel">
+        <p>Go to <strong>Ledger Report</strong>:</p>
+        <ol>
+            <li>Select <strong>Party Type</strong> (Customer or Supplier).</li>
+            <li>Search for the <strong>Party Name</strong>.</li>
+            <li>Select a <strong>Date Range</strong> (optional).</li>
+            <li>Click <strong>Go</strong>. You will see a detailed statement of all invoices, payments, and returns.
+            </li>
+        </ol>
+    </div>
+
+    <button class="accordion">What are Credit and Debit Notes?</button>
+    <div class="panel">
+        <ul>
+            <li><strong>Credit Note:</strong> Issued when you owe money to a customer (e.g., they returned goods).
+                It reduces their outstanding balance.</li>
+            <li><strong>Debit Note:</strong> Issued when a customer owes you more money (e.g., undercharged
+                invoice). It increases their outstanding balance.</li>
+        </ul>
+    </div>
+
+    <button class="accordion">How to use Journal Voucher?</button>
+    <div class="panel">
+        <p>Use <strong>Journal Voucher</strong> for non-cash adjustments:</p>
+        <ul>
+            <li>Depreciation of Assets.</li>
+            <li>Adjusting entries between ledgers.</li>
+            <li>Asset purchases on credit.</li>
+        </ul>
+    </div>
+
+    <!-- SECTION: BANKING -->
+    <div class="category-header">🏦 Banking & Cash</div>
+
+    <button class="accordion">Managing Bank Accounts</button>
+    <div class="panel">
+        <p>In the <strong>Banking</strong> module:</p>
+        <ul>
+            <li>Add multiple Bank or Cash accounts.</li>
+            <li>Record <strong>Deposits</strong>, <strong>Withdrawals</strong>, and <strong>Transfers</strong> (Contra).
+            </li>
+            <li>Use <strong>Reconciliation</strong> to match system entries with your bank statement.</li>
+        </ul>
+    </div>
+
+    <!-- SECTION: HR & PAYROLL -->
+    <div class="category-header">👥 HR & Payroll</div>
+
+    <button class="accordion">Employee Management</button>
+    <div class="panel">
+        <p>Manage your staff efficiently:</p>
+        <ul>
+            <li><strong>Add Employees:</strong> Store details, salary, and shift timings.</li>
+            <li><strong>Attendance:</strong> Mark daily attendance (Present, Absent, Late, etc.).</li>
+            <li><strong>Payroll:</strong> Auto-calculate monthly salary based on attendance and generate payslips.</li>
+        </ul>
+    </div>
+
+    <!-- SECTION: REPORTS -->
+    <div class="category-header">📊 Reports & Analysis</div>
+
+    <button class="accordion">Financial Reports</button>
+    <div class="panel">
+        <ul>
+            <li><strong>Day Book:</strong> View all transactions for a specific day.</li>
+            <li><strong>Profit & Loss:</strong> Analyze net profit/loss over a period.</li>
+            <li><strong>Balance Sheet:</strong> View Assets, Liabilities, and Capital status.</li>
+            <li><strong>GST Report:</strong> Generate GSTR-1, GSTR-2, and GSTR-3B summaries.</li>
+        </ul>
+    </div>
+
+    <!-- SECTION: SETTINGS & BACKUP -->
+    <div class="category-header">⚙️ Settings & Data Safety</div>
+
+    <button class="accordion">How to Backup my Data?</button>
+    <div class="panel">
+        <p><strong>Local Backup:</strong> Click <strong>Backup Data</strong> on the Dashboard. This saves a secure
+            <code>.json</code> file to your computer.
+        </p>
+        <p><strong>Cloud Backup:</strong> Click <strong>Cloud Backup</strong>. This uploads your data to the
+            configured Google Drive (requires internet and Developer setup in Settings).</p>
+    </div>
+
+    <button class="accordion">How to configure Email for OTPs?</button>
+    <div class="panel">
+        <ol>
+            <li>Go to <strong>Settings</strong>. (<strong>Contact Developer</strong>)</li>
+            <li>Under "Recovery & OTP Configuration", enter your <strong>Admin Email</strong>.</li>
+            <li>Enter the <strong>App Password</strong> (generated from your Google Account security settings, NOT
+                your login password).</li>
+            <li>Click <strong>Test Config</strong> to verify.</li>
+        </ol>
+    </div>
+
+    <!-- SECTION: SYSTEM HEALTH -->
+    <div class="category-header">🩺 System Health</div>
+
+    <button class="accordion">System Status & Diagnostics</button>
+    <div class="panel">
+        <p>Run a quick check to ensure your internet connection and local data are healthy.</p>
+        <button onclick="runSystemHealthCheck()"
+            style="background:#27ae60; color:white; border:none; padding:8px 15px; border-radius:4px; cursor:pointer; font-weight:bold;">Run
+            Health Check</button>
+        <div id="healthResults"
+            style="margin-top:15px; display:none; background:#f8f9fa; padding:10px; border-radius:6px; border:1px solid #eee;">
+            <div class="health-item" id="internetStatus" style="padding:5px 0; border-bottom:1px solid #eee;"></div>
+            <div class="health-item" id="dbStatus" style="padding:5px 0; border-bottom:1px solid #eee;"></div>
+            <div class="health-item" id="storageStatus" style="padding:5px 0;"></div>
+        </div>
+    </div>
+    </div>
+
+    <div class="card">
+        <h3 style="margin-top:0; color:#f39c12;">💡 Feedback & Suggestions</h3>
+        <p>Have an idea or found a bug? We'd love to hear from you!</p>
+        <button onclick="window.open('https://forms.gle/pfvrju3GrHd6PStQA', '_blank')"
+            style="background:#f39c12; color:white; border:none; padding:8px 15px; border-radius:4px; cursor:pointer; font-weight:bold;">📝
+            Send Feedback</button>
+    </div>
+
+    <div class="card">
+        <h3 style="margin-top:0; color:#27ae60;">📞 Contact Support</h3>
+        <p>If you need further assistance, please contact the development team.</p>
+
+        <div class="contact-grid">
+            <div class="contact-item">
+                <strong>Developer</strong>
+                RISE Tech Revolution CRM System
+            </div>
+            <div class="contact-item">
+                <strong>Phone / WhatsApp</strong>
+                +91 96141 73988 / +91 79080 40851
+            </div>
+            <div class="contact-item">
+                <strong>Email</strong>
+                risetechrevolution.crm@gmail.com
+            </div>
+        </div>
+    </div>
+
+    <!-- Feedback Modal -->
+    <div id="feedbackModal" class="modal">
+        <div class="modal-content">
+            <h3 style="color: #f39c12; margin-top: 0;">📝 Send Feedback</h3>
+            <div class="form-group">
+                <label>Your Name</label>
+                <input type="text" id="fbName" placeholder="Optional">
+            </div>
+            <div class="form-group">
+                <label>Subject</label>
+                <select id="fbSubject">
+                    <option value="Suggestion">💡 Suggestion</option>
+                    <option value="Bug Report">🪲 Bug Report</option>
+                    <option value="Other">📝 Other</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Message</label>
+                <textarea id="fbMessage" rows="4" placeholder="Type your message here..."></textarea>
+            </div>
+            <div style="text-align: right; display: flex; gap: 10px; justify-content: flex-end;">
+                <button onclick="closeFeedbackModal()"
+                    style="background:#6c757d; color:white; border:none; padding:8px 15px; border-radius:4px; cursor:pointer;">Cancel</button>
+                <button onclick="sendFeedback()"
+                    style="background:#27ae60; color:white; border:none; padding:8px 15px; border-radius:4px; cursor:pointer;">Send
+                    via Email</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Accordion Logic
+        const acc = document.getElementsByClassName("accordion");
+        for (let i = 0; i < acc.length; i++) {
+            acc[i].addEventListener("click", function () {
+                this.classList.toggle("active");
+                const panel = this.nextElementSibling;
+                if (panel.style.maxHeight) {
+                    panel.style.maxHeight = null;
+                } else {
+                    panel.style.maxHeight = panel.scrollHeight + "px";
+                }
+            });
+        }
+
+        // Search Logic
+        function filterHelp() {
+            const input = document.getElementById('helpSearch');
+            const filter = input.value.toUpperCase();
+            const accordions = document.getElementsByClassName('accordion');
+
+            Array.from(accordions).forEach(btn => {
+                const text = btn.innerText + " " + btn.nextElementSibling.innerText;
+                if (text.toUpperCase().indexOf(filter) > -1) {
+                    btn.style.display = "";
+                } else {
+                    btn.style.display = "none";
+                    btn.classList.remove("active");
+                    btn.nextElementSibling.style.maxHeight = null;
+                }
+            });
+        }
+
+        function repairDatabase() {
+            if (!window.currentCorruptedKeys || window.currentCorruptedKeys.length === 0) return;
+
+            if (!confirm("⚠️ WARNING: Repairing will reset the corrupted data files to empty lists to restore application functionality.\n\nThe original corrupted data will be backed up with a '_corrupted' suffix.\n\nAre you sure you want to proceed?")) return;
+
+            let count = 0;
+            window.currentCorruptedKeys.forEach(key => {
+                const raw = localStorage.getItem(key);
+                if (raw) {
+                    const backupKey = key + '_corrupted_' + new Date().toISOString().replace(/[:.]/g, '-');
+                    localStorage.setItem(backupKey, raw);
+                    localStorage.setItem(key, '[]');
+                    count++;
+                }
+            });
+
+            alert(`✅ Successfully repaired ${count} files.\nCorrupted data has been backed up.`);
+            runSystemHealthCheck();
+        }
+
+        function runSystemHealthCheck() {
+            const resultsDiv = document.getElementById('healthResults');
+            resultsDiv.style.display = 'block';
+
+            // 1. Internet Check
+            const netStatus = document.getElementById('internetStatus');
+            const isOnline = navigator.onLine;
+            netStatus.innerHTML = isOnline
+                ? '<span style="color:#27ae60;">✅ <strong>Internet Connection:</strong> Online</span>'
+                : '<span style="color:#c0392b;">❌ <strong>Internet Connection:</strong> Offline</span>';
+
+            // 2. Database Integrity (LocalStorage JSON parsing)
+            const dbStatus = document.getElementById('dbStatus');
+            let corruptedKeys = [];
+            const keysToCheck = ['invoices', 'customers', 'items', 'suppliers', 'purchases', 'expenses', 'credit_debit_notes', 'returns', 'scraps'];
+            let totalRecords = 0;
+
+            keysToCheck.forEach(key => {
+                const data = localStorage.getItem(key);
+                if (data) {
+                    try {
+                        const parsed = JSON.parse(data);
+                        if (Array.isArray(parsed)) totalRecords += parsed.length;
+                    } catch (e) {
+                        corruptedKeys.push(key);
+                    }
+                }
+            });
+
+            if (corruptedKeys.length === 0) {
+                dbStatus.innerHTML = `<span style="color:#27ae60;">✅ <strong>Data Integrity:</strong> Healthy (${totalRecords} records checked)</span>`;
+            } else {
+                window.currentCorruptedKeys = corruptedKeys;
+                dbStatus.innerHTML = `<span style="color:#c0392b;">❌ <strong>Data Integrity:</strong> Corrupted data found in: ${corruptedKeys.join(', ')}</span> <button onclick="repairDatabase()" style="background:#d35400; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:12px; margin-left:10px; vertical-align:middle;">🛠️ Repair</button>`;
+            }
+
+            // 3. Storage Usage
+            const storageStatus = document.getElementById('storageStatus');
+            let total = 0;
+            for (let x in localStorage) {
+                if (localStorage.hasOwnProperty(x)) {
+                    total += ((localStorage[x].length * 2) / 1024 / 1024);
+                }
+            }
+            storageStatus.innerHTML = `<span style="color:#2c3e50;">ℹ️ <strong>Local Storage Usage:</strong> ${total.toFixed(2)} MB used</span>`;
+
+            // Recalculate panel height to fit results
+            const panel = resultsDiv.closest('.panel');
+            if (panel) {
+                panel.style.maxHeight = panel.scrollHeight + "px";
+            }
+        }
+
+        // Feedback Logic
+        function openFeedbackModal() {
+            document.getElementById('feedbackModal').style.display = 'flex';
+        }
+
+        function closeFeedbackModal() {
+            document.getElementById('feedbackModal').style.display = 'none';
+        }
+
+        function sendFeedback() {
+            const name = document.getElementById('fbName').value;
+            const subject = document.getElementById('fbSubject').value;
+            const message = document.getElementById('fbMessage').value;
+
+            if (!message) return alert("Please enter a message.");
+
+            const email = "risetechrevolution.crm@gmail.com";
+            const mailSubject = `[${subject}] Feedback from ${name || 'User'}`;
+            const mailBody = `Name: ${name || 'Anonymous'}\n\nMessage:\n${message}`;
+
+            window.location.href = `mailto:${email}?subject=${encodeURIComponent(mailSubject)}&body=${encodeURIComponent(mailBody)}`;
+            closeFeedbackModal();
+        }
+
+        // Apply Dark Mode if enabled
+        if (localStorage.getItem('appThemeMode') === 'dark') {
+            document.body.classList.add('dark-mode');
+        }
+    </script>
+</body>
+
+</html>

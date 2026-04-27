@@ -1,0 +1,1261 @@
+<!-- l:\Other computers\My computer\Final-14.4.6-Final Backup\credit_debit_notes.html -->
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Credit/Debit Notes</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="settings.js"></script>
+    <script src="brand.service.js"></script>
+    <script src="brandLoader.js"></script>
+    <script src="creditDebitService.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            padding: 0;
+            margin: 0;
+            background: #f4f6f8;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Main Content Styles */
+        .main-content {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        h2 {
+            color: #2c3e50;
+            margin: 0;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            align-items: center;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+
+        .date-group {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .date-group label {
+            font-size: 13px;
+            font-weight: bold;
+            color: #555;
+        }
+
+        input,
+        select,
+        button {
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+        }
+
+        button {
+            cursor: pointer;
+            color: white;
+            border: none;
+            font-weight: bold;
+        }
+
+        .btn-primary {
+            background: #3498db;
+        }
+
+        .btn-success {
+            background: #27ae60;
+        }
+
+        .btn-danger {
+            background: #e74c3c;
+        }
+
+        .btn-secondary {
+            background: #7f8c8d;
+        }
+
+        .btn-warning {
+            background: #f39c12;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+
+        th,
+        td {
+            padding: 10px;
+            border: 1px solid #ddd;
+            text-align: center;
+        }
+
+        th {
+            background: #2c3e50;
+            color: white;
+        }
+
+        .badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            color: white;
+        }
+
+        .badge-credit {
+            background: #27ae60;
+        }
+
+        .badge-debit {
+            background: #e67e22;
+        }
+
+        .badge-cancelled {
+            background: #c0392b;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            width: 500px;
+            max-width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+
+        /* Reason Manager List */
+        .reason-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            border: 1px solid #eee;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .reason-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px;
+            border-bottom: 1px solid #eee;
+            background: #fff;
+        }
+
+        .reason-item:last-child {
+            border-bottom: none;
+        }
+
+        .reason-item:hover {
+            background: #f9f9f9;
+        }
+
+        .reason-actions button {
+            padding: 2px 6px;
+            font-size: 12px;
+            margin-left: 2px;
+        }
+
+        .form-group {
+            margin-bottom: 10px;
+            text-align: left;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+            font-size: 13px;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .summary-box {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            border: 1px solid #e9ecef;
+        }
+
+        body.grey-mode button {
+            background-color: #6c757d !important;
+            color: #fff !important;
+        }
+
+        .sort-icon {
+            font-size: 12px;
+            margin-left: 5px;
+        }
+
+        /* Action Dropdown Menu */
+        .action-dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .action-btn-main {
+            background-color: #607d8b;
+            color: white;
+            padding: 6px 12px;
+            font-size: 13px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .action-dropdown-content {
+            display: none;
+            position: fixed;
+            background-color: #fff;
+            min-width: 120px;
+            box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
+            z-index: 9999;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 4px 0;
+            text-align: left;
+        }
+
+        .action-dropdown-content button {
+            color: #333 !important;
+            background: none !important;
+            padding: 8px 16px !important;
+            text-decoration: none !important;
+            display: block !important;
+            width: 100% !important;
+            text-align: left !important;
+            border: none !important;
+            border-radius: 0 !important;
+            margin: 0 !important;
+            box-shadow: none !important;
+            font-weight: normal !important;
+            font-size: 13px !important;
+        }
+
+        .action-dropdown-content button:hover {
+            background-color: #f1f1f1 !important;
+            color: #000 !important;
+        }
+
+        .action-dropdown.active .action-dropdown-content {
+            display: block;
+        }
+
+        body.dark-mode .action-dropdown-content {
+            background-color: #2c2c2c;
+            border-color: #444;
+        }
+
+        body.dark-mode .action-dropdown-content button {
+            color: #e0e0e0 !important;
+        }
+
+        body.dark-mode .action-dropdown-content button:hover {
+            background-color: #3a3a3a !important;
+            color: #fff !important;
+        }
+
+        @media print {
+            .controls,
+            .header,
+            .pagination-container,
+            button,
+            .modal {
+                display: none !important;
+            }
+
+            .main-content {
+                padding: 0;
+                margin: 0;
+            }
+
+            table th:last-child,
+            table td:last-child {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+
+    <div class="main-content">
+        <div class="header">
+            <h2><span data-brand="name"></span> – Credit / Debit Notes</h2>
+            <div>
+                <button class="btn-secondary" onclick="openReasonManager()"><i class="fas fa-cog"></i> Reasons</button>
+                <button class="btn-primary" onclick="openCreateModal()"><i class="fas fa-plus"></i> Create Note</button>
+            </div>
+        </div>
+
+        <div class="controls">
+            <input type="text" id="searchInput" placeholder="Search Note No, Invoice, Customer..."
+                oninput="renderTable()" style="width: 250px;">
+
+            <div class="date-group">
+                <label>From:</label>
+                <input type="date" id="fromDate" onchange="renderTable()">
+            </div>
+            <div class="date-group">
+                <label>To:</label>
+                <input type="date" id="toDate" onchange="renderTable()">
+            </div>
+
+            <select id="typeFilter" onchange="renderTable()">
+                <option value="">All Types</option>
+                <option value="CREDIT">Credit Note</option>
+                <option value="DEBIT">Debit Note</option>
+            </select>
+
+            <button onclick="location.reload()" style="background:#17a2b8;"><i class="fas fa-sync-alt"></i>
+                Refresh</button>
+            <button class="btn-success" onclick="exportToExcel()"><i class="fas fa-file-excel"></i> Export
+                Excel</button>
+            <button class="btn-primary" onclick="window.print()" data-permission-id="perm_print"><i
+                    class="fas fa-print"></i> Print</button>
+
+            <button class="btn-secondary" onclick="openSettingsModal()" style="background:#607d8b;"><i
+                    class="fas fa-cog"></i> Settings</button>
+        </div>
+
+        <div
+            style="flex:1; overflow:auto; background:white; border-radius:8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
+            <table>
+                <thead style="position:sticky; top:0;">
+                    <tr>
+                        <th style="cursor:pointer;" onclick="handleSort('note_date')">Date <span
+                                id="sort-icon-note_date" class="sort-icon"></span></th>
+                        <th style="cursor:pointer;" onclick="handleSort('note_no')">Note No <span id="sort-icon-note_no"
+                                class="sort-icon"></span></th>
+                        <th style="cursor:pointer;" onclick="handleSort('type')">Type <span id="sort-icon-type"
+                                class="sort-icon"></span></th>
+                        <th style="cursor:pointer;" onclick="handleSort('invoice_no')">Invoice Ref <span
+                                id="sort-icon-invoice_no" class="sort-icon"></span></th>
+                        <th style="cursor:pointer;" onclick="handleSort('customer_name')">Party <span
+                                id="sort-icon-customer_name" class="sort-icon"></span></th>
+                        <th style="cursor:pointer;" onclick="handleSort('reason')">Reason <span id="sort-icon-reason"
+                                class="sort-icon"></span></th>
+                        <th style="cursor:pointer;" onclick="handleSort('total_amount')">Amount (₹) <span
+                                id="sort-icon-total_amount" class="sort-icon"></span></th>
+                        <th style="cursor:pointer;" onclick="handleSort('status')">Status <span id="sort-icon-status"
+                                class="sort-icon"></span></th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="notesTableBody"></tbody>
+            </table>
+        </div>
+
+        <!-- Pagination Controls -->
+        <div class="pagination-container"
+            style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px; padding: 10px; background: white; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
+            <div style="display: flex; align-items: center; gap: 5px;">
+                <span id="totalNotesDisplay" style="font-weight: bold; color: #2c3e50; margin-right: 8px;"></span>
+                <select id="rowsPerPageSelect" onchange="changeRowsPerPage()"
+                    style="width: auto; padding: 4px; border: 1px solid #ccc; border-radius: 4px; margin: 0;">
+                    <option value="10">10 rows</option>
+                    <option value="20" selected>20 rows</option>
+                    <option value="50">50 rows</option>
+                </select>
+                <input type="number" id="goToPageInput"
+                    style="width: 60px; padding: 4px; border: 1px solid #ccc; border-radius: 4px;" placeholder="Go to"
+                    min="1" onchange="goToPage()">
+            </div>
+            <div id="paginationInfo" style="color: #666;"></div>
+            <div class="pagination" id="paginationControls" style="display: flex; gap: 5px;"></div>
+        </div>
+    </div>
+
+    <!-- Create Note Modal -->
+    <div id="createModal" class="modal">
+        <div class="modal-content" style="width: 600px;">
+            <div class="modal-header">
+                <h3>Create Adjustment Note</h3>
+                <span style="cursor:pointer; font-size:20px;" onclick="closeCreateModal()">&times;</span>
+            </div>
+
+            <div class="form-group">
+                <label>Party Type:</label>
+                <select id="partyType" onchange="togglePartyType()"
+                    style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;">
+                    <option value="Customer">Customer</option>
+                    <option value="Supplier">Supplier</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label id="partyLabel">Select Customer:</label>
+                <input list="partyList" id="partyInput" onchange="loadPartyInvoices()" placeholder="Type to search...">
+                <datalist id="partyList"></datalist>
+            </div>
+
+            <div class="form-group">
+                <label>Select Invoice:</label>
+                <select id="invoiceSelect" onchange="selectInvoice()">
+                    <option value="">-- Select Invoice --</option>
+                </select>
+            </div>
+
+            <div id="invoiceSummary" class="summary-box" style="display:none;">
+                <strong>Invoice Total:</strong> ₹<span id="invTotal">0</span> |
+                <strong>Date:</strong> <span id="invDate">-</span>
+            </div>
+
+            <div class="form-group" style="display:flex; gap:10px;">
+                <div style="flex:1;">
+                    <label>Note Type:</label>
+                    <select id="noteType" onchange="generateNoteNo()">
+                        <option value="CREDIT">Credit Note (Reduce Due)</option>
+                        <option value="DEBIT">Debit Note (Increase Due)</option>
+                    </select>
+                </div>
+                <div style="flex:1;">
+                    <label>Note No:</label>
+                    <input id="noteNo">
+                    <small id="lastNoteNoDisplay"
+                        style="display:block; font-weight:bold; color:#555; font-size:11px; margin-top:2px;">Last Note
+                        No: -</small>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Reason:</label>
+                <select id="reasonSelect"></select>
+            </div>
+
+            <div class="form-group">
+                <label>Remarks:</label>
+                <input type="text" id="remarksInput" placeholder="Optional remarks">
+            </div>
+
+            <div class="form-group">
+                <label>Taxable Amount (Adjustment Value):</label>
+                <input type="number" id="taxableAmount" oninput="calculateTotals()" placeholder="0.00">
+            </div>
+
+            <div class="form-group">
+                <label>Non-Taxable / Adjustment Amount:</label>
+                <input type="number" id="nonTaxableAmount" oninput="calculateTotals()" placeholder="0.00">
+            </div>
+
+            <div class="summary-box">
+                <div style="display:flex; justify-content:space-between;">
+                    <span>Taxable: ₹<span id="dispTaxable">0.00</span></span>
+                    <span>GST: ₹<span id="dispGst">0.00</span></span>
+                    <strong style="color:#2c3e50;">Total: ₹<span id="dispTotal">0.00</span></strong>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label style="display:flex; align-items:center; gap:5px; cursor:pointer;">
+                    <input type="checkbox" id="stockEffect"> Return items to inventory? (Credit Note Only)
+                </label>
+            </div>
+
+            <div style="text-align:right; margin-top:15px;">
+                <button class="btn-success" onclick="saveNote()">Save Note</button>
+                <button class="btn-secondary" onclick="closeCreateModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reason Manager Modal -->
+    <div id="reasonModal" class="modal">
+        <div class="modal-content" style="width: 400px;">
+            <div class="modal-header">
+                <h3>Manage Reasons</h3>
+                <span style="cursor:pointer; font-size:20px;" onclick="closeReasonModal()">&times;</span>
+            </div>
+
+            <div style="display:flex; gap:5px; margin-bottom:10px;">
+                <input id="newReasonInput" placeholder="Enter new reason..." style="flex:1;">
+                <button class="btn-success" onclick="addReason()">Add</button>
+            </div>
+
+            <ul id="reasonList" class="reason-list">
+                <!-- Reasons injected here -->
+            </ul>
+
+            <div style="text-align:right; margin-top:15px;">
+                <button class="btn-secondary" onclick="closeReasonModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="modal">
+        <div class="modal-content" style="width: 300px;">
+            <div class="modal-header">
+                <h3 style="margin-top: 0; color: #607d8b;">⚙️ Settings</h3>
+                <span style="cursor:pointer; font-size:20px;" onclick="closeSettingsModal()">&times;</span>
+            </div>
+            <div style="text-align: left; margin-bottom: 15px;">
+                <label style="cursor:pointer; display:flex; align-items:center; gap:5px; font-weight:bold;">
+                    <input type="checkbox" id="greyButtonsToggle" onchange="toggleGreyButtons()"> Grey Buttons Mode
+                </label>
+            </div>
+            <div style="text-align:right;">
+                <button class="btn-secondary" onclick="closeSettingsModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- View Modal -->
+    <div id="viewModal" class="modal">
+        <div class="modal-content" style="width: 700px; max-width: 95%;">
+            <div class="modal-header">
+                <h3 style="margin-top: 0; color: #2c3e50;">📄 Note Details</h3>
+                <span style="cursor:pointer; font-size:20px;" onclick="closeViewModal()">&times;</span>
+            </div>
+            <div id="viewContent" style="text-align: left; max-height: 60vh; overflow-y: auto; padding-right: 10px;">
+                <!-- Content injected via JS -->
+            </div>
+            <div style="text-align:right; margin-top:15px; border-top: 1px solid #eee; padding-top: 15px;">
+                <button class="btn-primary" id="btnViewPrint"><i class="fas fa-print"></i> Print</button>
+                <button class="btn-secondary" onclick="closeViewModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let notes = [];
+        let invoices = JSON.parse(localStorage.getItem('invoices')) || [];
+        let customers = JSON.parse(localStorage.getItem('customers')) || [];
+        let purchases = JSON.parse(localStorage.getItem('purchases')) || [];
+        let suppliers = JSON.parse(localStorage.getItem('suppliers')) || [];
+        let selectedInvoice = null;
+        let currentPartyInvoices = [];
+
+        // Pagination Globals
+        let currentPage = 1;
+        let rowsPerPage = 20;
+
+        // Sorting Globals
+        let currentSortColumn = 'created_at';
+        let currentSortDirection = 'desc';
+
+        // Theme & Appearance
+        let isGreyButtons = localStorage.getItem("creditDebitGreyButtons") === "true";
+
+        // --- Initialization ---
+        document.addEventListener('DOMContentLoaded', () => {
+            applyGreyButtons();
+            // populatePartyList called when modal opens
+        });
+
+        async function fetchNotesData() {
+            notes = await apiClient.getCreditDebitNotes();
+            renderTable();
+        }
+
+        function toggleGreyButtons() {
+            isGreyButtons = document.getElementById("greyButtonsToggle").checked;
+            localStorage.setItem("creditDebitGreyButtons", isGreyButtons);
+            applyGreyButtons();
+        }
+
+        function applyGreyButtons() {
+            if (isGreyButtons) document.body.classList.add("grey-mode");
+            else document.body.classList.remove("grey-mode");
+        }
+
+        function openSettingsModal() {
+            const greyToggle = document.getElementById("greyButtonsToggle");
+            if (greyToggle) greyToggle.checked = isGreyButtons;
+            document.getElementById('settingsModal').style.display = 'flex';
+        }
+
+        function closeSettingsModal() {
+            document.getElementById('settingsModal').style.display = 'none';
+        }
+
+        function populatePartyList() {
+            const type = document.getElementById('partyType').value;
+            const list = document.getElementById('partyList');
+            const source = type === 'Customer' ? customers : suppliers;
+
+            list.innerHTML = '';
+            source.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c.name;
+                list.appendChild(opt);
+            });
+        }
+
+        function handleSort(column) {
+            if (currentSortColumn === column) {
+                currentSortDirection = currentSortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSortColumn = column;
+                currentSortDirection = 'asc';
+            }
+
+            document.querySelectorAll('.sort-icon').forEach(el => el.innerText = '');
+            const icon = document.getElementById(`sort-icon-${column}`);
+            if (icon) icon.innerText = currentSortDirection === 'asc' ? ' ▲' : ' ▼';
+
+            renderTable();
+        }
+
+        // --- Table Rendering ---
+        function renderTable() {
+            const tbody = document.getElementById('notesTableBody');
+            tbody.innerHTML = '';
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            const fromDate = document.getElementById('fromDate').value;
+            const toDate = document.getElementById('toDate').value;
+            const typeFilter = document.getElementById('typeFilter').value;
+
+            const filtered = notes.filter(n => {
+                const matchesSearch = (n.note_no.toLowerCase().includes(search) ||
+                    n.invoice_no.toLowerCase().includes(search) ||
+                    n.customer_name.toLowerCase().includes(search));
+                const matchesDate = (!fromDate || n.note_date >= fromDate) && (!toDate || n.note_date <= toDate);
+                const matchesType = typeFilter ? n.type === typeFilter : true;
+                return matchesSearch && matchesDate && matchesType;
+            });
+
+            // Sort
+            filtered.sort((a, b) => {
+                let valA = a[currentSortColumn];
+                let valB = b[currentSortColumn];
+
+                if (currentSortColumn === 'total_amount') {
+                    valA = parseFloat(valA) || 0;
+                    valB = parseFloat(valB) || 0;
+                } else if (currentSortColumn === 'note_date' || currentSortColumn === 'created_at') {
+                    valA = new Date(valA || 0).getTime();
+                    valB = new Date(valB || 0).getTime();
+                } else {
+                    valA = (valA || "").toString().toLowerCase();
+                    valB = (valB || "").toString().toLowerCase();
+                }
+
+                if (valA < valB) return currentSortDirection === 'asc' ? -1 : 1;
+                if (valA > valB) return currentSortDirection === 'asc' ? 1 : -1;
+                return 0;
+            });
+
+            // Pagination Logic
+            const totalItems = filtered.length;
+            const totalPages = Math.ceil(totalItems / rowsPerPage);
+
+            if (currentPage > totalPages) currentPage = totalPages || 1;
+            if (currentPage < 1) currentPage = 1;
+
+            const startIndex = (currentPage - 1) * rowsPerPage;
+            const endIndex = Math.min(startIndex + rowsPerPage, totalItems);
+            const paginatedData = filtered.slice(startIndex, endIndex);
+
+            paginatedData.forEach(n => {
+                const tr = document.createElement('tr');
+                const badgeClass = n.status === 'CANCELLED' ? 'badge-cancelled' : (n.type === 'CREDIT' ? 'badge-credit' : 'badge-debit');
+
+                tr.innerHTML = `
+                    <td>${new Date(n.note_date).toLocaleDateString('en-GB')}</td>
+                    <td>${n.note_no}</td>
+                    <td><span class="badge ${badgeClass}">${n.type}</span></td>
+                    <td>${n.invoice_no}</td>
+                    <td>${n.customer_name}</td>
+                    <td>${n.reason}</td>
+                    <td style="text-align:right;">${parseFloat(n.total_amount).toFixed(2)}</td>
+                    <td>${n.status}</td>
+                    <td>
+                        <div class="action-dropdown">
+                            <button class="action-btn-main" onclick="toggleActionMenu(this)">⚙️ Options ▼</button>
+                            <div class="action-dropdown-content">
+                                <button onclick="viewNote('${n.id}')">👁️ View</button>
+                                <button onclick="printNote('${n.id}')">🖨️ Print</button>
+                                ${n.status === 'ACTIVE' ? `<button onclick="cancelNote('${n.id}')" style="color: #dc3545 !important;">🚫 Cancel</button>` : ''}
+                            </div>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            renderPaginationControls(totalItems, startIndex + 1, endIndex, totalPages);
+            updateLastNoteNoDisplay();
+        }
+
+        function renderPaginationControls(totalItems, start, end, totalPages) {
+            const info = document.getElementById("paginationInfo");
+            const controls = document.getElementById("paginationControls");
+            const totalDisplay = document.getElementById("totalNotesDisplay");
+
+            if (totalDisplay) totalDisplay.innerText = `Total Notes: ${totalItems}`;
+
+            if (totalItems === 0) {
+                info.innerText = "No records found";
+                controls.innerHTML = "";
+                return;
+            }
+
+            info.innerText = `Showing ${start} to ${end} of ${totalItems} entries`;
+
+            let html = "";
+            // Previous
+            html += `<button onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''} style="padding: 6px 12px; border: 1px solid #ccc; background: #fff; cursor: pointer; border-radius: 4px; color: #333;">Previous</button>`;
+
+            // Page Numbers
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
+                    const activeStyle = i === currentPage ? 'background: #2c3e50; color: #fff; border-color: #2c3e50;' : 'background: #fff; color: #333;';
+                    html += `<button onclick="changePage(${i})" style="padding: 6px 12px; border: 1px solid #ccc; cursor: pointer; border-radius: 4px; ${activeStyle}">${i}</button>`;
+                } else if (i === currentPage - 3 || i === currentPage + 3) {
+                    html += `<span style="padding: 6px 12px;">...</span>`;
+                }
+            }
+
+            // Next
+            html += `<button onclick="changePage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''} style="padding: 6px 12px; border: 1px solid #ccc; background: #fff; cursor: pointer; border-radius: 4px; color: #333;">Next</button>`;
+
+            controls.innerHTML = html;
+        }
+
+        function changePage(page) {
+            currentPage = page;
+            renderTable();
+        }
+
+        function updateLastNoteNoDisplay() {
+            if (!notes || notes.length === 0) {
+                const el = document.getElementById('lastNoteNoDisplay');
+                if (el) el.innerText = "Last Note No: -";
+                return;
+            }
+            const sorted = [...notes].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+            const el = document.getElementById('lastNoteNoDisplay');
+            if (el) el.innerText = "Last Note No: " + (sorted[0] ? sorted[0].note_no : "-");
+        }
+
+        // --- Create Workflow ---
+        function openCreateModal() {
+            document.getElementById('createModal').style.display = 'flex';
+            document.getElementById('partyType').value = 'Customer';
+            togglePartyType(); // Resets label and list
+            document.getElementById('partyInput').value = '';
+            document.getElementById('invoiceSelect').innerHTML = '<option value="">-- Select Invoice --</option>';
+            document.getElementById('invoiceSummary').style.display = 'none';
+            document.getElementById('taxableAmount').value = '';
+            document.getElementById('nonTaxableAmount').value = '';
+            document.getElementById('remarksInput').value = '';
+            document.getElementById('stockEffect').checked = false;
+            resetTotals();
+            populateReasonDropdown();
+        }
+
+        function closeCreateModal() {
+            document.getElementById('createModal').style.display = 'none';
+        }
+
+        function togglePartyType() {
+            const type = document.getElementById('partyType').value;
+            document.getElementById('partyLabel').innerText = `Select ${type}:`;
+            document.getElementById('partyInput').value = '';
+            document.getElementById('invoiceSelect').innerHTML = '<option value="">-- Select Invoice --</option>';
+            document.getElementById('invoiceSummary').style.display = 'none';
+
+            // Auto-select Note Type based on Party
+            const noteTypeSelect = document.getElementById('noteType');
+            if (type === 'Customer') noteTypeSelect.value = 'CREDIT'; // Sales Return
+            else noteTypeSelect.value = 'DEBIT'; // Purchase Return
+            generateNoteNo();
+
+            populatePartyList();
+        }
+
+        function loadPartyInvoices() {
+            const type = document.getElementById('partyType').value;
+            const name = document.getElementById('partyInput').value;
+            const select = document.getElementById('invoiceSelect');
+            select.innerHTML = '<option value="">-- Select Invoice --</option>';
+            currentPartyInvoices = [];
+
+            if (type === 'Customer') {
+                currentPartyInvoices = invoices.filter(i => (i.customer_name || i.customerName) === name);
+            } else {
+                // Aggregate purchases by Invoice No
+                const rawPurchases = purchases.filter(p => p.supplierName === name);
+                const groups = {};
+                rawPurchases.forEach(p => {
+                    const invNo = p.supplierInv || "Unknown";
+                    if (!groups[invNo]) {
+                        groups[invNo] = {
+                            invoice_no: invNo,
+                            date: p.date,
+                            total: 0,
+                            items: [],
+                            supplier_name: p.supplierName
+                        };
+                    }
+                    const amt = (parseFloat(p.qty) || 0) * (parseFloat(p.price) || 0);
+                    const tax = amt * ((parseFloat(p.gst) || 0) / 100);
+                    groups[invNo].total += (amt + tax);
+                    groups[invNo].items.push(p);
+                });
+                currentPartyInvoices = Object.values(groups);
+            }
+
+            currentPartyInvoices.forEach(inv => {
+                const opt = document.createElement('option');
+                opt.value = inv.invoice_no || inv.invoiceNo;
+                opt.textContent = `${inv.invoice_no || inv.invoiceNo} (${new Date(inv.invoice_date || inv.date).toLocaleDateString('en-GB')})`;
+                select.appendChild(opt);
+            });
+        }
+
+        function selectInvoice() {
+            const invNo = document.getElementById('invoiceSelect').value;
+            selectedInvoice = currentPartyInvoices.find(i => (i.invoice_no || i.invoiceNo) === invNo);
+
+            if (selectedInvoice) {
+                document.getElementById('invoiceSummary').style.display = 'block';
+                document.getElementById('invTotal').innerText = parseFloat(selectedInvoice.invoice_total || selectedInvoice.total).toFixed(2);
+                document.getElementById('invDate').innerText = new Date(selectedInvoice.invoice_date || selectedInvoice.date).toLocaleDateString('en-GB');
+                generateNoteNo();
+            }
+        }
+
+        function generateNoteNo() {
+            const type = document.getElementById('noteType').value;
+            const newNo = window.creditDebitService.generateNoteNumber(type, notes);
+            document.getElementById('noteNo').value = newNo;
+        }
+
+        function populateReasonDropdown() {
+            const select = document.getElementById('reasonSelect');
+            select.innerHTML = '';
+            const reasons = window.creditDebitService.getReasons();
+            reasons.forEach(r => {
+                const opt = document.createElement('option');
+                opt.value = r;
+                opt.textContent = r;
+                select.appendChild(opt);
+            });
+        }
+
+        function calculateTotals() {
+            if (!selectedInvoice) return;
+            const taxable = parseFloat(document.getElementById('taxableAmount').value) || 0;
+            const nonTaxable = parseFloat(document.getElementById('nonTaxableAmount').value) || 0;
+            const taxDetails = window.creditDebitService.calculateTax(taxable, selectedInvoice);
+
+            const finalTotal = taxDetails.total_amount + nonTaxable;
+            document.getElementById('dispTaxable').innerText = taxDetails.taxable_amount.toFixed(2);
+            document.getElementById('dispGst').innerText = (taxDetails.cgst + taxDetails.sgst + taxDetails.igst).toFixed(2);
+            document.getElementById('dispTotal').innerText = finalTotal.toFixed(2);
+        }
+
+        function resetTotals() {
+            document.getElementById('dispTaxable').innerText = '0.00';
+            document.getElementById('dispGst').innerText = '0.00';
+            document.getElementById('dispTotal').innerText = '0.00';
+        }
+
+        async function saveNote() {
+            if (!selectedInvoice) return alert("Please select an invoice.");
+            const taxable = parseFloat(document.getElementById('taxableAmount').value) || 0;
+            const nonTaxable = parseFloat(document.getElementById('nonTaxableAmount').value) || 0;
+            if (taxable <= 0 && nonTaxable <= 0) return alert("Enter valid amount (Taxable or Non-Taxable).");
+
+
+            // --- ADD THIS VALIDATION BLOCK ---
+            const noteNo = document.getElementById('noteNo').value;
+            if (window.creditDebitService.isDuplicateNoteNumber(noteNo, notes)) {
+                return alert("Duplicate Note Number! This number already exists.");
+            }
+
+            const type = document.getElementById('noteType').value;
+            const taxDetails = window.creditDebitService.calculateTax(taxable, selectedInvoice);
+            const finalTotal = taxDetails.total_amount + nonTaxable;
+
+            // Ensure GSTIN is present (Fetch from Master if missing in invoice object)
+            if (!selectedInvoice.gstin) {
+                const partyType = document.getElementById('partyType').value;
+                const partyName = document.getElementById('partyInput').value;
+                if (partyType === 'Customer') {
+                    const c = customers.find(x => x.name === partyName);
+                    if (c) selectedInvoice.gstin = c.gst;
+                } else {
+                    const s = suppliers.find(x => x.name === partyName);
+                    if (s) selectedInvoice.gstin = s.gstin;
+                }
+            }
+
+            // Validation
+            const validation = window.creditDebitService.validateCreditNote(selectedInvoice, finalTotal, notes);
+            if (!validation.valid && type === 'CREDIT') {
+                return alert(validation.message);
+            }
+
+            const noteData = {
+                note_no: document.getElementById('noteNo').value,
+                date: new Date().toISOString(),
+                reason: document.getElementById('reasonSelect').value,
+                remarks: document.getElementById('remarksInput').value,
+                stock_effect: document.getElementById('stockEffect').checked,
+                non_taxable_amount: nonTaxable,
+                total_amount: finalTotal, // Override service total with final total including non-taxable
+                user: 'Admin', // Replace with actual user if available
+                customer_name: document.getElementById('partyInput').value, // Explicitly set party name
+                ...taxDetails
+            };
+
+            const newNote = window.creditDebitService.createNoteObject(type, selectedInvoice, noteData);
+
+            const result = await apiClient.saveCreditDebitNote(newNote);
+            if (result.success) {
+                alert("Note Saved Successfully!");
+                closeCreateModal();
+                await fetchNotesData();
+            } else {
+                alert("Error saving note: " + result.message);
+            }
+        }
+
+        async function cancelNote(id) {
+            if (!confirm("Are you sure you want to cancel this note?")) return;
+            const idx = notes.findIndex(n => n.id === id);
+            if (idx > -1) {
+                notes[idx].status = 'CANCELLED';
+                await apiClient.saveCreditDebitNote(notes[idx]);
+                await fetchNotesData();
+            }
+        }
+
+        function viewNote(id) {
+            const note = notes.find(n => n.id === id);
+            if (!note) return;
+
+            const content = document.getElementById('viewContent');
+            const typeLabel = note.type === 'CREDIT' ? 'Credit Note' : 'Debit Note';
+            const badgeClass = note.status === 'CANCELLED' ? 'badge-cancelled' : (note.type === 'CREDIT' ? 'badge-credit' : 'badge-debit');
+
+            const party = customers.find(c => c.name === note.customer_name) || suppliers.find(s => s.name === note.customer_name) || {};
+            const contact = party.contact ? party.contact : '-';
+            let address = party.address || '';
+            let locParts = [];
+            if (party.district) locParts.push(party.district);
+            if (party.state) locParts.push(party.state);
+            if (party.pin) locParts.push(`PIN: ${party.pin}`);
+            if (locParts.length > 0) address += (address ? ', ' : '') + locParts.join(", ");
+            const gstin = note.gstin || party.gst || party.gstin || '-';
+
+            let companyName = "Company Name";
+            if (window.getBrandSettings) {
+                const brand = window.getBrandSettings();
+                if (brand.companyName) companyName = brand.companyName;
+            }
+
+            let html = `
+            <div style="display:flex; justify-content:space-between; margin-bottom: 15px;">
+                <div>
+                    <strong>Note No:</strong> ${note.note_no}<br>
+                    <strong>Date:</strong> ${new Date(note.note_date).toLocaleDateString('en-GB')}<br>
+                    <strong>Type:</strong> ${typeLabel} <span class="badge ${badgeClass}" style="margin-left:5px;">${note.status}</span>
+                </div>
+                <div style="text-align:right;">
+                    <strong>Ref Invoice:</strong> ${note.invoice_no}<br>
+                    <strong>Invoice Date:</strong> ${new Date(note.invoice_date).toLocaleDateString('en-GB')}
+                </div>
+            </div>
+            <div style="background:#f9f9f9; padding:15px; border-radius:6px; border:1px solid #eee; margin-bottom:15px;">
+                <h4 style="margin-top:0; margin-bottom:10px; color:#2c3e50;">Party Details</h4>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div><strong>Name:</strong> ${note.customer_name || '-'}</div>
+                    <div><strong>Contact:</strong> ${contact}</div>
+                    <div style="grid-column: span 2;"><strong>Address:</strong> ${address || '-'}</div>
+                    <div style="grid-column: span 2;"><strong>GSTIN:</strong> ${gstin}</div>
+                </div>
+            </div>
+            <div style="margin-bottom:15px;">
+                <strong>Reason:</strong> ${note.reason || '-'}<br>
+                <strong>Remarks:</strong> ${note.remarks || '-'}
+            </div>
+            <table style="width:100%; border-collapse:collapse; margin-bottom:15px;">
+                <thead>
+                    <tr>
+                        <th style="text-align:left;">Description</th>
+                        <th style="text-align:right;">Amount (₹)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td style="text-align:left; border: 1px solid #eee;">Taxable Adjustment</td><td style="text-align:right; border: 1px solid #eee;">${parseFloat(note.taxable_amount || 0).toFixed(2)}</td></tr>
+                    <tr><td style="text-align:left; border: 1px solid #eee;">CGST</td><td style="text-align:right; border: 1px solid #eee;">${parseFloat(note.cgst || 0).toFixed(2)}</td></tr>
+                    <tr><td style="text-align:left; border: 1px solid #eee;">SGST</td><td style="text-align:right; border: 1px solid #eee;">${parseFloat(note.sgst || 0).toFixed(2)}</td></tr>
+                    <tr><td style="text-align:left; border: 1px solid #eee;">IGST</td><td style="text-align:right; border: 1px solid #eee;">${parseFloat(note.igst || 0).toFixed(2)}</td></tr>
+                    <tr><td style="text-align:left; border: 1px solid #eee;">Non-Taxable / Other Adjustment</td><td style="text-align:right; border: 1px solid #eee;">${parseFloat(note.non_taxable_amount || 0).toFixed(2)}</td></tr>
+                </tbody>
+                <tfoot>
+                    <tr style="background:#e9ecef; font-weight:bold;">
+                        <td style="text-align:right; border: 1px solid #eee;">Total Amount</td>
+                        <td style="text-align:right; font-size:16px; color:#2c3e50; border: 1px solid #eee;">${parseFloat(note.total_amount || 0).toFixed(2)}</td>
+                    </tr>
+                </tfoot>
+            </table>
+            <div style="display:flex; justify-content:space-between; margin-top: 20px;">
+                <div style="flex:1; padding-right:20px;">
+                    <strong>Amount in Words:</strong><br>
+                    <span>${window.creditDebitService.convertNumberToWords(note.total_amount || 0)}</span>
+                </div>
+                <div style="text-align:right; width: 250px;">
+                    <p style="margin: 0; font-weight: bold;">For ${companyName}</p>
+                    <br><br><br>
+                    <p style="margin: 0; border-top: 1px solid #333; display: inline-block; padding-top: 5px; width: 150px; text-align: center;">Authorized Signatory</p>
+                </div>
+            </div>
+        `;
+            content.innerHTML = html;
+            document.getElementById('btnViewPrint').onclick = () => { closeViewModal(); printNote(id); };
+            document.getElementById('viewModal').style.display = 'flex';
+        }
+
+        function closeViewModal() {
+            document.getElementById('viewModal').style.display = 'none';
+        }
+
+        // --- Reason Manager Logic ---
+        function openReasonManager() {
+            renderReasonList();
+            document.getElementById('reasonModal').style.display = 'flex';
+        }
+
+        function closeReasonModal() {
+            document.getElementById('reasonModal').style.display = 'none';
+            populateReasonDropdown(); // Refresh dropdown in create modal
+        }
+
+        function renderReasonList() {
+            const list = document.getElementById('reasonList');
+            list.innerHTML = '';
+            const reasons = window.creditDebitService.getReasons();
+
+            reasons.forEach((r, i) => {
+                const li = document.createElement('li');
+                li.className = 'reason-item';
+                li.innerHTML = `
+                    <span id="reason-text-${i}">${r}</span>
+                    <div class="reason-actions">
+                        <button class="btn-secondary" onclick="moveReason(${i}, -1)" title="Move Up">↑</button>
+                        <button class="btn-secondary" onclick="moveReason(${i}, 1)" title="Move Down">↓</button>
+                        <button class="btn-primary" onclick="editReason(${i})">✎</button>
+                        <button class="btn-danger" onclick="deleteReason(${i})">🗑</button>
+                    </div>
+                `;
+                list.appendChild(li);
+            });
+        }
+
+        function addReason() {
+            const input = document.getElementById('newReasonInput');
+            const val = input.value.trim();
+            if (!val) return;
+
+            const reasons = window.creditDebitService.getReasons();
+            if (reasons.includes(val)) return alert("Reason already exists!");
+
+            reasons.push(val);
+            window.creditDebitService.saveReasons(reasons);
+            input.value = '';
+            renderReasonList();
+        }
+
+        function deleteReason(index) {
+            if (!confirm("Delete this reason?")) return;
+            const reasons = window.creditDebitService.getReasons();
+            reasons.splice(index, 1);
+            window.creditDebitService.saveReasons(reasons);
+            renderReasonList();
+        }
+
+        function moveReason(index, direction) {
+            const reasons = window.creditDebitService.getReasons();
+            const newIndex = index + direction;
+
+            if (newIndex < 0 || newIndex >= reasons.length) return;
+
+            // Swap
+            const temp = reasons[index];
+            reasons[index] = reasons[newIndex];
+            reasons[newIndex] = temp;
+
+            window.creditDebitService.saveReasons(reasons);
+            renderReasonList();
+        }
+
+        function editReason(index) {
+            const reasons = window.creditDebitService.getReasons();
+            const currentVal = reasons[index];
+            const newVal = prompt("Edit Reason:", currentVal);
+
+            if (newVal && newVal.trim() !== "" && newVal !== currentVal) {
+                reasons[index] = newVal.trim();
+                window.creditDebitService.saveReasons(reasons);
+                renderReasonList();
+            }
+        }
+
+        function printNote(id) {
+            const note = notes.find(n => n.id === id);
+            if (note) {
+                window.creditDebitService.printNote(note);
+            }
+        }
+
+        function exportToExcel() {
+            const tbody = document.getElementById('notesTableBody');
+            if (tbody.rows.length === 0) return alert("No data to export");
+
+            // Get current filtered data logic again or scrape table
+            // Better to use the filtered data logic
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            const fromDate = document.getElementById('fromDate').value;
+            const toDate = document.getElementById('toDate').value;
+            const typeFilter = document.getElementById('typeFilter').value;
+
+            const filtered = notes.filter(n => {
+                const matchesSearch = (n.note_no.toLowerCase().includes(search) || n.invoice_no.toLowerCase().includes(search) || n.customer_name.toLowerCase().includes(search));
+                const matchesDate = (!fromDate || n.note_date >= fromDate) && (!toDate || n.note_date <= toDate);
+                const matchesType = typeFilter ? n.type === typeFilter : true;
+                return matchesSearch && matchesDate && matchesType;
+            });
+
+            const data = filtered.map(n => ({
+                "Date": new Date(n.note_date).toLocaleDateString('en-GB'),
+                "Note No": n.note_no,
+                "Type": n.type,
+                "Invoice Ref": n.invoice_no,
+                "Customer": n.customer_name,
+                "Reason": n.reason,
+                "Taxable": parseFloat(n.taxable_amount || 0),
+                "Non-Taxable": parseFloat(n.non_taxable_amount || 0),
+                "GST Amount": (parseFloat(n.cgst || 0) + parseFloat(n.sgst || 0) + parseFloat(n.igst || 0)),
+                "Total Amount": parseFloat(n.total_amount),
+                "Status": n.status
+            }));
+
+            const ws = XLSX.utils.json_to_sheet(data);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Credit_Debit_Notes");
+            XLSX.writeFile(wb, "Credit_Debit_Notes.xlsx");
+        }
+
+        function changeRowsPerPage() {
+            rowsPerPage = parseInt(document.getElementById("rowsPerPageSelect").value);
+            currentPage = 1;
+            renderTable();
+        }
+
+        function goToPage() {
+            const pageInput = document.getElementById("goToPageInput");
+            const page = parseInt(pageInput.value);
+            if (page >= 1) {
+                currentPage = page;
+                renderTable();
+            }
+            pageInput.value = "";
+        }
+
+        fetchNotesData();
+
+        // --- Action Dropdown Logic ---
+        function toggleActionMenu(btn) {
+            document.querySelectorAll('.action-dropdown.active').forEach(d => {
+                if (d !== btn.parentElement) d.classList.remove('active');
+            });
+
+            const dropdown = btn.parentElement;
+            dropdown.classList.toggle('active');
+
+            if (dropdown.classList.contains('active')) {
+                const content = dropdown.querySelector('.action-dropdown-content');
+                content.style.display = 'block';
+                const rect = btn.getBoundingClientRect();
+
+                let top = rect.bottom;
+                let left = rect.right - content.offsetWidth;
+
+                if (top + content.offsetHeight > window.innerHeight) {
+                    top = rect.top - content.offsetHeight;
+                }
+
+                content.style.top = top + 'px';
+                content.style.left = left + 'px';
+                content.style.display = '';
+            }
+        }
+
+        document.addEventListener('click', function (e) {
+            if (!e.target.matches('.action-btn-main')) {
+                document.querySelectorAll('.action-dropdown.active').forEach(d => d.classList.remove('active'));
+            }
+        });
+
+        window.addEventListener('scroll', function () {
+            document.querySelectorAll('.action-dropdown.active').forEach(d => d.classList.remove('active'));
+        }, true);
+
+    </script>
+</body>
+
+</html>

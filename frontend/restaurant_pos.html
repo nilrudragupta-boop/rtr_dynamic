@@ -1,0 +1,1094 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Restaurant POS - RISE Tech Revolution</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="apiClient.js"></script>
+    <script src="settings.js"></script>
+    <script src="brandLoader.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: #eef2f6;
+            color: #333;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .pos-header {
+            background: #2c3e50;
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            z-index: 10;
+        }
+
+        .pos-header h2 {
+            margin: 0;
+            font-size: 20px;
+        }
+
+        .close-btn {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        #pos-layout {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* Left Side: Cart */
+        #cart-section {
+            width: 35%;
+            min-width: 350px;
+            background: #fff;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid #ddd;
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.05);
+        }
+
+        .cart-header {
+            padding: 15px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #ddd;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .cart-header select {
+            padding: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        #runningOrderList {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+        }
+
+        .cart-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px dashed #eee;
+        }
+
+        .cart-item-name {
+            font-weight: 600;
+            flex: 1;
+        }
+
+        .cart-item-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .qty-btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .cart-item-price {
+            font-weight: bold;
+            width: 70px;
+            text-align: right;
+        }
+
+        .cart-footer {
+            padding: 15px;
+            background: #f8f9fa;
+            border-top: 1px solid #ddd;
+        }
+
+        .totals-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 15px;
+        }
+
+        .totals-row.grand-total {
+            font-size: 20px;
+            font-weight: bold;
+            color: #2c3e50;
+            border-top: 1px solid #ccc;
+            padding-top: 8px;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .action-buttons button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            color: white;
+        }
+
+        .btn-kot {
+            background: #f39c12;
+        }
+
+        .btn-bill {
+            background: #27ae60;
+        }
+
+        .btn-clear {
+            background: #e74c3c;
+            flex: 0.5 !important;
+        }
+
+        /* Right Side: Menu */
+        #menu-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #eef2f6;
+        }
+
+        #categories {
+            display: flex;
+            gap: 10px;
+            padding: 15px;
+            background: white;
+            border-bottom: 1px solid #ddd;
+            overflow-x: auto;
+        }
+
+        .cat-btn {
+            padding: 10px 20px;
+            border: 1px solid #3498db;
+            background: white;
+            color: #3498db;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: bold;
+            white-space: nowrap;
+            transition: 0.2s;
+        }
+
+        .cat-btn.active,
+        .cat-btn:hover {
+            background: #3498db;
+            color: white;
+        }
+
+        #menu-items {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 15px;
+            align-content: start;
+        }
+
+        .menu-card {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: transform 0.1s, box-shadow 0.1s;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            min-height: 100px;
+            height: auto;
+        }
+
+        .menu-card:active {
+            transform: scale(0.95);
+        }
+
+        .menu-card.out-of-stock {
+            opacity: 0.6;
+            border-color: #e74c3c;
+            background: #fdf2f2;
+        }
+
+        .menu-card h4 {
+            margin: 0 0 10px 0;
+            color: #333;
+            font-size: 15px;
+        }
+
+        .menu-card .price {
+            font-weight: bold;
+            color: #27ae60;
+            font-size: 16px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="pos-header">
+        <h2><i class="fas fa-utensils"></i> Restaurant POS - <span data-brand="name"></span></h2>
+        <div style="display: flex; gap: 10px;">
+            <button style="background: #3498db; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-weight: bold;" onclick="refreshMenu()"><i class="fas fa-sync-alt"></i> Refresh</button>
+            <button
+                style="background: #8e44ad; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-weight: bold;"
+                onclick="showOrderStatus()"><i class="fas fa-bell"></i> Order Status</button>
+            <button
+                style="background: #16a085; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-weight: bold;"
+                onclick="showEODReport()"><i class="fas fa-chart-pie"></i> EOD Report</button>
+        </div>
+    </div>
+
+    <div id="pos-layout">
+        <!-- Left Side: Table & Order Cart -->
+        <div id="cart-section">
+            <div class="cart-header">
+                <span style="font-size: 16px; font-weight: 600;">Current Order</span>
+                <button id="currentTableBtn"
+                    style="padding: 6px 12px; font-size: 15px; font-weight: bold; background: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; transition: 0.2s;"
+                    onclick="openTableMap()" onmouseover="this.style.background='#2980b9'"
+                    onmouseout="this.style.background='#3498db'">Takeaway ▼</button>
+            </div>
+
+            <div id="runningOrderList">
+                <!-- Cart Items -->
+            </div>
+
+            <div class="cart-footer">
+                <div class="totals-row" style="align-items: center; margin-bottom: 12px;">
+                    <span>Overall Discount:</span>
+                    <div style="display:flex; gap:5px; justify-content: flex-end;">
+                        <input type="number" id="posDiscount" value="0" min="0" oninput="renderCart()" style="width: 70px; padding: 4px; text-align: right; font-weight: bold; border: 1px solid #ccc; border-radius: 4px; font-family: inherit;">
+                        <select id="posDiscountType" onchange="renderCart()" style="width: 50px; padding: 4px; border: 1px solid #ccc; border-radius: 4px; font-family: inherit;">
+                            <option value="flat">₹</option>
+                            <option value="%">%</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="totals-row">
+                    <span>Subtotal:</span>
+                    <span id="subtotalDisplay">₹0.00</span>
+                </div>
+                <div class="totals-row" id="discountDisplayRow" style="display:none; color: #e74c3c;">
+                    <span>Discount Amount:</span>
+                    <span id="discountDisplay">-₹0.00</span>
+                </div>
+                <div class="totals-row">
+                    <span>Tax (GST):</span>
+                    <span id="taxDisplay">₹0.00</span>
+                </div>
+                <div class="totals-row grand-total">
+                    <span>Grand Total:</span>
+                    <span id="grandTotalDisplay">₹0.00</span>
+                </div>
+                <div class="action-buttons">
+                    <button class="btn-clear" onclick="clearCart()" title="Clear Order"><i
+                            class="fas fa-trash"></i></button>
+                    <button class="btn-kot" onclick="printKOT()"><i class="fas fa-receipt"></i> Print KOT</button>
+                    <button class="btn-bill" onclick="generateBill()"><i class="fas fa-check-circle"></i> Settle
+                        Bill</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Side: Touch-friendly Menu -->
+        <div id="menu-section">
+            <div style="padding: 15px 15px 0 15px; background: white;">
+                <input type="text" id="menuSearch" placeholder="🔍 Search items by name or code..." oninput="triggerSearch()" style="width: 100%; padding: 10px 15px; border: 1px solid #bdc3c7; border-radius: 20px; font-size: 14px; box-sizing: border-box; outline: none; transition: 0.2s;">
+            </div>
+            <div id="categories">
+                <button class="cat-btn active" onclick="filterMenu('All', this)">All</button>
+                <!-- Category buttons injected via JS -->
+            </div>
+            <div id="menu-items">
+                <!-- Menu item cards injected via JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Table Map & Layout Modal -->
+    <div id="tableMapModal"
+        style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:100; align-items:center; justify-content:center; backdrop-filter: blur(3px);">
+        <div
+            style="background:#fff; width: 85%; max-width: 650px; border-radius:10px; padding:25px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
+            <div
+                style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom: 2px solid #eee; padding-bottom: 10px;">
+                <h3 style="margin:0; color:#2c3e50;"><i class="fas fa-th-large"></i> Table Layout Map</h3>
+                <button onclick="closeTableMap()"
+                    style="background:none; border:none; font-size:28px; cursor:pointer; color:#7f8c8d; line-height: 1;">&times;</button>
+            </div>
+            <div id="tableGrid"
+                style="display:grid; grid-template-columns:repeat(auto-fill, minmax(120px, 1fr)); gap:15px; max-height:50vh; overflow-y:auto; padding: 5px;">
+                <!-- Tables injected here -->
+            </div>
+            <div style="margin-top: 20px; text-align:right; border-top: 1px solid #eee; padding-top: 15px;">
+                <button onclick="addCustomTable()"
+                    style="background:#2c3e50; color:#fff; border:none; padding:10px 20px; border-radius:6px; cursor:pointer; font-weight:bold; font-size: 14px;"><i
+                        class="fas fa-plus"></i> Add New Table / Zone</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- EOD Report Modal -->
+    <div id="eodModal"
+        style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:1000; align-items:center; justify-content:center; backdrop-filter: blur(3px);">
+        <div
+            style="background:#fff; width: 90%; max-width: 500px; border-radius:10px; padding:25px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
+            <div
+                style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom: 2px solid #eee; padding-bottom: 10px;">
+                <h3 style="margin:0; color:#2c3e50;"><i class="fas fa-chart-pie"></i> End of Day Summary</h3>
+                <input type="date" id="eodDateSelector"
+                    style="padding: 5px 10px; border: 1px solid #ccc; border-radius: 4px; outline: none; font-family: inherit; margin-left: auto; margin-right: 15px;"
+                    onchange="showEODReport(this.value)">
+                <button onclick="document.getElementById('eodModal').style.display='none'"
+                    style="background:none; border:none; font-size:28px; cursor:pointer; color:#7f8c8d; line-height: 1;">&times;</button>
+            </div>
+            <div id="eodContent" style="font-size: 16px; line-height: 1.6;"></div>
+            <div style="margin-top: 20px; text-align:right;">
+                <button onclick="document.getElementById('eodModal').style.display='none'"
+                    style="background:#34495e; color:white; border:none; padding:8px 15px; border-radius:4px; cursor:pointer;">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Order Status Modal -->
+    <div id="statusModal"
+        style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:1000; align-items:center; justify-content:center; backdrop-filter: blur(3px);">
+        <div
+            style="background:#fff; width: 90%; max-width: 600px; border-radius:10px; padding:25px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
+            <div
+                style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom: 2px solid #eee; padding-bottom: 10px;">
+                <h3 style="margin:0; color:#2c3e50;"><i class="fas fa-bell"></i> Order Status Tracker</h3>
+                <button onclick="document.getElementById('statusModal').style.display='none'"
+                    style="background:none; border:none; font-size:28px; cursor:pointer; color:#7f8c8d; line-height: 1;">&times;</button>
+            </div>
+            <div id="statusContent" style="max-height: 400px; overflow-y: auto;"></div>
+            <div style="margin-top: 20px; text-align:right;">
+                <button onclick="document.getElementById('statusModal').style.display='none'"
+                    style="background:#34495e; color:white; border:none; padding:8px 15px; border-radius:4px; cursor:pointer;">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let menuItems = [];
+        let categories = new Set();
+        let orderState = {}; // Holds cart data per table
+        let currentTable = 'Takeaway';
+        let restaurantTables = JSON.parse(localStorage.getItem("restaurant_tables")) || ['Takeaway', 'Delivery', 'T1', 'T2', 'T3', 'T4', 'T5', 'T6'];
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadMenuItems();
+            document.getElementById('currentTableBtn').innerText = currentTable + ' ▼';
+            if (!orderState[currentTable]) orderState[currentTable] = [];
+            renderCart();
+        });
+
+        function getStockMap() {
+            const purchases = JSON.parse(localStorage.getItem("purchases")) || [];
+            const invoices = JSON.parse(localStorage.getItem("invoices")) || [];
+            const returns = JSON.parse(localStorage.getItem("returns")) || [];
+            const scraps = JSON.parse(localStorage.getItem("scraps")) || [];
+            const productions = JSON.parse(localStorage.getItem("production")) || [];
+            const stockMap = {};
+
+            purchases.forEach(p => {
+                const key = (p.itemName || "").trim().toLowerCase() + "|" + (p.itemCode || "").trim().toLowerCase();
+                stockMap[key] = (stockMap[key] || 0) + (parseFloat(p.qty) || 0);
+            });
+            invoices.forEach(inv => {
+                if (inv.items) inv.items.forEach(it => {
+                    let itemName = (it.item || "").trim();
+                    const noteIdx = itemName.indexOf(' (* '); // Strip POS notes before checking stock
+                    if(noteIdx > -1) itemName = itemName.substring(0, noteIdx).trim();
+                    const key = itemName.toLowerCase() + "|" + (it.itemCode || "").trim().toLowerCase();
+                    stockMap[key] = (stockMap[key] || 0) - (parseFloat(it.qty) || 0);
+                });
+            });
+            returns.forEach(ret => {
+                if (ret.items) ret.items.forEach(it => {
+                    const key = (it.item_name || "").trim().toLowerCase() + "|" + (it.itemCode || "").trim().toLowerCase();
+                    if (ret.return_type === 'Sales Return') stockMap[key] = (stockMap[key] || 0) + (parseFloat(it.qty) || 0);
+                    else if (ret.return_type === 'Purchase Return' || ret.return_type === 'Damage') stockMap[key] = (stockMap[key] || 0) - (parseFloat(it.qty) || 0);
+                });
+            });
+            scraps.forEach(s => {
+                const key = (s.itemName || "").trim().toLowerCase() + "|" + (s.itemCode || "").trim().toLowerCase();
+                stockMap[key] = (stockMap[key] || 0) - (parseFloat(s.qty) || 0);
+            });
+            productions.forEach(prod => {
+                const stage = prod.stage || 'Completed';
+                if (stage === 'Completed') {
+                    const fgKey = (prod.finishedGood || "").trim().toLowerCase() + "|" + (prod.fgCode || "").trim().toLowerCase();
+                    stockMap[fgKey] = (stockMap[fgKey] || 0) + (parseFloat(prod.fgQtyProduced) || 0);
+                    if (prod.additionalOutputsProduced && Array.isArray(prod.additionalOutputsProduced)) {
+                        prod.additionalOutputsProduced.forEach(out => {
+                            const outKey = (out.item || "").trim().toLowerCase() + "|" + (out.code || "").trim().toLowerCase();
+                            stockMap[outKey] = (stockMap[outKey] || 0) + (parseFloat(out.qty) || 0);
+                        });
+                    }
+                }
+                if (stage === 'WIP' || stage === 'Completed') {
+                    if (prod.materialsConsumed && Array.isArray(prod.materialsConsumed)) {
+                        prod.materialsConsumed.forEach(rm => {
+                            const rmKey = (rm.item || "").trim().toLowerCase() + "|" + (rm.code || "").trim().toLowerCase();
+                            stockMap[rmKey] = (stockMap[rmKey] || 0) - (parseFloat(rm.qty) || 0);
+                        });
+                    }
+                }
+            });
+            return stockMap;
+        }
+
+        function refreshMenu() {
+            categories.clear();
+            document.getElementById('categories').innerHTML = '<button class="cat-btn active" onclick="filterMenu(\'All\', this)">All</button>';
+            loadMenuItems();
+        }
+
+        function loadMenuItems() {
+            const storedItems = JSON.parse(localStorage.getItem("items")) || [];
+            const stockMap = getStockMap();
+            
+            menuItems = storedItems.map(i => {
+                const key = (i.name || "").trim().toLowerCase() + "|" + (i.itemCode || "").trim().toLowerCase();
+                return {
+                    id: i.id,
+                    name: i.name,
+                    itemCode: i.itemCode || '',
+                    description: i.description || '',
+                    category: i.category || 'Uncategorized',
+                    price: parseFloat(i.salePrice || i.price) || 0,
+                    gst: parseFloat(i.gst) || 0,
+                    stock: stockMap[key] || 0
+                };
+            });
+
+            menuItems.forEach(i => categories.add(i.category));
+
+            const catContainer = document.getElementById('categories');
+            categories.forEach(cat => {
+                const btn = document.createElement('button');
+                btn.className = 'cat-btn';
+                btn.innerText = cat;
+                btn.onclick = function () { filterMenu(cat, this); };
+                catContainer.appendChild(btn);
+            });
+
+            renderMenu('All');
+        }
+
+        function filterMenu(category, btnElement) {
+            document.querySelectorAll('.cat-btn').forEach(btn => btn.classList.remove('active'));
+            if (btnElement) btnElement.classList.add('active');
+            renderMenu(category);
+        }
+
+        function triggerSearch() {
+            const activeBtn = document.querySelector('.cat-btn.active');
+            const category = activeBtn ? activeBtn.innerText : 'All';
+            renderMenu(category);
+        }
+
+        function renderMenu(category) {
+            const container = document.getElementById('menu-items');
+            container.innerHTML = '';
+
+            const searchInput = document.getElementById('menuSearch');
+            const searchText = searchInput ? searchInput.value.toLowerCase().trim() : '';
+
+            const filtered = menuItems.filter(i => {
+                const matchCat = category === 'All' ? true : i.category === category;
+                const matchSearch = !searchText || i.name.toLowerCase().includes(searchText) || (i.itemCode && i.itemCode.toLowerCase().includes(searchText));
+                return matchCat && matchSearch;
+            });
+
+            filtered.forEach(item => {
+                const isOutOfStock = item.stock <= 0;
+                const card = document.createElement('div');
+                card.className = 'menu-card';
+                if (isOutOfStock) {
+                    card.classList.add('out-of-stock');
+                }
+                card.onclick = () => addToCart(item);
+
+                let detailsHtml = '';
+                if (item.itemCode) detailsHtml += `<span style="display:block; color:#7f8c8d; font-size:11px; margin-top:2px;"><b>Code:</b> ${item.itemCode}</span>`;
+                if (item.category && item.category !== 'Uncategorized') detailsHtml += `<span style="display:block; color:#7f8c8d; font-size:11px; margin-top:2px;"><b>Cat:</b> ${item.category}</span>`;
+                if (item.description) detailsHtml += `<span style="display:block; color:#95a5a6; font-size:11px; margin-top:2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${item.description}">${item.description}</span>`;
+                
+                let oosOverlay = isOutOfStock ? `<span style="display:block; color:#e74c3c; font-weight:bold; font-size:11px; margin-top:5px;">OUT OF STOCK</span>` : '';
+
+                card.innerHTML = `
+                    <div style="margin-bottom: 10px;">
+                        <h4>${item.name}</h4>
+                        ${detailsHtml}
+                        ${oosOverlay}
+                    </div>
+                    <div class="price">₹${item.price.toFixed(2)}</div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function openTableMap() {
+            const grid = document.getElementById('tableGrid');
+            grid.innerHTML = '';
+            restaurantTables.forEach(t => {
+                const isActive = orderState[t] && orderState[t].length > 0;
+                const box = document.createElement('div');
+                box.style.padding = '15px 10px';
+                box.style.borderRadius = '8px';
+                box.style.textAlign = 'center';
+                box.style.cursor = 'pointer';
+                box.style.fontWeight = 'bold';
+                box.style.transition = 'transform 0.1s, box-shadow 0.1s';
+                box.style.border = isActive ? '2px solid #e74c3c' : '2px solid #27ae60';
+                box.style.background = isActive ? '#fadbd8' : '#eafaf1';
+                box.style.color = isActive ? '#c0392b' : '#27ae60';
+                box.innerHTML = `<div style="font-size:18px; margin-bottom:5px;">${t}</div><small style="font-weight:normal; font-size: 12px;"><i class="fas ${isActive ? 'fa-user-clock' : 'fa-check-circle'}"></i> ${isActive ? 'Occupied' : 'Available'}</small>`;
+
+                box.onmousedown = () => box.style.transform = 'scale(0.95)';
+                box.onmouseup = () => box.style.transform = 'scale(1)';
+                box.onclick = () => selectTable(t);
+
+                grid.appendChild(box);
+            });
+            document.getElementById('tableMapModal').style.display = 'flex';
+        }
+
+        function closeTableMap() {
+            document.getElementById('tableMapModal').style.display = 'none';
+        }
+
+        function selectTable(t) {
+            currentTable = t;
+            document.getElementById('currentTableBtn').innerText = t + ' ▼';
+            if (!orderState[currentTable]) {
+                orderState[currentTable] = [];
+            }
+            const discInput = document.getElementById('posDiscount');
+            if (discInput) discInput.value = '0';
+            renderCart();
+            closeTableMap();
+        }
+
+        function addCustomTable() {
+            const newTable = prompt("Enter new table name or zone (e.g., T7, VIP-1, Rooftop-1):");
+            if (newTable && newTable.trim()) {
+                const tableName = newTable.trim();
+                if (!restaurantTables.includes(tableName)) {
+                    restaurantTables.push(tableName);
+                    localStorage.setItem("restaurant_tables", JSON.stringify(restaurantTables));
+                    openTableMap(); // Refresh grid layout
+                } else {
+                    alert("This table or zone already exists!");
+                }
+            }
+        }
+
+        function addToCart(item) {
+            if (item.stock <= 0) {
+                playErrorSound();
+                showPosNotification(`❌ Cannot add ${item.name} - Out of Stock!`, true);
+                return;
+            }
+            const cart = orderState[currentTable];
+            const existing = cart.find(i => i.id === item.id);
+
+            if (existing) {
+                if (existing.qty >= item.stock) {
+                    playErrorSound();
+                    showPosNotification(`❌ Only ${item.stock} available in stock!`, true);
+                    return;
+                }
+                existing.qty += 1;
+            } else {
+                cart.push({ ...item, qty: 1 });
+            }
+            renderCart();
+        }
+
+        function updateQty(id, delta) {
+            const cart = orderState[currentTable];
+            const item = cart.find(i => i.id === id);
+            if (item) {
+                if (delta > 0 && item.qty >= item.stock) {
+                    playErrorSound();
+                    showPosNotification(`❌ Only ${item.stock} available in stock!`, true);
+                    return;
+                }
+                item.qty += delta;
+                if (item.qty <= 0) {
+                    orderState[currentTable] = cart.filter(i => i.id !== id);
+                }
+                renderCart();
+            }
+        }
+
+        function addNoteToItem(id) {
+            const cart = orderState[currentTable];
+            const item = cart.find(i => i.id === id);
+            if (item) {
+                const note = prompt(`Add special instruction for ${item.name}:`, item.note || "");
+                if (note !== null) {
+                    item.note = note.trim();
+                    renderCart();
+                }
+            }
+        }
+
+        function clearCart() {
+            if (confirm(`Clear order for ${currentTable}?`)) {
+                orderState[currentTable] = [];
+                const discInput = document.getElementById('posDiscount');
+                if (discInput) discInput.value = '0';
+                renderCart();
+            }
+        }
+
+        function renderCart() {
+            const cart = orderState[currentTable];
+            const list = document.getElementById('runningOrderList');
+            list.innerHTML = '';
+
+            let subtotal = 0;
+            let tax = 0;
+
+            if (cart.length === 0) {
+                list.innerHTML = '<div style="text-align:center; color:#999; margin-top:20px;">Cart is empty</div>';
+            } else {
+                cart.forEach(item => {
+                    const itemTaxable = item.price * item.qty;
+                    const itemTax = itemTaxable * (item.gst / 100);
+                    subtotal += itemTaxable;
+                    tax += itemTax;
+
+                    const div = document.createElement('div');
+                    div.className = 'cart-item';
+                    div.innerHTML = `
+                        <div class="cart-item-name">
+                            ${item.name}
+                            ${item.note ? `<br><small style="color:#e74c3c;">* ${item.note}</small>` : ''}
+                        </div>
+                        <div class="cart-item-controls">
+                            <button class="qty-btn" style="background:#f39c12; border-radius:4px; width:auto; padding:0 6px;" onclick="addNoteToItem('${item.id}')" title="Add Note"><i class="fas fa-edit"></i></button>
+                            <button class="qty-btn" onclick="updateQty('${item.id}', -1)">-</button>
+                            <span style="font-weight:bold; width:20px; text-align:center;">${item.qty}</span>
+                            <button class="qty-btn" onclick="updateQty('${item.id}', 1)">+</button>
+                        </div>
+                        <div class="cart-item-price">₹${itemTaxable.toFixed(2)}</div>
+                    `;
+                    list.appendChild(div);
+                });
+            }
+
+            const discInput = document.getElementById('posDiscount');
+            const discTypeSelect = document.getElementById('posDiscountType');
+            let discVal = 0;
+            let discType = 'flat';
+            if (discInput && discTypeSelect) {
+                discVal = parseFloat(discInput.value) || 0;
+                discType = discTypeSelect.value;
+            }
+
+            let appliedDisc = 0;
+            if (discType === '%') {
+                appliedDisc = subtotal * (discVal / 100);
+            } else {
+                appliedDisc = discVal;
+            }
+            appliedDisc = Math.min(appliedDisc, subtotal);
+
+            let gstReduction = 0;
+            if (subtotal > 0) {
+                gstReduction = tax * (appliedDisc / subtotal);
+            }
+
+            const finalTax = tax - gstReduction;
+            const grandTotal = Math.round((subtotal - appliedDisc) + finalTax);
+
+            document.getElementById('subtotalDisplay').innerText = `₹${subtotal.toFixed(2)}`;
+            
+            const discRow = document.getElementById('discountDisplayRow');
+            if (discRow) {
+                if (appliedDisc > 0) {
+                    discRow.style.display = 'flex';
+                    document.getElementById('discountDisplay').innerText = `-₹${appliedDisc.toFixed(2)}`;
+                } else {
+                    discRow.style.display = 'none';
+                }
+            }
+            
+            document.getElementById('taxDisplay').innerText = `₹${finalTax.toFixed(2)}`;
+            document.getElementById('grandTotalDisplay').innerText = `₹${grandTotal.toFixed(2)}`;
+        }
+
+        function printKOT() {
+            const cart = orderState[currentTable];
+            if (!cart || cart.length === 0) return alert("No items in order to print KOT.");
+
+            // Send Order to Kitchen Display System (KDS)
+            let kdsOrders = JSON.parse(localStorage.getItem("kds_orders")) || [];
+
+            const kdsItems = JSON.parse(JSON.stringify(cart)).map(i => {
+                if (i.note) i.name += ` <span style="color:#e74c3c; font-size:14px;">(* ${i.note})</span>`;
+                return i;
+            });
+
+            kdsOrders.push({
+                id: 'KOT-' + Date.now(),
+                table: currentTable,
+                items: kdsItems,
+                timestamp: new Date().toISOString()
+            });
+            localStorage.setItem("kds_orders", JSON.stringify(kdsOrders));
+
+            const printWin = window.open('', '', 'width=400,height=600');
+            let html = `
+                <div style="font-family: monospace; padding: 10px;">
+                    <h2 style="text-align:center; margin:0;">KITCHEN TICKET</h2>
+                    <h3 style="text-align:center; margin:5px 0;">${currentTable}</h3>
+                    <p style="text-align:center; font-size:12px; margin:0;">${new Date().toLocaleString()}</p>
+                    <hr style="border-top: 1px dashed #000;">
+                    <table style="width:100%; text-align:left; font-size: 14px;">
+                        <tr><th>Qty</th><th>Item</th></tr>
+            `;
+
+            cart.forEach(i => {
+                html += `<tr><td style="font-weight:bold; vertical-align:top;">${i.qty}</td><td>${i.name}${i.note ? '<br><small><i>* ' + i.note + '</i></small>' : ''}</td></tr>`;
+            });
+
+            html += `
+                    </table>
+                    <hr style="border-top: 1px dashed #000;">
+                </div>
+            `;
+
+            printWin.document.write(html);
+            printWin.document.close();
+            printWin.focus();
+            setTimeout(() => {
+                printWin.print();
+                printWin.close();
+            }, 250);
+        }
+
+        function generateBill() {
+            const cart = orderState[currentTable];
+            if (!cart || cart.length === 0) return alert("Cart is empty.");
+
+            if (!confirm(`Finalize bill for ${currentTable}?`)) return;
+
+            let invoices = JSON.parse(localStorage.getItem("invoices")) || [];
+            let max = 0;
+            invoices.forEach(inv => {
+                if (inv.invoice_no) {
+                    const num = parseInt(inv.invoice_no.replace(/\D/g, ''));
+                    if (!isNaN(num) && num > max) max = num;
+                }
+            });
+            const invNo = `INV-${String(max + 1).padStart(4, '0')}`;
+
+            let subtotal = 0;
+            let tax = 0;
+
+            const invItems = cart.map(i => {
+                const taxable = i.price * i.qty;
+                const itemTax = taxable * (i.gst / 100);
+                subtotal += taxable;
+                tax += itemTax;
+                return {
+                    item: i.name + (i.note ? ` (* ${i.note})` : ''),
+                    itemCode: i.itemCode || '',
+                    qty: i.qty,
+                    price: i.price,
+                    gst: i.gst,
+                    total: taxable + itemTax,
+                    uom: "Pcs"
+                };
+            });
+
+            const discInput = document.getElementById('posDiscount');
+            const discTypeSelect = document.getElementById('posDiscountType');
+            let discVal = 0;
+            let discType = 'flat';
+            if (discInput && discTypeSelect) {
+                discVal = parseFloat(discInput.value) || 0;
+                discType = discTypeSelect.value;
+            }
+
+            let appliedDisc = 0;
+            if (discType === '%') {
+                appliedDisc = subtotal * (discVal / 100);
+            } else {
+                appliedDisc = discVal;
+            }
+            appliedDisc = Math.min(appliedDisc, subtotal);
+
+            let gstReduction = 0;
+            if (subtotal > 0) {
+                gstReduction = tax * (appliedDisc / subtotal);
+            }
+
+            const finalTax = tax - gstReduction;
+            const grandTotal = Math.round((subtotal - appliedDisc) + finalTax);
+            const exactTotal = (subtotal - appliedDisc) + finalTax;
+            const roundOff = grandTotal - exactTotal;
+
+            const newInv = {
+                id: Date.now().toString(),
+                invoice_no: invNo,
+                invoice_date: new Date().toISOString().split('T')[0],
+                customer_name: `POS - ${currentTable}`,
+                invoiceType: "SALE INVOICE", // Used as a simple B2C receipt
+                items: invItems,
+                invoice_total: grandTotal,
+                total_paid: grandTotal, // Assuming immediate settlement in POS
+                total_due: 0,
+                overallDiscount: discVal,
+                overallDiscountType: discType,
+                overallDiscountAmount: appliedDisc,
+                roundOff: true,
+                roundOffAmount: roundOff,
+                remarks: "Restaurant POS Order",
+                createdAt: new Date().toISOString()
+            };
+
+            invoices.push(newInv);
+            localStorage.setItem("invoices", JSON.stringify(invoices));
+        if (typeof apiClient !== 'undefined' && apiClient.saveInvoice) apiClient.saveInvoice(newInv).catch(console.warn);
+
+            alert(`Bill Settled Successfully! Invoice Generated: ${invNo}`);
+            orderState[currentTable] = []; // Clear the table cart
+            if (discInput) discInput.value = '0';
+            renderCart();
+        }
+
+        // --- End of Day Summary Report ---
+        function showEODReport(selectedDate) {
+            const invoices = JSON.parse(localStorage.getItem('invoices')) || [];
+            const targetDate = selectedDate || new Date().toISOString().split('T')[0];
+
+            const dateSelector = document.getElementById('eodDateSelector');
+            if (dateSelector && dateSelector.value !== targetDate) {
+                dateSelector.value = targetDate;
+            }
+
+            let posTotal = 0;
+            let regTotal = 0;
+            let posCount = 0;
+            let regCount = 0;
+
+            invoices.forEach(inv => {
+                const invDate = inv.invoice_date || inv.date;
+                if (invDate === targetDate) {
+                    const total = parseFloat(inv.invoice_total || inv.total) || 0;
+                    if (inv.remarks === "Restaurant POS Order" || (inv.customer_name && inv.customer_name.startsWith('POS -'))) {
+                        posTotal += total;
+                        posCount++;
+                    } else {
+                        regTotal += total;
+                        regCount++;
+                    }
+                }
+            });
+
+            const grandTotal = posTotal + regTotal;
+
+            const content = `
+                <div style="display:flex; justify-content:space-between; border-bottom:1px dashed #ccc; padding:10px 0;">
+                    <span><strong>POS Orders (${posCount}):</strong></span>
+                    <span style="color:#27ae60; font-weight:bold;">₹${posTotal.toFixed(2)}</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; border-bottom:1px dashed #ccc; padding:10px 0;">
+                    <span><strong>Regular Invoices (${regCount}):</strong></span>
+                    <span style="color:#2980b9; font-weight:bold;">₹${regTotal.toFixed(2)}</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; padding:15px 0; font-size:18px; font-weight:bold; background:#f8f9fa; margin-top:10px; border-radius:4px;">
+                    <span>Total Sales Today:</span>
+                    <span style="color:#c0392b;">₹${grandTotal.toFixed(2)}</span>
+                </div>
+            `;
+            document.getElementById('eodContent').innerHTML = content;
+            document.getElementById('eodModal').style.display = 'flex';
+        }
+
+        // --- Order Status Tracker ---
+        function showOrderStatus() {
+            const kdsOrders = JSON.parse(localStorage.getItem('kds_orders')) || [];
+            const readyNotifications = JSON.parse(localStorage.getItem('kds_ready_notifications')) || [];
+
+            const contentDiv = document.getElementById('statusContent');
+            let html = '<table style="width:100%; border-collapse:collapse; text-align:left;">';
+            html += '<tr style="background:#f8f9fa;"><th style="padding:10px; border-bottom:2px solid #ddd;">Order / Table</th><th style="padding:10px; border-bottom:2px solid #ddd;">Time</th><th style="padding:10px; border-bottom:2px solid #ddd;">Status</th></tr>';
+
+            let hasOrders = false;
+
+            // 1. Pending (In Cart, KOT not printed)
+            Object.keys(orderState).forEach(t => {
+                if (orderState[t] && orderState[t].length > 0) {
+                    hasOrders = true;
+                    html += `<tr>
+                        <td style="padding:10px; border-bottom:1px solid #eee; font-weight:bold;">${t} <span style="font-weight:normal; color:#e74c3c;">(Draft)</span></td>
+                        <td style="padding:10px; border-bottom:1px solid #eee;">-</td>
+                        <td style="padding:10px; border-bottom:1px solid #eee;"><span style="background:#e74c3c; color:white; padding:4px 8px; border-radius:12px; font-size:12px; font-weight:bold;">Pending (Not Sent)</span></td>
+                    </tr>`;
+                }
+            });
+
+            // 2. Processing (In KDS)
+            kdsOrders.forEach(o => {
+                hasOrders = true;
+                const timeStr = new Date(o.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                html += `<tr>
+                    <td style="padding:10px; border-bottom:1px solid #eee; font-weight:bold;">${o.table} <small style="color:#7f8c8d;">(${o.id})</small></td>
+                    <td style="padding:10px; border-bottom:1px solid #eee;">${timeStr}</td>
+                    <td style="padding:10px; border-bottom:1px solid #eee;"><span style="background:#f39c12; color:white; padding:4px 8px; border-radius:12px; font-size:12px; font-weight:bold;">Processing in Kitchen</span></td>
+                </tr>`;
+            });
+
+            // 3. Completed/Ready (Finished in KDS)
+            const today = new Date().toISOString().split('T')[0];
+            readyNotifications.forEach(o => {
+                if (o.timestamp.startsWith(today)) {
+                    hasOrders = true;
+                    const timeStr = new Date(o.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    html += `<tr>
+                        <td style="padding:10px; border-bottom:1px solid #eee; font-weight:bold;">${o.table} <small style="color:#7f8c8d;">(${o.id})</small></td>
+                        <td style="padding:10px; border-bottom:1px solid #eee;">${timeStr}</td>
+                        <td style="padding:10px; border-bottom:1px solid #eee;"><span style="background:#27ae60; color:white; padding:4px 8px; border-radius:12px; font-size:12px; font-weight:bold;">Ready to Serve / Completed</span></td>
+                    </tr>`;
+                }
+            });
+
+            if (!hasOrders) {
+                html += '<tr><td colspan="3" style="text-align:center; padding:20px; color:#999;">No active orders found for today.</td></tr>';
+            }
+
+            html += '</table>';
+            contentDiv.innerHTML = html;
+            document.getElementById('statusModal').style.display = 'flex';
+        }
+
+        // Play a dual-tone "success" chime using the Web Audio API
+        function playPosPingSound() {
+            try {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (!AudioContext) return;
+                const ctx = new AudioContext();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(523.25, ctx.currentTime); // C5
+                osc.frequency.setValueAtTime(659.25, ctx.currentTime + 0.1); // E5
+
+                gain.gain.setValueAtTime(0.5, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
+
+                osc.start();
+                osc.stop(ctx.currentTime + 0.5);
+            } catch (e) {
+                console.log("Audio play failed:", e);
+            }
+        }
+
+        // Listen for "Ready" notifications from the Kitchen Display System (KDS)
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'kds_ready_notifications') {
+                const newVal = JSON.parse(e.newValue || '[]');
+                const oldVal = JSON.parse(e.oldValue || '[]');
+                if (newVal.length > oldVal.length) {
+                    const latest = newVal[newVal.length - 1];
+                    playPosPingSound();
+                    showPosNotification(`🛎️ ORDER READY: Food for ${latest.table} is ready to serve!`);
+                }
+            }
+        });
+
+        function playErrorSound() {
+            try {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (!AudioContext) return;
+                const ctx = new AudioContext();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(150, ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(50, ctx.currentTime + 0.3);
+
+                gain.gain.setValueAtTime(0.5, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+
+                osc.start();
+                osc.stop(ctx.currentTime + 0.3);
+            } catch (e) {
+                console.log("Audio play failed:", e);
+            }
+        }
+
+        function showPosNotification(msg, isError = false) {
+            let toast = document.getElementById('pos-toast');
+            if (!toast) {
+                toast = document.createElement('div');
+                toast.id = 'pos-toast';
+                toast.style.cssText = 'position:fixed; top:20px; right:20px; background:#27ae60; color:white; padding:15px 25px; border-radius:8px; box-shadow:0 4px 15px rgba(0,0,0,0.3); z-index:9999; font-size:16px; font-weight:bold; transition:0.3s opacity, 0.3s transform; transform:translateY(-20px); opacity:0; pointer-events:none;';
+                document.body.appendChild(toast);
+            }
+            toast.style.background = isError ? '#e74c3c' : '#27ae60';
+            toast.innerText = msg;
+            toast.style.display = 'block';
+            setTimeout(() => { toast.style.opacity = '1'; toast.style.transform = 'translateY(0)'; }, 10);
+
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateY(-20px)';
+                setTimeout(() => toast.style.display = 'none', 300);
+            }, 5000); // Hides automatically after 5 seconds
+        }
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,2209 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Email Sender & Drafts</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f4f6f8;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+
+        .container {
+            display: flex;
+            gap: 20px;
+            width: 100%;
+            max-width: 1200px;
+        }
+
+        .card {
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+            border: 1px solid #e3e6f0;
+        }
+
+        .sidebar {
+            flex: 1;
+            max-width: 300px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .main-panel {
+            flex: 3;
+            display: flex;
+            flex-direction: column;
+        }
+
+        h3 {
+            margin-top: 0;
+            color: #2c3e50;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 5px;
+            font-size: 13px;
+            color: #555;
+        }
+
+        input[type="text"],
+        input[type="email"],
+        input[type="datetime-local"],
+        textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-family: inherit;
+            font-size: 14px;
+        }
+
+        .ql-container {
+            font-family: inherit;
+            font-size: 14px;
+        }
+
+        /* Automatically resize images to fit editor bounds */
+        .ql-editor img {
+            max-width: 100%;
+            height: auto;
+        }
+
+        .btn {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            color: white;
+            font-size: 14px;
+            transition: 0.2s;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+        }
+
+        .btn-primary {
+            background: #3498db;
+        }
+
+        .btn-success {
+            background: #27ae60;
+        }
+
+        .btn-warning {
+            background: #f39c12;
+        }
+
+        .btn-danger {
+            background: #e74c3c;
+        }
+
+        .btn-info {
+            background: #17a2b8;
+        }
+
+        .btn-secondary {
+            background: #7f8c8d;
+        }
+
+        /* Email Manager Styles */
+        .email-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .email-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background: #f8f9fa;
+            border: 1px solid #eee;
+            margin-bottom: 5px;
+            border-radius: 4px;
+        }
+
+        .email-item:hover {
+            background: #e9ecef;
+        }
+
+        .email-text {
+            font-size: 13px;
+            word-break: break-all;
+            cursor: pointer;
+            flex: 1;
+        }
+
+        .attachment-info {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .action-bar {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            align-items: center;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+        }
+
+        .schedule-box {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: #fff3cd;
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid #ffeeba;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 600px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Custom Font Sizes for Quill */
+        .ql-snow .ql-picker.ql-size .ql-picker-label::before,
+        .ql-snow .ql-picker.ql-size .ql-picker-item::before {
+            content: '14px';
+        }
+
+        .ql-snow .ql-picker.ql-size .ql-picker-label[data-value="10px"]::before,
+        .ql-snow .ql-picker.ql-size .ql-picker-item[data-value="10px"]::before {
+            content: '10px';
+        }
+
+        .ql-snow .ql-picker.ql-size .ql-picker-label[data-value="12px"]::before,
+        .ql-snow .ql-picker.ql-size .ql-picker-item[data-value="12px"]::before {
+            content: '12px';
+        }
+
+        .ql-snow .ql-picker.ql-size .ql-picker-label[data-value="14px"]::before,
+        .ql-snow .ql-picker.ql-size .ql-picker-item[data-value="14px"]::before {
+            content: '14px';
+        }
+
+        .ql-snow .ql-picker.ql-size .ql-picker-label[data-value="16px"]::before,
+        .ql-snow .ql-picker.ql-size .ql-picker-item[data-value="16px"]::before {
+            content: '16px';
+        }
+
+        .ql-snow .ql-picker.ql-size .ql-picker-label[data-value="18px"]::before,
+        .ql-snow .ql-picker.ql-size .ql-picker-item[data-value="18px"]::before {
+            content: '18px';
+        }
+
+        .ql-snow .ql-picker.ql-size .ql-picker-label[data-value="24px"]::before,
+        .ql-snow .ql-picker.ql-size .ql-picker-item[data-value="24px"]::before {
+            content: '24px';
+        }
+
+        .ql-snow .ql-picker.ql-size .ql-picker-label[data-value="32px"]::before,
+        .ql-snow .ql-picker.ql-size .ql-picker-item[data-value="32px"]::before {
+            content: '32px';
+        }
+
+        /* Custom Font Families for Quill */
+        .ql-snow .ql-picker.ql-font .ql-picker-label::before,
+        .ql-snow .ql-picker.ql-font .ql-picker-item::before {
+            content: 'Sans Serif';
+        }
+
+        /* Default */
+        .ql-snow .ql-picker.ql-font .ql-picker-label[data-value="Arial"]::before,
+        .ql-snow .ql-picker.ql-font .ql-picker-item[data-value="Arial"]::before {
+            content: 'Arial';
+            font-family: 'Arial', sans-serif;
+        }
+
+        .ql-snow .ql-picker.ql-font .ql-picker-label[data-value="Comic Sans MS"]::before,
+        .ql-snow .ql-picker.ql-font .ql-picker-item[data-value="Comic Sans MS"]::before {
+            content: 'Comic Sans';
+            font-family: 'Comic Sans MS', cursive;
+        }
+
+        .ql-snow .ql-picker.ql-font .ql-picker-label[data-value="Courier New"]::before,
+        .ql-snow .ql-picker.ql-font .ql-picker-item[data-value="Courier New"]::before {
+            content: 'Courier New';
+            font-family: 'Courier New', monospace;
+        }
+
+        .ql-snow .ql-picker.ql-font .ql-picker-label[data-value="Georgia"]::before,
+        .ql-snow .ql-picker.ql-font .ql-picker-item[data-value="Georgia"]::before {
+            content: 'Georgia';
+            font-family: 'Georgia', serif;
+        }
+
+        .ql-snow .ql-picker.ql-font .ql-picker-label[data-value="Helvetica"]::before,
+        .ql-snow .ql-picker.ql-font .ql-picker-item[data-value="Helvetica"]::before {
+            content: 'Helvetica';
+            font-family: 'Helvetica', sans-serif;
+        }
+
+        .ql-snow .ql-picker.ql-font .ql-picker-label[data-value="Lucida Sans Unicode"]::before,
+        .ql-snow .ql-picker.ql-font .ql-picker-item[data-value="Lucida Sans Unicode"]::before {
+            content: 'Lucida';
+            font-family: 'Lucida Sans Unicode', sans-serif;
+        }
+
+        .ql-snow .ql-picker.ql-font .ql-picker-label[data-value="Tahoma"]::before,
+        .ql-snow .ql-picker.ql-font .ql-picker-item[data-value="Tahoma"]::before {
+            content: 'Tahoma';
+            font-family: 'Tahoma', sans-serif;
+        }
+
+        .ql-snow .ql-picker.ql-font .ql-picker-label[data-value="Times New Roman"]::before,
+        .ql-snow .ql-picker.ql-font .ql-picker-item[data-value="Times New Roman"]::before {
+            content: 'Times New Roman';
+            font-family: 'Times New Roman', serif;
+        }
+
+        .ql-snow .ql-picker.ql-font .ql-picker-label[data-value="Trebuchet MS"]::before,
+        .ql-snow .ql-picker.ql-font .ql-picker-item[data-value="Trebuchet MS"]::before {
+            content: 'Trebuchet MS';
+            font-family: 'Trebuchet MS', sans-serif;
+        }
+
+        .ql-snow .ql-picker.ql-font .ql-picker-label[data-value="Verdana"]::before,
+        .ql-snow .ql-picker.ql-font .ql-picker-item[data-value="Verdana"]::before {
+            content: 'Verdana';
+            font-family: 'Verdana', sans-serif;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <!-- Saved Emails Sidebar -->
+        <div class="card sidebar">
+            <div style="position: relative; margin-bottom: 15px;">
+                <i class="fas fa-search" style="position: absolute; left: 10px; top: 12px; color: #aaa;"></i>
+                <input type="text" id="sidebarSearch" placeholder="Search history & drafts..." oninput="filterSidebar()"
+                    style="width: 100%; padding: 10px 10px 10px 30px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; font-size: 13px; outline: none;">
+            </div>
+
+            <h3><i class="fas fa-address-book"></i> Saved Emails</h3>
+
+            <div class="form-group" style="display: flex; gap: 5px;">
+                <input type="email" id="newEmailInput" placeholder="Add new email...">
+                <button class="btn btn-primary" onclick="addSavedEmail()"><i class="fas fa-plus"></i></button>
+            </div>
+
+            <p style="font-size: 12px; color: #666; margin-top: 0;">Click an email to add it to the recipient list.</p>
+            <ul class="email-list" id="savedEmailList">
+                <!-- Populated by JS -->
+            </ul>
+
+            <div style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 15px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; cursor: pointer;"
+                    onclick="toggleSection('draftListContainer', 'draftIcon')">
+                    <h3 style="border: none; margin: 0; display: flex; align-items: center; gap: 8px;"><i id="draftIcon"
+                            class="fas fa-chevron-down" style="font-size: 14px;"></i> <span><i
+                                class="fas fa-file-alt"></i> Saved Drafts</span></h3>
+                    <button class="btn btn-danger" style="padding: 4px 8px; font-size: 11px;"
+                        onclick="clearAllDrafts(); event.stopPropagation();" title="Clear All Drafts">Clear All</button>
+                </div>
+                <div id="draftListContainer" style="display: block;">
+                    <p style="font-size: 12px; color: #666; margin-top: 0;">Click a draft to continue editing.</p>
+                    <ul class="email-list" id="draftList" style="max-height: 200px;">
+                        <!-- Populated by JS -->
+                    </ul>
+                </div>
+            </div>
+
+            <div style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 15px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; cursor: pointer;"
+                    onclick="toggleSection('sentListContainer', 'sentIcon')">
+                    <h3 style="border: none; margin: 0; display: flex; align-items: center; gap: 8px;"><i id="sentIcon"
+                            class="fas fa-chevron-down" style="font-size: 14px;"></i> <span><i
+                                class="fas fa-paper-plane"></i> Sent Log</span></h3>
+                </div>
+                <div id="sentListContainer" style="display: block;">
+                    <p style="font-size: 12px; color: #666; margin-top: 0;">History of successfully sent emails.</p>
+                    <ul class="email-list" id="sentEmailList" style="max-height: 200px;">
+                        <!-- Populated by JS -->
+                    </ul>
+                </div>
+            </div>
+
+            <div style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 15px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; cursor: pointer;"
+                    onclick="toggleSection('inboxListContainer', 'inboxIcon')">
+                    <h3 style="border: none; margin: 0; display: flex; align-items: center; gap: 8px;"><i id="inboxIcon"
+                            class="fas fa-chevron-right" style="font-size: 14px;"></i> <span><i
+                                class="fas fa-inbox"></i> Inbox (Recent)</span></h3>
+                    <button class="btn btn-info" style="padding: 4px 8px; font-size: 11px;"
+                        onclick="loadInbox(); event.stopPropagation();" title="Refresh Inbox"><i
+                            class="fas fa-sync-alt"></i></button>
+                </div>
+                <div id="inboxListContainer" style="display: none;">
+                    <p style="font-size: 12px; color: #666; margin-top: 0;">Last 15 received emails.</p>
+                    <ul class="email-list" id="inboxEmailList" style="max-height: 200px;">
+                        <!-- Populated by JS -->
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Email Composer Panel -->
+        <div class="card main-panel">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; cursor: pointer;"
+                onclick="toggleSection('composeContainer', 'composeIcon')">
+                <h3 style="border: none; margin: 0; display: flex; align-items: center; gap: 8px;">
+                    <i id="composeIcon" class="fas fa-chevron-down" style="font-size: 14px;"></i>
+                    <span><i class="fas fa-envelope"></i> Compose Email</span>
+                </h3>
+            </div>
+
+            <div id="composeContainer">
+
+                <div class="form-group"
+                    style="background: #eef2f5; padding: 10px; border-radius: 6px; border: 1px solid #d1d3e2; display: flex; align-items: center; gap: 10px;">
+                    <label style="margin: 0; min-width: 90px;"><i class="fas fa-file-code"></i> Templates:</label>
+                    <select id="templateSelect" onchange="applyTemplate()"
+                        style="flex: 1; margin: 0; padding: 6px; border: 1px solid #ccc; border-radius: 4px;">
+                        <option value="">-- Choose a Template --</option>
+                    </select>
+                    <button class="btn btn-primary" onclick="saveCurrentAsTemplate()"
+                        style="padding: 6px 12px; font-size: 12px;"
+                        title="Save current subject & message as a new template"><i class="fas fa-save"></i> Save
+                        As</button>
+                    <button class="btn btn-secondary" onclick="openTemplateManager()"
+                        style="padding: 6px 12px; font-size: 12px;" title="Manage saved templates"><i
+                            class="fas fa-tasks"></i> Manage</button>
+                </div>
+
+                <div class="form-group">
+                    <label>To: <span style="font-weight: normal; color: #888;">(Comma separated for
+                            multiple)</span></label>
+                    <input type="text" id="emailTo" list="emailContacts" placeholder="recipient@example.com"
+                        oninput="saveDraft()">
+                    <datalist id="emailContacts"></datalist>
+                </div>
+
+                <div class="form-group">
+                    <label>CC: <span style="font-weight: normal; color: #888;">(Comma separated for
+                            multiple)</span></label>
+                    <input type="text" id="emailCc" list="emailContacts" placeholder="cc@example.com"
+                        oninput="saveDraft()">
+                </div>
+
+                <div class="form-group">
+                    <label>BCC: <span style="font-weight: normal; color: #888;">(Comma separated for
+                            multiple)</span></label>
+                    <input type="text" id="emailBcc" list="emailContacts" placeholder="bcc@example.com"
+                        oninput="saveDraft()">
+                </div>
+
+                <div class="form-group">
+                    <label>Subject:</label>
+                    <input type="text" id="emailSubject" placeholder="Email Subject" oninput="saveDraft()">
+                </div>
+
+                <div class="form-group"
+                    style="background: #eef2f5; padding: 10px; border-radius: 6px; border: 1px solid #d1d3e2; display: flex; align-items: center; gap: 10px;">
+                    <label style="margin: 0; min-width: 90px;"><i class="fas fa-users"></i> Groups:</label>
+                    <select id="groupSelect"
+                        style="flex: 1; margin: 0; padding: 6px; border: 1px solid #ccc; border-radius: 4px;">
+                        <option value="">-- Choose a Contact Group --</option>
+                    </select>
+                    <button class="btn btn-info" onclick="insertGroup('emailTo')"
+                        style="padding: 6px 12px; font-size: 12px; color: white;"
+                        title="Add selected group to 'To' field"><i class="fas fa-plus"></i> To</button>
+                    <button class="btn btn-info" onclick="insertGroup('emailBcc')"
+                        style="padding: 6px 12px; font-size: 12px; color: white;"
+                        title="Add selected group to 'BCC' field"><i class="fas fa-plus"></i> BCC</button>
+                    <button class="btn btn-secondary" onclick="openGroupManager()"
+                        style="padding: 6px 12px; font-size: 12px;" title="Manage Contact Groups"><i
+                            class="fas fa-users-cog"></i> Manage</button>
+                </div>
+
+                <div class="form-group">
+                    <label>Message: <i class="fas fa-info-circle" style="color: #3498db; cursor: help;"
+                            title="Type your email body here. Use the toolbar to format text, add links, or insert images."></i></label>
+                    <div id="editor-container" style="height: 250px; background: #fff;"></div>
+                </div>
+
+                <div class="form-group">
+                    <label><i class="fas fa-paperclip"></i> Attachments (Max 5 files, 25MB total)</label>
+                    <input type="file" id="emailAttachments" multiple onchange="handleFileSelect(this)">
+                    <div id="attachmentWarning"
+                        style="color: #e74c3c; font-size: 12px; font-weight: bold; margin-top: 5px; display: none;">
+                    </div>
+                    <div class="attachment-info" id="attachmentInfo">0 files selected (0 MB)</div>
+                    <ul id="attachmentList" style="list-style: none; padding: 0; margin-top: 10px; font-size: 13px;">
+                    </ul>
+                </div>
+
+                <div class="action-bar">
+                    <div style="margin-right: auto; display: flex; align-items: center; gap: 15px;">
+                        <button class="btn btn-secondary" onclick="openSignatureModal()"
+                            style="padding: 6px 12px; font-size: 13px;"><i class="fas fa-signature"></i> Setup
+                            Signature</button>
+                        <span id="draftStatus" style="font-size: 12px; color: #27ae60; display: none;"><i
+                                class="fas fa-check-circle"></i> Draft saved</span>
+                    </div>
+
+                    <label
+                        style="display: flex; align-items: center; gap: 5px; cursor: pointer; font-size: 13px; font-weight: bold; margin: 0;">
+                        <input type="checkbox" id="includeSignature" checked style="width: auto; margin: 0;"> Include
+                        Signature
+                    </label>
+
+                    <label
+                        style="display: flex; align-items: center; gap: 5px; cursor: pointer; font-size: 13px; font-weight: bold; margin: 0;">
+                        <input type="checkbox" id="requestReadReceipt" style="width: auto; margin: 0;"> Request Read
+                        Receipt
+                    </label>
+
+                    <div class="schedule-box">
+                        <label style="margin: 0;">Schedule:</label>
+                        <input type="datetime-local" id="scheduleTime" style="padding: 6px; margin: 0; width: auto;">
+                        <button class="btn btn-warning" onclick="sendEmail('schedule')"><i class="fas fa-clock"></i>
+                            Schedule Send</button>
+                    </div>
+
+                    <button id="btnSendNow" class="btn btn-success" onclick="sendEmail('direct')"><i
+                            class="fas fa-paper-plane"></i> Send
+                        Now</button>
+                    <button class="btn btn-info" onclick="saveToDrafts()"><i class="fas fa-save"></i> Save
+                        Draft</button>
+                    <button class="btn btn-secondary" onclick="clearDraft()"><i class="fas fa-trash"></i>
+                        Discard</button>
+                </div>
+            </div>
+
+            <!-- Inline Email Preview -->
+            <div id="previewHeader"
+                style="display: none; justify-content: space-between; align-items: center; margin-top: 10px; margin-bottom: 15px; border-top: 1px solid #eee; padding-top: 15px; cursor: pointer;"
+                onclick="toggleSection('previewContainer', 'previewIcon')">
+                <h3 style="border: none; margin: 0; display: flex; align-items: center; gap: 8px;">
+                    <i id="previewIcon" class="fas fa-chevron-down" style="font-size: 14px;"></i>
+                    <span id="previewTitle"><i class="fas fa-envelope-open-text"></i> Email Details</span>
+                </h3>
+            </div>
+            <div id="previewContainer" style="display: none;">
+                <div style="margin-bottom: 15px; font-size: 13px;">
+                    <div id="viewSentFromWrapper" style="display: none;"><strong>From:</strong> <span
+                            id="viewSentFrom"></span></div>
+                    <div><strong>To:</strong> <span id="viewSentTo"></span></div>
+                    <div id="viewSentDateWrapper" style="display: none;"><strong>Date:</strong> <span
+                            id="viewSentDate"></span></div>
+                    <div><strong>Subject:</strong> <span id="viewSentSubject"></span></div>
+                    <div id="viewSentAttachmentsWrapper" style="display: none; margin-top: 5px;">
+                        <strong>Attachments:</strong> <span id="viewSentAttachmentNames" style="color: #3498db;"><i
+                                class="fas fa-paperclip"></i> Included in this email</span>
+                    </div>
+                </div>
+                <div style="border: 1px solid #ddd; padding: 15px; border-radius: 4px; min-height: 200px; max-height: 400px; overflow-y: auto; background: #f9f9f9;"
+                    id="viewSentBody">
+                </div>
+                <div style="text-align: right; margin-top: 15px;">
+                    <button class="btn btn-warning" id="btnEditDraft" style="display: none;"><i class="fas fa-edit"></i>
+                        Edit Draft</button>
+                    <button class="btn btn-success" id="btnReplyInbox" style="display: none;"><i
+                            class="fas fa-reply"></i> Reply</button>
+                    <button class="btn btn-info" id="btnForwardSent"><i class="fas fa-share"></i> Forward</button>
+                    <button class="btn btn-success" id="btnReplyAllSent"><i class="fas fa-reply-all"></i> Reply
+                        All</button>
+                    <button class="btn btn-primary" onclick="printSentEmail()"><i class="fas fa-print"></i>
+                        Print</button>
+                    <button class="btn btn-secondary" onclick="closePreviewPanel()"><i class="fas fa-times"></i> Close
+                        Preview</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Signature Modal -->
+    <div id="signatureModal" class="modal">
+        <div class="modal-content">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h3 style="margin: 0;"><i class="fas fa-signature"></i> Signature Setup</h3>
+                <span style="cursor: pointer; font-size: 20px;" onclick="closeSignatureModal()">&times;</span>
+            </div>
+            <div style="margin-bottom: 10px; font-size: 13px;">
+                <strong>Add Social Icons:</strong>
+                <button class="btn btn-secondary"
+                    style="padding: 2px 6px; font-size: 12px; margin-left: 5px; background: #3b5998; border: none;"
+                    onclick="addSocialIcon('facebook')" title="Facebook"><i class="fab fa-facebook-f"></i></button>
+                <button class="btn btn-secondary"
+                    style="padding: 2px 6px; font-size: 12px; margin-left: 5px; background: #000; border: none;"
+                    onclick="addSocialIcon('twitter')" title="X (Twitter)"><i class="fab fa-x-twitter"></i></button>
+                <button class="btn btn-secondary"
+                    style="padding: 2px 6px; font-size: 12px; margin-left: 5px; background: #0077b5; border: none;"
+                    onclick="addSocialIcon('linkedin')" title="LinkedIn"><i class="fab fa-linkedin-in"></i></button>
+                <button class="btn btn-secondary"
+                    style="padding: 2px 6px; font-size: 12px; margin-left: 5px; background: #e1306c; border: none;"
+                    onclick="addSocialIcon('instagram')" title="Instagram"><i class="fab fa-instagram"></i></button>
+                <button class="btn btn-secondary"
+                    style="padding: 2px 6px; font-size: 12px; margin-left: 5px; background: #34495e; border: none;"
+                    onclick="addSocialIcon('website')" title="Website"><i class="fas fa-globe"></i></button>
+            </div>
+            <div id="signature-editor-container" style="height: 150px; background: #fff; margin-bottom: 15px;"></div>
+            <div style="text-align: right;">
+                <button class="btn btn-secondary" onclick="closeSignatureModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="saveSignature()">Save Signature</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Saved Email Modal -->
+    <div id="editEmailModal" class="modal">
+        <div class="modal-content" style="max-width: 400px; text-align: left;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h3 style="margin: 0;"><i class="fas fa-edit"></i> Edit Saved Email</h3>
+                <span style="cursor: pointer; font-size: 20px;" onclick="closeEditEmailModal()">&times;</span>
+            </div>
+            <input type="hidden" id="editEmailIndex">
+            <input type="email" id="editEmailInput"
+                style="width: 100%; padding: 10px; margin-bottom: 15px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px;">
+            <div style="text-align: right;">
+                <button class="btn btn-secondary" onclick="closeEditEmailModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="saveEditedEmail()">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success Modal -->
+    <div id="successModal" class="modal" style="z-index: 2000;">
+        <div class="modal-content" style="max-width: 400px; text-align: center;">
+            <div style="font-size: 40px; color: #27ae60; margin-bottom: 10px;"><i class="fas fa-check-circle"></i></div>
+            <h3 style="margin-top: 0; color: #2c3e50;">Success</h3>
+            <p id="successMsg" style="color: #666;"></p>
+            <button class="btn btn-success" style="width: 100%; margin-top: 15px;"
+                onclick="closeSuccessModal()">OK</button>
+        </div>
+    </div>
+
+    <!-- Error Modal -->
+    <div id="errorModal" class="modal" style="z-index: 2000;">
+        <div class="modal-content" style="max-width: 400px; text-align: center;">
+            <div style="font-size: 40px; color: #e74c3c; margin-bottom: 10px;"><i class="fas fa-times-circle"></i></div>
+            <h3 style="margin-top: 0; color: #2c3e50;">Error</h3>
+            <p id="errorMsg" style="color: #666;"></p>
+            <button class="btn btn-danger" style="width: 100%; margin-top: 15px;"
+                onclick="closeErrorModal()">Close</button>
+        </div>
+    </div>
+
+    <!-- Attachment Preview Modal -->
+    <div id="attachmentPreviewModal" class="modal" style="z-index: 2000;">
+        <div class="modal-content"
+            style="max-width: 800px; width: 90%; max-height: 90vh; display: flex; flex-direction: column;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <h3 style="margin: 0; color: #0d6efd;" id="previewAttachmentTitle">Attachment Preview</h3>
+                <span style="cursor: pointer; font-size: 20px;"
+                    onclick="document.getElementById('attachmentPreviewModal').style.display='none'">&times;</span>
+            </div>
+            <div id="previewAttachmentContent"
+                style="flex: 1; overflow: auto; text-align: center; background: #eee; border-radius: 4px;">
+            </div>
+            <div style="margin-top: 15px; text-align: center;">
+                <button class="btn btn-primary" id="downloadAttachmentBtn">Download</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Template Manager Modal -->
+    <div id="templateManagerModal" class="modal" style="z-index: 2000;">
+        <div class="modal-content" style="max-width: 600px; width: 90%;">
+            <div
+                style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px;">
+                <h3 style="margin: 0;"><i class="fas fa-file-code"></i> Manage Templates</h3>
+                <span style="cursor: pointer; font-size: 20px;" onclick="closeTemplateManager()">&times;</span>
+            </div>
+            <ul id="templateList"
+                style="list-style: none; padding: 0; margin: 0; max-height: 300px; overflow-y: auto; text-align: left;">
+            </ul>
+            <div style="text-align: right; margin-top: 15px;">
+                <button class="btn btn-secondary" onclick="closeTemplateManager()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Template Name Input Modal -->
+    <div id="templateNameModal" class="modal" style="z-index: 2000;">
+        <div class="modal-content" style="max-width: 400px; text-align: left;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h3 style="margin: 0;" id="templateNameTitle">Template Name</h3>
+                <span style="cursor: pointer; font-size: 20px;" onclick="closeTemplateNameModal()">&times;</span>
+            </div>
+            <input type="hidden" id="templateEditIndex">
+            <input type="text" id="templateNameInput" placeholder="Enter template name..."
+                style="width: 100%; padding: 10px; margin-bottom: 15px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px;"
+                onkeydown="if(event.key === 'Enter') confirmSaveTemplateName()">
+            <div style="text-align: right;">
+                <button class="btn btn-secondary" onclick="closeTemplateNameModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="confirmSaveTemplateName()">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Group Manager Modal -->
+    <div id="groupManagerModal" class="modal" style="z-index: 2000;">
+        <div class="modal-content" style="max-width: 600px; width: 90%;">
+            <div
+                style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px;">
+                <h3 style="margin: 0;"><i class="fas fa-users-cog"></i> Manage Contact Groups</h3>
+                <span style="cursor: pointer; font-size: 20px;" onclick="closeGroupManager()">&times;</span>
+            </div>
+            <div style="text-align: left; margin-bottom: 10px;">
+                <button class="btn btn-primary" onclick="openGroupEditor()"><i class="fas fa-plus"></i> Create New
+                    Group</button>
+            </div>
+            <ul id="groupList"
+                style="list-style: none; padding: 0; margin: 0; max-height: 300px; overflow-y: auto; text-align: left;">
+            </ul>
+            <div style="text-align: right; margin-top: 15px;">
+                <button class="btn btn-secondary" onclick="closeGroupManager()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Group Editor Modal -->
+    <div id="groupEditorModal" class="modal" style="z-index: 2005;">
+        <div class="modal-content" style="max-width: 500px; width: 90%; text-align: left;">
+            <div
+                style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px;">
+                <h3 style="margin: 0;" id="groupEditorTitle">Create Contact Group</h3>
+                <span style="cursor: pointer; font-size: 20px;" onclick="closeGroupEditor()">&times;</span>
+            </div>
+            <input type="hidden" id="groupEditIndex">
+            <div class="form-group">
+                <label>Group Name:</label>
+                <input type="text" id="groupNameInput" placeholder="e.g. VIP Customers, North Zone Suppliers">
+            </div>
+            <div class="form-group">
+                <label>Select Contacts:</label>
+                <input type="text" id="groupContactSearch" placeholder="Search contacts..."
+                    style="margin-bottom: 10px; padding: 6px; font-size: 13px;" oninput="filterGroupContacts()">
+                <div id="groupContactsContainer"
+                    style="max-height: 250px; overflow-y: auto; border: 1px solid #ccc; border-radius: 4px; padding: 10px; background: #f9f9f9;">
+                    <!-- Checkboxes injected here -->
+                </div>
+            </div>
+            <div style="text-align: right; margin-top: 15px;">
+                <button class="btn btn-secondary" onclick="closeGroupEditor()">Cancel</button>
+                <button class="btn btn-primary" onclick="saveContactGroup()">Save Group</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
+    <script>
+        const MAX_FILES = 5;
+        const MAX_TOTAL_SIZE_MB = 25;
+        const MAX_TOTAL_SIZE_BYTES = MAX_TOTAL_SIZE_MB * 1024 * 1024;
+
+        let savedEmails = JSON.parse(localStorage.getItem('savedEmails')) || [];
+        let savedDrafts = JSON.parse(localStorage.getItem('savedDrafts')) || [];
+        let quill;
+        let signatureQuill;
+        let selectedAttachments = [];
+
+        function loadContacts() {
+            const datalist = document.getElementById('emailContacts');
+            if (!datalist) return;
+            datalist.innerHTML = '';
+
+            const customers = JSON.parse(localStorage.getItem('customers')) || [];
+            const suppliers = JSON.parse(localStorage.getItem('suppliers')) || [];
+
+            const addContact = (name, email, type) => {
+                if (name && email) {
+                    const opt = document.createElement('option');
+                    opt.value = `"${name}" <${email}>`;
+                    opt.textContent = type;
+                    datalist.appendChild(opt);
+                }
+            };
+
+            customers.forEach(c => addContact(c.name, c.email, 'Customer'));
+            suppliers.forEach(s => addContact(s.name, s.email, 'Supplier'));
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // Enforce inline styling instead of classes for maximum email compatibility
+            const SizeStyle = Quill.import('attributors/style/size');
+            SizeStyle.whitelist = ['10px', '12px', '14px', '16px', '18px', '24px', '32px'];
+            Quill.register(SizeStyle, true);
+
+            const FontStyle = Quill.import('attributors/style/font');
+            FontStyle.whitelist = ['Arial', 'Comic Sans MS', 'Courier New', 'Georgia', 'Helvetica', 'Lucida Sans Unicode', 'Tahoma', 'Times New Roman', 'Trebuchet MS', 'Verdana'];
+            Quill.register(FontStyle, true);
+
+            quill = new Quill('#editor-container', {
+                theme: 'snow',
+                placeholder: 'Write your message here...',
+                modules: {
+                    toolbar: [
+                        [{ 'font': FontStyle.whitelist }],
+                        [{ 'header': [1, 2, 3, false] }],
+                        [{ 'size': SizeStyle.whitelist }],
+                        ['bold', 'italic', 'underline', 'strike'],
+                        [{ 'color': [] }, { 'background': [] }],
+                        [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+                        ['link', 'image'],
+                        ['clean']
+                    ]
+                }
+            });
+
+            // Function to downscale large images via Canvas to save email payload size
+            function processAndInsertImage(file, editorInstance) {
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        let width = img.width;
+                        let height = img.height;
+                        const MAX_WIDTH = 800; // Constrain width to 800px max
+
+                        if (width > MAX_WIDTH) {
+                            height = Math.round(height * (MAX_WIDTH / width));
+                            width = MAX_WIDTH;
+                        }
+
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+
+                        const mimeType = file.type === 'image/png' ? 'image/png' : 'image/jpeg';
+                        const dataUrl = canvas.toDataURL(mimeType, 0.8);
+
+                        const range = editorInstance.getSelection(true) || { index: editorInstance.getLength() };
+                        editorInstance.insertEmbed(range.index, 'image', dataUrl);
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+
+            // Intercept Drop and Paste events to resize automatically
+            function attachImageResizer(editorInstance) {
+                editorInstance.root.addEventListener('drop', (e) => {
+                    if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) {
+                        const file = e.dataTransfer.files[0];
+                        if (file.type.startsWith('image/')) {
+                            e.preventDefault();
+                            processAndInsertImage(file, editorInstance);
+                        }
+                    }
+                });
+
+                editorInstance.root.addEventListener('paste', (e) => {
+                    if (e.clipboardData && e.clipboardData.items && e.clipboardData.items.length) {
+                        for (let i = 0; i < e.clipboardData.items.length; i++) {
+                            const item = e.clipboardData.items[i];
+                            if (item.type.startsWith('image/')) {
+                                e.preventDefault();
+                                const file = item.getAsFile();
+                                processAndInsertImage(file, editorInstance);
+                                break;
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Custom Image Handler for Main Editor (Base64 Injection)
+            quill.getModule('toolbar').addHandler('image', function () {
+                const input = document.createElement('input');
+                input.setAttribute('type', 'file');
+                input.setAttribute('accept', 'image/*');
+                input.click();
+                input.onchange = () => {
+                    processAndInsertImage(input.files[0], quill);
+                };
+            });
+            attachImageResizer(quill);
+
+            // Signature Quill Editor Initialization
+            signatureQuill = new Quill('#signature-editor-container', {
+                theme: 'snow',
+                placeholder: 'Create your signature here...',
+                modules: {
+                    toolbar: [
+                        [{ 'font': FontStyle.whitelist }],
+                        [{ 'size': SizeStyle.whitelist }],
+                        ['bold', 'italic', 'underline', 'strike'],
+                        [{ 'color': [] }],
+                        ['link', 'image'],
+                        ['clean']
+                    ]
+                }
+            });
+
+            signatureQuill.getModule('toolbar').addHandler('image', function () {
+                const input = document.createElement('input');
+                input.setAttribute('type', 'file');
+                input.setAttribute('accept', 'image/*');
+                input.click();
+                input.onchange = () => {
+                    processAndInsertImage(input.files[0], signatureQuill);
+                };
+            });
+            attachImageResizer(signatureQuill);
+
+            quill.on('text-change', () => {
+                saveDraft();
+            });
+
+            loadSavedEmails();
+            loadDraft();
+            loadSavedDrafts();
+            loadSentEmails();
+            loadContacts();
+            loadTemplatesDropdown();
+            loadGroupsDropdown();
+
+            // Load saved signature status
+            const savedSig = localStorage.getItem('emailSignature');
+            if (!savedSig || savedSig === '<p><br></p>') {
+                document.getElementById('includeSignature').checked = false;
+            }
+
+            // Auto-fill target email from URL if redirected from customer/supplier table
+            const urlParams = new URLSearchParams(window.location.search);
+            const toParam = urlParams.get('to');
+            if (toParam) {
+                document.getElementById('emailTo').value = toParam;
+                saveDraft(); // Auto-save into active draft immediately
+            }
+        });
+
+        // --- Saved Emails Logic ---
+
+        // --- Template Logic ---
+        let emailTemplates = JSON.parse(localStorage.getItem('emailTemplates')) || [];
+
+        function loadTemplatesDropdown() {
+            const select = document.getElementById('templateSelect');
+            if (!select) return;
+            select.innerHTML = '<option value="">-- Choose a Template --</option>';
+            emailTemplates.forEach((t, i) => {
+                const opt = document.createElement('option');
+                opt.value = i;
+                opt.textContent = t.name;
+                select.appendChild(opt);
+            });
+        }
+
+        function applyTemplate() {
+            const select = document.getElementById('templateSelect');
+            const idx = select.value;
+            if (idx === "") return;
+            const t = emailTemplates[idx];
+            if (t) {
+                document.getElementById('emailSubject').value = t.subject || '';
+                quill.clipboard.dangerouslyPasteHTML(t.message || '');
+                saveDraft();
+            }
+            select.value = "";
+        }
+
+        function saveCurrentAsTemplate() {
+            const subject = document.getElementById('emailSubject').value.trim();
+            const message = quill.root.innerHTML.trim();
+
+            if (!subject && (message === '<p><br></p>' || !message)) {
+                showErrorModal("Please enter a subject or message to save as a template.");
+                return;
+            }
+
+            openTemplateNameModal("Save New Template", "", "");
+        }
+
+        function openTemplateManager() {
+            renderTemplateList();
+            document.getElementById('templateManagerModal').style.display = 'flex';
+        }
+
+        function closeTemplateManager() { document.getElementById('templateManagerModal').style.display = 'none'; }
+
+        function renderTemplateList() {
+            const list = document.getElementById('templateList');
+            list.innerHTML = '';
+            if (emailTemplates.length === 0) return list.innerHTML = '<li style="text-align:center; padding:10px; color:#666;">No templates saved.</li>';
+
+            emailTemplates.forEach((t, i) => {
+                const li = document.createElement('li');
+                li.style.cssText = "display:flex; justify-content:space-between; align-items:center; padding:10px; border-bottom:1px solid #eee;";
+
+                // Safely extract plain text from the rich-text HTML for a clean preview
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = t.message || '';
+                let msgPreview = tempDiv.textContent || tempDiv.innerText || '(No Message)';
+
+                li.innerHTML = `<div style="flex:1; overflow:hidden;"><strong style="display:block; font-size:14px; color:#2c3e50; margin-bottom:4px;">${String(t.name).replace(/</g, "&lt;")}</strong><span style="font-size:12px; color:#666; text-overflow:ellipsis; white-space:nowrap; display:block; overflow:hidden;">Subject: ${String(t.subject || '(No Subject)').replace(/</g, "&lt;")}</span><span style="font-size:11px; color:#888; text-overflow:ellipsis; white-space:nowrap; display:block; overflow:hidden; margin-top:2px;">Message: ${msgPreview.replace(/</g, "&lt;")}</span></div><div style="display:flex; gap:5px;"><button class="btn btn-warning" style="padding: 4px 8px; font-size: 11px; color: #fff;" onclick="editTemplateName(${i})" title="Edit Template Name"><i class="fas fa-edit"></i></button><button class="btn btn-danger" style="padding: 4px 8px; font-size: 11px;" onclick="deleteTemplate(${i})" title="Delete Template"><i class="fas fa-trash"></i></button></div>`;
+                list.appendChild(li);
+            });
+        }
+
+        function editTemplateName(index) {
+            const t = emailTemplates[index];
+            if (!t) return;
+            openTemplateNameModal("Edit Template Name", t.name, index);
+        }
+
+        function openTemplateNameModal(title, defaultName, index) {
+            document.getElementById('templateNameTitle').innerText = title;
+            document.getElementById('templateNameInput').value = defaultName || '';
+            document.getElementById('templateEditIndex').value = index !== undefined ? index : '';
+            document.getElementById('templateNameModal').style.display = 'flex';
+            document.getElementById('templateNameInput').focus();
+        }
+
+        function closeTemplateNameModal() {
+            document.getElementById('templateNameModal').style.display = 'none';
+        }
+
+        function confirmSaveTemplateName() {
+            const name = document.getElementById('templateNameInput').value.trim();
+            if (!name) return showErrorModal("Please enter a template name.");
+
+            const index = document.getElementById('templateEditIndex').value;
+            if (index === '') {
+                const subject = document.getElementById('emailSubject').value.trim();
+                const message = quill.root.innerHTML.trim();
+                emailTemplates.push({ id: Date.now(), name: name, subject: subject, message: message });
+                showSuccessModal("Template saved successfully!");
+            } else {
+                if (name !== emailTemplates[index].name) emailTemplates[index].name = name;
+                renderTemplateList();
+            }
+
+            localStorage.setItem('emailTemplates', JSON.stringify(emailTemplates));
+            loadTemplatesDropdown();
+            closeTemplateNameModal();
+        }
+
+        function deleteTemplate(index) {
+            if (confirm("Are you sure you want to delete this template?")) {
+                emailTemplates.splice(index, 1);
+                localStorage.setItem('emailTemplates', JSON.stringify(emailTemplates));
+                renderTemplateList();
+                loadTemplatesDropdown();
+            }
+        }
+
+        // --- Contact Groups Logic ---
+        let contactGroups = JSON.parse(localStorage.getItem('emailContactGroups')) || [];
+
+        function loadGroupsDropdown() {
+            const select = document.getElementById('groupSelect');
+            if (!select) return;
+            select.innerHTML = '<option value="">-- Choose a Contact Group --</option>';
+            contactGroups.forEach((g, i) => {
+                const opt = document.createElement('option');
+                opt.value = i;
+                opt.textContent = g.name + ` (${g.emails.length} contacts)`;
+                select.appendChild(opt);
+            });
+        }
+
+        function insertGroup(fieldId) {
+            const select = document.getElementById('groupSelect');
+            const idx = select.value;
+            if (idx === "") return;
+            const group = contactGroups[idx];
+            if (!group || !group.emails || group.emails.length === 0) {
+                showErrorModal("This contact group is empty.");
+                return;
+            }
+
+            const input = document.getElementById(fieldId);
+            let current = input.value.trim();
+            if (current && !current.endsWith(',')) current += ', ';
+
+            input.value = current + group.emails.join(', ');
+            saveDraft();
+            select.value = "";
+            showSuccessModal(`Successfully added ${group.emails.length} contacts to the ${fieldId === 'emailTo' ? 'To' : 'BCC'} field!`);
+        }
+
+        function openGroupManager() {
+            renderGroupList();
+            document.getElementById('groupManagerModal').style.display = 'flex';
+        }
+
+        function closeGroupManager() { document.getElementById('groupManagerModal').style.display = 'none'; }
+
+        function renderGroupList() {
+            const list = document.getElementById('groupList');
+            list.innerHTML = '';
+            if (contactGroups.length === 0) return list.innerHTML = '<li style="text-align:center; padding:10px; color:#666;">No groups created.</li>';
+
+            contactGroups.forEach((g, i) => {
+                const li = document.createElement('li');
+                li.style.cssText = "display:flex; justify-content:space-between; align-items:center; padding:10px; border-bottom:1px solid #eee;";
+                li.innerHTML = `
+                    <div style="flex:1; overflow:hidden;">
+                        <strong style="display:block; font-size:14px; color:#2c3e50; margin-bottom:4px;">${String(g.name).replace(/</g, "&lt;")}</strong>
+                        <span style="font-size:12px; color:#666;">${g.emails.length} contacts saved</span>
+                    </div>
+                    <div style="display:flex; gap:5px;">
+                        <button class="btn btn-warning" style="padding: 4px 8px; font-size: 11px; color: #fff;" onclick="openGroupEditor(${i})" title="Edit Group"><i class="fas fa-edit"></i></button>
+                        <button class="btn btn-danger" style="padding: 4px 8px; font-size: 11px;" onclick="deleteGroup(${i})" title="Delete Group"><i class="fas fa-trash"></i></button>
+                    </div>
+                `;
+                list.appendChild(li);
+            });
+        }
+
+        function deleteGroup(index) {
+            if (confirm("Are you sure you want to delete this contact group?")) {
+                contactGroups.splice(index, 1);
+                localStorage.setItem('emailContactGroups', JSON.stringify(contactGroups));
+                renderGroupList();
+                loadGroupsDropdown();
+            }
+        }
+
+        function openGroupEditor(index = -1) {
+            document.getElementById('groupEditIndex').value = index === -1 ? '' : index;
+            document.getElementById('groupEditorTitle').innerText = index === -1 ? "Create Contact Group" : "Edit Contact Group";
+            document.getElementById('groupNameInput').value = index === -1 ? '' : contactGroups[index].name;
+            document.getElementById('groupContactSearch').value = '';
+
+            const selectedEmails = index === -1 ? [] : (contactGroups[index].emails || []);
+            const container = document.getElementById('groupContactsContainer');
+            container.innerHTML = '';
+
+            const customers = JSON.parse(localStorage.getItem('customers')) || [];
+            const suppliers = JSON.parse(localStorage.getItem('suppliers')) || [];
+
+            const addContactCb = (name, email, type) => {
+                if (name && email) {
+                    const val = `"${name}" <${email}>`;
+                    const isChecked = selectedEmails.includes(val) ? 'checked' : '';
+                    const div = document.createElement('div');
+                    div.className = 'group-contact-item';
+                    div.style.cssText = "padding: 5px 0; border-bottom: 1px solid #eee; display: flex; align-items: center; gap: 8px;";
+                    div.innerHTML = `<input type="checkbox" class="group-email-cb" value='${val.replace(/'/g, "&#39;")}' ${isChecked} style="margin: 0; width: auto;"><span style="font-size: 13px;">${name} <small style="color:#888;">(${email}) - ${type}</small></span>`;
+                    container.appendChild(div);
+                }
+            };
+            customers.forEach(c => addContactCb(c.name, c.email, 'Customer'));
+            suppliers.forEach(s => addContactCb(s.name, s.email, 'Supplier'));
+
+            if (container.children.length === 0) container.innerHTML = '<p style="color:#888; font-size:12px; text-align:center;">No contacts with valid email addresses found.</p>';
+            document.getElementById('groupEditorModal').style.display = 'flex';
+        }
+
+        function closeGroupEditor() { document.getElementById('groupEditorModal').style.display = 'none'; }
+
+        function filterGroupContacts() {
+            const term = document.getElementById('groupContactSearch').value.toLowerCase();
+            const items = document.querySelectorAll('.group-contact-item');
+            items.forEach(item => {
+                item.style.display = item.textContent.toLowerCase().includes(term) ? 'flex' : 'none';
+            });
+        }
+
+        function saveContactGroup() {
+            const name = document.getElementById('groupNameInput').value.trim();
+            if (!name) return showErrorModal("Please enter a group name.");
+
+            const checkboxes = document.querySelectorAll('.group-email-cb:checked');
+            if (checkboxes.length === 0) return showErrorModal("Please select at least one contact to save.");
+
+            const emails = Array.from(checkboxes).map(cb => cb.value);
+            const index = document.getElementById('groupEditIndex').value;
+
+            if (index === '') {
+                contactGroups.push({ id: Date.now(), name: name, emails: emails });
+            } else {
+                contactGroups[index].name = name;
+                contactGroups[index].emails = emails;
+            }
+
+            localStorage.setItem('emailContactGroups', JSON.stringify(contactGroups));
+            loadGroupsDropdown();
+            renderGroupList();
+            closeGroupEditor();
+            showSuccessModal("Contact group saved successfully!");
+        }
+
+        function loadSavedEmails() {
+            const list = document.getElementById('savedEmailList');
+            list.innerHTML = '';
+
+            if (savedEmails.length === 0) {
+                list.innerHTML = '<li style="font-size: 12px; color: #999; text-align: center; padding: 10px;">No saved emails</li>';
+                return;
+            }
+
+            savedEmails.forEach((email, index) => {
+                const li = document.createElement('li');
+                li.className = 'email-item';
+                li.innerHTML = `
+                    <span class="email-text" onclick="addToRecipient('${email}')">${email}</span>
+                    <div style="display: flex; gap: 5px;">
+                        <button class="btn btn-warning" style="padding: 2px 6px; font-size: 11px; color: #fff;" onclick="editSavedEmail(${index})" title="Edit"><i class="fas fa-edit"></i></button>
+                        <button class="btn btn-danger" style="padding: 2px 6px; font-size: 11px;" onclick="removeSavedEmail(${index})" title="Delete"><i class="fas fa-times"></i></button>
+                    </div>
+                `;
+                list.appendChild(li);
+            });
+        }
+
+        function addSavedEmail() {
+            const input = document.getElementById('newEmailInput');
+            const email = input.value.trim();
+
+            if (!email || !email.includes('@')) {
+                alert('Please enter a valid email address.');
+                return;
+            }
+
+            if (!savedEmails.includes(email)) {
+                savedEmails.push(email);
+                localStorage.setItem('savedEmails', JSON.stringify(savedEmails));
+                loadSavedEmails();
+                input.value = '';
+            } else {
+                alert('Email already saved.');
+            }
+        }
+
+        function removeSavedEmail(index) {
+            if (confirm('Are you sure you want to delete this saved email?')) {
+                savedEmails.splice(index, 1);
+                localStorage.setItem('savedEmails', JSON.stringify(savedEmails));
+                loadSavedEmails();
+            }
+        }
+
+        function editSavedEmail(index) {
+            const currentEmail = savedEmails[index];
+            document.getElementById('editEmailIndex').value = index;
+            document.getElementById('editEmailInput').value = currentEmail;
+            document.getElementById('editEmailModal').style.display = 'flex';
+        }
+
+        function closeEditEmailModal() {
+            document.getElementById('editEmailModal').style.display = 'none';
+        }
+
+        function showSuccessModal(msg) {
+            document.getElementById('successMsg').innerText = msg;
+            document.getElementById('successModal').style.display = 'flex';
+        }
+
+        function closeSuccessModal() {
+            document.getElementById('successModal').style.display = 'none';
+        }
+
+        function showErrorModal(msg) {
+            document.getElementById('errorMsg').innerText = msg;
+            document.getElementById('errorModal').style.display = 'flex';
+        }
+
+        function closeErrorModal() {
+            document.getElementById('errorModal').style.display = 'none';
+        }
+
+        function saveEditedEmail() {
+            const index = document.getElementById('editEmailIndex').value;
+            const currentEmail = savedEmails[index];
+            const newEmail = document.getElementById('editEmailInput').value.trim();
+
+            if (!newEmail || !newEmail.includes('@')) {
+                alert('Please enter a valid email address.');
+                return;
+            }
+            if (newEmail !== currentEmail && savedEmails.includes(newEmail)) {
+                alert('Email already saved.');
+                return;
+            }
+
+            savedEmails[index] = newEmail;
+            localStorage.setItem('savedEmails', JSON.stringify(savedEmails));
+            loadSavedEmails();
+            closeEditEmailModal();
+        }
+
+        function addToRecipient(email) {
+            const toInput = document.getElementById('emailTo');
+            let currentVal = toInput.value.trim();
+
+            if (currentVal && !currentVal.endsWith(',')) {
+                currentVal += ', ';
+            }
+
+            if (!currentVal.includes(email)) {
+                toInput.value = currentVal + email;
+                saveDraft();
+            }
+        }
+
+        // --- Multiple Drafts Logic ---
+        function loadSavedDrafts() {
+            const list = document.getElementById('draftList');
+            list.innerHTML = '';
+
+            if (savedDrafts.length === 0) {
+                list.innerHTML = '<li style="font-size: 12px; color: #999; text-align: center; padding: 10px;">No saved drafts</li>';
+                return;
+            }
+
+            savedDrafts.forEach(draft => {
+                const li = document.createElement('li');
+                li.className = 'email-item';
+                const subjectPreview = draft.subject ? draft.subject : '(No Subject)';
+                const timePreview = draft.scheduleTime ? new Date(draft.scheduleTime).toLocaleString() : 'No schedule';
+                const attachIcon = (draft.attachments && draft.attachments.length > 0) ? ' <i class="fas fa-paperclip" style="color: #666; margin-left: 5px;" title="Has Attachments"></i>' : '';
+
+                li.innerHTML = `
+                    <div style="flex: 1; cursor: pointer; overflow: hidden;" onclick="viewDraft(${draft.id})">
+                        <div style="font-weight: bold; font-size: 13px; text-overflow: ellipsis; white-space: nowrap; overflow: hidden;">${subjectPreview}${attachIcon}</div>
+                        <div style="font-size: 11px; color: #666;">To: ${draft.to || '-'}</div>
+                        <div style="font-size: 11px; color: #888;"><i class="fas fa-clock"></i> ${timePreview}</div>
+                    </div>
+                    <button class="btn btn-danger" style="padding: 2px 6px; font-size: 11px; margin-left: 5px;" onclick="deleteSpecificDraft(${draft.id}); event.stopPropagation();" title="Delete"><i class="fas fa-times"></i></button>
+                `;
+                list.appendChild(li);
+            });
+        }
+
+        function saveToDrafts() {
+            const draftAttachments = selectedAttachments.map(f => {
+                if (f instanceof File) {
+                    return { name: f.name, path: f.path, size: f.size, type: f.type };
+                }
+                return f;
+            });
+
+            const draft = {
+                id: Date.now(),
+                to: document.getElementById('emailTo').value.trim(),
+                cc: document.getElementById('emailCc').value.trim(),
+                bcc: document.getElementById('emailBcc').value.trim(),
+                subject: document.getElementById('emailSubject').value.trim(),
+                message: quill.root.innerHTML,
+                scheduleTime: document.getElementById('scheduleTime').value,
+                attachments: draftAttachments
+            };
+
+            if (!draft.to && !draft.subject && quill.getText().trim() === "" && draftAttachments.length === 0) {
+                alert("Cannot save an empty draft.");
+                return;
+            }
+
+            savedDrafts.unshift(draft);
+            localStorage.setItem('savedDrafts', JSON.stringify(savedDrafts));
+            loadSavedDrafts();
+            clearDraft(true); // Silently clear the editor
+        }
+
+        function loadSpecificDraft(id) {
+            if (!confirm("This will overwrite your current composition. Proceed?")) return;
+
+            const draftIndex = savedDrafts.findIndex(d => d.id === id);
+            if (draftIndex > -1) {
+                const draft = savedDrafts[draftIndex];
+
+                // Set up the temporary generic draft so loadDraft() populates it identically
+                localStorage.setItem('emailDraft', JSON.stringify(draft));
+                loadDraft();
+
+                // Remove from the saved list to move it into the active workspace
+                savedDrafts.splice(draftIndex, 1);
+                localStorage.setItem('savedDrafts', JSON.stringify(savedDrafts));
+                loadSavedDrafts();
+                document.getElementById('scheduleTime').value = draft.scheduleTime || '';
+
+                closePreviewPanel();
+            }
+        }
+
+        function deleteSpecificDraft(id) {
+            if (confirm("Are you sure you want to delete this saved draft?")) {
+                savedDrafts = savedDrafts.filter(d => d.id !== id);
+                localStorage.setItem('savedDrafts', JSON.stringify(savedDrafts));
+                loadSavedDrafts();
+            }
+        }
+
+        function clearAllDrafts() {
+            if (savedDrafts.length === 0) return;
+            if (confirm("Are you sure you want to delete all saved drafts? This cannot be undone.")) {
+                savedDrafts = [];
+                localStorage.setItem('savedDrafts', JSON.stringify(savedDrafts));
+                loadSavedDrafts();
+            }
+        }
+
+        // --- Draft Logic ---
+        function saveDraft() {
+            const draftAttachments = selectedAttachments.map(f => {
+                if (f instanceof File) {
+                    return { name: f.name, path: f.path, size: f.size, type: f.type };
+                }
+                return f;
+            });
+
+
+            const draft = {
+                to: document.getElementById('emailTo').value,
+                cc: document.getElementById('emailCc').value,
+                bcc: document.getElementById('emailBcc').value,
+                subject: document.getElementById('emailSubject').value,
+                message: quill.root.innerHTML,
+                attachments: draftAttachments
+            };
+            localStorage.setItem('emailDraft', JSON.stringify(draft));
+
+            const status = document.getElementById('draftStatus');
+            status.style.display = 'inline-block';
+            setTimeout(() => { status.style.display = 'none'; }, 2000);
+        }
+
+        function loadDraft() {
+            const draft = JSON.parse(localStorage.getItem('emailDraft'));
+            if (draft) {
+                document.getElementById('emailTo').value = draft.to || '';
+                document.getElementById('emailCc').value = draft.cc || '';
+                document.getElementById('emailBcc').value = draft.bcc || '';
+                document.getElementById('emailSubject').value = draft.subject || '';
+                if (draft.message) {
+                    quill.clipboard.dangerouslyPasteHTML(draft.message);
+                }
+                if (draft.attachments && Array.isArray(draft.attachments)) {
+                    selectedAttachments = draft.attachments;
+                    renderAttachmentList();
+
+                    let totalSize = 0;
+                    selectedAttachments.forEach(f => totalSize += f.size);
+                    const sizeMB = (totalSize / (1024 * 1024)).toFixed(2);
+                    document.getElementById('attachmentInfo').innerText = `${selectedAttachments.length} files selected (${sizeMB} MB total)`;
+                }
+            } else {
+                const defBcc = localStorage.getItem('defaultBcc');
+                if (defBcc) document.getElementById('emailBcc').value = defBcc;
+            }
+        }
+
+        function clearDraft(silent = false) {
+            if (silent || confirm("Are you sure you want to discard this draft?")) {
+                document.getElementById('emailTo').value = '';
+                document.getElementById('emailCc').value = '';
+                document.getElementById('emailBcc').value = e = '';
+                quill.setContents([]);
+                document.getElementById('emailAttachments').value = '';
+                document.getElementById('scheduleTime').value = '';
+                selectedAttachments = [];
+                validateAndRenderAttachments();
+                localStorage.removeItem('emailDraft');
+                hasUnsavedChanges = false;
+            }
+        }
+
+        // --- Shared Preview Logic ---
+        function expandPreviewPanel() {
+            document.getElementById('composeContainer').style.display = 'none';
+            document.getElementById('composeIcon').classList.remove('fa-chevron-down');
+            document.getElementById('composeIcon').classList.add('fa-chevron-right');
+
+            document.getElementById('previewHeader').style.display = 'flex';
+            document.getElementById('previewContainer').style.display = 'block';
+            document.getElementById('previewIcon').classList.remove('fa-chevron-right');
+            document.getElementById('previewIcon').classList.add('fa-chevron-down');
+        }
+
+        function closePreviewPanel() {
+            document.getElementById('previewHeader').style.display = 'none';
+            document.getElementById('previewContainer').style.display = 'none';
+
+            document.getElementById('composeContainer').style.display = 'block';
+            document.getElementById('composeIcon').classList.remove('fa-chevron-right');
+            document.getElementById('composeIcon').classList.add('fa-chevron-down');
+        }
+
+        function viewDraft(id) {
+            const draftIndex = savedDrafts.findIndex(d => d.id === id);
+            if (draftIndex === -1) return;
+            const draft = savedDrafts[draftIndex];
+
+            document.getElementById('previewTitle').innerHTML = '<i class="fas fa-file-alt"></i> Draft Details';
+            document.getElementById('viewSentFromWrapper').style.display = 'none';
+            document.getElementById('viewSentDateWrapper').style.display = 'none';
+
+            document.getElementById('viewSentTo').innerText = draft.to || 'N/A';
+            document.getElementById('viewSentSubject').innerText = draft.subject || '(No Subject)';
+
+            const attachWrapper = document.getElementById('viewSentAttachmentsWrapper');
+            attachWrapper.style.display = (draft.attachments && draft.attachments.length > 0) ? 'block' : 'none';
+            if (draft.attachments && draft.attachments.length > 0) document.getElementById('viewSentAttachmentNames').innerHTML = `<i class="fas fa-paperclip"></i> ${draft.attachments.length} file(s) attached`;
+
+            document.getElementById('viewSentBody').innerHTML = draft.message || '<span style="color: #999;">(No Content)</span>';
+            document.getElementById('btnForwardSent').style.display = 'none';
+            document.getElementById('btnReplyAllSent').style.display = 'none';
+            if (document.getElementById('btnReplyInbox')) document.getElementById('btnReplyInbox').style.display = 'none';
+            document.getElementById('btnEditDraft').style.display = 'inline-block';
+            document.getElementById('btnEditDraft').onclick = function () { loadSpecificDraft(draft.id); };
+            expandPreviewPanel();
+        }
+
+        // --- Sent Emails Logic ---
+        let currentSentEmails = [];
+
+        async function loadSentEmails() {
+            const api = window.electronAPI || (window.parent && window.parent.electronAPI);
+            const list = document.getElementById('sentEmailList');
+            list.innerHTML = '';
+            try {
+                let emails = [];
+                if (api && api.getSentEmails) {
+                    const response = await api.getSentEmails();
+                    if (response.success) emails = response.emails;
+                } else {
+                    // Browser Fallback
+                    emails = JSON.parse(localStorage.getItem('sentEmails') || '[]');
+                }
+
+                currentSentEmails = emails;
+                if (emails.length === 0) {
+                    list.innerHTML = '<li style="font-size: 12px; color: #999; text-align: center; padding: 10px;">No sent emails</li>';
+                    return;
+                }
+                emails.forEach((email, index) => {
+                    const li = document.createElement('li');
+                    li.className = 'email-item';
+                    const time = new Date(email.sentAt).toLocaleString();
+                    const subjectPreview = email.subject || '(No Subject)';
+                    const attachIcon = email.hasAttachments ? ' <i class="fas fa-paperclip" style="color: #666; margin-left: 5px;" title="Has Attachments"></i>' : '';
+                    li.innerHTML = `
+                            <div style="flex: 1; overflow: hidden; cursor: pointer;" title="View Email Content" onclick="viewSentEmail(${index})">
+                                <div style="font-weight: bold; font-size: 13px; text-overflow: ellipsis; white-space: nowrap; overflow: hidden;">${subjectPreview}${attachIcon}</div>
+                                <div style="font-size: 11px; color: #666; text-overflow: ellipsis; white-space: nowrap; overflow: hidden;">To: ${email.to}</div>
+                                <div style="font-size: 11px; color: #888;"><i class="fas fa-check-circle" style="color: #27ae60;"></i> ${time}</div>
+                            </div>
+                            <button class="btn btn-danger" style="padding: 2px 6px; font-size: 11px; margin-left: 5px;" onclick="deleteSentEmail('${email.id}'); event.stopPropagation();" title="Delete Log"><i class="fas fa-trash"></i></button>
+                        `;
+                    list.appendChild(li);
+                });
+            } catch (error) { console.error("Error loading sent emails:", error); }
+        }
+
+        // --- Inbox Logic ---
+        let currentInboxEmails = [];
+
+        async function loadInbox() {
+            const api = window.electronAPI || (window.parent && window.parent.electronAPI);
+
+            const list = document.getElementById('inboxEmailList');
+            list.innerHTML = '<li style="font-size: 12px; color: #999; text-align: center; padding: 10px;"><i class="fas fa-spinner fa-spin"></i> Fetching...</li>';
+
+            try {
+                let responseData;
+                if (api && api.getInboxEmails) {
+                    responseData = await api.getInboxEmails();
+                } else {
+                    // Browser Fallback
+                    const res = await fetch('/api/emails/inbox');
+                    responseData = await res.json();
+                }
+
+                if (responseData && responseData.success) {
+                    currentInboxEmails = responseData.emails;
+                    list.innerHTML = '';
+                    if (currentInboxEmails.length === 0) {
+                        list.innerHTML = '<li style="font-size: 12px; color: #999; text-align: center; padding: 10px;">Inbox is empty</li>';
+                        return;
+                    }
+                    currentInboxEmails.forEach((email, index) => {
+                        const li = document.createElement('li');
+                        li.className = 'email-item';
+                        const time = email.date ? new Date(email.date).toLocaleString() : '';
+                        const subjectPreview = email.subject || '(No Subject)';
+                        const unreadDot = email.isUnread ? '<span style="color: #e74c3c; margin-right: 5px; font-size: 10px;"><i class="fas fa-circle"></i></span>' : '';
+                        const fontWeight = email.isUnread ? '900' : 'normal';
+                        const color = email.isUnread ? '#000' : '#444';
+                        li.innerHTML = `
+                            <div style="flex: 1; overflow: hidden; cursor: pointer;" title="View Email" onclick="viewInboxEmail(${index})">
+                                <div style="font-weight: ${fontWeight}; color: ${color}; font-size: 13px; text-overflow: ellipsis; white-space: nowrap; overflow: hidden;">${unreadDot}${subjectPreview}</div>
+                                <div style="font-size: 11px; color: #666; text-overflow: ellipsis; white-space: nowrap; overflow: hidden;">From: ${email.from}</div>
+                                <div style="font-size: 11px; color: #888;"><i class="fas fa-envelope"></i> ${time}</div>
+                            </div>
+                        `;
+                        list.appendChild(li);
+                    });
+                } else {
+                    list.innerHTML = `<li style="font-size: 12px; color: #e74c3c; text-align: center; padding: 10px;">${responseData.error || 'Failed to fetch inbox'}</li>`;
+                }
+            } catch (error) {
+                list.innerHTML = '<li style="font-size: 12px; color: #e74c3c; text-align: center; padding: 10px;">Error connecting to server</li>';
+            }
+        }
+
+        function viewInboxEmail(index) {
+            const email = currentInboxEmails[index];
+            if (!email) return;
+
+            const api = window.electronAPI || (window.parent && window.parent.electronAPI);
+            if (email.isUnread) {
+                email.isUnread = false;
+
+                const handleReadSuccess = () => {
+                    checkUnreadEmails();
+                    const listItems = document.querySelectorAll('#inboxEmailList .email-item');
+                    if (listItems[index]) {
+                        const subjectDiv = listItems[index].querySelector('div > div:first-child');
+                        if (subjectDiv) {
+                            subjectDiv.style.fontWeight = 'normal';
+                            subjectDiv.style.color = '#444';
+                            const dot = subjectDiv.querySelector('span');
+                            if (dot) dot.remove();
+                        }
+                    }
+                };
+
+
+                if (api && api.markEmailRead) {
+                    api.markEmailRead(email.uid).then(res => {
+                        if (res.success) handleReadSuccess();
+                    });
+                } else {
+                    // Browser Fallback
+                    fetch('/api/emails/mark-read', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ uid: email.uid })
+                    }).then(res => res.json()).then(data => {
+                        if (data.success) handleReadSuccess();
+                    }).catch(e => console.error(e));
+                }
+            }
+        }
+
+        document.getElementById('previewTitle').innerHTML = '<i class="fas fa-inbox"></i> Received Email Details';
+        document.getElementById('viewSentFromWrapper').style.display = 'block';
+        document.getElementById('viewSentFrom').innerText = email.from;
+        document.getElementById('viewSentTo').innerText = email.to || 'Me';
+        document.getElementById('viewSentDateWrapper').style.display = 'block';
+        document.getElementById('viewSentDate').innerText = email.date ? new Date(email.date).toLocaleString() : 'N/A';
+        document.getElementById('viewSentSubject').innerText = email.subject || '(No Subject)';
+
+        const attachWrapper = document.getElementById('viewSentAttachmentsWrapper');
+        if (email.attachments && email.attachments.length > 0) {
+            attachWrapper.style.display = 'block';
+            let attHtml = `<i class="fas fa-paperclip"></i> ${email.attachments.length} Attachment(s): <br><div style="margin-top: 5px; display: flex; gap: 5px; flex-wrap: wrap;">`;
+            email.attachments.forEach((att) => {
+                if (att.content) {
+                    attHtml += `<a href="data:${att.contentType};base64,${att.content}" download="${att.filename}" style="color: #3498db; text-decoration: none; background: #eef2f5; padding: 4px 8px; border-radius: 4px; border: 1px solid #d1d3e2; display: inline-block; font-size: 12px;"><i class="fas fa-download"></i> ${att.filename} (${(att.size / 1024).toFixed(1)} KB)</a>`;
+                }
+            });
+            attHtml += `</div>`;
+            document.getElementById('viewSentAttachmentNames').innerHTML = attHtml;
+        } else {
+            attachWrapper.style.display = 'none';
+        }
+
+        document.getElementById('viewSentBody').innerHTML = email.html || email.text || '<span style="color: #999;">(No Content)</span>';
+
+        document.getElementById('btnEditDraft').style.display = 'none';
+        if (document.getElementById('btnReplyInbox')) document.getElementById('btnReplyInbox').style.display = 'none';
+        document.getElementById('btnForwardSent').style.display = 'inline-block';
+        document.getElementById('btnReplyAllSent').style.display = 'inline-block';
+        document.getElementById('btnForwardSent').onclick = function () { forwardSentEmail(index); };
+        const replyBtn = document.getElementById('btnReplyInbox');
+        replyBtn.style.display = 'inline-block';
+        replyBtn.onclick = function () { replyToInboxEmail(index); };
+        expandPreviewPanel();
+
+
+        async function checkUnreadEmails() {
+            const api = window.electronAPI || (window.parent && window.parent.electronAPI);
+
+            const handleUnreadCount = (unread) => {
+                const titleSpan = document.querySelector('#inboxIcon').nextElementSibling;
+                if (unread > 0) {
+                    titleSpan.innerHTML = `<i class="fas fa-inbox"></i> Inbox (<span style="color:#e74c3c;">${unread} New</span>)`;
+                } else {
+                    titleSpan.innerHTML = `<i class="fas fa-inbox"></i> Inbox (Recent)`;
+                }
+                if (window.parent && window.parent.checkUnreadEmails) {
+                    window.parent.checkUnreadEmails();
+                }
+            };
+
+            try {
+                if (api && api.checkNewEmails) {
+                    const res = await api.checkNewEmails();
+                    if (res.success) handleUnreadCount(res.unread);
+                } else {
+                    // Browser Fallback
+                    const res = await fetch('/api/emails/unread-count');
+                    const data = await res.json();
+                    if (data.success) handleUnreadCount(data.unread);
+                }
+            } catch (e) { }
+        }
+        setInterval(checkUnreadEmails, 60000);
+        checkUnreadEmails();
+
+        function replyToInboxEmail(index) {
+            const email = currentInboxEmails[index];
+            if (!email) return;
+
+            document.getElementById('emailTo').value = email.fromAddress || email.from || '';
+            document.getElementById('emailCc').value = '';
+            document.getElementById('emailBcc').value = localStorage.getItem('defaultBcc') || '';
+
+            let subj = email.subject || '';
+            if (!subj.toLowerCase().startsWith('re:')) subj = 'Re: ' + subj;
+            document.getElementById('emailSubject').value = subj;
+
+            const replyHeader = `<br><br><div class="gmail_quote"><div dir="ltr" class="gmail_attr">On ${new Date(email.date).toLocaleString()}, <strong>${email.from}</strong> wrote:<br></div><blockquote style="margin:0px 0px 0px 0.8ex;border-left:1px solid rgb(204,204,204);padding-left:1ex">`;
+            const originalContent = email.html || email.text || '';
+            const replyFooter = `</blockquote></div>`;
+
+            quill.clipboard.dangerouslyPasteHTML(replyHeader + originalContent + replyFooter);
+            closePreviewPanel();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function viewSentEmail(index) {
+            const email = currentSentEmails[index];
+            if (!email) return;
+
+            const fromWrapper = document.getElementById('viewSentFromWrapper');
+            if (email.from && fromWrapper) {
+                document.getElementById('viewSentFrom').innerText = email.from;
+                fromWrapper.style.display = 'block';
+            } else if (fromWrapper) {
+                fromWrapper.style.display = 'none';
+            }
+
+            document.getElementById('viewSentTo').innerText = email.to || 'N/A';
+            document.getElementById('viewSentDate').innerText = email.sentAt ? new Date(email.sentAt).toLocaleString() : 'N/A';
+            document.getElementById('viewSentSubject').innerText = email.subject || '(No Subject)';
+
+            const attachWrapper = document.getElementById('viewSentAttachmentsWrapper');
+            if (attachWrapper) {
+                attachWrapper.style.display = email.hasAttachments ? 'block' : 'none';
+                const nameSpan = document.getElementById('viewSentAttachmentNames');
+                if (nameSpan) nameSpan.innerHTML = `<i class="fas fa-paperclip"></i> ${email.attachmentNames || 'Included in this email'}`;
+            }
+
+            const bodyContainer = document.getElementById('viewSentBody');
+            if (email.html) {
+                bodyContainer.innerHTML = email.html;
+            } else if (email.text) {
+                bodyContainer.innerText = email.text;
+            } else {
+                bodyContainer.innerHTML = '<span style="color: #999;">(No Content Available - Old Log)</span>';
+            }
+
+            document.getElementById('btnForwardSent').onclick = function () { forwardSentEmail(index); };
+            document.getElementById('btnReplyAllSent').onclick = function () { replyAllSentEmail(index); };
+
+            // Collapse Compose section
+            document.getElementById('composeContainer').style.display = 'none';
+            document.getElementById('composeIcon').classList.remove('fa-chevron-down');
+            document.getElementById('composeIcon').classList.add('fa-chevron-right');
+
+            // Expand Preview section
+            document.getElementById('previewHeader').style.display = 'flex';
+            document.getElementById('previewContainer').style.display = 'block';
+            document.getElementById('previewIcon').classList.remove('fa-chevron-right');
+            document.getElementById('previewIcon').classList.add('fa-chevron-down');
+        }
+
+        function closeViewSentEmailModal() {
+            document.getElementById('previewHeader').style.display = 'none';
+            document.getElementById('previewContainer').style.display = 'none';
+
+            document.getElementById('composeContainer').style.display = 'block';
+            document.getElementById('composeIcon').classList.remove('fa-chevron-right');
+            document.getElementById('composeIcon').classList.add('fa-chevron-down');
+        }
+
+        function printSentEmail() {
+            const fromStr = document.getElementById('viewSentFrom').innerText;
+            const to = document.getElementById('viewSentTo').innerText;
+            const date = document.getElementById('viewSentDate').innerText;
+            const subject = document.getElementById('viewSentSubject').innerText;
+            const bodyHtml = document.getElementById('viewSentBody').innerHTML;
+            const attachWrapper = document.getElementById('viewSentAttachmentsWrapper');
+            const attachments = attachWrapper.style.display !== 'none' ? document.getElementById('viewSentAttachmentNames').innerText.trim() : '';
+
+            const printWindow = window.open('', '', 'height=800,width=800');
+            printWindow.document.write('<html><head><title>Print Email</title>');
+            printWindow.document.write('<style>body { font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif; padding: 20px; color: #333; } .header-info { margin-bottom: 20px; border-bottom: 1px solid #ddd; padding-bottom: 10px; } .header-info div { margin-bottom: 5px; } .email-content { margin-top: 20px; line-height: 1.5; }</style>');
+            printWindow.document.write('</head><body>');
+            printWindow.document.write('<h2>Sent Email Details</h2>');
+            printWindow.document.write('<div class="header-info">');
+            if (fromStr) printWindow.document.write(`<div><strong>From:</strong> ${fromStr}</div>`);
+            printWindow.document.write(`<div><strong>To:</strong> ${to}</div>`);
+            printWindow.document.write(`<div><strong>Date:</strong> ${date}</div>`);
+            printWindow.document.write(`<div><strong>Subject:</strong> ${subject}</div>`);
+            if (attachments) printWindow.document.write(`<div><strong>Attachments:</strong> ${attachments}</div>`);
+            printWindow.document.write('</div>');
+            printWindow.document.write('<div class="email-content">');
+            printWindow.document.write(bodyHtml);
+            printWindow.document.write('</div>');
+            printWindow.document.write('</body></html>');
+            printWindow.document.close();
+            printWindow.focus();
+            setTimeout(() => {
+                printWindow.print();
+                printWindow.close();
+            }, 500);
+        }
+
+        function forwardSentEmail(index) {
+            const email = currentSentEmails[index];
+            if (!email) return;
+
+            document.getElementById('emailTo').value = '';
+            document.getElementById('emailCc').value = '';
+            document.getElementById('emailBcc').value = localStorage.getItem('defaultBcc') || '';
+            document.getElementById('emailSubject').value = 'Fwd: ' + (email.subject || '');
+
+            const fwdHeader = `<br><br><div class="gmail_quote"><div dir="ltr" class="gmail_attr">---------- Forwarded message ---------<br>From: <strong>${email.from || 'Me'}</strong><br>Date: ${new Date(email.sentAt).toLocaleString()}<br>Subject: ${email.subject || ''}<br>To: ${email.to}<br></div><br></div>`;
+            const originalContent = email.html || email.text || '';
+
+            quill.clipboard.dangerouslyPasteHTML(fwdHeader + originalContent);
+
+            closeViewSentEmailModal();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function replyAllSentEmail(index) {
+            const email = currentSentEmails[index];
+            if (!email) return;
+
+            document.getElementById('emailTo').value = email.to || '';
+            document.getElementById('emailCc').value = '';
+            document.getElementById('emailBcc').value = localStorage.getItem('defaultBcc') || '';
+
+            let subj = email.subject || '';
+            if (!subj.toLowerCase().startsWith('re:')) {
+                subj = 'Re: ' + subj;
+            }
+            document.getElementById('emailSubject').value = subj;
+
+            const replyHeader = `<br><br><div class="gmail_quote"><div dir="ltr" class="gmail_attr">On ${new Date(email.sentAt).toLocaleString()}, <strong>${email.from || 'Me'}</strong> wrote:<br></div><blockquote style="margin:0px 0px 0px 0.8ex;border-left:1px solid rgb(204,204,204);padding-left:1ex">`;
+            const originalContent = email.html || email.text || '';
+            const replyFooter = `</blockquote></div>`;
+
+            quill.clipboard.dangerouslyPasteHTML(replyHeader + originalContent + replyFooter);
+
+            closeViewSentEmailModal();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        async function deleteSentEmail(id) {
+            if (confirm("Are you sure you want to delete this log entry?")) {
+                const api = window.electronAPI || (window.parent && window.parent.electronAPI);
+                if (api && api.deleteSentEmail) {
+                    const res = await api.deleteSentEmail(id);
+                    if (res.success) loadSentEmails();
+                }
+                else {
+                    // Browser Fallback
+                    let sentEmails = JSON.parse(localStorage.getItem('sentEmails') || '[]');
+                    sentEmails = sentEmails.filter(e => e.id !== id);
+                    localStorage.setItem('sentEmails', JSON.stringify(sentEmails));
+                    loadSentEmails();
+                }
+            }
+        }
+
+        function toggleSection(containerId, iconId) {
+            const container = document.getElementById(containerId);
+            const icon = document.getElementById(iconId);
+            if (container.style.display === 'none') {
+                container.style.display = 'block';
+                icon.classList.remove('fa-chevron-right');
+                icon.classList.add('fa-chevron-down');
+            } else {
+                container.style.display = 'none';
+                icon.classList.remove('fa-chevron-down');
+                icon.classList.add('fa-chevron-right');
+            }
+        }
+
+        // --- Search Filter Logic ---
+        function filterSidebar() {
+            const term = document.getElementById('sidebarSearch').value.toLowerCase();
+
+            const filterList = (listId) => {
+                const items = document.querySelectorAll(`#${listId} .email-item`);
+                items.forEach(item => {
+                    const text = item.textContent.toLowerCase();
+                    item.style.display = text.includes(term) ? '' : 'none';
+                });
+            };
+
+            filterList('savedEmailList');
+            filterList('draftList');
+            filterList('sentEmailList');
+            filterList('inboxEmailList');
+        }
+
+        // --- Signature Logic ---
+        function openSignatureModal() {
+            const savedSig = localStorage.getItem('emailSignature');
+            if (savedSig) signatureQuill.clipboard.dangerouslyPasteHTML(savedSig);
+            document.getElementById('signatureModal').style.display = 'flex';
+        }
+
+        function closeSignatureModal() {
+            document.getElementById('signatureModal').style.display = 'none';
+        }
+
+        function saveSignature() {
+            const sigHtml = signatureQuill.root.innerHTML;
+            localStorage.setItem('emailSignature', sigHtml);
+            document.getElementById('includeSignature').checked = sigHtml !== '<p><br></p>';
+            closeSignatureModal();
+        }
+
+        function addSocialIcon(network) {
+            const url = prompt("Enter your " + network.charAt(0).toUpperCase() + network.slice(1) + " URL:");
+            if (!url) return;
+
+            const icons = {
+                'facebook': 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b8/2021_Facebook_icon.svg/24px-2021_Facebook_icon.svg.png',
+                'twitter': 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/ce/X_logo_2023.svg/24px-X_logo_2023.svg.png',
+                'linkedin': 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/ca/LinkedIn_logo_initials.png/24px-LinkedIn_logo_initials.png',
+                'instagram': 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e7/Instagram_logo_2016.svg/24px-Instagram_logo_2016.svg.png',
+                'website': 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3f/OOjs_UI_icon_globe.svg/24px-OOjs_UI_icon_globe.svg.png'
+            };
+
+            const iconSrc = icons[network];
+            if (iconSrc) {
+                const range = signatureQuill.getSelection(true) || { index: signatureQuill.getLength() };
+                const html = `<a href="${url}" target="_blank" style="text-decoration:none; margin-right:5px;"><img src="${iconSrc}" width="24" height="24" alt="${network}" style="width:24px; height:24px; vertical-align:middle; border:none;"></a>&nbsp;`;
+                signatureQuill.clipboard.dangerouslyPasteHTML(range.index, html);
+                signatureQuill.setSelection(range.index + 1);
+            }
+        }
+
+        // --- Attachment Validation Logic ---
+        function handleFileSelect(input) {
+            const files = input.files;
+            if (files.length > 0) {
+                selectedAttachments = Array.from(files);
+            } else {
+                selectedAttachments = [];
+            }
+            validateAndRenderAttachments();
+        }
+
+        function validateAndRenderAttachments() {
+            const warningEl = document.getElementById('attachmentWarning');
+            const infoEl = document.getElementById('attachmentInfo');
+            const input = document.getElementById('emailAttachments');
+
+            warningEl.style.display = 'none';
+
+            if (selectedAttachments.length === 0) {
+                infoEl.innerText = "0 files selected (0 MB)";
+                input.value = '';
+                renderAttachmentList();
+                return;
+            }
+
+            if (selectedAttachments.length > MAX_FILES) {
+                warningEl.innerText = `You can only attach a maximum of ${MAX_FILES} files.`;
+                warningEl.style.display = 'block';
+                selectedAttachments = [];
+                input.value = ''; // Clear selection
+                infoEl.innerText = "0 files selected (0 MB)";
+                renderAttachmentList();
+                return;
+            }
+
+            let totalSize = 0;
+            for (let i = 0; i < selectedAttachments.length; i++) {
+                totalSize += selectedAttachments[i].size;
+            }
+
+            if (totalSize > MAX_TOTAL_SIZE_BYTES) {
+                warningEl.innerText = `Total file size exceeds ${MAX_TOTAL_SIZE_MB}MB limit.`;
+                warningEl.style.display = 'block';
+                selectedAttachments = [];
+                input.value = ''; // Clear selection
+                infoEl.innerText = "0 files selected (0 MB)";
+                renderAttachmentList();
+                return;
+            }
+
+            const sizeMB = (totalSize / (1024 * 1024)).toFixed(2);
+            infoEl.innerText = `${selectedAttachments.length} files selected (${sizeMB} MB total)`;
+
+            // Sync the HTML File input with our tracked Array
+            try {
+                const dt = new DataTransfer();
+                selectedAttachments.forEach(file => {
+                    if (file instanceof File) dt.items.add(file);
+                });
+                input.files = dt.files;
+            } catch (e) { }
+
+            renderAttachmentList();
+            saveDraft();
+        }
+
+        function renderAttachmentList() {
+            const list = document.getElementById('attachmentList');
+            if (!list) return;
+            list.innerHTML = '';
+
+            selectedAttachments.forEach((file, index) => {
+                const li = document.createElement('li');
+                li.style.display = 'flex';
+                li.style.justifyContent = 'space-between';
+                li.style.alignItems = 'center';
+                li.style.background = '#f8f9fa';
+                li.style.padding = '5px 10px';
+                li.style.marginBottom = '5px';
+                li.style.border = '1px solid #eee';
+                li.style.borderRadius = '4px';
+
+                const sizeKB = (file.size / 1024).toFixed(1);
+                li.innerHTML = `
+                    <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 70%; cursor: pointer; color: #3498db; text-decoration: underline;" title="Preview ${file.name}" onclick="previewAttachment(${index})">${file.name} (${sizeKB} KB)</span>
+                    <div>
+                        <button type="button" class="btn btn-info" style="padding: 2px 6px; font-size: 11px; color: white;" onclick="previewAttachment(${index})" title="Preview"><i class="fas fa-eye"></i></button>
+                        <button type="button" class="btn btn-danger" style="padding: 2px 6px; font-size: 11px;" onclick="removeAttachment(${index})" title="Remove"><i class="fas fa-times"></i></button>
+                    </div>
+                `;
+                list.appendChild(li);
+            });
+        }
+
+        function removeAttachment(index) {
+            if (confirm("Are you sure you want to remove this file attachment?")) {
+                selectedAttachments.splice(index, 1);
+                validateAndRenderAttachments();
+            }
+        }
+
+        function previewAttachment(index) {
+            const file = selectedAttachments[index];
+            if (!file) return;
+
+            document.getElementById('previewAttachmentTitle').innerText = file.name;
+            const content = document.getElementById('previewAttachmentContent');
+            const fileUrl = URL.createObjectURL(file);
+
+            if (file.type.startsWith('image/')) {
+                content.innerHTML = `<img src="${fileUrl}" style="max-width: 100%; max-height: 60vh; object-fit: contain;">`;
+            } else if (file.type === 'application/pdf') {
+                content.innerHTML = `<iframe src="${fileUrl}" style="width: 100%; height: 60vh; border: none;"></iframe>`;
+            } else {
+                content.innerHTML = `<p style="padding: 20px;">Preview not available for this file type.</p>`;
+            }
+
+            const downloadBtn = document.getElementById('downloadAttachmentBtn');
+            downloadBtn.onclick = function () {
+                const a = document.createElement('a');
+                a.href = fileUrl;
+                a.download = file.name;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            };
+            document.getElementById('attachmentPreviewModal').style.display = 'flex';
+        }
+
+        // --- Send / Schedule Logic ---
+        function sendEmail(mode) {
+            const to = document.getElementById('emailTo').value.trim();
+            const cc = document.getElementById('emailCc').value.trim();
+            const bcc = document.getElementById('emailBcc').value.trim();
+            const subject = document.getElementById('emailSubject').value.trim();
+            let messageHtml = quill.root.innerHTML;
+            let messageText = quill.getText().trim();
+            const scheduleTime = document.getElementById('scheduleTime').value;
+            const requestReadReceipt = document.getElementById('requestReadReceipt') ? document.getElementById('requestReadReceipt').checked : false;
+
+            const includeSig = document.getElementById('includeSignature').checked;
+            const savedSig = localStorage.getItem('emailSignature');
+
+            // Append signature dynamically if checked and signature exists
+            if (includeSig && savedSig && savedSig !== '<p><br></p>') {
+                // Inject inline margins to match the tight line spacing of the Signature Setup editor
+                const formattedSig = savedSig.replace(/<p>/gi, '<p style="margin: 0; padding: 0;">');
+                messageHtml += '<br><br>' + formattedSig;
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = savedSig;
+                messageText += '\n\n' + tempDiv.textContent.trim();
+            }
+
+            if (!to) return alert("Please specify at least one recipient.");
+            if (!subject && !messageText) return alert("Please provide a subject or message.");
+
+            if (mode === 'schedule' && !scheduleTime) {
+                return alert("Please select a date and time for the scheduled email.");
+            }
+
+            const btnSendNow = document.getElementById('btnSendNow');
+            let originalSendText = '';
+            if (mode === 'direct' && btnSendNow) {
+                originalSendText = btnSendNow.innerHTML;
+                btnSendNow.disabled = true;
+                btnSendNow.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+            }
+
+            const restoreButton = () => {
+                if (mode === 'direct' && btnSendNow) {
+                    btnSendNow.disabled = false;
+                    btnSendNow.innerHTML = originalSendText;
+                }
+            };
+
+            // Retrieve files
+            const filePromises = [];
+            for (let i = 0; i < selectedAttachments.length; i++) {
+                const file = selectedAttachments[i];
+                filePromises.push(new Promise((resolve) => {
+                    if (file.path) {
+                        resolve({ filename: file.name, path: file.path });
+                    } else if (file instanceof File) {
+                        const reader = new FileReader();
+                        reader.onload = (e) => {
+                            const content = e.target.result.split(',')[1];
+                            resolve({ filename: file.name, content: content, encoding: 'base64' });
+                        };
+                        reader.readAsDataURL(file);
+                    } else if (file.content) {
+                        resolve({ filename: file.name, content: file.content, encoding: file.encoding });
+                    } else {
+                        resolve({ filename: file.name, path: file.path });
+                    }
+                }));
+            }
+
+            Promise.all(filePromises).then(attachments => {
+                const payload = {
+                    to: to,
+                    cc: cc,
+                    bcc: bcc,
+                    subject: subject,
+                    html: messageHtml,
+                    text: messageText,
+                    attachments: attachments,
+                    scheduledTime: mode === 'schedule' ? scheduleTime : null,
+                    isScheduled: mode === 'schedule',
+                    readReceipt: requestReadReceipt
+                };
+
+                // Safely fetch API whether loaded directly or inside a dashboard iframe
+                const api = window.electronAPI || (window.parent && window.parent.electronAPI);
+                if (api && api.sendEmail) {
+                    api.sendEmail(payload).then(response => {
+                        restoreButton();
+                        if (response.success) {
+                            // Auto-save new emails to "Saved Emails" list
+                            let addedNew = false;
+                            const allRecipients = [to, cc, bcc].join(',').split(',').map(e => e.trim()).filter(e => e.includes('@'));
+                            allRecipients.forEach(email => {
+                                if (!savedEmails.includes(email)) {
+                                    savedEmails.push(email);
+                                    addedNew = true;
+                                }
+                            });
+                            if (addedNew) {
+                                localStorage.setItem('savedEmails', JSON.stringify(savedEmails));
+                                loadSavedEmails();
+                            }
+
+                            showSuccessModal(mode === 'schedule' ? `Email scheduled to ${to} for ${new Date(scheduleTime).toLocaleString()}!` : `Email sent successfully to ${to}!`);
+                            clearDraft(true); // clear after successful send (passes true to silence the discard prompt)
+                            loadSentEmails(); // refresh the sent log sidebar
+                        } else {
+                            showErrorModal("Failed to send: " + response.error);
+                        }
+                    }).catch(err => {
+                        restoreButton();
+                        showErrorModal("System Error: " + err.message);
+                    });
+                } else {
+                    restoreButton();
+
+                    // Simulated Send for Web Browser environment
+                    let sentEmails = JSON.parse(localStorage.getItem('sentEmails') || '[]');
+                    sentEmails.unshift({
+                        id: `sent_${Date.now()}_${Math.random().toString(36).substring(2)}`,
+                        from: "Browser Web Client",
+                        to: payload.to,
+                        subject: payload.subject,
+                        html: payload.html,
+                        text: payload.text,
+                        hasAttachments: payload.attachments && payload.attachments.length > 0,
+                        attachmentNames: payload.attachments && payload.attachments.length > 0 ? payload.attachments.map(a => a.filename || 'Attachment').join(', ') : '',
+                        sentAt: new Date().toISOString()
+                    });
+                    if (sentEmails.length > 100) sentEmails.length = 100;
+                    localStorage.setItem('sentEmails', JSON.stringify(sentEmails));
+
+                    showSuccessModal(mode === 'schedule' ? `Email scheduled to ${to} for ${new Date(scheduleTime).toLocaleString()}! (Simulated in Browser)` : `Email sent successfully to ${to}! (Simulated in Browser)`);
+                    clearDraft(true);
+                    loadSentEmails();
+                }
+            });
+        }
+    </script>
+</body>
+
+</html>

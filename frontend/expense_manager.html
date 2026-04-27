@@ -1,0 +1,2550 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Expense Manager</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <script src="apiClient.js"></script>
+    <script src="settings.js"></script>
+    <script src="brand.service.js"></script>
+    <script src="brandLoader.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            padding: 20px;
+            background: #f8f9fa;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h2 {
+            color: #2c3e50;
+            margin-top: 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+            background: #f1f3f5;
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            font-size: 13px;
+            color: #555;
+        }
+
+        input,
+        select,
+        textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        button {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            color: white;
+        }
+
+        .btn-save {
+            background: #27ae60;
+        }
+
+        .btn-clear {
+            background: #6c757d;
+        }
+
+        .btn-delete {
+            background: #dc3545;
+            padding: 4px 8px;
+            font-size: 12px;
+        }
+
+        .btn-recurring {
+            background: #8e44ad;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            font-size: 14px;
+        }
+
+        th,
+        td {
+            border: 1px solid #dee2e6;
+            padding: 10px;
+            text-align: left;
+        }
+
+        th {
+            background: #2c3e50;
+            color: white;
+            position: sticky;
+            top: 0;
+            z-index: 5;
+        }
+
+        tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+
+        .kpi-row {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .kpi-card {
+            flex: 1;
+            background: #fff;
+            padding: 15px;
+            border-radius: 6px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+            border-left: 4px solid #3498db;
+        }
+
+        .kpi-card h4 {
+            margin: 0 0 5px 0;
+            color: #7f8c8d;
+            font-size: 12px;
+            text-transform: uppercase;
+        }
+
+        .kpi-card .val {
+            font-size: 20px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-content {
+            background-color: #fff;
+            margin: 10% auto;
+            padding: 20px;
+            border-radius: 8px;
+            width: 80%;
+            max-width: 800px;
+            position: relative;
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 24px;
+            cursor: pointer;
+            color: #aaa;
+        }
+
+        .close-modal:hover {
+            color: #000;
+        }
+
+        /* Dropdown Styles */
+        .dropdown-wrapper {
+            position: relative;
+        }
+
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background-color: #fff;
+            min-width: 100%;
+            box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
+            z-index: 10;
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .dropdown-content div {
+            color: black;
+            padding: 10px;
+            text-decoration: none;
+            display: block;
+            cursor: pointer;
+            border-bottom: 1px solid #f1f1f1;
+        }
+
+        .dropdown-content div:hover {
+            background-color: #f1f1f1;
+        }
+
+        .dropdown-content div.active-item {
+            background-color: #f1f1f1;
+            border-left: 3px solid #3c91e6;
+        }
+
+        .add-new {
+            color: #2980b9;
+            font-weight: bold;
+            background: #ebf5fb;
+        }
+
+        /* Dark Mode */
+        body.dark-mode {
+            background: #121212;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .container,
+        body.dark-mode .kpi-card,
+        body.dark-mode .modal-content {
+            background: #2c2c2c;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .form-grid {
+            background: #333;
+        }
+
+        body.dark-mode input,
+        body.dark-mode select,
+        body.dark-mode textarea {
+            background: #444;
+            color: #fff;
+            border-color: #555;
+        }
+
+        body.dark-mode th {
+            background: #1f1f1f;
+        }
+
+        body.dark-mode tr:nth-child(even) {
+            background: #3a3a3a;
+        }
+
+        body.dark-mode .dropdown-content {
+            background: #333;
+            border-color: #555;
+        }
+
+        body.dark-mode .dropdown-content div {
+            color: #eee;
+            border-bottom-color: #444;
+        }
+
+        body.dark-mode .dropdown-content div:hover {
+            background: #444;
+        }
+
+        body.dark-mode .dropdown-content div.active-item {
+            background-color: #444;
+            border-left: 3px solid #3c91e6;
+        }
+
+        body.dark-mode .add-new {
+            background: #2c3e50;
+            color: #3498db;
+        }
+
+        /* Grey Mode */
+        body.grey-mode button {
+            background-color: #6c757d !important;
+            color: #fff !important;
+        }
+
+        /* Compact View */
+        table.compact-table th,
+        table.compact-table td {
+            padding: 4px 5px;
+            font-size: 13px;
+        }
+
+        /* Resizable Columns */
+        #expTable th,
+        #vendorListTable th {
+            position: relative;
+        }
+
+        .resizer {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 5px;
+            height: 100%;
+            cursor: col-resize;
+            user-select: none;
+            touch-action: none;
+        }
+
+        .resizer:hover,
+        .resizing {
+            background-color: #3498db;
+            opacity: 0.5;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <h2>
+            <span>💸 Expense Ledger - <span data-brand="name">RISE Tech Revolution</span></span>
+            <div style="display:flex; align-items:center; gap:10px;">
+                <button class="btn-recurring" onclick="openRecurringModal()">🔄 Manage Recurring</button>
+            </div>
+        </h2>
+
+        <!-- KPI Dashboard -->
+        <div class="kpi-row">
+            <div class="kpi-card">
+                <h4>Total Expenses (This Month)</h4>
+                <div class="val" id="kpiTotal">₹ 0.00</div>
+            </div>
+            <div class="kpi-card" style="border-left-color: #e74c3c;">
+                <h4>Highest Category</h4>
+                <div class="val" id="kpiHighCat">-</div>
+            </div>
+            <div class="kpi-card" style="border-left-color: #f39c12;">
+                <h4>Avg Monthly Spend</h4>
+                <div class="val" id="kpiAvg">₹ 0.00</div>
+            </div>
+        </div>
+
+        <!-- Entry Form -->
+        <div class="form-grid">
+            <input type="hidden" id="expenseId">
+            <div>
+                <label>Date</label>
+                <input type="date" id="expDate">
+            </div>
+            <div>
+                <label style="display:flex; justify-content:space-between; align-items:center;">
+                    Parent Category
+                    <span>
+                        <button onclick="editParentCategory()"
+                            style="padding:2px 6px; font-size:11px; background:#ffc107; border:none; color:black; border-radius:3px; cursor:pointer; margin-right:3px;"
+                            title="Edit selected category">✎</button>
+                        <button onclick="deleteParentCategory()"
+                            style="padding:2px 6px; font-size:11px; background:#dc3545; border:none; color:white; border-radius:3px; cursor:pointer; margin-right:3px;"
+                            title="Delete selected category">🗑️</button>
+                        <button onclick="addParentCategory()"
+                            style="padding:2px 6px; font-size:11px; background:#17a2b8; border:none; color:white; border-radius:3px; cursor:pointer;"
+                            title="Add new parent category">+ Add</button>
+                    </span>
+                </label>
+                <div class="dropdown-wrapper">
+                    <input type="text" id="expCategory" placeholder="Search or Select Parent..."
+                        oninput="filterParentCategories()" onfocus="filterParentCategories()" onkeydown="handleDropdownKeyDown(event, 'expCategory', 'parentCategoryDropdown')" autocomplete="off">
+                    <div id="parentCategoryDropdown" class="dropdown-content"></div>
+                </div>
+            </div>
+            <div>
+                <label style="display:flex; justify-content:space-between; align-items:center;">
+                    Sub-Category
+                    <span>
+                        <button onclick="openReorderModal()"
+                            style="padding:2px 6px; font-size:11px; background:#6f42c1; border:none; color:white; border-radius:3px; cursor:pointer; margin-right:3px;"
+                            title="Reorder sub-categories">↕️</button>
+                        <button onclick="editSubCategory()"
+                            style="padding:2px 6px; font-size:11px; background:#ffc107; border:none; color:black; border-radius:3px; cursor:pointer; margin-right:3px;"
+                            title="Edit selected sub-category">✎</button>
+                        <button onclick="deleteSubCategory()"
+                            style="padding:2px 6px; font-size:11px; background:#dc3545; border:none; color:white; border-radius:3px; cursor:pointer; margin-right:3px;"
+                            title="Delete selected sub-category">🗑️</button>
+                        <button onclick="addSubCategory()"
+                            style="padding:2px 6px; font-size:11px; background:#17a2b8; border:none; color:white; border-radius:3px; cursor:pointer;"
+                            title="Add new sub-category">+ Add</button>
+                    </span>
+                </label>
+                <div class="dropdown-wrapper">
+                    <input type="text" id="expSubCategory" placeholder="Search or Select Sub-Category..."
+                        oninput="filterSubCategories()" onfocus="filterSubCategories()" onkeydown="handleDropdownKeyDown(event, 'expSubCategory', 'subCategoryDropdown')" autocomplete="off">
+                    <div id="subCategoryDropdown" class="dropdown-content"></div>
+                </div>
+            </div>
+            <div>
+
+                <!-- Reorder Modal -->
+                <div id="reorderModal" class="modal" style="z-index: 1200;">
+                    <div class="modal-content" style="max-width: 450px;">
+                        <span class="close-modal" onclick="closeReorderModal()">&times;</span>
+                        <h3 style="color:#6f42c1; margin-top:0;">↕️ Reorder Sub-Categories</h3>
+                        <p style="font-size:14px; color:#666;">Drag and drop to reorder. This new order will be saved
+                            for this parent category.</p>
+                        <ul id="reorderList"
+                            style="list-style:none; padding:0; border:1px solid #ccc; border-radius:4px; max-height:300px; overflow-y:auto;">
+                            <!-- Draggable items will be injected here -->
+                        </ul>
+                        <style>
+                            #reorderList li {
+                                padding: 10px;
+                                background: #f9f9f9;
+                                border-bottom: 1px solid #eee;
+                                cursor: grab;
+                                user-select: none;
+                            }
+
+                            #reorderList li:last-child {
+                                border-bottom: none;
+                            }
+
+                            #reorderList li.dragging {
+                                opacity: 0.5;
+                                background: #e0e0e0;
+                            }
+
+                            body.dark-mode #reorderList li {
+                                background: #3a3a3a;
+                                border-bottom-color: #444;
+                            }
+
+                            body.dark-mode #reorderList li.dragging {
+                                background: #555;
+                            }
+                        </style>
+                        <div style="text-align:right; margin-top:15px;">
+                            <button class="btn-clear" onclick="closeReorderModal()">Cancel</button>
+                            <button class="btn-save" onclick="saveSubCategoryOrder()" style="background:#6f42c1;">Save
+                                Order</button>
+                        </div>
+                    </div>
+                </div>
+
+
+                <label>Vendor / Payee</label>
+                <div class="dropdown-wrapper">
+                    <input type="text" id="vendorSearchInput" placeholder="Search or Select Vendor..."
+                        oninput="filterVendors()" onfocus="filterVendors()" onkeydown="handleDropdownKeyDown(event, 'vendorSearchInput', 'vendorDropdown')" autocomplete="off">
+                    <input type="hidden" id="selectedVendorId">
+                    <div id="vendorDropdown" class="dropdown-content"></div>
+                </div>
+            </div>
+            <div>
+                <label>Payment Mode</label>
+                <select id="expMode" onchange="toggleBankDropdown()">
+                    <option value="Cash">Cash</option>
+                    <option value="Bank Transfer">Bank Transfer</option>
+                    <option value="UPI">UPI</option>
+                    <option value="Card">Card</option>
+                </select>
+            </div>
+            <div id="bankAccountDiv" style="display:none;">
+                <label>Bank Account</label>
+                <select id="expBankAccount"></select>
+            </div>
+            <div>
+
+                <!-- Vendor Modal -->
+                <div id="vendorModal" class="modal">
+                    <div class="modal-content">
+                        <span class="close-modal" onclick="closeVendorModal()">&times;</span>
+                        <h3 style="color:#2c3e50; margin-top:0;">👤 Add / Edit Vendor</h3>
+                        <div class="form-grid" style="grid-template-columns: 1fr 1fr; background:none; padding:0;">
+                            <input type="hidden" id="vendId">
+                            <div style="grid-column: span 2;">
+                                <label>Vendor Name *</label>
+                                <input type="text" id="vendName" placeholder="Official Name">
+                            </div>
+                            <div>
+                                <label>Alias / Nickname</label>
+                                <input type="text" id="vendAlias" placeholder="Optional">
+                            </div>
+                            <div>
+                                <label>Mobile Number</label>
+                                <input type="text" id="vendMobile" placeholder="10-digit Mobile">
+                            </div>
+                            <div>
+                                <label>Email</label>
+                                <input type="email" id="vendEmail" placeholder="Optional">
+                            </div>
+                            <div>
+                                <label>GSTIN</label>
+                                <input type="text" id="vendGst" placeholder="Optional">
+                            </div>
+                            <div>
+                                <label>PAN</label>
+                                <input type="text" id="vendPan" placeholder="Optional">
+                            </div>
+                            <div style="grid-column: span 2;">
+                                <label>Address</label>
+                                <input type="text" id="vendAddress" placeholder="Full Address">
+                            </div>
+                        </div>
+                        <div style="text-align:right; margin-top:10px;">
+                            <button class="btn-save" onclick="saveVendor()">💾 Save Vendor</button>
+                        </div>
+                    </div>
+                </div>
+
+
+
+
+                <label>Invoice / Ref No</label>
+                <input type="text" id="expInv" placeholder="Optional">
+            </div>
+            <div>
+                <label>Taxable Amount (Debit)</label>
+                <input type="number" id="expAmount" placeholder="0.00" oninput="calcTotal()">
+            </div>
+            <div>
+                <label>GST Input (Eligible)</label>
+                <input type="number" id="expGst" placeholder="0.00" oninput="calcTotal()">
+            </div>
+            <div>
+                <label>Total Amount</label>
+                <input type="number" id="expTotal" placeholder="0.00" readonly style="background:#e9ecef;">
+            </div>
+
+            <!-- Recurring Options -->
+            <div
+                style="grid-column: span 2; display: flex; gap: 10px; align-items: center; background: #e8f5e9; padding: 5px 10px; border-radius: 4px;">
+                <label style="margin:0; cursor:pointer; display:flex; align-items:center; gap:5px;">
+                    <input type="checkbox" id="isRecurring" onchange="toggleFrequency()" style="width:auto; margin:0;">
+                    Make Recurring?
+                </label>
+                <select id="frequency" style="display:none; width:auto; margin:0;">
+                    <option value="Daily">Daily</option>
+                    <option value="Weekly">Weekly</option>
+                    <option value="Monthly">Monthly</option>
+                    <option value="Quarterly">Quarterly</option>
+                    <option value="Half-Yearly">Half-Yearly</option>
+                    <option value="Yearly">Yearly</option>
+                </select>
+                <input type="number" id="recurCount" placeholder="Stop after (times)"
+                    style="display:none; width:140px; margin:0;" min="1" title="Optional: Stop after X occurrences">
+            </div>
+
+            <div style="grid-column: span 2;">
+                <label>Remarks</label>
+                <input type="text" id="expRemarks" placeholder="Description...">
+            </div>
+            <div style="grid-column: span 4; text-align: right;">
+                <button class="btn-save" onclick="saveExpense()">💾 Save Expense</button>
+                <button class="btn-clear" onclick="confirmClearForm()">♻️ Clear</button>
+            </div>
+        </div>
+
+        <!-- List -->
+        <div style="display:flex; justify-content:space-between; margin-bottom:10px; flex-wrap:wrap; gap:10px;">
+            <div style="display:flex; gap:10px; flex:1; align-items:center;">
+                <input type="text" id="searchBox" placeholder="Search expenses..." style="max-width:200px;"
+                    oninput="renderTable()">
+                <select id="filterNature" onchange="renderTable()" style="max-width:150px;">
+                    <option value="">All Natures</option>
+                    <option value="Direct Expense">Direct Expense</option>
+                    <option value="Indirect Expense">Indirect Expense</option>
+                </select>
+                <input type="date" id="filterFromDate" onchange="renderTable()" style="max-width:130px;"
+                    title="From Date">
+                <input type="date" id="filterToDate" onchange="renderTable()" style="max-width:130px;" title="To Date">
+            </div>
+            <div>
+                <button class="btn-save" style="background:#17a2b8; margin-right:5px;" 
+                    onclick="location.reload()">🔄 Refresh</button>
+
+                <button class="btn-save" style="background:#8e44ad; margin-right:5px;" onclick="openVendorManager()">👥
+                    Manage Vendors</button>
+                <button id="btnExportVendors" class="btn-save" style="background:#16a085; margin-right:5px;"
+                    onclick="exportVendorsToExcel()">👥 Export Vendors</button>
+                <button id="btnExportExpenses" class="btn-save" style="background:#2980b9;" onclick="exportToExcel()">📊
+                    Export
+                    Expenses</button>
+                <button class="btn-save" style="background:#607d8b; margin-left:5px;" onclick="openSettingsModal()">⚙️
+                    Settings</button>
+            </div>
+        </div>
+
+
+
+        <!-- Vendor List Modal -->
+        <div id="vendorListModal" class="modal">
+            <div class="modal-content" style="max-width: 900px;">
+                <span class="close-modal" onclick="closeVendorListModal()">&times;</span>
+                <h3 style="color:#2c3e50; margin-top:0;">👥 Manage Vendors</h3>
+                <div style="display:flex; justify-content:space-between; margin-bottom: 10px;">
+                    <input type="text" id="vendorListSearch" placeholder="Search vendors..." style="max-width: 300px;"
+                        oninput="renderVendorList()">
+                    <div>
+                        <button class="btn-save" style="background:#607d8b; margin-right:5px;"
+                            onclick="openVendorColumnSettings()">⚙️ Columns</button>
+                        <button class="btn-save" onclick="openVendorModal()">+ Add New Vendor</button>
+                    </div>
+                </div>
+                <div style="overflow-x:auto; max-height:500px;">
+                    <table id="vendorListTable" style="width:100%; border-collapse:collapse;">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Alias</th>
+                                <th>Mobile</th>
+                                <th>Email</th>
+                                <th>GSTIN</th>
+                                <th>PAN</th>
+                                <th>Address</th>
+                                <th>Total Paid</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pagination Controls (Top) -->
+        <div class="pagination-container"
+            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding: 10px; background: #f1f3f5; border-radius: 8px;">
+            <div style="display: flex; align-items: center; gap: 5px;">
+                <span id="totalExpensesDisplay" style="font-weight: bold; color: #2c3e50; margin-right: 8px;"></span>
+                <select id="rowsPerPageSelect" onchange="changeRowsPerPage()"
+                    style="width: auto; padding: 4px; border: 1px solid #ccc; border-radius: 4px; margin: 0;">
+                    <option value="10">10 rows</option>
+                    <option value="20" selected>20 rows</option>
+                    <option value="50">50 rows</option>
+                </select>
+                <input type="number" id="goToPageInput"
+                    style="width: 60px; padding: 4px; border: 1px solid #ccc; border-radius: 4px;" placeholder="Go to"
+                    min="1" onchange="goToPage()">
+            </div>
+            <div id="paginationInfo" style="color: #666; font-size: 14px;"></div>
+            <div class="pagination" id="paginationControls" style="display: flex; gap: 5px;"></div>
+        </div>
+
+
+        <div style="overflow-x:auto; max-height: 600px; overflow-y:auto; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border-radius: 4px;">
+            <table id="expTable" style="margin-top: 0;">
+                <thead>
+                    <tr>
+                        <th style="cursor:pointer;" onclick="handleSort('expense_date')">Date <span
+                                id="sort-icon-expense_date" class="sort-icon"></span></th>
+                        <th style="cursor:pointer;" onclick="handleSort('expense_category')">Parent Category <span
+                                id="sort-icon-expense_category" class="sort-icon"></span></th>
+                        <th style="cursor:pointer;" onclick="handleSort('nature')">Nature <span id="sort-icon-nature"
+                                class="sort-icon"></span></th>
+                        <th style="cursor:pointer;" onclick="handleSort('expense_sub_category')">Sub-Category <span
+                                id="sort-icon-expense_sub_category" class="sort-icon"></span></th>
+                        <th style="cursor:pointer;" onclick="handleSort('vendor_name')">Vendor <span
+                                id="sort-icon-vendor_name" class="sort-icon"></span></th>
+                        <th>Ref No</th>
+                        <th>Mode</th>
+                        <th style="cursor:pointer;" onclick="handleSort('debit_amount')">Debit (Cost) <span
+                                id="sort-icon-debit_amount" class="sort-icon"></span></th>
+                        <th style="cursor:pointer;" onclick="handleSort('gst_amount')">GST <span
+                                id="sort-icon-gst_amount" class="sort-icon"></span></th>
+                        <th style="cursor:pointer;" onclick="handleSort('total_amount')">Total <span
+                                id="sort-icon-total_amount" class="sort-icon"></span></th>
+                        <th class="action-col">Action</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+                <tfoot></tfoot>
+            </table>
+        </div>
+    </div>
+
+    <!-- Recurring Manager Modal -->
+    <div id="recurringModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeRecurringModal()">&times;</span>
+            <h3 style="color:#8e44ad; margin-top:0;">🔄 Active Recurring Expenses <span id="activeRecurringCount" style="font-size:18px; color:#666;">(0)</span></h3>
+            <p style="font-size:13px; color:#666;">These expenses will be automatically generated on their due dates.
+            </p>
+            <input type="text" id="recurringSearchBox" placeholder="Search recurring expenses..." oninput="renderRecurringTable()" style="width:100%; max-width: 300px; margin-bottom: 10px;">
+            <div style="overflow:auto; max-height:400px; margin-top:10px;">
+                <table id="recTable" style="margin-top:0;">
+                    <thead>
+                        <tr>
+                            <th>Category</th>
+                            <th>Vendor</th>
+                            <th>Amount</th>
+                            <th>Frequency</th>
+                            <th style="cursor:pointer;" onclick="handleRecSort()">Next Due <span id="sort-icon-rec-next-due" class="sort-icon"></span></th>
+                            <th class="action-col">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Recurring Modal -->
+    <div id="editRecurringModal" class="modal" style="z-index: 1300;">
+        <div class="modal-content" style="max-width: 300px;">
+            <span class="close-modal" onclick="closeEditRecurringModal()">&times;</span>
+            <h3 style="color:#8e44ad; margin-top:0;">✏️ Edit Frequency</h3>
+            <input type="hidden" id="editRecIndex">
+            <label>New Frequency:</label>
+            <select id="editRecFrequency" style="width:100%; margin-bottom:15px;">
+                <option value="Daily">Daily</option>
+                <option value="Weekly">Weekly</option>
+                <option value="Monthly">Monthly</option>
+                <option value="Quarterly">Quarterly</option>
+                <option value="Half-Yearly">Half-Yearly</option>
+                <option value="Yearly">Yearly</option>
+            </select>
+            <label>Remaining Occurrences:</label>
+            <input type="number" id="editRecRemaining" placeholder="Optional (Empty = Forever)"
+                style="width:100%; margin-bottom:15px;">
+            <div style="text-align:right;">
+                <button class="btn-save" onclick="saveRecurringFrequency()">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Vendor Column Settings Modal -->
+    <div id="vendorColumnSettingsModal" class="modal" style="z-index: 1100;">
+        <div class="modal-content" style="width: 300px;">
+            <span class="close-modal" onclick="closeVendorColumnSettings()">&times;</span>
+            <h3 style="color: #607d8b; margin-top: 0;">⚙️ Table Columns</h3>
+            <div id="vendorColumnToggles"
+                style="text-align: left; max-height: 300px; overflow-y: auto; display: grid; grid-template-columns: 1fr; gap: 10px;">
+            </div>
+            <div style="text-align: right; margin-top: 15px;">
+                <button class="btn-save" onclick="saveVendorColumnSettings()">Apply</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="modal" style="z-index: 1100;">
+        <div class="modal-content" style="width: 300px;">
+            <span class="close-modal" onclick="closeSettingsModal()">&times;</span>
+            <h3 style="color: #607d8b; margin-top: 0;">⚙️ Settings</h3>
+
+            <div style="text-align: left; margin-bottom: 15px;">
+                <h5 style="font-size: 1rem; margin-top: 0; margin-bottom: 10px;">Button Visibility</h5>
+                <label
+                    style="cursor:pointer; display:flex; align-items:center; gap:5px; font-weight:bold; margin-top: 5px;">
+                    <input type="checkbox" id="showBtnExportVendorsToggle"
+                        onchange="toggleButtonVisibility('btnExportVendors', this.checked)"> Show Export Vendors
+                </label>
+                <label
+                    style="cursor:pointer; display:flex; align-items:center; gap:5px; font-weight:bold; margin-top: 5px;">
+                    <input type="checkbox" id="showBtnExportExpensesToggle"
+                        onchange="toggleButtonVisibility('btnExportExpenses', this.checked)"> Show Export Expenses
+                </label>
+                
+                <h5 style="font-size: 1rem; margin-top: 15px; margin-bottom: 10px;">Table Settings</h5>
+                <label style="cursor:pointer; display:flex; align-items:center; gap:5px; font-weight:bold; margin-top: 5px;">
+                    <input type="checkbox" id="showActionButtonsToggle" onchange="toggleActionButtonsVisibility(this.checked)"> Show Action Buttons
+                </label>
+                <label style="cursor:pointer; display:flex; align-items:center; gap:5px; font-weight:bold; margin-top: 5px;">
+                    <input type="checkbox" id="compactViewToggle" onchange="toggleCompactView()"> Compact View
+                </label>
+                <label style="cursor:pointer; display:flex; align-items:center; gap:5px; font-weight:bold; margin-top: 5px;">
+                    <input type="checkbox" id="greyButtonsToggle" onchange="toggleGreyButtons()"> Grey Buttons Mode
+                </label>
+            </div>
+
+            <div style="text-align: right; margin-top: 15px;">
+                <button class="btn-save" onclick="closeSettingsModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Category Input Modal (Replaces prompt) -->
+    <div id="categoryInputModal" class="modal" style="z-index: 1300;">
+        <div class="modal-content" style="max-width: 350px;">
+            <span class="close-modal" onclick="closeCategoryInputModal()">&times;</span>
+            <h3 id="catInputTitle" style="color:#2c3e50; margin-top:0;">Add Category</h3>
+            <p id="catInputWarning" style="font-size:13px; color:#d35400; margin-bottom:10px; display:none;"></p>
+            <input type="text" id="catInputValue" placeholder="Enter Name"
+                style="width:100%; padding:8px; margin-bottom:15px; border:1px solid #ccc; border-radius:4px;"
+                onkeydown="if(event.key==='Enter') confirmSaveCategory()">
+
+            <select id="catInputNature"
+                style="width:100%; padding:8px; margin-bottom:15px; border:1px solid #ccc; border-radius:4px; display:none;">
+                <option value="Indirect Expense">Indirect Expense</option>
+                <option value="Direct Expense">Direct Expense</option>
+            </select>
+            <div style="text-align:right;">
+                <button class="btn-save" onclick="confirmSaveCategory()">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Generic Action Confirmation Modal -->
+    <div id="actionConfirmModal" class="modal" style="z-index: 1100;">
+        <div class="modal-content" style="max-width: 400px; text-align: center;">
+            <span class="close-modal" onclick="closeActionConfirmModal()">&times;</span>
+            <h3 id="actionConfirmTitle" style="color: #d35400; margin-top: 0;">⚠️ Confirmation</h3>
+            <p id="actionConfirmMsg" style="font-size: 16px; color: #555; margin: 20px 0;"></p>
+            <div style="text-align: center;">
+                <button id="actionConfirmBtnYes" class="btn-save" style="margin-right: 10px;">Yes</button>
+                <button class="btn-clear" onclick="closeActionConfirmModal()">No</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Initial Data Loading ---
+        let expenses = JSON.parse(localStorage.getItem("expenses")) || [];
+        let recurring = JSON.parse(localStorage.getItem("recurring_expenses")) || [];
+        let vendors = JSON.parse(localStorage.getItem("vendors")) || [];
+        let isManagingVendors = false;
+
+        // Theme Logic
+        if (localStorage.getItem("appThemeMode") === "dark") document.body.classList.add("dark-mode");
+
+        // Grey Buttons Logic
+        let isGreyButtons = localStorage.getItem("expenseGreyButtons") === "true";
+
+        // Compact View Logic
+        let isCompactView = localStorage.getItem("expenseCompactView") === "true";
+
+        function toggleCompactView() {
+            isCompactView = document.getElementById("compactViewToggle").checked;
+            localStorage.setItem("expenseCompactView", isCompactView);
+            applyCompactView();
+        }
+
+        function applyCompactView() {
+            const table = document.getElementById("expTable");
+            if (isCompactView) table.classList.add("compact-table");
+            else table.classList.remove("compact-table");
+
+            const toggle = document.getElementById("compactViewToggle");
+            if (toggle) toggle.checked = isCompactView;
+        }
+
+        // --- Settings Modal Logic ---
+        let savedButtonVisibility = JSON.parse(localStorage.getItem("expenseButtonVisibility")) || {};
+        let buttonVisibility = {
+            btnExportVendors: true,
+            btnExportExpenses: true,
+            ...savedButtonVisibility
+        };
+
+        function enforceButtonVisibility() {
+            for (const btnId in buttonVisibility) {
+                const btn = document.getElementById(btnId);
+                if (btn) {
+                    if (!buttonVisibility[btnId]) {
+                        btn.style.display = 'none';
+                    }
+                }
+            }
+        }
+
+        const _globalApplyUIPermissions = window.applyUIPermissions;
+        window.applyUIPermissions = function () {
+            if (typeof _globalApplyUIPermissions === 'function') {
+                _globalApplyUIPermissions();
+            }
+            enforceButtonVisibility();
+        };
+
+        function toggleButtonVisibility(btnId, isVisible) {
+            buttonVisibility[btnId] = isVisible;
+            localStorage.setItem("expenseButtonVisibility", JSON.stringify(buttonVisibility));
+            applyButtonVisibility();
+        }
+
+        function applyButtonVisibility() {
+            if (typeof window.applyUIPermissions === 'function') {
+                window.applyUIPermissions();
+            } else {
+                for (const btnId in buttonVisibility) {
+                    const btn = document.getElementById(btnId);
+                    if (btn) btn.style.display = buttonVisibility[btnId] ? '' : 'none';
+                }
+            }
+        }
+
+        // --- Action Buttons Visibility Logic ---
+        let showActionButtons = localStorage.getItem("expenseShowActionButtons") !== "false";
+
+        function toggleActionButtonsVisibility(isVisible) {
+            showActionButtons = isVisible;
+            localStorage.setItem("expenseShowActionButtons", isVisible);
+            applyActionButtonsVisibility();
+        }
+
+        function applyActionButtonsVisibility() {
+            let style = document.getElementById('actionButtonsStyle');
+            if (!style) {
+                style = document.createElement('style');
+                style.id = 'actionButtonsStyle';
+                document.head.appendChild(style);
+            }
+            if (!showActionButtons) {
+                style.textContent = `.action-col { display: none !important; }`;
+            } else {
+                style.textContent = '';
+            }
+        }
+
+        function openSettingsModal() {
+            document.getElementById('settingsModal').style.display = 'block';
+            for (const btnId in buttonVisibility) {
+                const toggleId = `show${btnId.charAt(0).toUpperCase() + btnId.slice(1)}Toggle`;
+                const toggle = document.getElementById(toggleId);
+                if (toggle) {
+                    toggle.checked = buttonVisibility[btnId];
+                }
+            }
+
+            const actionToggle = document.getElementById("showActionButtonsToggle");
+            if (actionToggle) actionToggle.checked = showActionButtons;
+
+            const compactToggle = document.getElementById("compactViewToggle");
+            if (compactToggle) compactToggle.checked = isCompactView;
+
+            const greyToggle = document.getElementById("greyButtonsToggle");
+            if (greyToggle) greyToggle.checked = isGreyButtons;
+        }
+
+        function closeSettingsModal() {
+            document.getElementById('settingsModal').style.display = 'none';
+        }
+
+        // Pagination & Sorting Globals
+        let currentPage = 1;
+        let rowsPerPage = 20;
+        let currentSortColumn = 'expense_date';
+        let currentSortDirection = 'desc';
+
+        function handleSort(column) {
+            if (currentSortColumn === column) {
+                currentSortDirection = currentSortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSortColumn = column;
+                currentSortDirection = 'asc';
+            }
+
+            document.querySelectorAll('.sort-icon').forEach(el => el.innerText = '');
+            const icon = document.getElementById(`sort-icon-${column}`);
+            if (icon) icon.innerText = currentSortDirection === 'asc' ? ' ▲' : ' ▼';
+
+            renderTable();
+        }
+
+        function toggleGreyButtons() {
+            isGreyButtons = document.getElementById("greyButtonsToggle").checked;
+            localStorage.setItem("expenseGreyButtons", isGreyButtons);
+            applyGreyButtons();
+        }
+
+        function applyGreyButtons() {
+            if (isGreyButtons) document.body.classList.add("grey-mode");
+            else document.body.classList.remove("grey-mode");
+        }
+
+        /** * FIX 1: Robust Schema Merging
+         * Ensures the 'Add' and 'Edit' category buttons always have a data source.
+         */
+        function getMergedSchema() {
+            let schema = { groups: [] };
+
+            // Fallback defaults if settings.js is missing or empty
+            // const defaultParents = ["Rent", "Salary", "Electricity", "Travel", "Office Supplies"];
+
+            // Removed predefined lists as per request
+            // if (typeof EXPENSE_LEDGER_SCHEMA !== 'undefined' && EXPENSE_LEDGER_SCHEMA.groups) {
+            //     schema.groups = JSON.parse(JSON.stringify(EXPENSE_LEDGER_SCHEMA.groups));
+            // }
+
+            const customParents = JSON.parse(localStorage.getItem("custom_expense_parents")) || [];
+            customParents.forEach(cp => {
+                if (!schema.groups.some(g => g.name === cp.name)) schema.groups.push(cp);
+            });
+
+            const customSubs = JSON.parse(localStorage.getItem("custom_expense_subcategories")) || {};
+            schema.groups.forEach(group => {
+                if (customSubs[group.name]) {
+                    if (!group.subCategories) group.subCategories = [];
+                    group.subCategories = [...new Set([...group.subCategories, ...customSubs[group.name]])];
+                }
+            });
+            return schema;
+        }
+
+        // --- Category Functions ---
+        function populateExpenseCategories() {
+            const div = document.getElementById("parentCategoryDropdown");
+            if (!div) return;
+            div.innerHTML = "";
+
+            const schema = getMergedSchema();
+            schema.groups.sort((a, b) => a.name.localeCompare(b.name));
+
+            schema.groups.forEach(g => {
+                const item = document.createElement("div");
+                item.innerHTML = `<strong>${g.name}</strong> <small style="color:#888;">(${g.nature || 'Indirect Expense'})</small>`;
+                item.onclick = function () {
+                    document.getElementById("expCategory").value = g.name;
+                    div.style.display = "none";
+                    document.getElementById('expSubCategory').value = ''; // Clear sub on parent change
+                };
+                div.appendChild(item);
+            });
+        }
+
+        function populateSubCategories() {
+            // No-op for input-based dropdown
+        }
+
+        function filterParentCategories() {
+            const input = document.getElementById("expCategory");
+            input.currentFocus = -1;
+            const filter = input.value.toLowerCase();
+            const div = document.getElementById("parentCategoryDropdown");
+            div.innerHTML = "";
+            div.style.display = "block";
+
+            const schema = getMergedSchema();
+            schema.groups.sort((a, b) => a.name.localeCompare(b.name));
+
+            const filtered = schema.groups.filter(g => g.name.toLowerCase().includes(filter));
+
+            filtered.forEach(g => {
+                const item = document.createElement("div");
+                item.innerHTML = `<strong>${g.name}</strong> <small style="color:#888;">(${g.nature || 'Indirect Expense'})</small>`;
+                item.onclick = function () {
+                    input.value = g.name;
+                    div.style.display = "none";
+                    document.getElementById('expSubCategory').value = ''; // Clear sub on parent change
+                };
+                div.appendChild(item);
+            });
+
+            if (filtered.length === 0) {
+                const item = document.createElement("div");
+                item.textContent = "No matches";
+                item.style.color = "#999";
+                div.appendChild(item);
+            }
+        }
+
+        function filterSubCategories() {
+            const parentInput = document.getElementById("expCategory");
+            const input = document.getElementById("expSubCategory");
+            input.currentFocus = -1;
+            const filter = input.value.toLowerCase();
+            const div = document.getElementById("subCategoryDropdown");
+            div.innerHTML = "";
+            div.style.display = "block";
+
+            const parentName = parentInput.value;
+            if (!parentName) {
+                const item = document.createElement("div");
+                item.textContent = "Select Parent Category First";
+                item.style.color = "#999";
+                div.appendChild(item);
+                return;
+            }
+
+            const schema = getMergedSchema();
+            const group = schema.groups.find(g => g.name === parentName);
+
+            if (!group || !group.subCategories) {
+                const item = document.createElement("div");
+                item.textContent = "No sub-categories";
+                item.style.color = "#999";
+                div.appendChild(item);
+                return;
+            }
+
+            group.subCategories.sort((a, b) => a.localeCompare(b));
+            const filtered = group.subCategories.filter(s => s.toLowerCase().includes(filter));
+
+            filtered.forEach(s => {
+                const item = document.createElement("div");
+                item.textContent = s;
+                item.onclick = function () {
+                    input.value = s;
+                    div.style.display = "none";
+                };
+                div.appendChild(item);
+            });
+            if (filtered.length === 0) {
+                const item = document.createElement("div");
+                item.textContent = "No matches";
+                item.style.color = "#999";
+                div.appendChild(item);
+            }
+        }
+
+        // --- Calculation Logic ---
+        function calcTotal() {
+            const amt = parseFloat(document.getElementById('expAmount').value) || 0;
+            const gst = parseFloat(document.getElementById('expGst').value) || 0;
+            // FIX: Ensure total is formatted correctly for the UI
+            document.getElementById('expTotal').value = (amt + gst).toFixed(2);
+        }
+
+        // --- Confirmation & Modal Helpers ---
+        function askConfirm(title, msg, callback) {
+            const modal = document.getElementById('actionConfirmModal');
+            if (!modal) { // Fallback if modal HTML is broken
+                if (confirm(msg)) callback();
+                return;
+            }
+            document.getElementById('actionConfirmTitle').innerText = title;
+            document.getElementById('actionConfirmMsg').innerText = msg;
+            const yesBtn = document.getElementById('actionConfirmBtnYes');
+            const newYesBtn = yesBtn.cloneNode(true);
+            yesBtn.parentNode.replaceChild(newYesBtn, yesBtn);
+            newYesBtn.onclick = () => { closeActionConfirmModal(); callback(); };
+            modal.style.display = 'block';
+        }
+
+        function closeActionConfirmModal() {
+            document.getElementById('actionConfirmModal').style.display = 'none';
+        }
+
+        // --- Initialization ---
+        function init() {
+            const dateInput = document.getElementById('expDate');
+            if (dateInput) dateInput.valueAsDate = new Date();
+
+            // Brand Name Handling
+            const brandLabel = document.getElementById('brandName');
+            if (typeof APP_SETTINGS !== 'undefined' && APP_SETTINGS.COMPANY_NAME) {
+                brandLabel.innerText = "💸 Expense Ledger - " + APP_SETTINGS.COMPANY_NAME;
+            }
+
+            populateExpenseCategories();
+            renderTable();
+            updateKPIs();
+        }
+
+        // Initialize on load
+        window.onload = init;
+
+        // --- Category Input Modal Logic ---
+        let categoryInputCallback = null;
+
+        function openCategoryInputModal(title, callback, showNature = false, defaultValue = '', defaultNature = 'Indirect Expense', warningMsg = '') {
+            document.getElementById('catInputTitle').innerText = title;
+            const warningEl = document.getElementById('catInputWarning');
+            if (warningEl) {
+                if (warningMsg) {
+                    warningEl.innerText = warningMsg;
+                    warningEl.style.display = 'block';
+                } else {
+                    warningEl.style.display = 'none';
+                }
+            }
+            document.getElementById('catInputValue').value = defaultValue || '';
+            const natureEl = document.getElementById('catInputNature');
+            if (natureEl) {
+                natureEl.style.display = showNature ? 'block' : 'none';
+                natureEl.value = defaultNature || 'Indirect Expense';
+            }
+            categoryInputCallback = callback;
+            document.getElementById('categoryInputModal').style.display = 'block';
+            document.getElementById('catInputValue').focus();
+        }
+
+
+        function closeCategoryInputModal() {
+            document.getElementById('categoryInputModal').style.display = 'none';
+            categoryInputCallback = null;
+        }
+
+        function confirmSaveCategory() {
+            const val = document.getElementById('catInputValue').value;
+            const natureEl = document.getElementById('catInputNature');
+            const nature = natureEl ? natureEl.value : 'Indirect Expense';
+            if (categoryInputCallback) categoryInputCallback(val, nature);
+            closeCategoryInputModal();
+        }
+
+        function addParentCategory() {
+            openCategoryInputModal("Add Parent Category", (name, nature) => {
+                if (!name || !name.trim()) return;
+                const cleanName = name.trim();
+
+                const schema = getMergedSchema();
+                if (schema.groups.some(g => g.name.toLowerCase() === cleanName.toLowerCase())) {
+                    alert("Category already exists!");
+                    return;
+                }
+
+                const newGroup = {
+                    id: "custom_" + Date.now(),
+                    name: cleanName,
+                    reportTarget: "Profit & Loss",
+                    nature: nature || "Indirect Expense",
+                    subCategories: []
+                };
+
+                const customParents = JSON.parse(localStorage.getItem("custom_expense_parents")) || [];
+                customParents.push(newGroup);
+                localStorage.setItem("custom_expense_parents", JSON.stringify(customParents));
+
+                console.log("Parent category added:", newGroup);
+
+                // Update UI
+                document.getElementById('expCategory').value = cleanName;
+                populateExpenseCategories();
+                document.getElementById('parentCategoryDropdown').style.display = 'none';
+
+                populateSubCategories();
+            }, true);
+        }
+
+        function addSubCategory() {
+            const parent = document.getElementById('expCategory').value;
+            if (!parent) {
+                alert("Please select a Parent Category first.");
+                return;
+            }
+
+            openCategoryInputModal(`Add Sub-Category for '${parent}'`, (name) => {
+                if (!name || !name.trim()) return;
+                const cleanName = name.trim();
+
+                const customSubs = JSON.parse(localStorage.getItem("custom_expense_subcategories")) || {};
+                if (!customSubs[parent]) customSubs[parent] = [];
+
+                // Check duplicates
+                const schema = getMergedSchema();
+                let existingParent = null;
+                for (const g of schema.groups) {
+                    if (g.subCategories && g.subCategories.some(s => s.toLowerCase() === cleanName.toLowerCase())) {
+                        existingParent = g.name;
+                        break;
+                    }
+                }
+                if (existingParent) {
+                    alert(`Sub-category '${cleanName}' already exists under '${existingParent}'.`);
+                    return;
+                }
+
+                customSubs[parent].push(cleanName);
+                localStorage.setItem("custom_expense_subcategories", JSON.stringify(customSubs));
+
+                populateSubCategories();
+                document.getElementById('expSubCategory').value = cleanName;
+            });
+        }
+
+        function editParentCategory() {
+            const sel = document.getElementById('expCategory');
+            const oldName = sel.value;
+            if (!oldName) return alert("Please select a category to edit.");
+
+            // Check if custom
+            let customParents = JSON.parse(localStorage.getItem("custom_expense_parents")) || [];
+            let index = customParents.findIndex(p => p.name === oldName);
+
+            if (index === -1) {
+                // Migrate legacy default to custom
+                customParents.push({
+                    id: "custom_" + Date.now(),
+                    name: oldName,
+                    reportTarget: "Profit & Loss",
+                    nature: "Indirect Expense",
+                    subCategories: []
+                });
+                index = customParents.length - 1;
+            }
+
+            const usedCount = expenses.filter(e => e.expense_category === oldName).length;
+            let warningMsg = "";
+            if (usedCount > 0) {
+                warningMsg = `⚠️ Used in ${usedCount} past expense record(s). Renaming it will update these historical records as well.`;
+            }
+
+            const currentNature = customParents[index].nature || 'Indirect Expense';
+
+            openCategoryInputModal("Edit Parent Category", (newName, newNature) => {
+                if (!newName || newName.trim() === "") return;
+                const cleanName = newName.trim();
+
+                if (cleanName.toLowerCase() !== oldName.toLowerCase()) {
+                    const schema = getMergedSchema();
+                    if (schema.groups.some(g => g.name.toLowerCase() === cleanName.toLowerCase())) {
+                        return alert("Category name already exists.");
+                    }
+                }
+
+                customParents[index].name = cleanName;
+                customParents[index].nature = newNature || currentNature;
+                localStorage.setItem("custom_expense_parents", JSON.stringify(customParents));
+
+                let customSubs = JSON.parse(localStorage.getItem("custom_expense_subcategories")) || {};
+                if (customSubs[oldName] && cleanName !== oldName) {
+                    customSubs[cleanName] = customSubs[oldName];
+                    delete customSubs[oldName];
+                    localStorage.setItem("custom_expense_subcategories", JSON.stringify(customSubs));
+                }
+
+                if (usedCount > 0 || cleanName !== oldName) {
+                    expenses.forEach(e => {
+                        if (e.expense_category === oldName) e.expense_category = cleanName;
+                    });
+                    localStorage.setItem("expenses", JSON.stringify(expenses));
+                    renderTable();
+                }
+
+                populateExpenseCategories();
+                sel.value = cleanName;
+                document.getElementById('expSubCategory').value = '';
+                populateSubCategories();
+            }, true, oldName, currentNature, warningMsg);
+        }
+
+        function editSubCategory() {
+            const parent = document.getElementById('expCategory').value;
+            const sel = document.getElementById('expSubCategory');
+            const oldName = sel.value;
+
+            if (!parent || !oldName) return alert("Please select a sub-category to edit.");
+
+            let customSubs = JSON.parse(localStorage.getItem("custom_expense_subcategories")) || {};
+            let subs = customSubs[parent] || [];
+            let index = subs.indexOf(oldName);
+
+            if (index === -1) {
+                subs.push(oldName);
+                index = subs.length - 1;
+            }
+
+            const usedCount = expenses.filter(e => e.expense_category === parent && e.expense_sub_category === oldName).length;
+            let warningMsg = "";
+            if (usedCount > 0) {
+                warningMsg = `⚠️ Used in ${usedCount} past expense record(s). Renaming it will update these historical records as well.`;
+            }
+
+            openCategoryInputModal("Edit Sub-Category", (newName) => {
+                if (!newName || newName.trim() === "") return;
+                const cleanName = newName.trim();
+
+                if (cleanName.toLowerCase() !== oldName.toLowerCase()) {
+                    const schema = getMergedSchema();
+                    let existingParent = null;
+                    for (const g of schema.groups) {
+                        if (g.subCategories && g.subCategories.some(s => s.toLowerCase() === cleanName.toLowerCase())) {
+                            existingParent = g.name;
+                            break;
+                        }
+                    }
+                    if (existingParent) {
+                        return alert(`Sub-category '${cleanName}' already exists under '${existingParent}'.`);
+                    }
+                }
+
+                subs[index] = cleanName;
+                customSubs[parent] = subs;
+                localStorage.setItem("custom_expense_subcategories", JSON.stringify(customSubs));
+
+                if (usedCount > 0 || cleanName !== oldName) {
+                    expenses.forEach(e => {
+                        if (e.expense_category === parent && e.expense_sub_category === oldName) e.expense_sub_category = cleanName;
+                    });
+                    localStorage.setItem("expenses", JSON.stringify(expenses));
+                    renderTable();
+                }
+
+                populateSubCategories();
+                sel.value = cleanName;
+            }, false, oldName, 'Indirect Expense', warningMsg);
+        }
+
+        function deleteParentCategory() {
+            const sel = document.getElementById('expCategory');
+            const name = sel.value;
+            if (!name) return alert("Please select a category to delete.");
+
+            // Check if custom
+            let customParents = JSON.parse(localStorage.getItem("custom_expense_parents")) || [];
+            const index = customParents.findIndex(p => p.name === name);
+
+            if (index === -1) {
+                return alert("System default categories cannot be deleted.");
+            }
+
+            if (!confirm(`Are you sure you want to delete the category '${name}'? This will also remove its sub-categories mapping.`)) return;
+
+            // Remove Parent
+            customParents.splice(index, 1);
+            localStorage.setItem("custom_expense_parents", JSON.stringify(customParents));
+
+            // Remove Subcategories mapping
+            let customSubs = JSON.parse(localStorage.getItem("custom_expense_subcategories")) || {};
+            if (customSubs[name]) {
+                delete customSubs[name];
+                localStorage.setItem("custom_expense_subcategories", JSON.stringify(customSubs));
+            }
+
+            populateExpenseCategories();
+            populateSubCategories();
+        }
+
+        function deleteSubCategory() {
+            const parent = document.getElementById('expCategory').value;
+            const sel = document.getElementById('expSubCategory');
+            const name = sel.value;
+
+            if (!parent || !name) return alert("Please select a sub-category to delete.");
+
+            let customSubs = JSON.parse(localStorage.getItem("custom_expense_subcategories")) || {};
+            let subs = customSubs[parent] || [];
+            const index = subs.indexOf(name);
+
+            if (index === -1) {
+                return alert("System default sub-categories cannot be deleted.");
+            }
+
+            if (!confirm(`Are you sure you want to delete the sub-category '${name}'?`)) return;
+
+            // Remove Sub-category
+            subs.splice(index, 1);
+            customSubs[parent] = subs;
+            localStorage.setItem("custom_expense_subcategories", JSON.stringify(customSubs));
+
+            populateSubCategories();
+        }
+
+        function openReorderModal() {
+            const parent = document.getElementById('expCategory').value;
+            if (!parent) {
+                alert("Please select a Parent Category first.");
+                return;
+            }
+
+            const listEl = document.getElementById('reorderList');
+            listEl.innerHTML = '';
+
+            const schema = getMergedSchema();
+            const group = schema.groups.find(g => g.name === parent);
+
+            if (!group || !group.subCategories || group.subCategories.length === 0) {
+                alert("No sub-categories to reorder for this parent.");
+                return;
+            }
+
+            group.subCategories.forEach(sub => {
+                const li = document.createElement('li');
+                li.draggable = true;
+                li.textContent = sub;
+                li.addEventListener('dragstart', handleDragStart);
+                li.addEventListener('dragover', handleDragOver);
+                li.addEventListener('drop', handleDrop);
+                li.addEventListener('dragend', handleDragEnd);
+                listEl.appendChild(li);
+            });
+
+            document.getElementById('reorderModal').style.display = 'block';
+        }
+
+        function closeReorderModal() {
+            document.getElementById('reorderModal').style.display = 'none';
+        }
+
+        function saveSubCategoryOrder() {
+            const parent = document.getElementById('expCategory').value;
+            const listEl = document.getElementById('reorderList');
+            const newOrder = Array.from(listEl.querySelectorAll('li')).map(li => li.textContent);
+
+            const customSubs = JSON.parse(localStorage.getItem("custom_expense_subcategories")) || {};
+            customSubs[parent] = newOrder;
+            localStorage.setItem("custom_expense_subcategories", JSON.stringify(customSubs));
+
+            closeReorderModal();
+            populateSubCategories(); // Refresh dropdown with new order
+            alert("Sub-category order saved!");
+        }
+
+        // --- Drag and Drop Handlers ---
+        let draggedItem = null;
+
+        function handleDragStart(e) { draggedItem = this; setTimeout(() => this.classList.add('dragging'), 0); }
+        function handleDragEnd() { this.classList.remove('dragging'); draggedItem = null; }
+        function handleDragOver(e) { e.preventDefault(); const list = document.getElementById('reorderList'); const afterElement = getDragAfterElement(list, e.clientY); if (afterElement == null) { list.appendChild(draggedItem); } else { list.insertBefore(draggedItem, afterElement); } }
+        function handleDrop(e) { e.preventDefault(); }
+        function getDragAfterElement(container, y) { const draggableElements = [...container.querySelectorAll('li:not(.dragging)')]; return draggableElements.reduce((closest, child) => { const box = child.getBoundingClientRect(); const offset = y - box.top - box.height / 2; if (offset < 0 && offset > closest.offset) { return { offset: offset, element: child }; } else { return closest; } }, { offset: Number.NEGATIVE_INFINITY }).element; }
+
+        function populateBankAccounts() {
+            const accounts = JSON.parse(localStorage.getItem('bank_accounts')) || [];
+            const sel = document.getElementById('expBankAccount');
+            sel.innerHTML = '<option value="">-- Select Bank --</option>';
+            accounts.forEach(acc => {
+                if (acc.type === 'Bank') {
+                    const opt = document.createElement('option');
+                    opt.value = acc.id;
+                    opt.textContent = acc.name + (acc.number ? ` (${acc.number})` : '');
+                    if (acc.isPrimary) opt.selected = true;
+                    sel.appendChild(opt);
+                }
+            });
+        }
+
+        function toggleBankDropdown() {
+            const mode = document.getElementById('expMode').value;
+            const div = document.getElementById('bankAccountDiv');
+            if (mode === 'Cash') {
+                div.style.display = 'none';
+            } else {
+                div.style.display = 'block';
+            }
+        }
+
+        // --- Column Resizing Logic ---
+        function enableColumnResizing(tableId, storageKey) {
+            const table = document.getElementById(tableId);
+            if (!table) return;
+            const headers = table.querySelectorAll('th');
+
+            headers.forEach((th) => {
+                if (th.querySelector('.resizer')) return;
+
+                const resizer = document.createElement('div');
+                resizer.classList.add('resizer');
+                th.appendChild(resizer);
+
+                resizer.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                });
+
+                let startX, startWidth;
+
+                resizer.addEventListener('mousedown', function (e) {
+                    e.preventDefault();
+                    e.stopPropagation(); // prevent sort when resizing
+                    startX = e.pageX;
+                    startWidth = th.offsetWidth;
+                    resizer.classList.add('resizing');
+
+                    document.addEventListener('mousemove', onMouseMove);
+                    document.addEventListener('mouseup', onMouseUp);
+                });
+
+                function onMouseMove(e) {
+                    const newWidth = startWidth + (e.pageX - startX);
+                    if (newWidth > 30) {
+                        th.style.width = newWidth + 'px';
+                        th.style.minWidth = newWidth + 'px';
+                    }
+                }
+
+                function onMouseUp() {
+                    resizer.classList.remove('resizing');
+                    document.removeEventListener('mousemove', onMouseMove);
+                    document.removeEventListener('mouseup', onMouseUp);
+                    saveColumnWidths(tableId, storageKey);
+                }
+            });
+        }
+
+        function saveColumnWidths(tableId, storageKey) {
+            const widths = [];
+            const headers = document.querySelectorAll(`#${tableId} th`);
+            headers.forEach(th => {
+                widths.push(th.style.width);
+            });
+            localStorage.setItem(storageKey, JSON.stringify(widths));
+        }
+
+        function loadColumnWidths(tableId, storageKey) {
+            const savedWidths = JSON.parse(localStorage.getItem(storageKey));
+            if (savedWidths && Array.isArray(savedWidths)) {
+                const headers = document.querySelectorAll(`#${tableId} th`);
+                headers.forEach((th, index) => {
+                    if (savedWidths[index]) {
+                        th.style.width = savedWidths[index];
+                        th.style.minWidth = savedWidths[index];
+                    }
+                });
+            }
+        }
+
+        function init() {
+            document.getElementById('expDate').valueAsDate = new Date();
+
+            populateExpenseCategories();
+            populateBankAccounts();
+            checkRecurringExpenses(); // Check for due recurring items
+            renderTable();
+            updateKPIs();
+
+            // Initialize Grey Buttons
+            const greyToggle = document.getElementById("greyButtonsToggle");
+            if (greyToggle) {
+                greyToggle.checked = isGreyButtons;
+            }
+            applyGreyButtons();
+            applyCompactView();
+            applyButtonVisibility();
+            applyActionButtonsVisibility();
+            loadColumnWidths('expTable', 'expenseColumnWidths');
+            enableColumnResizing('expTable', 'expenseColumnWidths');
+
+            // Close dropdown when clicking outside
+            document.addEventListener('click', function (e) {
+                if (!e.target.closest('.dropdown-wrapper')) {
+                    document.getElementById('vendorDropdown').style.display = 'none';
+                    document.getElementById('parentCategoryDropdown').style.display = 'none';
+                    document.getElementById('subCategoryDropdown').style.display = 'none';
+                }
+            });
+        }
+
+        // --- Confirmation Modal Logic ---
+        function askConfirm(title, msg, callback) {
+            document.getElementById('actionConfirmTitle').innerText = title;
+            document.getElementById('actionConfirmMsg').innerText = msg;
+            const yesBtn = document.getElementById('actionConfirmBtnYes');
+
+            // Clone to remove old listeners
+            const newYesBtn = yesBtn.cloneNode(true);
+            yesBtn.parentNode.replaceChild(newYesBtn, yesBtn);
+
+            newYesBtn.onclick = function () {
+                closeActionConfirmModal();
+                callback();
+            };
+
+            document.getElementById('actionConfirmModal').style.display = 'block';
+        }
+
+        function closeActionConfirmModal() {
+            document.getElementById('actionConfirmModal').style.display = 'none';
+        }
+
+        // --- Vendor Logic ---
+        function filterVendors() {
+            const input = document.getElementById("vendorSearchInput");
+            input.currentFocus = -1;
+            const filter = input.value.toLowerCase();
+            const div = document.getElementById("vendorDropdown");
+            div.innerHTML = "";
+            div.style.display = "block";
+
+            // Sort by usage or name (simple sort by name for now)
+            const filtered = vendors.filter(v =>
+                v.status !== 'Inactive' &&
+                (v.vendorName.toLowerCase().includes(filter) || (v.aliasName && v.aliasName.toLowerCase().includes(filter)))
+            );
+
+            filtered.forEach(v => {
+                const item = document.createElement("div");
+                item.innerHTML = `<strong>${v.vendorName}</strong> <small style='color:#888'>${v.aliasName ? '(' + v.aliasName + ')' : ''}</small>`;
+                item.onclick = function () {
+                    selectVendor(v.vendorId, v.vendorName);
+                };
+                div.appendChild(item);
+            });
+
+            // Add New Option
+            const addNew = document.createElement("div");
+            addNew.className = "add-new";
+            addNew.innerHTML = "+ Add New Vendor";
+            addNew.onclick = function () {
+                openVendorModal(input.value); // Pre-fill name if typed
+            };
+            div.appendChild(addNew);
+        }
+
+        function selectVendor(id, name) {
+            document.getElementById("vendorSearchInput").value = name;
+            document.getElementById("selectedVendorId").value = id;
+            document.getElementById("vendorDropdown").style.display = "none";
+        }
+
+        function handleDropdownKeyDown(e, inputId, dropdownId) {
+            let input = document.getElementById(inputId);
+            let list = document.getElementById(dropdownId);
+            if (!list || list.style.display === 'none') return;
+
+            let items = list.getElementsByTagName("div");
+            if (input.currentFocus === undefined) input.currentFocus = -1;
+
+            if (e.keyCode == 40) { // Down
+                input.currentFocus++;
+                addActiveDropdown(items, input);
+                if (items && items[input.currentFocus]) items[input.currentFocus].scrollIntoView({ block: 'nearest' });
+            } else if (e.keyCode == 38) { // Up
+                input.currentFocus--;
+                addActiveDropdown(items, input);
+                if (items && items[input.currentFocus]) items[input.currentFocus].scrollIntoView({ block: 'nearest' });
+            } else if (e.keyCode == 13) { // Enter
+                if (input.currentFocus > -1 && items && items[input.currentFocus]) {
+                    e.preventDefault();
+                    items[input.currentFocus].click();
+                }
+            } else if (e.keyCode == 9) { // Tab
+                if (input.currentFocus > -1 && items && items[input.currentFocus]) {
+                    items[input.currentFocus].click();
+                } else if (items && items.length > 0 && items[0].textContent !== "No matches" && items[0].textContent !== "No sub-categories" && items[0].textContent !== "Select Parent Category First") {
+                    items[0].click();
+                } else {
+                    list.style.display = 'none';
+                }
+            } else if (e.keyCode == 27) { // Escape
+                list.style.display = 'none';
+            }
+        }
+
+        function openVendorModal(prefillName = "") {
+            document.getElementById('vendId').value = "";
+            document.getElementById('vendName').value = prefillName;
+            document.getElementById('vendAlias').value = "";
+            document.getElementById('vendMobile').value = "";
+            document.getElementById('vendEmail').value = "";
+            document.getElementById('vendGst').value = "";
+            document.getElementById('vendPan').value = "";
+            document.getElementById('vendAddress').value = "";
+            document.getElementById('vendorModal').style.display = 'block';
+            document.getElementById('vendorDropdown').style.display = 'none';
+            document.getElementById('vendorListModal').style.display = 'none';
+        }
+
+        function addActiveDropdown(items, input) {
+            if (!items || items.length === 0) return false;
+            if (items[0].textContent === "No matches" || items[0].textContent === "No sub-categories" || items[0].textContent === "Select Parent Category First") return false;
+            for (let i = 0; i < items.length; i++) {
+                items[i].classList.remove("active-item");
+            }
+            if (input.currentFocus >= items.length) input.currentFocus = 0;
+            if (input.currentFocus < 0) input.currentFocus = (items.length - 1);
+            items[input.currentFocus].classList.add("active-item");
+        }
+
+        function closeVendorModal() {
+            document.getElementById('vendorModal').style.display = 'none';
+        }
+
+        function saveVendor() {
+            const id = document.getElementById('vendId').value;
+            const name = document.getElementById('vendName').value.trim();
+            const mobile = document.getElementById('vendMobile').value.trim();
+            const gst = document.getElementById('vendGst').value.trim();
+
+            if (!name) { alert("Vendor Name is required"); return; }
+
+            // Duplicate Checks
+            const isDuplicate = vendors.some(v => {
+                if (id && v.vendorId === id) return false; // Skip self
+                if (v.vendorName.toLowerCase() === name.toLowerCase() && v.mobileNumber === mobile) return true;
+                if (gst && v.gstin === gst) return true;
+                return false;
+            });
+
+            if (isDuplicate) {
+                alert("Similar vendor already exists (Name+Mobile or GSTIN match). Please select from list.");
+                return;
+            }
+
+            // Similarity Check & Confirmation
+            const similar = vendors.find(v => v.vendorId !== id && similarity(v.vendorName, name) > 0.9);
+            let confirmMsg = "Are you sure you want to save this vendor?";
+            if (similar) {
+                confirmMsg = `A similar vendor "${similar.vendorName}" exists. Do you want to continue?`;
+            }
+
+            const vendorObj = {
+                vendorId: id || 'v_' + Date.now(),
+                vendorName: name,
+                aliasName: document.getElementById('vendAlias').value.trim(),
+                mobileNumber: mobile,
+                email: document.getElementById('vendEmail').value.trim(),
+                gstin: gst,
+                pan: document.getElementById('vendPan').value.trim(),
+                address: document.getElementById('vendAddress').value.trim(),
+                status: 'Active',
+                createdAt: new Date().toISOString()
+            };
+
+            askConfirm("Save Vendor", confirmMsg, () => {
+                if (id) {
+                    const idx = vendors.findIndex(v => v.vendorId === id);
+                    vendors[idx] = vendorObj;
+                } else {
+                    vendors.push(vendorObj);
+                }
+
+                localStorage.setItem("vendors", JSON.stringify(vendors));
+                closeVendorModal();
+                selectVendor(vendorObj.vendorId, vendorObj.vendorName); // Auto-select
+
+                if (isManagingVendors) {
+                    renderVendorList();
+                    document.getElementById('vendorListModal').style.display = 'block';
+                }
+            });
+        }
+
+        // Simple Levenshtein-like similarity (0 to 1)
+        function similarity(s1, s2) {
+            s1 = s1.toLowerCase(); s2 = s2.toLowerCase();
+            if (s1 === s2) return 1;
+            const len = Math.max(s1.length, s2.length);
+            let match = 0;
+            for (let i = 0; i < Math.min(s1.length, s2.length); i++) if (s1[i] === s2[i]) match++;
+            return match / len;
+        }
+
+        function toggleFrequency() {
+            const isRec = document.getElementById('isRecurring').checked;
+            document.getElementById('frequency').style.display = isRec ? 'block' : 'none';
+            document.getElementById('recurCount').style.display = isRec ? 'block' : 'none';
+        }
+
+        function calcTotal() {
+            const amt = parseFloat(document.getElementById('expAmount').value) || 0;
+            const gst = parseFloat(document.getElementById('expGst').value) || 0;
+            document.getElementById('expTotal').value = (amt + gst).toFixed(2);
+        }
+
+        function saveExpense() {
+            // FY Lock Check
+            if (typeof APP_SETTINGS !== 'undefined' && APP_SETTINGS.FINANCIAL_YEAR_LOCK) {
+                alert("Financial Year is locked. Cannot add/edit expenses.");
+                return;
+            }
+
+            const id = document.getElementById('expenseId').value;
+            const date = document.getElementById('expDate').value;
+            const category = document.getElementById('expCategory').value;
+            const subCategory = document.getElementById('expSubCategory').value;
+            const vendorId = document.getElementById('selectedVendorId').value;
+            const paymentMode = document.getElementById('expMode').value;
+            const accountId = document.getElementById('expBankAccount').value;
+            const amount = parseFloat(document.getElementById('expAmount').value);
+
+            if (!date || !category || !subCategory || isNaN(amount) || !vendorId) {
+                alert("Please fill Date, Parent Category, Sub-Category, Vendor and Amount.");
+                return;
+            }
+
+            if (paymentMode !== 'Cash' && !accountId) {
+                alert("Please select a Bank Account for non-cash payments.");
+                return;
+            }
+
+            const record = {
+                expense_id: id || 'exp_' + Date.now(),
+                expense_date: date,
+                expense_category: category,
+                expense_sub_category: subCategory,
+                vendorId: vendorId, // Store ID
+                payment_mode: paymentMode,
+                accountId: accountId,
+                invoice_number: document.getElementById('expInv').value,
+                debit_amount: amount,
+                gst_amount: parseFloat(document.getElementById('expGst').value) || 0,
+                total_amount: parseFloat(document.getElementById('expTotal').value) || 0,
+                remarks: document.getElementById('expRemarks').value,
+                created_at: new Date().toISOString()
+            };
+
+            // Pre-calculate old bank amount for updates to handle banking feed
+            let oldBankAmount = 0;
+            if (id) {
+                const oldExp = expenses.find(e => e.expense_id === id);
+                if (oldExp && ['Bank Transfer', 'UPI', 'Card'].includes(oldExp.payment_mode)) {
+                    oldBankAmount = parseFloat(oldExp.total_amount) || 0;
+                }
+            }
+
+            askConfirm("Save Expense", "Are you sure you want to save this expense?", () => {
+                // Handle Recurring Setup
+                const isRecurring = document.getElementById('isRecurring').checked;
+                if (isRecurring && !id) { // Only for new entries
+                    const freq = document.getElementById('frequency').value;
+                    const count = document.getElementById('recurCount').value;
+                    setupRecurring(record, freq, count);
+                }
+
+                if (id) {
+                    const idx = expenses.findIndex(e => e.expense_id === id);
+                    if (idx > -1) expenses[idx] = record;
+                } else {
+                    expenses.push(record);
+                }
+
+                // Auto-feed to Banking
+                let newBankAmount = 0;
+                if (['Bank Transfer', 'UPI', 'Card'].includes(record.payment_mode)) {
+                    newBankAmount = record.total_amount;
+                }
+                const diff = newBankAmount - oldBankAmount;
+
+                if (Math.abs(diff) > 0.01) {
+                    const accounts = JSON.parse(localStorage.getItem('bank_accounts')) || [];
+                    if (accounts.length > 0) {
+                        let accId = record.accountId;
+                        if (!accId) {
+                            const primaryAcc = accounts.find(a => a.isPrimary) || accounts[0];
+                            accId = primaryAcc.id;
+                        }
+
+                        const type = diff > 0 ? 'Withdrawal' : 'Deposit'; // Expense is outflow
+                        const tx = {
+                            id: 'tx_exp_' + Date.now(),
+                            date: record.expense_date,
+                            type: type,
+                            amount: Math.abs(diff),
+                            accountId: accId,
+                            ref: record.invoice_number || "EXP",
+                            remarks: `Expense: ${record.expense_category}`,
+                            cleared: false
+                        };
+                        const bankTx = JSON.parse(localStorage.getItem('bank_transactions')) || [];
+                        bankTx.push(tx);
+                        localStorage.setItem('bank_transactions', JSON.stringify(bankTx));
+                    if (typeof apiClient !== 'undefined' && apiClient.saveBankTransaction) apiClient.saveBankTransaction(tx).catch(console.warn);
+                    }
+                }
+
+                localStorage.setItem("expenses", JSON.stringify(expenses));
+            if (typeof apiClient !== 'undefined' && apiClient.saveExpense) apiClient.saveExpense(record).catch(console.warn);
+                clearForm();
+                renderTable();
+                updateKPIs();
+            });
+        }
+
+        function getVendorName(id, fallbackName) {
+            const v = vendors.find(x => x.vendorId === id);
+            return v ? v.vendorName : (fallbackName || 'Unknown');
+        }
+
+        function setupRecurring(record, frequency, count) {
+            const template = { ...record };
+            delete template.expense_id;
+            delete template.created_at;
+
+            // Calculate next due date based on current entry date
+            let nextDue = new Date(record.expense_date);
+            if (frequency === 'Daily') nextDue.setDate(nextDue.getDate() + 1);
+            else if (frequency === 'Weekly') nextDue.setDate(nextDue.getDate() + 7);
+            else if (frequency === 'Monthly') nextDue.setMonth(nextDue.getMonth() + 1);
+            else if (frequency === 'Quarterly') nextDue.setMonth(nextDue.getMonth() + 3);
+            else if (frequency === 'Half-Yearly') nextDue.setMonth(nextDue.getMonth() + 6);
+            else if (frequency === 'Yearly') nextDue.setFullYear(nextDue.getFullYear() + 1);
+
+            const recObj = {
+                id: 'rec_' + Date.now(),
+                template: template,
+                frequency: frequency,
+                nextDueDate: nextDue.toISOString().split('T')[0],
+                remaining: count ? parseInt(count) : null
+            };
+
+            recurring.push(recObj);
+            localStorage.setItem("recurring_expenses", JSON.stringify(recurring));
+            alert(`Recurring expense set up (${frequency}). Next due: ${recObj.nextDueDate}`);
+        }
+
+        function checkRecurringExpenses() {
+            let changed = false;
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const activeRecurring = [];
+
+            recurring.forEach(r => {
+                // Skip if paused
+                if (r.status === 'paused') {
+                    activeRecurring.push(r);
+                    return;
+                }
+
+                let due = new Date(r.nextDueDate);
+                let keep = true;
+                // If due date is today or passed
+                if (due <= today) {
+                    // Generate Expense
+                    const newExp = { ...r.template };
+                    newExp.expense_id = 'exp_' + Date.now() + Math.random().toString(36).substr(2, 5);
+                    newExp.expense_date = r.nextDueDate; // Use the due date as expense date
+                    newExp.created_at = new Date().toISOString();
+                    newExp.remarks = (newExp.remarks || "") + " (Auto-Recurring)";
+
+                    expenses.push(newExp);
+
+                    // Update Next Due Date
+                    if (r.frequency === 'Daily') due.setDate(due.getDate() + 1);
+                    else if (r.frequency === 'Weekly') due.setDate(due.getDate() + 7);
+                    else if (r.frequency === 'Monthly') due.setMonth(due.getMonth() + 1);
+                    else if (r.frequency === 'Quarterly') due.setMonth(due.getMonth() + 3);
+                    else if (r.frequency === 'Half-Yearly') due.setMonth(due.getMonth() + 6);
+                    else if (r.frequency === 'Yearly') due.setFullYear(due.getFullYear() + 1);
+
+                    r.nextDueDate = due.toISOString().split('T')[0];
+                    changed = true;
+
+                    if (r.remaining !== null && r.remaining !== undefined) {
+                        r.remaining = parseInt(r.remaining) - 1;
+                        if (r.remaining <= 0) {
+                            keep = false;
+                        }
+                    }
+                }
+
+                if (keep) activeRecurring.push(r);
+                else changed = true;
+            });
+
+            if (changed) {
+                recurring = activeRecurring;
+                localStorage.setItem("expenses", JSON.stringify(expenses));
+                localStorage.setItem("recurring_expenses", JSON.stringify(recurring));
+                // alert("Recurring expenses have been automatically generated.");
+            }
+        }
+
+        function deleteExpense(id) {
+            askConfirm("Delete Expense", "Are you sure you want to delete this expense?", () => {
+                expenses = expenses.filter(e => e.expense_id !== id);
+                localStorage.setItem("expenses", JSON.stringify(expenses));
+            if (typeof apiClient !== 'undefined' && apiClient.deleteExpense) apiClient.deleteExpense(id).catch(console.warn);
+                renderTable();
+                updateKPIs();
+            });
+        }
+
+        function editExpense(id) {
+            const rec = expenses.find(e => e.expense_id === id);
+            if (!rec) return;
+            document.getElementById('expenseId').value = rec.expense_id;
+            document.getElementById('expDate').value = rec.expense_date;
+            document.getElementById('expCategory').value = rec.expense_category;
+
+            populateSubCategories(); // Populate subs based on parent
+            document.getElementById('expSubCategory').value = rec.expense_sub_category || "";
+
+            // Populate Vendor
+            const vName = getVendorName(rec.vendorId, rec.vendor_name);
+            selectVendor(rec.vendorId || '', vName);
+
+            document.getElementById('expMode').value = rec.payment_mode;
+            toggleBankDropdown();
+            if (rec.accountId) document.getElementById('expBankAccount').value = rec.accountId;
+            document.getElementById('expInv').value = rec.invoice_number || '';
+            document.getElementById('expAmount').value = rec.debit_amount;
+            document.getElementById('expGst').value = rec.gst_amount;
+            document.getElementById('expTotal').value = rec.total_amount;
+            document.getElementById('expRemarks').value = rec.remarks || '';
+
+            // Hide recurring option during edit to avoid confusion
+            document.getElementById('isRecurring').checked = false;
+            toggleFrequency();
+
+            window.scrollTo(0, 0);
+        }
+
+        function clearForm() {
+            document.querySelectorAll('input').forEach(i => i.value = '');
+            document.getElementById('expDate').valueAsDate = new Date();
+            document.getElementById('selectedVendorId').value = '';
+            document.getElementById('vendorSearchInput').value = '';
+            document.getElementById('expenseId').value = '';
+            document.getElementById('expMode').value = 'Cash';
+            toggleBankDropdown();
+            document.getElementById('expBankAccount').value = '';
+            document.getElementById('isRecurring').checked = false;
+            toggleFrequency();
+            document.getElementById('recurCount').value = '';
+        }
+
+        function confirmClearForm() {
+            askConfirm("Clear Form", "Are you sure you want to clear the form?", () => {
+                clearForm();
+            });
+        }
+
+        function changeRowsPerPage() {
+            rowsPerPage = parseInt(document.getElementById('rowsPerPageSelect').value);
+            currentPage = 1;
+            renderTable();
+        }
+
+        function goToPage() {
+            const pageInput = document.getElementById("goToPageInput");
+            const page = parseInt(pageInput.value);
+            if (page >= 1) {
+                currentPage = page;
+                renderTable();
+            }
+            pageInput.value = "";
+        }
+
+        function changePage(page) {
+            currentPage = page;
+            renderTable();
+        }
+
+        function renderPagination(totalItems, start, end, totalPages) {
+            const info = document.getElementById("paginationInfo");
+            const controls = document.getElementById("paginationControls");
+            const totalDisplay = document.getElementById("totalExpensesDisplay");
+
+            if (totalDisplay) totalDisplay.innerText = `Total Expenses: ${totalItems}`;
+
+            if (totalItems === 0) {
+                if (info) info.innerText = "No expenses found";
+                if (controls) controls.innerHTML = "";
+                return;
+            }
+
+            if (info) info.innerText = `Showing ${start} to ${end} of ${totalItems} entries`;
+
+            let html = "";
+            html += `<button class="btn-clear" onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''} style="padding: 4px 8px; margin: 0 2px;">Prev</button>`;
+
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
+                    const activeStyle = i === currentPage ? 'background: #3498db; color: #fff;' : 'background: #fff; color: #333;';
+                    html += `<button class="btn-clear" onclick="changePage(${i})" style="padding: 4px 8px; margin: 0 2px; ${activeStyle}">${i}</button>`;
+                } else if (i === currentPage - 3 || i === currentPage + 3) {
+                    html += `<span style="padding: 4px 8px;">...</span>`;
+                }
+            }
+
+            html += `<button class="btn-clear" onclick="changePage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''} style="padding: 4px 8px; margin: 0 2px;">Next</button>`;
+
+            if (controls) controls.innerHTML = html;
+        }
+
+        function renderTable() {
+            const tbody = document.querySelector('#expTable tbody');
+            const tfoot = document.querySelector('#expTable tfoot');
+            tbody.innerHTML = '';
+            tfoot.innerHTML = '';
+            const search = document.getElementById('searchBox').value.toLowerCase();
+            const filterNature = document.getElementById('filterNature').value;
+            const filterFromDate = document.getElementById('filterFromDate').value;
+            const filterToDate = document.getElementById('filterToDate').value;
+
+            // Build nature map for lookup
+            const schema = getMergedSchema();
+            const natureMap = {};
+            schema.groups.forEach(g => natureMap[g.name] = g.nature || 'Indirect Expense');
+
+            // Sort
+            const sorted = [...expenses].sort((a, b) => {
+                let valA = a[currentSortColumn];
+                let valB = b[currentSortColumn];
+
+                if (['debit_amount', 'gst_amount', 'total_amount'].includes(currentSortColumn)) {
+                    valA = parseFloat(valA) || 0;
+                    valB = parseFloat(valB) || 0;
+                } else if (currentSortColumn === 'expense_date') {
+                    valA = new Date(valA);
+                    valB = new Date(valB);
+                } else if (currentSortColumn === 'nature') {
+                    valA = natureMap[a.expense_category] || 'Indirect Expense';
+                    valB = natureMap[b.expense_category] || 'Indirect Expense';
+                } else if (currentSortColumn === 'expense_category' || currentSortColumn === 'expense_sub_category') {
+                    valA = (valA || '').toLowerCase();
+                    valB = (valB || '').toLowerCase();
+                } else if (currentSortColumn === 'vendor_name') {
+                    valA = getVendorName(a.vendorId, a.vendor_name).toLowerCase();
+                    valB = getVendorName(b.vendorId, b.vendor_name).toLowerCase();
+                }
+
+                if (valA < valB) return currentSortDirection === 'asc' ? -1 : 1;
+                if (valA > valB) return currentSortDirection === 'asc' ? 1 : -1;
+                return 0;
+            });
+
+            let totalDebit = 0;
+            let totalGst = 0;
+            let grandTotal = 0;
+
+            const filtered = sorted.filter(e => {
+                const nature = natureMap[e.expense_category] || 'Indirect Expense';
+                if (filterNature && nature !== filterNature) return false;
+                if (filterFromDate && e.expense_date < filterFromDate) return false;
+                if (filterToDate && e.expense_date > filterToDate) return false;
+                if (search) {
+                    const stringified = JSON.stringify(e).toLowerCase() + ' ' + nature.toLowerCase();
+                    if (!stringified.includes(search)) return false;
+                }
+                return true;
+            });
+
+            filtered.forEach(e => {
+
+                totalDebit += (parseFloat(e.debit_amount) || 0);
+                totalGst += (parseFloat(e.gst_amount) || 0);
+                grandTotal += (parseFloat(e.total_amount) || 0);
+            });
+
+            const totalItems = filtered.length;
+            const totalPages = Math.ceil(totalItems / rowsPerPage) || 1;
+
+            if (currentPage > totalPages) currentPage = totalPages;
+            if (currentPage < 1) currentPage = 1;
+
+            const startIndex = (currentPage - 1) * rowsPerPage;
+            const endIndex = Math.min(startIndex + rowsPerPage, totalItems);
+            const paginatedData = filtered.slice(startIndex, endIndex);
+
+            paginatedData.forEach(e => {
+
+                const displayVendor = getVendorName(e.vendorId, e.vendor_name);
+                const nature = natureMap[e.expense_category] || 'Indirect Expense';
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                <td>${new Date(e.expense_date).toLocaleDateString('en-GB')}</td>
+                <td>${e.expense_category}</td>
+                <td>${nature}</td>
+                <td>${e.expense_sub_category || '-'}</td>
+                <td>${displayVendor}</td>
+                <td>${e.invoice_number || '-'}</td>
+                <td>${e.payment_mode}</td>
+                <td>₹ ${e.debit_amount.toFixed(2)}</td>
+                <td>₹ ${e.gst_amount.toFixed(2)}</td>
+                <td><strong>₹ ${e.total_amount.toFixed(2)}</strong></td>
+                <td class="action-col">
+                    <button class="btn-save" style="background:#3498db; padding:4px 8px;" onclick="editExpense('${e.expense_id}')">Edit</button>
+                    <button class="btn-delete" onclick="deleteExpense('${e.expense_id}')">Del</button>
+                </td>
+            `;
+                tbody.appendChild(tr);
+            });
+
+            // Footer Row
+            const trFoot = document.createElement('tr');
+            trFoot.style.backgroundColor = '#e9ecef';
+            trFoot.style.fontWeight = 'bold';
+            trFoot.innerHTML = `
+            <td colspan="7" style="text-align:right;">Total:</td>
+            <td>₹ ${totalDebit.toFixed(2)}</td>
+            <td>₹ ${totalGst.toFixed(2)}</td>
+            <td>₹ ${grandTotal.toFixed(2)}</td>
+            <td class="action-col"></td>
+        `;
+            tfoot.appendChild(trFoot);
+
+            renderPagination(totalItems, startIndex + 1, endIndex, totalPages);
+        }
+
+        function updateKPIs() {
+            const now = new Date();
+            const thisMonth = now.getMonth();
+            const thisYear = now.getFullYear();
+
+            const monthlyExpenses = expenses.filter(e => {
+                const d = new Date(e.expense_date);
+                return d.getMonth() === thisMonth && d.getFullYear() === thisYear;
+            });
+
+            const total = monthlyExpenses.reduce((sum, e) => sum + e.debit_amount, 0);
+            document.getElementById('kpiTotal').innerText = '₹ ' + total.toLocaleString('en-IN');
+
+            // Highest Category
+            const catMap = {};
+            expenses.forEach(e => {
+                catMap[e.expense_category] = (catMap[e.expense_category] || 0) + e.debit_amount;
+            });
+            const highCat = Object.keys(catMap).reduce((a, b) => catMap[a] > catMap[b] ? a : b, '-');
+            document.getElementById('kpiHighCat').innerText = highCat;
+
+            // Avg Monthly
+            const totalAll = expenses.reduce((sum, e) => sum + e.debit_amount, 0);
+            const uniqueMonths = new Set(expenses.map(e => e.expense_date.substring(0, 7))).size || 1;
+            document.getElementById('kpiAvg').innerText = '₹ ' + (totalAll / uniqueMonths).toFixed(0);
+        }
+
+        // --- Recurring Modal Logic ---
+        let currentRecSortDirection = 'asc';
+
+        function handleRecSort() {
+            currentRecSortDirection = currentRecSortDirection === 'asc' ? 'desc' : 'asc';
+            const icon = document.getElementById('sort-icon-rec-next-due');
+            if (icon) icon.innerText = currentRecSortDirection === 'asc' ? ' ▲' : ' ▼';
+            renderRecurringTable();
+        }
+
+        function openRecurringModal() {
+            if (document.getElementById('recurringSearchBox')) document.getElementById('recurringSearchBox').value = '';
+            renderRecurringTable();
+            document.getElementById('recurringModal').style.display = 'block';
+        }
+
+        function renderRecurringTable() {
+            const tbody = document.querySelector('#recTable tbody');
+            tbody.innerHTML = '';
+            
+            let totalActive = 0;
+            recurring.forEach(r => { if (r.status !== 'paused') totalActive++; });
+            const countEl = document.getElementById('activeRecurringCount');
+            if (countEl) countEl.innerText = `(${totalActive})`;
+
+            const search = document.getElementById('recurringSearchBox') ? document.getElementById('recurringSearchBox').value.toLowerCase() : '';
+
+            let mappedRecurring = recurring.map((r, index) => ({...r, originalIndex: index}));
+
+            if (search) {
+                mappedRecurring = mappedRecurring.filter(r => {
+                    const stringified = JSON.stringify(r).toLowerCase();
+                    return stringified.includes(search);
+                });
+            }
+
+            mappedRecurring.sort((a, b) => {
+                let valA = new Date(a.nextDueDate);
+                let valB = new Date(b.nextDueDate);
+                if (valA < valB) return currentRecSortDirection === 'asc' ? -1 : 1;
+                if (valA > valB) return currentRecSortDirection === 'asc' ? 1 : -1;
+                return 0;
+            });
+
+            if (mappedRecurring.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">No recurring expenses found.</td></tr>';
+            } else {
+                mappedRecurring.forEach(r => {
+                    const i = r.originalIndex;
+                    const remainingText = (r.remaining !== null && r.remaining !== undefined) ? ` (${r.remaining} left)` : '';
+                    const isPaused = r.status === 'paused';
+                    const rowStyle = isPaused ? 'background-color: #f9f9f9; color: #999;' : '';
+                    const pauseLabel = isPaused ? 'Resume' : 'Pause';
+                    const pauseColor = isPaused ? '#27ae60' : '#f39c12';
+                    const statusText = isPaused ? ' <span style="font-weight:bold; color:#f39c12;">(Paused)</span>' : '';
+
+                    const tr = document.createElement('tr');
+                    tr.style.cssText = rowStyle;
+                    tr.innerHTML = `
+                    <td>${r.template.expense_category} <br><small>${r.template.expense_sub_category || ''}</small></td>
+                    <td>${getVendorName(r.template.vendorId, r.template.vendor_name)}</td>
+                    <td>₹ ${r.template.debit_amount}</td>
+                    <td>${r.frequency}${remainingText}${statusText}</td>
+                    <td>${new Date(r.nextDueDate).toLocaleDateString('en-GB')}</td>
+                    <td class="action-col">
+                        <button class="btn-save" style="padding:2px 6px; font-size:12px; background:#ffc107; color:black; margin-right:5px;" onclick="editRecurring(${i})">Edit</button>
+                        <button class="btn-save" style="padding:2px 6px; font-size:12px; background:${pauseColor}; color:white; margin-right:5px;" onclick="togglePause(${i})">${pauseLabel}</button>
+                        <button class="btn-delete" onclick="deleteRecurring(${i})">Stop</button>
+                    </td>
+                `;
+                    tbody.appendChild(tr);
+                });
+            }
+        }
+
+        function closeRecurringModal() {
+            document.getElementById('recurringModal').style.display = 'none';
+        }
+
+        function togglePause(index) {
+            if (recurring[index]) {
+                recurring[index].status = (recurring[index].status === 'paused') ? 'active' : 'paused';
+                localStorage.setItem("recurring_expenses", JSON.stringify(recurring));
+                renderRecurringTable();
+            }
+        }
+
+        function deleteRecurring(index) {
+            askConfirm("Stop Recurring", "Are you sure you want to stop this recurring expense?", () => {
+                recurring.splice(index, 1);
+                localStorage.setItem("recurring_expenses", JSON.stringify(recurring));
+                renderRecurringTable(); // Refresh list
+            });
+        }
+
+        function editRecurring(index) {
+            const rec = recurring[index];
+            document.getElementById('editRecIndex').value = index;
+            document.getElementById('editRecFrequency').value = rec.frequency;
+            document.getElementById('editRecRemaining').value = (rec.remaining !== null && rec.remaining !== undefined) ? rec.remaining : '';
+            document.getElementById('editRecurringModal').style.display = 'block';
+        }
+
+        function closeEditRecurringModal() {
+            document.getElementById('editRecurringModal').style.display = 'none';
+        }
+
+        function saveRecurringFrequency() {
+            const index = document.getElementById('editRecIndex').value;
+            const newFreq = document.getElementById('editRecFrequency').value;
+            const newRem = document.getElementById('editRecRemaining').value;
+
+            if (recurring[index]) {
+                recurring[index].frequency = newFreq;
+                recurring[index].remaining = newRem ? parseInt(newRem) : null;
+                localStorage.setItem("recurring_expenses", JSON.stringify(recurring));
+                renderRecurringTable(); // Refresh list
+                closeEditRecurringModal();
+            }
+        }
+
+        function exportToExcel() {
+            const ws = XLSX.utils.json_to_sheet(expenses);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Expenses");
+            XLSX.writeFile(wb, "Expense_Ledger.xlsx");
+        }
+
+        function exportVendorsToExcel() {
+            if (!vendors || vendors.length === 0) {
+                alert("No vendors to export.");
+                return;
+            }
+            const ws = XLSX.utils.json_to_sheet(vendors);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Vendors");
+            XLSX.writeFile(wb, "Vendor_List.xlsx");
+        }
+
+        // --- Vendor Manager Logic ---
+        function openVendorManager() {
+            isManagingVendors = true;
+            if (document.getElementById('vendorListSearch')) document.getElementById('vendorListSearch').value = '';
+            renderVendorList();
+            document.getElementById('vendorListModal').style.display = 'block';
+            loadColumnWidths('vendorListTable', 'vendorColumnWidths');
+            enableColumnResizing('vendorListTable', 'vendorColumnWidths');
+        }
+
+        function closeVendorListModal() {
+            isManagingVendors = false;
+            document.getElementById('vendorListModal').style.display = 'none';
+        }
+
+        function renderVendorList() {
+            const tbody = document.querySelector('#vendorListTable tbody');
+            tbody.innerHTML = '';
+            const search = document.getElementById('vendorListSearch') ? document.getElementById('vendorListSearch').value.toLowerCase() : '';
+
+            vendors.forEach(v => {
+                if (search) {
+                    const text = [v.vendorName, v.aliasName, v.mobileNumber, v.gstin, v.pan, v.address].join(' ').toLowerCase();
+                    if (!text.includes(search)) return;
+                }
+
+                const totalPaid = expenses.filter(e => e.vendorId === v.vendorId).reduce((sum, e) => sum + (parseFloat(e.total_amount) || 0), 0);
+
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${v.vendorName}</td>
+                    <td>${v.aliasName || '-'}</td>
+                    <td>${v.mobileNumber || '-'}</td>
+                    <td>${v.email || '-'}</td>
+                    <td>${v.gstin || '-'}</td>
+                    <td>${v.pan || '-'}</td>
+                    <td>${v.address || '-'}</td>
+                    <td style="font-weight:bold; color:#2c3e50;">₹ ${totalPaid.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                    <td>
+                        <button class="btn-save" style="padding:4px 8px; font-size:12px; background:#3498db;" onclick="editVendor('${v.vendorId}')">Edit</button>
+                        ${v.email ? `<button class="btn-save" style="padding:4px 8px; font-size:12px; background:#f39c12; margin-left:2px;" onclick="window.location.href='mailto:${v.email}'" title="Send Email">Email</button>` : ''}
+                        <button class="btn-delete" style="padding:4px 8px; font-size:12px;" onclick="deleteVendor('${v.vendorId}')">Del</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+            applyVendorColumnVisibility();
+        }
+
+        function editVendor(id) {
+            const v = vendors.find(x => x.vendorId === id);
+            if (!v) return;
+
+            document.getElementById('vendId').value = v.vendorId;
+            document.getElementById('vendName').value = v.vendorName;
+            document.getElementById('vendAlias').value = v.aliasName || '';
+            document.getElementById('vendMobile').value = v.mobileNumber || '';
+            document.getElementById('vendEmail').value = v.email || '';
+            document.getElementById('vendGst').value = v.gstin || '';
+            document.getElementById('vendPan').value = v.pan || '';
+            document.getElementById('vendAddress').value = v.address || '';
+
+            document.getElementById('vendorListModal').style.display = 'none';
+            document.getElementById('vendorModal').style.display = 'block';
+        }
+
+        function deleteVendor(id) {
+            const isUsed = expenses.some(e => e.vendorId === id);
+            if (isUsed) {
+                alert("Cannot delete vendor because they are linked to existing expenses.");
+                return;
+            }
+            askConfirm("Delete Vendor", "Are you sure you want to delete this vendor?", () => {
+                vendors = vendors.filter(v => v.vendorId !== id);
+                localStorage.setItem("vendors", JSON.stringify(vendors));
+                renderVendorList();
+            });
+        }
+
+        // --- Vendor Column Settings ---
+        let vendorColumnVisibility = JSON.parse(localStorage.getItem("vendorColumnVisibility")) || new Array(9).fill(true);
+        if (vendorColumnVisibility.length !== 9) vendorColumnVisibility = new Array(9).fill(true);
+        const vendorColumns = ["Name", "Alias", "Mobile", "Email", "GSTIN", "PAN", "Address", "Total Paid", "Action"];
+
+        function openVendorColumnSettings() {
+            const container = document.getElementById('vendorColumnToggles');
+            container.innerHTML = '';
+            vendorColumns.forEach((col, index) => {
+                const div = document.createElement('div');
+                div.innerHTML = `
+                    <label style="cursor:pointer; display:flex; align-items:center; gap:5px;">
+                        <input type="checkbox" id="vcol_${index}" ${vendorColumnVisibility[index] ? 'checked' : ''}> ${col}
+                    </label>
+                `;
+                container.appendChild(div);
+            });
+            document.getElementById('vendorColumnSettingsModal').style.display = 'block';
+        }
+
+        function closeVendorColumnSettings() {
+            document.getElementById('vendorColumnSettingsModal').style.display = 'none';
+        }
+
+        function saveVendorColumnSettings() {
+            vendorColumns.forEach((col, index) => {
+                const cb = document.getElementById(`vcol_${index}`);
+                if (cb) vendorColumnVisibility[index] = cb.checked;
+            });
+            localStorage.setItem("vendorColumnVisibility", JSON.stringify(vendorColumnVisibility));
+            applyVendorColumnVisibility();
+            closeVendorColumnSettings();
+        }
+
+        function applyVendorColumnVisibility() {
+            const table = document.getElementById('vendorListTable');
+            const rows = table.querySelectorAll('tr');
+            rows.forEach(row => {
+                const cells = row.children;
+                for (let i = 0; i < cells.length; i++) {
+                    if (vendorColumnVisibility[i]) {
+                        cells[i].style.display = '';
+                    } else {
+                        cells[i].style.display = 'none';
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+
+</html>

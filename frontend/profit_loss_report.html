@@ -1,0 +1,2034 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Profit & Loss Report</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+    <script src="brand.service.js"></script>
+    <script src="brandLoader.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 20px;
+            background: #f4f6f9;
+            color: #495057;
+        }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 25px;
+            color: #2c3e50;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            background: #ffffff;
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            align-items: center;
+        }
+
+        input,
+        select,
+        button {
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid #ced4da;
+            outline: none;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+        
+        input:focus, select:focus {
+            border-color: #4e73df;
+        }
+
+        button {
+            cursor: pointer;
+            border: none;
+            font-weight: 600;
+            color: #fff;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+
+        .btn-print {
+            background: #4e73df;
+        }
+
+        .btn-close {
+            background: #e74a3b;
+        }
+
+        .btn-export {
+            background: #1cc88a;
+        }
+
+        .btn-reset {
+            background: #f6c23e;
+            color: #fff !important;
+        }
+
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: #fff;
+        }
+
+        th,
+        td {
+            border: 1px solid #e3e6f0;
+            padding: 12px 15px;
+            text-align: center;
+        }
+
+        th {
+            background: #4e73df;
+            color: #fff;
+            position: sticky;
+            top: 0;
+            z-index: 5;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 13px;
+            letter-spacing: 0.5px;
+        }
+
+        tr:nth-child(even) {
+            background: #f8f9fc;
+        }
+        
+        tr:hover {
+            background: #eaecf4;
+        }
+
+        .profit {
+            color: #27ae60;
+            font-weight: bold;
+        }
+
+        .loss {
+            color: #c0392b;
+            font-weight: bold;
+        }
+
+        .neutral {
+            color: #7f8c8d;
+            font-weight: bold;
+        }
+
+        .table-container {
+            max-height: 750px;
+            overflow-y: auto;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        @media print {
+            .controls {
+                display: none;
+            }
+
+            #printDateRange {
+                display: block !important;
+            }
+
+            .no-print {
+                display: none !important;
+            }
+
+            .chart-container {
+                display: block !important;
+                page-break-inside: avoid;
+            }
+
+            .pnl-statement {
+                border: 1px solid #000 !important;
+            }
+
+            .card {
+                border: 1px solid #ccc !important;
+            }
+
+            /* P&L T-Format specific print rules */
+            .t-table {
+                display: flex !important;
+                flex-direction: row !important;
+                border: 2px solid #000 !important;
+                page-break-inside: avoid;
+            }
+
+            .t-side {
+                flex: 1;
+                border: none;
+            }
+
+            .t-side:first-child {
+                border-right: 1px solid #e3e6f0 !important;
+            }
+
+            .t-header {
+                background: #4e73df !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+                border-bottom: 1px solid #e3e6f0 !important;
+                color: #fff !important;
+            }
+
+            .t-row {
+                border-bottom: 1px solid #e3e6f0 !important;
+            }
+
+            .t-row.total {
+                background: #eaecf4 !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+                border-top: 2px solid #5a5c69 !important;
+            }
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            min-width: 300px;
+        }
+
+        .modal-buttons {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        /* Pagination Styles */
+        .pagination-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 15px;
+        }
+
+        .pagination button {
+            padding: 6px 12px;
+            border: 1px solid #ccc;
+            background: #fff;
+            cursor: pointer;
+            border-radius: 4px;
+            margin: 0 2px;
+        }
+
+        .pagination button.active {
+            background: #2980b9;
+            color: #fff;
+            border-color: #2980b9;
+        }
+
+        .pagination button:disabled {
+            background: #eee;
+            cursor: not-allowed;
+        }
+
+        .highlight {
+            background-color: #fff176;
+            font-weight: bold;
+        }
+
+        /* Dark Mode */
+        body.dark-mode {
+            background: #121212;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode h2,
+        body.dark-mode h4 {
+            color: #e0e0e0 !important;
+        }
+
+        body.dark-mode table {
+            background: #2c2c2c;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode th,
+        body.dark-mode td {
+            border-color: #444;
+        }
+
+        /* Grey Mode */
+        body.grey-mode button {
+            background-color: #6c757d !important;
+            color: #fff !important;
+        }
+
+        body.dark-mode tr:nth-child(even) {
+            background: #3a3a3a;
+        }
+
+        body.dark-mode input,
+        body.dark-mode select {
+            background: #2c2c2c;
+            color: #fff;
+            border: 1px solid #444;
+        }
+
+        body.dark-mode .modal-content {
+            background: #2c2c2c;
+            color: #e0e0e0;
+        }
+
+        /* New P&L Styles */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+
+        .card {
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            text-align: center;
+            border-left: 5px solid #858796;
+            transition: transform 0.2s;
+        }
+        
+        .card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+        }
+
+        .card h3 {
+            margin: 0 0 10px 0;
+            font-size: 13px;
+            color: #858796;
+            text-transform: uppercase;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+
+        .card .value {
+            font-size: 26px;
+            font-weight: bold;
+            color: #5a5c69;
+        }
+
+        .card.profit {
+            border-left-color: #1cc88a;
+        }
+
+        .card.loss {
+            border-left-color: #e74a3b;
+        }
+
+        .card.revenue {
+            border-left-color: #4e73df;
+        }
+
+        .card.expense {
+            border-left-color: #f6c23e;
+        }
+
+        .pnl-container {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .pnl-statement {
+            flex: 1;
+            min-width: 400px;
+            background: #fff;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            border: 1px solid #e3e6f0;
+        }
+
+        .pnl-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 15px;
+            border-bottom: 1px solid #e3e6f0;
+            transition: background 0.2s;
+        }
+        
+        .pnl-row:hover {
+            background: #f8f9fc;
+        }
+
+        .pnl-row.header {
+            font-weight: 700;
+            background: #eaecf4;
+            padding: 12px 15px;
+            border-radius: 4px;
+            color: #4e73df;
+            text-transform: uppercase;
+            font-size: 14px;
+            margin-top: 10px;
+            border-bottom: none;
+        }
+
+        .pnl-row.total {
+            font-weight: 800;
+            font-size: 1.15em;
+            border-top: 2px solid #5a5c69;
+            border-bottom: none;
+            margin-top: 15px;
+            padding-top: 15px;
+            background: #f8f9fc;
+            border-radius: 0 0 6px 6px;
+        }
+
+        .pnl-row.subtotal {
+            font-weight: 700;
+            color: #333;
+            background: #f8f9fc;
+            border-top: 1px dashed #e3e6f0;
+        }
+
+        .pnl-row .label {
+            flex: 1;
+        }
+
+        .pnl-row .amount {
+            font-family: 'Consolas', 'Courier New', monospace;
+            font-weight: 600;
+        }
+
+        .chart-section {
+            flex: 1;
+            min-width: 300px;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #e3e6f0;
+        }
+
+        .date-filters {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+
+        .date-filters button {
+            background: #f8f9fc;
+            color: #5a5c69;
+            font-size: 13px;
+            padding: 6px 12px;
+            border: 1px solid #e3e6f0;
+            box-shadow: none;
+            border-radius: 4px;
+        }
+        
+        .date-filters button:hover {
+            background: #eaecf4;
+            color: #333;
+        }
+
+        .date-filters button.active {
+            background: #4e73df;
+            color: #fff;
+            border-color: #4e73df;
+        }
+
+        /* Dark Mode Overrides for New Elements */
+        body.dark-mode .card,
+        body.dark-mode .pnl-statement,
+        body.dark-mode .chart-section {
+            background: #2c2c2c;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .card .value {
+            color: #fff;
+        }
+
+        body.dark-mode .pnl-row {
+            border-bottom-color: #444;
+        }
+
+        body.dark-mode .pnl-row.header {
+            background: #3a3a3a;
+        }
+
+        body.dark-mode .pnl-row.subtotal {
+            background: #333;
+        }
+
+        body.dark-mode .date-filters button {
+            background: #444;
+            color: #ccc;
+        }
+
+        body.dark-mode .date-filters button.active {
+            background: #2980b9;
+            color: #fff;
+        }
+
+        /* T-Format Styles */
+        .t-format-container {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .t-table {
+            display: flex;
+            border: 1px solid #e3e6f0;
+            background: #fff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .t-side {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .t-side:first-child {
+            border-right: 1px solid #e3e6f0;
+        }
+
+        .t-header {
+            background: #4e73df;
+            color: #fff;
+            font-weight: 600;
+            padding: 12px 15px;
+            border-bottom: 1px solid #e3e6f0;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .t-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 15px;
+            border-bottom: 1px solid #e3e6f0;
+        }
+        
+        .t-row:hover {
+            background: #f8f9fc;
+        }
+
+        .t-row.total {
+            font-weight: 700;
+            border-top: 2px solid #5a5c69;
+            border-bottom: none;
+            background: #eaecf4;
+            margin-top: auto;
+            font-size: 1.1em;
+            color: #333;
+        }
+
+        body.dark-mode .t-table {
+            border-color: #555;
+            background: #2c2c2c;
+        }
+
+        body.dark-mode .t-side:first-child {
+            border-right-color: #555;
+        }
+
+        body.dark-mode .t-header {
+            background: #1f1f1f;
+            border-bottom-color: #555;
+            color: #fff;
+        }
+
+        body.dark-mode .t-row {
+            border-bottom-color: #444;
+        }
+
+        body.dark-mode .t-row.total {
+            border-top-color: #555;
+            background: #3a3a3a;
+        }
+
+        /* Drill Down Styles */
+        .clickable-row {
+            cursor: pointer;
+            color: #0d6efd;
+        }
+
+        .clickable-row:hover {
+            text-decoration: underline;
+            background-color: rgba(13, 110, 253, 0.05);
+        }
+
+        #drillDownModal table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        #drillDownModal th,
+        #drillDownModal td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+    </style>
+    <script src="settings.js"></script>
+</head>
+
+<body>
+
+    <h2><span id="brandName" data-brand="name"></span> -💰 Financial Statement - (Profit & Loss Report)</h2>
+    <h4 id="printDateRange" style="text-align:center; margin:0 0 15px 0; display:none; color:#555;"></h4>
+
+    <div class="controls no-print">
+        <div class="date-filters">
+            <button onclick="setDateFilter('today')" id="btnToday">Today</button>
+            <button onclick="setDateFilter('thisMonth')" id="btnThisMonth">This Month</button>
+            <button onclick="setDateFilter('lastMonth')" id="btnLastMonth">Last Month</button>
+            <button onclick="setDateFilter('thisQuarter')" id="btnThisQuarter">This Quarter</button>
+            <button onclick="setDateFilter('thisFY')" id="btnThisFY">This FY</button>
+            <button onclick="setDateFilter('all')" id="btnAll">All Time</button>
+        </div>
+
+        <input type="date" id="fromDate" onchange="renderReport()" title="From Date" style="width:130px;">
+        <input type="date" id="toDate" onchange="renderReport()" title="To Date" style="width:130px;">
+
+        <button class="btn-reset" onclick="location.reload()" style="background:#17a2b8;">🔄 Refresh</button>
+
+        <button class="btn-print" onclick="printStatement()">🖨️ Print</button>
+        <button class="btn-danger" onclick="exportToPDF()" style="background:#e74c3c;">📄 Export PDF</button>
+        <button class="btn-export" onclick="exportToExcel()">📊 Export Excel</button>
+        <button onclick="openSettingsModal()" style="background:#607d8b;">⚙️ Table Settings</button>
+
+        <div style="display:flex; align-items:center; gap:5px; background:#6c757d; padding:4px 8px; border-radius:4px;">
+            <label style="font-weight:bold; font-size:14px; color:white;">Theme:</label>
+            <select id="themeSelect" onchange="changeTheme()"
+                style="padding:4px; border-radius:4px; border:none; font-size:13px;">
+                <option value="light">Light</option>
+                <option value="dark">Dark</option>
+                <option value="system">System</option>
+            </select>
+        </div>
+        <label
+            style="cursor:pointer; display:flex; align-items:center; gap:5px; font-weight:bold; font-size:14px; margin-left: 10px;">
+            <input type="checkbox" id="tFormatToggle" onchange="toggleTFormat()"> T-Format View
+        </label>
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="dashboard-grid">
+        <div class="card revenue">
+            <h3>Total Revenue</h3>
+            <div class="value" id="kpiRevenue">₹ 0.00</div>
+        </div>
+        <div class="card expense">
+            <h3>Cost of Goods (COGS)</h3>
+            <div class="value" id="kpiCOGS">₹ 0.00</div>
+        </div>
+        <div class="card profit">
+            <h3>Gross Profit</h3>
+            <div class="value" id="kpiGross">₹ 0.00</div>
+        </div>
+        <div class="card expense">
+            <h3>Operating Expenses</h3>
+            <div class="value" id="kpiOpExp">₹ 0.00</div>
+        </div>
+        <div class="card profit" id="kpiNetCard">
+            <h3>Net Profit</h3>
+            <div class="value" id="kpiNet">₹ 0.00</div>
+        </div>
+    </div>
+
+    <!-- P&L Statement & Charts -->
+    <div class="pnl-container">
+        <div class="pnl-statement" id="pnlStatement">
+            <!-- Injected by JS -->
+        </div>
+        <div class="chart-section">
+            <canvas id="pnlChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="modal">
+        <div class="modal-content" style="width: 400px; text-align: left;">
+            <h3 style="color: #607d8b; text-align: center; margin-top: 0;">⚙️ Table Settings</h3>
+            <div style="margin-bottom: 15px; text-align: left; padding-left: 20px;">
+                <label
+                    style="cursor:pointer; display:flex; align-items:center; gap:5px; font-weight:bold; margin-top: 5px;">
+                    <input type="checkbox" id="greyButtonsToggle" onchange="toggleGreyButtons()"> Grey Buttons Mode
+                </label>
+            </div>
+            <p style="font-size:14px; color:#666; margin-bottom:10px; text-align: center;">Select columns to display:
+            </p>
+            <div style="margin-bottom: 10px; display: flex; gap: 10px; justify-content: center;">
+                <button onclick="toggleAllColumns(true)"
+                    style="background:#007bff; color:white; padding: 6px 12px; font-size: 12px;">Select All</button>
+                <button onclick="toggleAllColumns(false)"
+                    style="background:#6c757d; color:white; padding: 6px 12px; font-size: 12px;">Deselect All</button>
+            </div>
+            <div id="columnToggles"
+                style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; max-height:300px; overflow-y:auto; margin-bottom: 15px;">
+                <!-- Checkboxes generated by JS -->
+            </div>
+            <div class="modal-buttons">
+                <button onclick="closeSettingsModal()" class="btn-close" style="background:#f72626;">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Expense Management Modal -->
+    <div id="expenseModal" class="modal">
+        <div class="modal-content" style="width: 500px; text-align: left;">
+            <h3 style="color: #d35400; text-align: center; margin-top: 0;">💸 Manage Expenses</h3>
+            <div style="margin-bottom: 15px; display: flex; gap: 10px;">
+                <input type="date" id="newExpDate" style="flex:1;">
+                <input type="text" id="newExpCategory" placeholder="Category (e.g. Rent)" list="expCategories"
+                    style="flex:1;">
+                <datalist id="expCategories">
+                    <option value="Salaries">
+                    <option value="Rent">
+                    <option value="Utilities">
+                    <option value="Transport">
+                    <option value="Marketing">
+                    <option value="Miscellaneous">
+                </datalist>
+                <input type="number" id="newExpAmount" placeholder="Amount" style="width: 100px;">
+                <button onclick="addExpense()" style="background:#27ae60;">Add</button>
+            </div>
+            <div id="expenseList" style="max-height: 300px; overflow-y: auto; border: 1px solid #eee; padding: 5px;">
+            </div>
+            <div class="modal-buttons">
+                <button onclick="closeExpenseModal()" class="btn-close" style="background:#d62b2b;">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Drill Down Modal -->
+    <div id="drillDownModal" class="modal" style="align-items: center; justify-content: center;">
+        <div class="modal-content"
+            style="width: 800px; max-width: 90%; text-align: left; display: flex; flex-direction: column; max-height: 80vh;">
+            <div id="drillDownHeader"
+                style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom: 1px solid #eee; padding-bottom: 10px; cursor: move;">
+                <h3 id="drillDownTitle" style="margin:0; color:#2c3e50;">Details</h3>
+                <span onclick="closeDrillDown()" style="font-size:24px; cursor:pointer; color:#ec1313;">&times;</span>
+            </div>
+            <div style="flex:1; overflow-y:auto;">
+                <table id="drillDownTable">
+                    <thead></thead>
+                    <tbody id="drillDownBody"></tbody>
+                    <tbody id="drillDownBody"></tbody>
+                    <tfoot id="drillDownFoot"></tfoot>
+                </table>
+            </div>
+            <div style="text-align:right; margin-top:15px; padding-top:10px; border-top:1px solid #f03d3d;">
+                <button class="btn-close" onclick="closeDrillDown()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <h3 style="margin-top: 30px; border-bottom: 2px solid #ddd; padding-bottom: 10px;">Detailed Sales & COGS Schedule
+    </h3>
+    <input type="text" id="searchBox" placeholder="Search Item in Schedule..." oninput="renderItemTable()"
+        style="width: 100%; max-width: 300px; margin-bottom: 10px; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+    <div class="table-container">
+        <table id="reportTable" class="table-striped">
+            <thead>
+                <tr>
+                    <th>Sl No</th>
+                    <th>Item Name</th>
+                    <th>UOM</th>
+                    <th>Qty Sold</th>
+                    <th>Avg Purchase Price</th>
+                    <th>Cost of Goods (COGS)</th>
+                    <th>Avg Sell Price</th>
+                    <th>Sales Revenue</th>
+                    <th>Profit / Loss</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <!-- Pagination Controls -->
+    <div class="pagination-container">
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <div id="paginationInfo" style="color: #666;"></div>
+            <select id="rowsPerPageSelect" onchange="changeRowsPerPage()"
+                style="padding: 6px; border-radius: 4px; border: 1px solid #ccc;">
+                <option value="10">10 rows</option>
+                <option value="20" selected>20 rows</option>
+                <option value="50">50 rows</option>
+                <option value="100">100 rows</option>
+            </select>
+            <input type="number" id="goToPageInput"
+                style="width: 60px; padding: 6px; border-radius: 4px; border: 1px solid #ccc;" placeholder="Go to"
+                min="1" onchange="goToPage()">
+        </div>
+        <div class="pagination" id="paginationControls"></div>
+    </div>
+
+    <script>
+        const openedWindows = {};
+        let chartInstance = null;
+
+        function openWindow(url, width, height) {
+            const windowName = url.split('?')[0].split('/').pop().replace('.html', '').replace(/[^a-zA-Z0-9]/g, '_');
+            const features = `width=${width},height=${height},resizable=yes,scrollbars=yes`;
+            const win = window.open(url, windowName, features);
+            if (win) win.focus();
+        }
+
+        // --- Settings Logic ---
+        let isGreyButtons = localStorage.getItem("profitLossGreyButtons") === "true";
+
+        // Column visibility state (10 columns total)
+        let columnVisibility = JSON.parse(localStorage.getItem("profitLossColumnVisibility")) || new Array(10).fill(true);
+
+        function toggleGreyButtons() {
+            isGreyButtons = document.getElementById("greyButtonsToggle").checked;
+            localStorage.setItem("profitLossGreyButtons", isGreyButtons);
+            applyGreyButtons();
+        }
+
+        function applyGreyButtons() {
+            if (isGreyButtons) document.body.classList.add("grey-mode");
+            else document.body.classList.remove("grey-mode");
+        }
+
+        function openSettingsModal() {
+            document.getElementById('settingsModal').style.display = 'flex';
+
+            const greyToggle = document.getElementById("greyButtonsToggle");
+            if (greyToggle) greyToggle.checked = isGreyButtons;
+
+            renderColumnToggles();
+        }
+
+        function closeSettingsModal() {
+            document.getElementById('settingsModal').style.display = 'none';
+        }
+
+        function renderColumnToggles() {
+            const container = document.getElementById("columnToggles");
+            container.innerHTML = "";
+            const headers = Array.from(document.querySelectorAll("#reportTable thead th"));
+
+            const items = headers.map((th, index) => {
+                let text = th.innerText.trim();
+                return { index, text };
+            });
+
+            items.forEach(item => {
+                const label = document.createElement("label");
+                label.style.cursor = "pointer";
+                label.style.display = "flex";
+                label.style.alignItems = "center";
+                label.style.gap = "5px";
+                label.style.marginBottom = "5px";
+
+                const cb = document.createElement("input");
+                cb.type = "checkbox";
+                cb.checked = columnVisibility[item.index];
+                cb.style.margin = "0";
+                cb.onchange = () => toggleColumn(item.index, cb.checked);
+
+                label.appendChild(cb);
+                label.appendChild(document.createTextNode(item.text));
+                container.appendChild(label);
+            });
+        }
+
+        function toggleAllColumns(isVisible) {
+            for (let i = 0; i < columnVisibility.length; i++) {
+                columnVisibility[i] = isVisible;
+            }
+            localStorage.setItem("profitLossColumnVisibility", JSON.stringify(columnVisibility));
+            updateColumnStyles();
+            renderColumnToggles();
+            // renderReport called by toggleColumn
+            renderReport();
+        }
+
+        function toggleColumn(index, isVisible) {
+            columnVisibility[index] = isVisible;
+            localStorage.setItem("profitLossColumnVisibility", JSON.stringify(columnVisibility));
+            updateColumnStyles();
+            renderReport();
+        }
+
+        function updateColumnStyles() {
+            let style = document.getElementById('dynamicColumnStyles');
+            if (!style) {
+                style = document.createElement('style');
+                style.id = 'dynamicColumnStyles';
+                document.head.appendChild(style);
+            }
+            let css = '';
+            columnVisibility.forEach((visible, i) => {
+                if (!visible) {
+                    css += `#reportTable th:nth-child(${i + 1}), #reportTable td:nth-child(${i + 1}) { display: none; }\n`;
+                }
+            });
+            style.textContent = css;
+        }
+
+        // --- Data Logic ---
+        let cachedData = null;
+
+        function getData() {
+            const purchases = JSON.parse(localStorage.getItem("purchases")) || [];
+            const invoices = JSON.parse(localStorage.getItem("invoices")) || [];
+            const expenses = JSON.parse(localStorage.getItem("expenses")) || [];
+            const returns = JSON.parse(localStorage.getItem("returns")) || [];
+            const scraps = JSON.parse(localStorage.getItem("scraps")) || [];
+            const productions = JSON.parse(localStorage.getItem("production")) || [];
+
+            const fromDate = document.getElementById("fromDate").value || "1900-01-01";
+            const toDate = document.getElementById("toDate").value || "2100-12-31";
+
+            // 1. Calculate Global Average Purchase Price (CPP) based on ALL purchases (adjusted for Purchase Returns)
+            const costMap = {};
+            purchases.forEach(p => {
+                const name = (p.itemName || "").trim();
+                const code = (p.itemCode || "").trim();
+                if (!name) return;
+                const key = name.toLowerCase() + "|" + code.toLowerCase();
+                if (!costMap[key]) costMap[key] = { qty: 0, cost: 0 };
+                costMap[key].qty += (parseFloat(p.qty) || 0);
+                costMap[key].cost += (parseFloat(p.qty) || 0) * (parseFloat(p.price) || 0);
+            });
+
+            // Adjust for Purchase Returns (to get accurate Avg Cost)
+            returns.forEach(r => {
+                if (r.return_type === 'Purchase Return') {
+                    if (r.items) {
+                        r.items.forEach(item => {
+                            const name = (item.item_name || "").trim();
+                            const code = (item.itemCode || "").trim();
+                            const key = name.toLowerCase() + "|" + code.toLowerCase();
+                            if (costMap[key]) {
+                                const qty = parseFloat(item.qty) || 0;
+                                const rate = parseFloat(item.rate) || 0;
+                                costMap[key].qty -= qty;
+                                costMap[key].cost -= (qty * rate);
+                            }
+                        });
+                    }
+                }
+            });
+
+            // Add Production (Manufacturing) Costs to Avg Cost
+            productions.forEach(prod => {
+                const name = (prod.finishedGood || "").trim();
+                const code = (prod.fgCode || "").trim();
+                if (!name) return;
+                const key = name.toLowerCase() + "|" + code.toLowerCase();
+                if (!costMap[key]) costMap[key] = { qty: 0, cost: 0 };
+                costMap[key].qty += (parseFloat(prod.fgQtyProduced) || 0);
+                costMap[key].cost += (parseFloat(prod.totalCost) || 0);
+            });
+
+            // 2. Calculate Sales in Range
+            const salesMap = {};
+            let extraChargesRevenue = 0;
+            invoices.forEach(inv => {
+                const invDate = inv.invoice_date || inv.date;
+                if (invDate < fromDate) return;
+                if (invDate > toDate) return;
+
+                if (inv.items && Array.isArray(inv.items)) {
+                    inv.items.forEach(item => {
+                        const name = (item.item || "").trim();
+                        const code = (item.itemCode || "").trim();
+                        if (!name) return;
+                        const key = name.toLowerCase() + "|" + code.toLowerCase();
+
+                        if (!salesMap[key]) salesMap[key] = { name: name, code: code, uom: item.uom || "-", qty: 0, revenue: 0 };
+                        // Update UOM if we find a valid one later
+                        if (salesMap[key].uom === "-" && item.uom) salesMap[key].uom = item.uom;
+
+                        salesMap[key].qty += (parseFloat(item.qty) || 0);
+                        salesMap[key].revenue += (parseFloat(item.total) || 0);
+                    });
+                }
+                extraChargesRevenue += (parseFloat(inv.freightCharges) || 0) + (parseFloat(inv.packingCharges) || 0) + (parseFloat(inv.customCharges) || 0) + (parseFloat(inv.freightBeforeGst) || 0);
+            });
+
+            // 3. Merge and Calculate Profit
+            const salesData = Object.values(salesMap).map(item => {
+                const key = item.name.toLowerCase() + "|" + item.code.toLowerCase();
+                const costData = costMap[key];
+                const avgCost = (costData && costData.qty > 0) ? (costData.cost / costData.qty) : 0;
+
+                item.cogs = item.qty * avgCost;
+                item.profit = item.revenue - item.cogs;
+                item.avgCost = avgCost;
+                item.avgSellPrice = item.qty > 0 ? (item.revenue / item.qty) : 0;
+                return item;
+            }).sort((a, b) => {
+                const nameA = a.code ? `${a.name} [${a.code}]` : a.name;
+                const nameB = b.code ? `${b.name} [${b.code}]` : b.name;
+                return nameA.localeCompare(nameB);
+            });
+
+            // 4. Calculate Returns & Losses in Range
+            let salesReturnRevenue = 0;
+            let salesReturnCOGS = 0;
+            let damageLoss = 0;
+
+            returns.forEach(r => {
+                const rDate = r.return_date || r.date;
+                if (rDate < fromDate || rDate > toDate) return;
+
+                if (r.return_type === 'Sales Return') {
+                    if (r.items) {
+                        r.items.forEach(item => {
+                            const name = (item.item_name || "").trim();
+                            const code = (item.itemCode || "").trim();
+                            const key = name.toLowerCase() + "|" + code.toLowerCase();
+                            const qty = parseFloat(item.qty) || 0;
+                            const rate = parseFloat(item.rate) || 0; // Sale price returned
+
+                            salesReturnRevenue += (qty * rate);
+
+                            const costData = costMap[key];
+                            const avgCost = (costData && costData.qty > 0) ? (costData.cost / costData.qty) : 0;
+                            salesReturnCOGS += (qty * avgCost);
+                        });
+                    }
+                } else if (r.return_type === 'Damage') {
+                    if (r.items) {
+                        r.items.forEach(item => {
+                            const name = (item.item_name || "").trim();
+                            const code = (item.itemCode || "").trim();
+                            const key = name.toLowerCase() + "|" + code.toLowerCase();
+                            const qty = parseFloat(item.qty) || 0;
+                            const costData = costMap[key];
+                            const avgCost = (costData && costData.qty > 0) ? (costData.cost / costData.qty) : 0;
+                            damageLoss += (qty * avgCost);
+                        });
+                    }
+                }
+            });
+
+            let scrapLoss = 0;
+            scraps.forEach(s => {
+                const sDate = s.date;
+                if (sDate < fromDate || sDate > toDate) return;
+                const name = (s.itemName || "").trim();
+                const code = (s.itemCode || "").trim();
+                const key = name.toLowerCase() + "|" + code.toLowerCase();
+                const qty = parseFloat(s.qty) || 0;
+                const costData = costMap[key];
+                const avgCost = (costData && costData.qty > 0) ? (costData.cost / costData.qty) : 0;
+                scrapLoss += (qty * avgCost);
+            });
+
+            // Map Category to Nature
+            const customParents = JSON.parse(localStorage.getItem("custom_expense_parents")) || [];
+            const categoryNatureMap = {};
+            customParents.forEach(cp => {
+                categoryNatureMap[(cp.name || "").toLowerCase()] = cp.nature || "Indirect Expense";
+            });
+
+            const defaultDirect = ['wages', 'carriage inward', 'freight inward', 'factory power', 'manufacturing expenses', 'manufacturing overheads', 'manufacturing wages'];
+            const getNature = (catName) => {
+                const lower = (catName || "").toLowerCase();
+                if (categoryNatureMap[lower]) return categoryNatureMap[lower];
+                if (defaultDirect.includes(lower)) return 'Direct Expense';
+                return 'Indirect Expense';
+            };
+
+            // 5. Filter Expenses
+            const mappedExpenses = expenses.map(e => ({
+                date: e.expense_date || e.date,
+                category: e.expense_category || e.category,
+                amount: parseFloat(e.debit_amount || e.amount || 0),
+                vchType: 'Expense',
+                vchNo: e.expense_id || '-'
+            }));
+
+            const filteredExpenses = mappedExpenses.filter(e => e.date >= fromDate && e.date <= toDate).map(e => {
+                e.nature = getNature(e.category);
+                return e;
+            });
+
+            // --- NEW: Process Journal Vouchers for P&L items ---
+            const journalVouchers = JSON.parse(localStorage.getItem("journal_vouchers")) || [];
+            const jvPnlItems = [];
+            // List of nominal accounts that are expenses (debited)
+            const pnlDebitAccounts = ['depreciation', 'loss on sale', 'revaluation loss', 'audit fees', 'bank charges', 'legal charges', 'wages', 'freight inward', 'carriage inward', 'manufacturing overheads', 'manufacturing wages'];
+            // List of nominal accounts that are other incomes (credited)
+            const pnlCreditAccounts = ['profit on sale'];
+
+            journalVouchers.forEach(jv => {
+                if (jv.date >= fromDate && jv.date <= toDate) {
+                    jv.entries.forEach(entry => {
+                        const accountLower = entry.account.toLowerCase();
+                        const amount = parseFloat(entry.debit || entry.credit || 0);
+
+                        // Check for expenses (Debits to P&L accounts)
+                        let isExp = false;
+                        let expNature = 'Indirect Expense';
+                        let factor = 1;
+
+                        if (entry.type === 'Dr') {
+                            if (pnlDebitAccounts.some(acc => accountLower.includes(acc))) {
+                                isExp = true;
+                                expNature = getNature(entry.account);
+                            } else if (categoryNatureMap[accountLower]) {
+                                isExp = true;
+                                expNature = categoryNatureMap[accountLower];
+                            }
+                        } else if (entry.type === 'Cr') {
+                            // Credits to expense accounts reduce the expense (e.g., absorbed manufacturing costs)
+                            if (pnlDebitAccounts.some(acc => accountLower.includes(acc)) || categoryNatureMap[accountLower]) {
+                                isExp = true;
+                                expNature = getNature(entry.account);
+                                factor = -1;
+                            }
+                        }
+
+                        if (isExp) {
+                            jvPnlItems.push({
+                                date: jv.date,
+                                category: entry.account,
+                                amount: amount * factor,
+                                vchType: jv.voucher_type || 'Journal',
+                                vchNo: jv.voucher_no || '-',
+                                nature: expNature
+                            });
+                        }
+
+                        // Note: Incomes from JVs are not yet handled to keep this change focused.
+                    });
+                }
+            });
+
+            const allExpenses = [...filteredExpenses, ...jvPnlItems];
+
+            return {
+                sales: salesData,
+                extraChargesRevenue: extraChargesRevenue,
+                expenses: allExpenses,
+                returns: {
+                    salesRevenue: salesReturnRevenue,
+                    salesCOGS: salesReturnCOGS,
+                    damage: damageLoss
+                },
+                scraps: scrapLoss,
+                period: { from: fromDate, to: toDate }
+            };
+        }
+
+        function formatDate(dateStr) {
+            if (!dateStr) return "";
+            const [y, m, d] = dateStr.split("-");
+            return `${d}/${m}/${y}`;
+        }
+
+        function highlightMatch(text, term) {
+            if (!text || !term) return text;
+            const regex = new RegExp(`(${term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+            return text.replace(regex, '<span class="highlight">$1</span>');
+        }
+
+        let currentPage = 1;
+        let rowsPerPage = 20;
+        let isTFormatPnl = localStorage.getItem("pnlTFormat") === "true";
+
+        function toggleTFormat() {
+            isTFormatPnl = document.getElementById("tFormatToggle").checked;
+            localStorage.setItem("pnlTFormat", isTFormatPnl);
+            renderReport();
+        }
+
+        function renderReport() {
+            const data = getData();
+            cachedData = data;
+
+            renderPnLStatement(data);
+            renderItemTable(data.sales);
+            renderCharts(data);
+            updateDateRangeHeader();
+        }
+
+        function updateDateRangeHeader() {
+            const fromDate = document.getElementById("fromDate").value;
+            const toDate = document.getElementById("toDate").value;
+            const printHeader = document.getElementById("printDateRange");
+            if (fromDate && toDate) printHeader.innerText = `Period: ${formatDate(fromDate)} to ${formatDate(toDate)}`;
+            else printHeader.innerText = "Period: All Time";
+        }
+
+        function formatCurrency(amount) {
+            return (amount || 0).toLocaleString('en-IN', { style: 'currency', currency: 'INR' });
+        }
+
+        function renderPnLStatement(data) {
+            const totalItemRevenue = data.sales.reduce((sum, item) => sum + item.revenue, 0);
+            const totalRevenue = totalItemRevenue + (data.extraChargesRevenue || 0);
+            const totalCOGS = data.sales.reduce((sum, item) => sum + item.cogs, 0);
+
+            // Adjust for Sales Returns
+            const netRevenue = totalRevenue - (data.returns ? data.returns.salesRevenue : 0);
+            const netCOGS = totalCOGS - (data.returns ? data.returns.salesCOGS : 0);
+
+            const directExpenses = data.expenses.filter(e => e.nature === 'Direct Expense').reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0);
+            const indirectExpenses = data.expenses.filter(e => e.nature !== 'Direct Expense').reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0);
+            const totalExpenses = directExpenses + indirectExpenses;
+
+            const grossProfit = netRevenue - netCOGS - directExpenses;
+            const totalLosses = (data.returns ? data.returns.damage : 0) + (data.scraps || 0);
+            const netProfit = grossProfit - indirectExpenses - totalLosses;
+
+            // Update KPIs
+            document.getElementById('kpiRevenue').innerText = formatCurrency(netRevenue);
+            document.getElementById('kpiCOGS').innerText = formatCurrency(netCOGS);
+            document.getElementById('kpiGross').innerText = formatCurrency(grossProfit);
+            document.getElementById('kpiOpExp').innerText = formatCurrency(totalExpenses + totalLosses);
+            document.getElementById('kpiNet').innerText = formatCurrency(netProfit);
+
+            const netCard = document.getElementById('kpiNetCard');
+            if (netProfit >= 0) { netCard.classList.remove('loss'); netCard.classList.add('profit'); }
+            else { netCard.classList.remove('profit'); netCard.classList.add('loss'); }
+
+            // Render Statement HTML
+            const container = document.getElementById('pnlStatement');
+
+            if (isTFormatPnl) {
+                const isGrossProfit = grossProfit >= 0;
+                const isNetProfit = netProfit >= 0;
+
+                const tradingTotalAmount = isGrossProfit ? netRevenue : netCOGS;
+
+                let pnlTotalAmount = 0;
+                if (isNetProfit) {
+                    pnlTotalAmount = grossProfit;
+                } else {
+                    pnlTotalAmount = (indirectExpenses + totalLosses) + (isGrossProfit ? 0 : Math.abs(grossProfit));
+                }
+
+                let tradingDr = `<div class="t-row"><span class="label">Cost of Goods Sold (COGS)</span><span class="amount">${formatCurrency(totalCOGS)}</span></div>`;
+                if (data.returns && data.returns.salesCOGS > 0) {
+                    tradingDr += `<div class="t-row"><span class="label" style="color:#27ae60;">Less: Return Cost Reversal</span><span class="amount" style="color:#27ae60;">(${formatCurrency(data.returns.salesCOGS)})</span></div>`;
+                }
+                if (directExpenses > 0) {
+                    tradingDr += `<div class="t-row clickable-row" onclick="showDrillDown('Direct Expenses', cachedData.expenses.filter(e => e.nature === 'Direct Expense'))" title="Click to view details"><span class="label">Direct Expenses</span><span class="amount">${formatCurrency(directExpenses)}</span></div>`;
+                }
+                if (isGrossProfit) {
+                    tradingDr += `<div class="t-row" style="color:#27ae60; font-weight:bold;"><span class="label">Gross Profit c/d</span><span class="amount">${formatCurrency(grossProfit)}</span></div>`;
+                }
+
+                let tradingCr = `<div class="t-row"><span class="label">Sales Revenue (Items)</span><span class="amount">${formatCurrency(totalItemRevenue)}</span></div>`;
+                if ((data.extraChargesRevenue || 0) > 0) {
+                    tradingCr += `<div class="t-row"><span class="label">Additional Charges</span><span class="amount">${formatCurrency(data.extraChargesRevenue)}</span></div>`;
+                }
+                if (data.returns && data.returns.salesRevenue > 0) {
+                    tradingCr += `<div class="t-row"><span class="label" style="color:#c0392b;">Less: Sales Returns</span><span class="amount" style="color:#c0392b;">(${formatCurrency(data.returns.salesRevenue)})</span></div>`;
+                }
+                if (!isGrossProfit) {
+                    tradingCr += `<div class="t-row" style="color:#c0392b; font-weight:bold;"><span class="label">Gross Loss c/d</span><span class="amount">${formatCurrency(Math.abs(grossProfit))}</span></div>`;
+                }
+
+                let pnlDr = `<div class="t-row clickable-row" onclick="showDrillDown('Indirect Expenses', cachedData.expenses.filter(e => e.nature !== 'Direct Expense'))" title="Click to view details"><span class="label">Indirect Expenses</span><span class="amount">${formatCurrency(indirectExpenses)}</span></div>`;
+                if (data.returns && data.returns.damage > 0) {
+                    pnlDr += `<div class="t-row"><span class="label" style="color:#c0392b;">Loss: Damaged Goods</span><span class="amount">${formatCurrency(data.returns.damage)}</span></div>`;
+                }
+                if (data.scraps > 0) {
+                    pnlDr += `<div class="t-row"><span class="label" style="color:#c0392b;">Loss: Inventory Scrap</span><span class="amount">${formatCurrency(data.scraps)}</span></div>`;
+                }
+                if (!isGrossProfit) {
+                    pnlDr = `<div class="t-row" style="color:#c0392b; font-weight:bold;"><span class="label">Gross Loss b/d</span><span class="amount">${formatCurrency(Math.abs(grossProfit))}</span></div>` + pnlDr;
+                }
+                if (isNetProfit) {
+                    pnlDr += `<div class="t-row" style="color:#27ae60; font-weight:bold; margin-top: auto;"><span class="label">Net Profit</span><span class="amount">${formatCurrency(netProfit)}</span></div>`;
+                }
+
+                let pnlCr = '';
+                if (isGrossProfit) {
+                    pnlCr += `<div class="t-row" style="color:#27ae60; font-weight:bold;"><span class="label">Gross Profit b/d</span><span class="amount">${formatCurrency(grossProfit)}</span></div>`;
+                }
+                if (!isNetProfit) {
+                    pnlCr += `<div class="t-row" style="color:#c0392b; font-weight:bold; margin-top: auto;"><span class="label">Net Loss</span><span class="amount">${formatCurrency(Math.abs(netProfit))}</span></div>`;
+                }
+
+                container.innerHTML = `
+                    <div class="t-format-container">
+                        <h3 style="text-align:center; border-bottom:2px solid #eee; padding-bottom:10px;">Trading & Profit & Loss A/c</h3>
+                        <div class="t-table" style="margin-bottom: 20px;">
+                            <div class="t-side dr">
+                                <div class="t-header"><span>Particulars (Trading A/c)</span><span>Amount</span></div>
+                                <div style="display:flex; flex-direction:column; flex:1;">${tradingDr}</div>
+                                <div class="t-row total"><span>Total</span><span class="amount">${formatCurrency(tradingTotalAmount)}</span></div>
+                            </div>
+                            <div class="t-side cr">
+                                <div class="t-header"><span>Particulars</span><span>Amount</span></div>
+                                <div style="display:flex; flex-direction:column; flex:1;">${tradingCr}</div>
+                                <div class="t-row total"><span>Total</span><span class="amount">${formatCurrency(tradingTotalAmount)}</span></div>
+                            </div>
+                        </div>
+
+                        <div class="t-table">
+                            <div class="t-side dr">
+                                <div class="t-header"><span>Particulars (P&L A/c)</span><span>Amount</span></div>
+                                <div style="display:flex; flex-direction:column; flex:1;">${pnlDr}</div>
+                                <div class="t-row total"><span>Total</span><span class="amount">${formatCurrency(pnlTotalAmount)}</span></div>
+                            </div>
+                            <div class="t-side cr">
+                                <div class="t-header"><span>Particulars</span><span>Amount</span></div>
+                                <div style="display:flex; flex-direction:column; flex:1;">${pnlCr}</div>
+                                <div class="t-row total"><span>Total</span><span class="amount">${formatCurrency(pnlTotalAmount)}</span></div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else {
+                container.innerHTML = `
+                    <h3 style="text-align:center; border-bottom:2px solid #eee; padding-bottom:10px;">Profit & Loss Statement</h3>
+                    
+                    <div class="pnl-row header">
+                        <div class="label">REVENUE</div>
+                    </div>
+                    <div class="pnl-row">
+                        <div class="label" style="padding-left: 20px;">Sales Revenue (Items)</div>
+                        <div class="amount">${formatCurrency(totalItemRevenue)}</div>
+                    </div>
+                    ${(data.extraChargesRevenue || 0) > 0 ? `
+                    <div class="pnl-row">
+                        <div class="label" style="padding-left: 20px;">Additional Charges (Freight, Packing, etc.)</div>
+                        <div class="amount">${formatCurrency(data.extraChargesRevenue)}</div>
+                    </div>` : ''}
+                    ${data.returns && data.returns.salesRevenue > 0 ? `
+                    <div class="pnl-row">
+                        <div class="label" style="padding-left: 20px; color:#c0392b;">Less: Sales Returns</div>
+                        <div class="amount" style="color:#c0392b;">(${formatCurrency(data.returns.salesRevenue)})</div>
+                    </div>` : ''}
+                    
+                    <div class="pnl-row header" style="margin-top:15px;">
+                        <div class="label">COST OF GOODS SOLD & DIRECT EXPENSES</div>
+                    </div>
+                    <div class="pnl-row">
+                        <div class="label" style="padding-left: 20px;">Cost of Goods Sold (COGS)</div>
+                        <div class="amount">(${formatCurrency(totalCOGS)})</div>
+                    </div>
+                    ${data.returns && data.returns.salesCOGS > 0 ? `
+                    <div class="pnl-row">
+                        <div class="label" style="padding-left: 20px; color:#27ae60;">Add: Return Cost Reversal</div>
+                        <div class="amount" style="color:#27ae60;">${formatCurrency(data.returns.salesCOGS)}</div>
+                    </div>` : ''}
+                    ${directExpenses > 0 ? `
+                    <div class="pnl-row clickable-row" onclick="showDrillDown('Direct Expenses', cachedData.expenses.filter(e => e.nature === 'Direct Expense'))" title="Click to view details">
+                        <div class="label" style="padding-left: 20px;">Direct Expenses</div>
+                        <div class="amount">(${formatCurrency(directExpenses)})</div>
+                    </div>` : ''}
+
+                    <div class="pnl-row subtotal">
+                        <div class="label">GROSS PROFIT</div>
+                        <div class="amount">${formatCurrency(grossProfit)}</div>
+                    </div>
+
+                    <div class="pnl-row header" style="margin-top:15px;">
+                        <div class="label">OPERATING EXPENSES</div>
+                    </div>
+                <div class="pnl-row clickable-row" onclick="showDrillDown('Indirect Expenses', cachedData.expenses.filter(e => e.nature !== 'Direct Expense'))" title="Click to view details">
+                        <div class="label" style="padding-left: 20px;">Indirect Expenses</div>
+                        <div class="amount">${formatCurrency(indirectExpenses)}</div>
+                    </div>
+                    ${data.returns && data.returns.damage > 0 ? `
+                    <div class="pnl-row">
+                        <div class="label" style="padding-left: 20px; color:#c0392b;">Loss: Damaged Goods</div>
+                        <div class="amount">${formatCurrency(data.returns.damage)}</div>
+                    </div>` : ''}
+                    ${data.scraps > 0 ? `
+                    <div class="pnl-row">
+                        <div class="label" style="padding-left: 20px; color:#c0392b;">Loss: Inventory Scrap</div>
+                        <div class="amount">${formatCurrency(data.scraps)}</div>
+                    </div>` : ''}
+                    <div class="pnl-row subtotal">
+                        <div class="label">Total Expenses & Losses</div>
+                        <div class="amount">(${formatCurrency(indirectExpenses + totalLosses)})</div>
+                    </div>
+
+                    <div class="pnl-row total">
+                        <div class="label">NET PROFIT / (LOSS)</div>
+                        <div class="amount" style="color:${netProfit >= 0 ? '#27ae60' : '#c0392b'}">${formatCurrency(netProfit)}</div>
+                    </div>
+                `;
+            }
+        }
+
+        function renderItemTable(salesData) {
+            if (!salesData) salesData = cachedData ? cachedData.sales : [];
+
+            const tbody = document.querySelector("#reportTable tbody");
+            tbody.innerHTML = "";
+            const searchInput = document.getElementById("searchBox").value.trim();
+            const searchTerm = searchInput.toLowerCase();
+
+            // Filter data
+            let data = salesData;
+            if (searchTerm) {
+                data = data.filter(item => {
+                    const displayName = item.code ? `${item.name} [${item.code}]` : item.name;
+                    return displayName.toLowerCase().includes(searchTerm);
+                });
+            }
+
+            // Pagination Logic
+            const totalItems = data.length;
+            const totalPages = Math.ceil(totalItems / rowsPerPage);
+
+            if (currentPage > totalPages) currentPage = totalPages || 1;
+            if (currentPage < 1) currentPage = 1;
+
+            const startIndex = (currentPage - 1) * rowsPerPage;
+            const endIndex = startIndex + rowsPerPage;
+            const paginatedData = data.slice(startIndex, endIndex);
+
+            let sl = startIndex + 1;
+            let totalProfit = 0;
+
+            // Calculate total profit for ALL filtered data (not just current page)
+            data.forEach(item => totalProfit += item.profit);
+
+            paginatedData.forEach(item => {
+                const statusClass = item.profit > 0 ? "profit" : (item.profit < 0 ? "loss" : "neutral");
+                const statusText = item.profit > 0 ? "Profit" : (item.profit < 0 ? "Loss" : "Break-even");
+                const displayName = item.code ? `${item.name} [${item.code}]` : item.name;
+
+                const tr = document.createElement("tr");
+                tr.innerHTML = `
+          <td>${sl++}</td>
+          <td style="text-align:left; padding-left:15px;">${highlightMatch(displayName, searchInput)}</td>
+          <td>${item.uom}</td>
+          <td>${item.qty.toLocaleString('en-IN')}</td>
+          <td>${item.avgCost.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+          <td>${item.cogs.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+          <td>${item.avgSellPrice.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+          <td>${item.revenue.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+          <td class="${statusClass}">${item.profit.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+          <td class="${statusClass}">${statusText}</td>
+        `;
+                tbody.appendChild(tr);
+            });
+
+            let visibleCount = columnVisibility.filter(Boolean).length;
+            if (totalItems === 0) tbody.innerHTML = `<tr><td colspan="${visibleCount || 10}">No items found</td></tr>`;
+            else {
+                const trTotal = document.createElement("tr");
+                trTotal.style.fontWeight = "bold";
+                trTotal.style.background = "#e8f6f3";
+                const totalClass = totalProfit >= 0 ? "profit" : "loss";
+
+                let spanLabel = 0;
+                for (let i = 0; i < 8; i++) if (columnVisibility[i]) spanLabel++;
+
+                let html = '';
+                if (spanLabel > 0) {
+                    html += `<td colspan="${spanLabel}" style="text-align:right;">Total Net Profit/Loss (All Pages):</td>`;
+                }
+                if (columnVisibility[8]) {
+                    html += `<td class="${totalClass}">${totalProfit.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>`;
+                }
+                if (columnVisibility[9]) {
+                    html += `<td></td>`;
+                }
+                trTotal.innerHTML = html;
+                tbody.appendChild(trTotal);
+            }
+
+            renderPagination(totalItems, startIndex + 1, Math.min(endIndex, totalItems), totalPages);
+        }
+
+        function renderCharts(data) {
+            const ctx = document.getElementById('pnlChart').getContext('2d');
+
+            const totalRevenue = data.sales.reduce((sum, item) => sum + item.revenue, 0);
+            const totalCOGS = data.sales.reduce((sum, item) => sum + item.cogs, 0);
+            const netRevenue = totalRevenue - (data.returns ? data.returns.salesRevenue : 0);
+            const netCOGS = totalCOGS - (data.returns ? data.returns.salesCOGS : 0);
+            const totalExpenses = data.expenses.reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0);
+            const totalLosses = (data.returns ? data.returns.damage : 0) + (data.scraps || 0);
+            const netProfit = netRevenue - netCOGS - totalExpenses - totalLosses;
+
+            if (chartInstance) chartInstance.destroy();
+
+            chartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Net COGS', 'Expenses & Losses', 'Net Profit'],
+                    datasets: [{
+                        data: [netCOGS, totalExpenses + totalLosses, Math.max(0, netProfit)],
+                        backgroundColor: ['#e74c3c', '#f39c12', '#27ae60'],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom' },
+                        title: { display: true, text: 'Financial Breakdown' }
+                    }
+                }
+            });
+        }
+
+        // --- Date Filters ---
+        function setDateFilter(type) {
+            const today = new Date();
+            let from = "", to = "";
+
+            // Helper to format YYYY-MM-DD using local time
+            const fmt = d => {
+                const y = d.getFullYear();
+                const m = String(d.getMonth() + 1).padStart(2, '0');
+                const day = String(d.getDate()).padStart(2, '0');
+                return `${y}-${m}-${day}`;
+            };
+
+            if (type === 'today') {
+                from = fmt(today);
+                to = fmt(today);
+            } else if (type === 'thisMonth') {
+                from = fmt(new Date(today.getFullYear(), today.getMonth(), 1));
+                to = fmt(new Date(today.getFullYear(), today.getMonth() + 1, 0));
+            } else if (type === 'lastMonth') {
+                from = fmt(new Date(today.getFullYear(), today.getMonth() - 1, 1));
+                to = fmt(new Date(today.getFullYear(), today.getMonth(), 0));
+            } else if (type === 'thisQuarter') {
+                const currMonth = today.getMonth();
+                const startMonth = Math.floor(currMonth / 3) * 3;
+                from = fmt(new Date(today.getFullYear(), startMonth, 1));
+                to = fmt(new Date(today.getFullYear(), startMonth + 3, 0));
+            } else if (type === 'thisFY') {
+                const year = today.getMonth() >= 3 ? today.getFullYear() : today.getFullYear() - 1;
+                from = `${year}-04-01`;
+                to = `${year + 1}-03-31`;
+            } else if (type === 'all') {
+                from = "";
+                to = "";
+            }
+
+            document.getElementById('fromDate').value = from;
+            document.getElementById('toDate').value = to;
+
+            // Update active button state
+            document.querySelectorAll('.date-filters button').forEach(b => b.classList.remove('active'));
+            const btnId = 'btn' + type.charAt(0).toUpperCase() + type.slice(1);
+            const btn = document.getElementById(btnId);
+            if (btn) btn.classList.add('active');
+
+            renderReport();
+        }
+
+        // --- Export ---
+        function exportToExcel() {
+            const data = cachedData || getData();
+            const wb = XLSX.utils.book_new();
+
+            // Sheet 1: P&L Summary
+            const totalItemRevenue = data.sales.reduce((sum, item) => sum + item.revenue, 0);
+            const totalRevenue = totalItemRevenue + (data.extraChargesRevenue || 0);
+            const totalCOGS = data.sales.reduce((sum, item) => sum + item.cogs, 0);
+            const netRevenue = totalRevenue - (data.returns ? data.returns.salesRevenue : 0);
+            const netCOGS = totalCOGS - (data.returns ? data.returns.salesCOGS : 0);
+            const totalExpenses = data.expenses.reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0);
+            const totalLosses = (data.returns ? data.returns.damage : 0) + (data.scraps || 0);
+            const netProfit = netRevenue - netCOGS - totalExpenses - totalLosses;
+
+            const summaryData = [
+                ["Financial Statement", APP_SETTINGS.COMPANY_NAME || ""],
+                ["Period", `${document.getElementById('fromDate').value || 'Start'} to ${document.getElementById('toDate').value || 'End'}`],
+                [],
+                ["Particulars", "Amount (INR)"],
+                ["Total Revenue (Gross)", totalRevenue],
+                ["Less: Sales Returns", (data.returns ? data.returns.salesRevenue : 0)],
+                ["Net Revenue", netRevenue],
+                ["Net Cost of Goods Sold", netCOGS],
+                ["Gross Profit", netRevenue - netCOGS],
+                ["Operating Expenses", totalExpenses],
+                ["Losses (Damage/Scrap)", totalLosses],
+                ["Net Profit", netProfit]
+            ];
+            const wsSummary = XLSX.utils.aoa_to_sheet(summaryData);
+            XLSX.utils.book_append_sheet(wb, wsSummary, "P&L Statement");
+
+            // Sheet 2: Item Details
+            const itemData = data.sales.map((item, i) => {
+                const displayName = item.code ? `${item.name} [${item.code}]` : item.name;
+                return {
+                    "Sl No": i + 1, "Item Name": displayName, "UOM": item.uom, "Qty Sold": item.qty, "Avg Cost": item.avgCost, "COGS": item.cogs, "Avg Sell Price": item.avgSellPrice, "Revenue": item.revenue, "Profit": item.profit
+                };
+            });
+            const wsItems = XLSX.utils.json_to_sheet(itemData);
+            XLSX.utils.book_append_sheet(wb, wsItems, "Item Details");
+
+            XLSX.writeFile(wb, "Financial_Statement.xlsx");
+        }
+
+        function exportToPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            const companyName = document.getElementById('brandName').innerText;
+            const dateText = document.getElementById('printDateRange').innerText || "All Time";
+            const fmt = (amt) => formatCurrency(amt).replace('₹', 'Rs.');
+
+            doc.setFontSize(18);
+            doc.text(companyName, 105, 15, { align: 'center' });
+            doc.setFontSize(12);
+            doc.text("Profit & Loss Statement", 105, 22, { align: 'center' });
+            doc.setFontSize(10);
+            doc.text(dateText, 105, 28, { align: 'center' });
+
+            const data = cachedData || getData();
+            const totalItemRevenue = data.sales.reduce((sum, item) => sum + item.revenue, 0);
+            const totalRevenue = totalItemRevenue + (data.extraChargesRevenue || 0);
+            const totalCOGS = data.sales.reduce((sum, item) => sum + item.cogs, 0);
+            const netRevenue = totalRevenue - (data.returns ? data.returns.salesRevenue : 0);
+            const netCOGS = totalCOGS - (data.returns ? data.returns.salesCOGS : 0);
+            const directExpenses = data.expenses.filter(e => e.nature === 'Direct Expense').reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0);
+            const indirectExpenses = data.expenses.filter(e => e.nature !== 'Direct Expense').reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0);
+            const totalExpenses = directExpenses + indirectExpenses;
+            const grossProfit = netRevenue - netCOGS - directExpenses;
+            const totalLosses = (data.returns ? data.returns.damage : 0) + (data.scraps || 0);
+            const netProfit = grossProfit - indirectExpenses - totalLosses;
+
+            if (isTFormatPnl) {
+                const isGrossProfit = grossProfit >= 0;
+                const isNetProfit = netProfit >= 0;
+                const tradingTotalAmount = isGrossProfit ? netRevenue : netCOGS;
+                let pnlTotalAmount = isNetProfit ? grossProfit : ((indirectExpenses + totalLosses) + (isGrossProfit ? 0 : Math.abs(grossProfit)));
+
+                let tradingBody = [];
+                let drItems = [['Cost of Goods Sold (COGS)', fmt(totalCOGS)]];
+                if (data.returns && data.returns.salesCOGS > 0) drItems.push(['Less: Return Cost Reversal', '(' + fmt(data.returns.salesCOGS) + ')']);
+                if (directExpenses > 0) drItems.push(['Direct Expenses', fmt(directExpenses)]);
+                if (isGrossProfit) drItems.push(['Gross Profit c/d', fmt(grossProfit)]);
+
+                let crItems = [['Sales Revenue (Items)', fmt(totalItemRevenue)]];
+                if ((data.extraChargesRevenue || 0) > 0) crItems.push(['Additional Charges', fmt(data.extraChargesRevenue)]);
+                if (data.returns && data.returns.salesRevenue > 0) crItems.push(['Less: Sales Returns', '(' + fmt(data.returns.salesRevenue) + ')']);
+                if (!isGrossProfit) crItems.push(['Gross Loss c/d', fmt(Math.abs(grossProfit))]);
+
+                const maxTradingRows = Math.max(drItems.length, crItems.length);
+                for (let i = 0; i < maxTradingRows; i++) {
+                    const dr = drItems[i] || ['', ''];
+                    const cr = crItems[i] || ['', ''];
+                    tradingBody.push([dr[0], dr[1], cr[0], cr[1]]);
+                }
+
+                tradingBody.push([
+                    { content: "Total", styles: { fontStyle: 'bold', fillColor: [240, 240, 240] } },
+                    { content: fmt(tradingTotalAmount), styles: { fontStyle: 'bold', fillColor: [240, 240, 240] } },
+                    { content: "Total", styles: { fontStyle: 'bold', fillColor: [240, 240, 240] } },
+                    { content: fmt(tradingTotalAmount), styles: { fontStyle: 'bold', fillColor: [240, 240, 240] } }
+                ]);
+
+                doc.autoTable({
+                    startY: 35,
+                    head: [['Particulars (Trading A/c)', 'Amount', 'Particulars', 'Amount']],
+                    body: tradingBody,
+                    theme: 'grid',
+                    headStyles: { fillColor: [52, 58, 64], textColor: 255, halign: 'center' },
+                    columnStyles: { 1: { halign: 'right' }, 3: { halign: 'right' } },
+                    styles: { fontSize: 9, cellPadding: 3 }
+                });
+
+                let pnlBody = [];
+                let drPnl = [];
+                if (!isGrossProfit) drPnl.push(['Gross Loss b/d', fmt(Math.abs(grossProfit))]);
+                drPnl.push(['Indirect Expenses', fmt(indirectExpenses)]);
+                if (data.returns && data.returns.damage > 0) drPnl.push(['Loss: Damaged Goods', fmt(data.returns.damage)]);
+                if (data.scraps > 0) drPnl.push(['Loss: Inventory Scrap', fmt(data.scraps)]);
+                if (isNetProfit) drPnl.push(['Net Profit', fmt(netProfit)]);
+
+                let crPnl = [];
+                if (isGrossProfit) crPnl.push(['Gross Profit b/d', fmt(grossProfit)]);
+                if (!isNetProfit) crPnl.push(['Net Loss', fmt(Math.abs(netProfit))]);
+
+                const maxPnlRows = Math.max(drPnl.length, crPnl.length);
+                for (let i = 0; i < maxPnlRows; i++) {
+                    const dr = drPnl[i] || ['', ''];
+                    const cr = crPnl[i] || ['', ''];
+                    pnlBody.push([dr[0], dr[1], cr[0], cr[1]]);
+                }
+
+                pnlBody.push([
+                    { content: "Total", styles: { fontStyle: 'bold', fillColor: [240, 240, 240] } },
+                    { content: fmt(pnlTotalAmount), styles: { fontStyle: 'bold', fillColor: [240, 240, 240] } },
+                    { content: "Total", styles: { fontStyle: 'bold', fillColor: [240, 240, 240] } },
+                    { content: fmt(pnlTotalAmount), styles: { fontStyle: 'bold', fillColor: [240, 240, 240] } }
+                ]);
+
+                doc.autoTable({
+                    startY: doc.lastAutoTable.finalY + 10,
+                    head: [['Particulars (P&L A/c)', 'Amount', 'Particulars', 'Amount']],
+                    body: pnlBody,
+                    theme: 'grid',
+                    headStyles: { fillColor: [52, 58, 64], textColor: 255, halign: 'center' },
+                    columnStyles: { 1: { halign: 'right' }, 3: { halign: 'right' } },
+                    styles: { fontSize: 9, cellPadding: 3 }
+                });
+
+            } else {
+                let body = [];
+                body.push([{ content: 'REVENUE', colSpan: 2, styles: { fontStyle: 'bold', fillColor: [240, 240, 240] } }]);
+                body.push(['Sales Revenue (Items)', fmt(totalItemRevenue)]);
+                if ((data.extraChargesRevenue || 0) > 0) body.push(['Additional Charges', fmt(data.extraChargesRevenue)]);
+                if (data.returns && data.returns.salesRevenue > 0) body.push(['Less: Sales Returns', '(' + fmt(data.returns.salesRevenue) + ')']);
+                body.push([{ content: 'Net Revenue', styles: { fontStyle: 'bold' } }, { content: fmt(netRevenue), styles: { fontStyle: 'bold' } }]);
+
+                body.push([{ content: 'COST OF GOODS SOLD & DIRECT EXPENSES', colSpan: 2, styles: { fontStyle: 'bold', fillColor: [240, 240, 240] } }]);
+                body.push(['Cost of Goods Sold (COGS)', '(' + fmt(totalCOGS) + ')']);
+                if (data.returns && data.returns.salesCOGS > 0) body.push(['Add: Return Cost Reversal', fmt(data.returns.salesCOGS)]);
+                if (directExpenses > 0) body.push(['Direct Expenses', '(' + fmt(directExpenses) + ')']);
+                body.push([{ content: 'Net COGS & Direct Exp', styles: { fontStyle: 'bold' } }, { content: '(' + fmt(netCOGS + directExpenses) + ')', styles: { fontStyle: 'bold' } }]);
+
+                body.push([{ content: 'GROSS PROFIT', styles: { fontStyle: 'bold', fillColor: [220, 230, 240] } }, { content: fmt(grossProfit), styles: { fontStyle: 'bold', fillColor: [220, 230, 240] } }]);
+
+                body.push([{ content: 'OPERATING EXPENSES & LOSSES', colSpan: 2, styles: { fontStyle: 'bold', fillColor: [240, 240, 240] } }]);
+                body.push(['Indirect Expenses', fmt(indirectExpenses)]);
+                if (data.returns && data.returns.damage > 0) body.push(['Loss: Damaged Goods', fmt(data.returns.damage)]);
+                if (data.scraps > 0) body.push(['Loss: Inventory Scrap', fmt(data.scraps)]);
+                body.push([{ content: 'Total Expenses & Losses', styles: { fontStyle: 'bold' } }, { content: '(' + fmt(indirectExpenses + totalLosses) + ')', styles: { fontStyle: 'bold' } }]);
+
+                body.push([{ content: 'NET PROFIT / (LOSS)', styles: { fontStyle: 'bold', fillColor: [220, 240, 220] } }, { content: fmt(netProfit), styles: { fontStyle: 'bold', fillColor: [220, 240, 220] } }]);
+
+                doc.autoTable({
+                    startY: 35,
+                    head: [['Particulars', 'Amount']],
+                    body: body,
+                    theme: 'grid',
+                    headStyles: { fillColor: [52, 58, 64], textColor: 255 },
+                    columnStyles: { 1: { halign: 'right' } },
+                    styles: { fontSize: 10, cellPadding: 4 }
+                });
+            }
+
+            doc.save("Profit_Loss_Statement.pdf");
+        }
+
+        function changeRowsPerPage() {
+            rowsPerPage = parseInt(document.getElementById("rowsPerPageSelect").value);
+            currentPage = 1;
+            renderReport();
+        }
+
+        function goToPage() {
+            const pageInput = document.getElementById("goToPageInput");
+            const page = parseInt(pageInput.value);
+            if (page >= 1) {
+                currentPage = page;
+                renderReport();
+            }
+            pageInput.value = "";
+        }
+
+        function changePage(page) {
+            currentPage = page;
+            renderReport();
+        }
+
+        function renderPagination(totalItems, start, end, totalPages) {
+            const info = document.getElementById("paginationInfo");
+            const controls = document.getElementById("paginationControls");
+
+            if (totalItems === 0) {
+                info.innerText = "No records found";
+                controls.innerHTML = "";
+                return;
+            }
+
+            info.innerText = `Showing ${start} to ${end} of ${totalItems} entries`;
+
+            let html = "";
+            html += `<button onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>Previous</button>`;
+
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
+                    const activeClass = i === currentPage ? 'active' : '';
+                    html += `<button class="${activeClass}" onclick="changePage(${i})">${i}</button>`;
+                } else if (i === currentPage - 3 || i === currentPage + 3) {
+                    html += `<span>...</span>`;
+                }
+            }
+
+            html += `<button onclick="changePage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>Next</button>`;
+
+            controls.innerHTML = html;
+        }
+
+        function resetFilters() {
+            document.getElementById("searchBox").value = "";
+            document.getElementById("fromDate").value = "";
+            document.getElementById("toDate").value = "";
+            renderReport();
+        }
+
+        // Dark Mode Logic
+        let currentTheme = localStorage.getItem("appThemeMode") || "system";
+
+        function changeTheme() {
+            currentTheme = document.getElementById("themeSelect").value;
+            localStorage.setItem("appThemeMode", currentTheme);
+            applyTheme();
+        }
+
+        function applyTheme() {
+            if (!localStorage.getItem("appThemeMode") && localStorage.getItem("plDarkMode")) {
+                currentTheme = localStorage.getItem("plDarkMode") === "true" ? "dark" : "light";
+                localStorage.setItem("appThemeMode", currentTheme);
+            }
+            const isDark = currentTheme === "dark" || (currentTheme === "system" && window.matchMedia('(prefers-color-scheme: dark)').matches);
+            if (isDark) document.body.classList.add("dark-mode");
+            else document.body.classList.remove("dark-mode");
+
+            const sel = document.getElementById("themeSelect");
+            if (sel) sel.value = currentTheme;
+        }
+
+        function printStatement() {
+            // Use browser print, CSS handles hiding controls
+            window.print();
+        }
+
+        // --- Expense Management ---
+        function openExpenseModal() {
+            renderExpenseList();
+            document.getElementById('expenseModal').style.display = 'flex';
+        }
+        function closeExpenseModal() {
+            document.getElementById('expenseModal').style.display = 'none';
+            renderReport(); // Refresh P&L
+        }
+
+        // --- Drill Down Logic ---
+        function showDrillDown(accountName, transactions) {
+            const titleEl = document.getElementById('drillDownTitle');
+            const bodyEl = document.getElementById('drillDownBody');
+            const headEl = document.querySelector('#drillDownTable thead');
+            const footEl = document.getElementById('drillDownFoot');
+            const modal = document.getElementById('drillDownModal');
+
+            titleEl.innerText = `Ledger: ${accountName}`;
+            bodyEl.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px;">Loading...</td></tr>';
+            headEl.innerHTML = `
+                <tr>
+                    <th>Date</th>
+                    <th>Particulars</th>
+                    <th>Vch Type</th>
+                    <th>Vch No.</th>
+                    <th class="text-right">Debit</th>
+                    <th class="text-right">Running Balance</th>
+                </tr>
+            `;
+            modal.style.display = 'flex';
+
+            // Reset position and enable drag
+            const content = modal.querySelector('.modal-content');
+            content.style.position = '';
+            content.style.left = '';
+            content.style.top = '';
+            content.style.margin = '';
+            makeDraggable(content, "drillDownHeader");
+
+            setTimeout(() => {
+                if (!transactions || transactions.length === 0) {
+                    bodyEl.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px;">No transactions found.</td></tr>';
+                    footEl.innerHTML = '';
+                    return;
+                }
+
+                let runningBalance = 0;
+                let totalDebit = 0;
+                bodyEl.innerHTML = '';
+
+                const sortedTx = [...transactions].sort((a, b) => new Date(a.date) - new Date(b.date));
+
+                sortedTx.forEach(tx => {
+                    const amount = parseFloat(tx.amount) || 0;
+                    runningBalance += amount;
+                    totalDebit += amount;
+
+                    const tr = document.createElement('tr');
+                    tr.style.borderBottom = '1px solid #eee';
+                    tr.innerHTML = `
+                        <td style="padding:10px;">${new Date(tx.date).toLocaleDateString('en-GB')}</td>
+                        <td style="padding:10px;">${tx.category}</td>
+                        <td style="padding:10px;">${tx.vchType || '-'}</td>
+                        <td style="padding:10px;">${tx.vchNo || '-'}</td>
+                        <td style="padding:10px;" class="text-right">${formatCurrency(amount)}</td>
+                        <td style="padding:10px;" class="text-right font-bold">${formatCurrency(runningBalance)} Dr</td>
+                    `;
+                    bodyEl.appendChild(tr);
+                });
+
+                footEl.innerHTML = `
+                    <tr style="font-weight:bold; background:#f0f0f0;">
+                        <td colspan="4" class="text-right" style="padding:10px;">Total</td>
+                        <td class="text-right" style="padding:10px;">${formatCurrency(totalDebit)}</td>
+                        <td style="padding:10px;"></td>
+                    </tr>`;
+            }, 50);
+        }
+
+        function closeDrillDown() {
+            document.getElementById('drillDownModal').style.display = 'none';
+        }
+
+        function renderExpenseList() {
+            const expenses = JSON.parse(localStorage.getItem("expenses")) || [];
+            const container = document.getElementById('expenseList');
+            container.innerHTML = expenses.length ? '' : '<p style="text-align:center; color:#999;">No expenses recorded.</p>';
+
+            // Sort by date desc
+            expenses.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            expenses.forEach((e, i) => {
+                const div = document.createElement('div');
+                div.style.cssText = "display:flex; justify-content:space-between; padding:5px; border-bottom:1px solid #eee;";
+                div.innerHTML = `
+                    <span>${e.date} - <strong>${e.category}</strong></span>
+                    <span>₹ ${parseFloat(e.amount).toFixed(2)} <button onclick="deleteExpense(${i})" style="background:#dc3545; padding:2px 6px; font-size:10px; margin-left:10px;">X</button></span>
+                `;
+                container.appendChild(div);
+            });
+        }
+        function addExpense() {
+            const date = document.getElementById('newExpDate').value;
+            const category = document.getElementById('newExpCategory').value;
+            const amount = document.getElementById('newExpAmount').value;
+            if (!date || !category || !amount) return alert("Fill all fields");
+
+            const expenses = JSON.parse(localStorage.getItem("expenses")) || [];
+            expenses.push({ date, category, amount });
+            localStorage.setItem("expenses", JSON.stringify(expenses));
+
+            document.getElementById('newExpCategory').value = "";
+            document.getElementById('newExpAmount').value = "";
+            renderExpenseList();
+        }
+        window.deleteExpense = function (index) {
+            const expenses = JSON.parse(localStorage.getItem("expenses")) || [];
+            expenses.splice(index, 1);
+            localStorage.setItem("expenses", JSON.stringify(expenses));
+            renderExpenseList();
+        };
+
+        function makeDraggable(elmnt, headerId) {
+            var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+            const header = document.getElementById(headerId);
+            if (header) {
+                header.style.cursor = "move";
+                header.onmousedown = dragMouseDown;
+            }
+
+            function dragMouseDown(e) {
+                e = e || window.event;
+                // Prevent dragging when clicking buttons/icons
+                if (e.target.tagName === 'SPAN' || e.target.tagName === 'BUTTON') return;
+                e.preventDefault();
+                pos3 = e.clientX;
+                pos4 = e.clientY;
+
+                const style = window.getComputedStyle(elmnt);
+                if (style.position !== 'absolute') {
+                    const rect = elmnt.getBoundingClientRect();
+                    elmnt.style.position = 'absolute';
+                    elmnt.style.left = rect.left + 'px';
+                    elmnt.style.top = rect.top + 'px';
+                    elmnt.style.margin = '0';
+                }
+                document.onmouseup = closeDragElement;
+                document.onmousemove = elementDrag;
+            }
+
+            function elementDrag(e) {
+                e = e || window.event;
+                e.preventDefault();
+                pos1 = pos3 - e.clientX;
+                pos2 = pos4 - e.clientY;
+                pos3 = e.clientX;
+                pos4 = e.clientY;
+                elmnt.style.top = (elmnt.offsetTop - pos2) + "px";
+                elmnt.style.left = (elmnt.offsetLeft - pos1) + "px";
+            }
+
+            function closeDragElement() {
+                document.onmouseup = null;
+                document.onmousemove = null;
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            // Load Brand Name
+
+            // Set default date to this month
+            setDateFilter('thisMonth');
+
+            updateColumnStyles();
+            // renderReport called by setDateFilter
+            applyTheme();
+            applyGreyButtons();
+
+            const tToggle = document.getElementById("tFormatToggle");
+            if (tToggle) tToggle.checked = isTFormatPnl;
+
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+                if (currentTheme === "system") {
+                    applyTheme();
+                }
+            });
+
+            const drillDownModalContent = document.querySelector('#drillDownModal .modal-content');
+            if (drillDownModalContent) makeDraggable(drillDownModalContent, 'drillDownHeader');
+        });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,21 @@
+{
+  "productName": "RISE Tech Revolution-14.4.5",
+  "appId": "com.risetechrevolution.app",
+  "directories": {
+    "output": "dist"
+  },
+  "win": {
+    "target": [
+      {
+        "target": "nsis",
+        "arch": [
+          "x64"
+        ]
+      }
+    ]
+  },
+  "nsis": {
+    "oneClick": false,
+    "allowToChangeInstallationDirectory": true
+  }
+}

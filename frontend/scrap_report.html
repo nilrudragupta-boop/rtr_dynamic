@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Scrap Inventory Report</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="apiClient.js"></script>
+    <script src="settings.js"></script>
+    <script src="brand.service.js"></script>
+    <script src="brandLoader.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            padding: 20px;
+            background: #f4f6f8;
+            color: #333;
+        }
+
+        h2 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+
+        input,
+        button {
+            padding: 8px 12px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            font-size: 14px;
+        }
+
+        button {
+            cursor: pointer;
+            color: white;
+            border: none;
+            font-weight: bold;
+            transition: opacity 0.2s;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        .btn-primary {
+            background: #3498db;
+        }
+
+        .btn-success {
+            background: #27ae60;
+        }
+
+        .btn-danger {
+            background: #e74c3c;
+        }
+
+        .btn-secondary {
+            background: #7f8c8d;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+
+        th,
+        td {
+            padding: 12px;
+            border: 1px solid #ddd;
+            text-align: center;
+            font-size: 14px;
+        }
+
+        th {
+            background: #2c3e50;
+            color: white;
+        }
+
+        tr:nth-child(even) {
+            background: #f9f9f9;
+        }
+
+        /* Dark Mode */
+        body.dark-mode {
+            background: #121212;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .controls,
+        body.dark-mode table {
+            background: #2c2c2c;
+            border: 1px solid #444;
+        }
+
+        body.dark-mode input {
+            background: #3a3a3a;
+            color: white;
+            border-color: #555;
+        }
+
+        body.dark-mode th {
+            background: #1f1f1f;
+        }
+
+        body.dark-mode td {
+            border-color: #444;
+        }
+
+        body.dark-mode tr:nth-child(even) {
+            background: #2a2a2a;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            width: 400px;
+            max-width: 90%;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .modal-header {
+            font-weight: bold;
+            margin-bottom: 15px;
+            font-size: 18px;
+            color: #2c3e50;
+        }
+
+        .modal-footer {
+            margin-top: 20px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        body.dark-mode .modal-content {
+            background: #2c2c2c;
+            color: #e0e0e0;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h2>🗑️ Scrap Inventory Report - <span data-brand="name"></span></h2>
+
+    <div class="controls">
+        <div style="display:flex; align-items:center; gap:5px;">
+            <label>From:</label>
+            <input type="date" id="fromDate">
+        </div>
+        <div style="display:flex; align-items:center; gap:5px;">
+            <label>To:</label>
+            <input type="date" id="toDate">
+        </div>
+        <select id="categoryFilter" onchange="renderTable()"
+            style="padding: 8px 12px; border-radius: 4px; border: 1px solid #ccc; font-size: 14px; width: 150px;">
+            <option value="">All Categories</option>
+        </select>
+        <input type="text" id="searchInput" placeholder="Search Item, Reason..." style="width: 200px;">
+
+        <button class="btn-primary" onclick="renderTable()">Filter</button>
+        <button class="btn-secondary" onclick="resetFilters()">Reset</button>
+        <button class="btn-secondary" onclick="location.reload()" style="background:#17a2b8; border:none;">🔄
+            Refresh</button>
+        <button class="btn-secondary" onclick="openSummaryModal()">View Summary</button>
+        <button class="btn-success" onclick="exportExcel()">Export Excel</button>
+    </div>
+
+    <div id="totalLossDisplay"
+        style="text-align: right; font-size: 18px; font-weight: bold; color: #c0392b; margin-bottom: 10px; background: #fff; padding: 10px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
+        Total Loss Value: ₹ 0.00
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 50px;">Sl No</th>
+                <th>Date</th>
+                <th>Item Name</th>
+                <th>Qty</th>
+                <th>UOM</th>
+                <th>Avg Cost (₹)</th>
+                <th>Loss Value (₹)</th>
+                <th>Reason</th>
+                <th>Remarks</th>
+            </tr>
+        </thead>
+        <tbody id="reportBody"></tbody>
+    </table>
+
+    <!-- Summary Modal -->
+    <div id="summaryModal" class="modal">
+        <div class="modal-content"
+            style="width: 800px; max-height: 90vh; display: flex; flex-direction: column; padding: 0;">
+            <div class="modal-header"
+                style="padding: 15px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; margin: 0;">
+                <h3 style="margin: 0; color: #2c3e50;">Item-wise Scrap Summary</h3>
+                <span style="cursor:pointer; font-size:24px;" onclick="closeSummaryModal()">&times;</span>
+            </div>
+            <div
+                style="padding: 10px; border-bottom: 1px solid #eee; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                <div style="display:flex; align-items:center; gap:5px;">
+                    <label style="font-size: 13px; font-weight: bold;">From:</label>
+                    <input type="date" id="summaryFromDate" onchange="calculateModalSummary()"
+                        style="padding: 6px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px;">
+                </div>
+                <div style="display:flex; align-items:center; gap:5px;">
+                    <label style="font-size: 13px; font-weight: bold;">To:</label>
+                    <input type="date" id="summaryToDate" onchange="calculateModalSummary()"
+                        style="padding: 6px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px;">
+                </div>
+                <input type="text" id="summarySearchInput" placeholder="Search Item..." oninput="filterSummaryTable()"
+                    style="flex: 1; padding: 6px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px;">
+            </div>
+            <div style="flex: 1; overflow-y: auto; padding: 15px;">
+                <div style="height: 300px; width: 100%; margin-bottom: 20px;">
+                    <canvas id="scrapPieChart"></canvas>
+                </div>
+                <table style="width: 100%;">
+                    <thead style="position: sticky; top: 0;">
+                        <tr>
+                            <th style="text-align: left;">Item Name</th>
+                            <th style="text-align: right;">Total Qty Scrapped</th>
+                        </tr>
+                    </thead>
+                    <tbody id="summaryBody"></tbody>
+                </table>
+            </div>
+            <div class="modal-footer" style="padding: 10px 15px; border-top: 1px solid #eee; margin: 0;">
+                <button class="btn-secondary" onclick="closeSummaryModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Remark Modal -->
+    <div id="editRemarkModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">Edit Remark</div>
+            <input type="text" id="editRemarkInput"
+                style="width: 100%; box-sizing: border-box; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+            <input type="hidden" id="editRemarkId">
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeEditModal()">Cancel</button>
+                <button class="btn-primary" onclick="confirmSaveRemark()">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Warning Modal -->
+    <div id="warningModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header" style="color: #e74c3c;">⚠️ Confirm Update</div>
+            <p>Are you sure you want to update this remark?</p>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeWarningModal()">No</button>
+                <button class="btn-danger" onclick="saveRemark()">Yes, Update</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            if (localStorage.getItem('appThemeMode') === 'dark') document.body.classList.add('dark-mode');
+
+            populateCategoryFilter();
+            // Set default dates (This Month)
+            const today = new Date();
+            const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+            document.getElementById('fromDate').valueAsDate = firstDay;
+            document.getElementById('toDate').valueAsDate = today;
+
+            renderTable();
+        });
+
+        function renderTable() {
+            const scraps = JSON.parse(localStorage.getItem('scraps')) || [];
+            const purchases = JSON.parse(localStorage.getItem('purchases')) || [];
+            const itemsMaster = JSON.parse(localStorage.getItem("items")) || [];
+            const tbody = document.getElementById('reportBody');
+            tbody.innerHTML = '';
+
+            const fromDate = document.getElementById('fromDate').value;
+            const toDate = document.getElementById('toDate').value;
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            const categoryFilter = document.getElementById('categoryFilter') ? document.getElementById('categoryFilter').value : "";
+
+            const itemCategoryMap = {};
+            itemsMaster.forEach(i => {
+                if (i.name) itemCategoryMap[i.name.toLowerCase()] = i.category || "";
+            });
+
+            const filtered = scraps.filter(s => {
+                if (fromDate && s.date < fromDate) return false;
+                if (toDate && s.date > toDate) return false;
+                if (search && !s.itemName.toLowerCase().includes(search) && !s.reason.toLowerCase().includes(search)) return false;
+                if (categoryFilter && itemCategoryMap[s.itemName.toLowerCase()] !== categoryFilter) return false;
+                return true;
+            });
+
+            // Calculate Average Costs
+            const costMap = {};
+            purchases.forEach(p => {
+                const name = (p.itemName || "").trim().toLowerCase();
+                if (!name) return;
+                if (!costMap[name]) costMap[name] = { qty: 0, total: 0 };
+                const q = parseFloat(p.qty) || 0;
+                const price = parseFloat(p.price) || 0;
+                costMap[name].qty += q;
+                costMap[name].total += q * price;
+            });
+
+            const getAvgCost = (itemName) => {
+                const name = (itemName || "").trim().toLowerCase();
+                const data = costMap[name];
+                if (data && data.qty > 0) return data.total / data.qty;
+                return 0;
+            };
+
+            // Sort by date descending
+            filtered.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; color:#666;">No records found</td></tr>';
+                return;
+            }
+
+            let grandTotalLoss = 0;
+            let sl = 1;
+
+            filtered.forEach(s => {
+                const avgCost = getAvgCost(s.itemName);
+                const qty = parseFloat(s.qty) || 0;
+                const lossValue = qty * avgCost;
+                grandTotalLoss += lossValue;
+
+                const itemObj = itemsMaster.find(i => (i.name || "").toLowerCase() === (s.itemName || "").toLowerCase()) || {};
+                let details = [];
+                if (itemObj.itemCode) details.push(`Code: ${itemObj.itemCode}`);
+                if (itemObj.category) details.push(`Cat: ${itemObj.category}`);
+                if (itemObj.itemType) details.push(`Type: ${itemObj.itemType}`);
+                const detailText = details.length > 0 ? `<br><small style="color:#666;">[${details.join(' | ')}]</small>` : '';
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td style="text-align: center;">${sl++}</td>
+                    <td>${new Date(s.date).toLocaleDateString('en-GB')}</td>
+                    <td>${s.itemName}${detailText}</td>
+                    <td>${s.qty}</td>
+                    <td>${s.uom || '-'}</td>
+                    <td>${avgCost.toFixed(2)}</td>
+                    <td>${lossValue.toFixed(2)}</td>
+                    <td>${s.reason}</td>
+                    <td>
+                        <span id="remark-text-${s.id}">${s.remarks || ''}</span>
+                        <button class="btn-primary" style="padding: 2px 6px; font-size: 11px; margin-left: 5px;" onclick="openEditModal('${s.id}')">Edit</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            document.getElementById('totalLossDisplay').innerText = `Total Loss Value: ₹ ${grandTotalLoss.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        }
+
+        function populateCategoryFilter() {
+            const items = JSON.parse(localStorage.getItem("items")) || [];
+            const managed = JSON.parse(localStorage.getItem("managed_item_categories")) || [];
+            const categories = new Set();
+
+            items.forEach(item => {
+                if (item.category && item.category.trim() !== "") categories.add(item.category.trim());
+            });
+            managed.forEach(c => categories.add(c));
+
+            const select = document.getElementById("categoryFilter");
+            if (!select) return;
+
+            Array.from(categories).sort().forEach(cat => {
+                const opt = document.createElement("option");
+                opt.value = cat;
+                opt.textContent = cat;
+                select.appendChild(opt);
+            });
+        }
+
+        function resetFilters() {
+            document.getElementById('fromDate').value = '';
+            document.getElementById('toDate').value = '';
+            document.getElementById('searchInput').value = '';
+            if (document.getElementById('categoryFilter')) document.getElementById('categoryFilter').value = '';
+            renderTable();
+        }
+
+        function exportExcel() {
+            const table = document.querySelector('table');
+            // Create a workbook from the table
+            const wb = XLSX.utils.table_to_book(table, { sheet: "Scrap Report" });
+            // Write file
+            XLSX.writeFile(wb, 'Scrap_Inventory_Report.xlsx');
+        }
+
+        // --- Summary Modal Logic ---
+        let scrapChartInstance = null;
+
+        function openSummaryModal() {
+            // Sync dates from main filter
+            document.getElementById('summaryFromDate').value = document.getElementById('fromDate').value;
+            document.getElementById('summaryToDate').value = document.getElementById('toDate').value;
+
+            document.getElementById('summaryModal').style.display = 'flex';
+            document.getElementById('summarySearchInput').value = '';
+            calculateModalSummary();
+        }
+
+        function closeSummaryModal() {
+            document.getElementById('summaryModal').style.display = 'none';
+        }
+
+        function renderSummaryTable(map) {
+            const tbody = document.getElementById('summaryBody');
+            tbody.innerHTML = '';
+            Object.keys(map).sort().forEach(item => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td style="text-align: left;">${item}</td>
+                        <td style="text-align: right;">${map[item].toFixed(2)}</td>
+                    </tr>`;
+            });
+        }
+
+        function calculateModalSummary() {
+            const scraps = JSON.parse(localStorage.getItem('scraps')) || [];
+            const fromDate = document.getElementById('summaryFromDate').value;
+            const toDate = document.getElementById('summaryToDate').value;
+
+            const filtered = scraps.filter(s => {
+                if (fromDate && s.date < fromDate) return false;
+                if (toDate && s.date > toDate) return false;
+                return true;
+            });
+
+            const summaryMap = {};
+            filtered.forEach(s => {
+                const key = s.itemName;
+                if (!summaryMap[key]) summaryMap[key] = 0;
+                summaryMap[key] += parseFloat(s.qty) || 0;
+            });
+
+            window.currentSummaryData = summaryMap;
+            renderSummaryTable(summaryMap);
+            filterSummaryTable();
+            renderScrapChart(summaryMap);
+        }
+
+        function filterSummaryTable() {
+            const term = document.getElementById('summarySearchInput').value.toLowerCase();
+            const map = window.currentSummaryData || {};
+            const tbody = document.getElementById('summaryBody');
+            tbody.innerHTML = '';
+
+            Object.keys(map).sort().forEach(item => {
+                if (item.toLowerCase().includes(term)) {
+                    tbody.innerHTML += `
+                        <tr>
+                            <td style="text-align: left;">${item}</td>
+                            <td style="text-align: right;">${map[item].toFixed(2)}</td>
+                        </tr>`;
+                }
+            });
+        }
+
+        function renderScrapChart(map) {
+            const ctx = document.getElementById('scrapPieChart').getContext('2d');
+            const items = Object.keys(map).map(key => ({ name: key, qty: map[key] }));
+
+            // Sort by qty desc
+            items.sort((a, b) => b.qty - a.qty);
+
+            // Take top 20
+            const topItems = items.slice(0, 20);
+
+            const labels = topItems.map(i => i.name);
+            const data = topItems.map(i => i.qty);
+
+            if (scrapChartInstance) {
+                scrapChartInstance.destroy();
+            }
+
+            scrapChartInstance = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: [
+                            '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40',
+                            '#E7E9ED', '#76D7C4', '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0',
+                            '#9966FF', '#FF9F40', '#E7E9ED', '#76D7C4', '#FF6384', '#36A2EB',
+                            '#FFCE56', '#4BC0C0'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: { boxWidth: 10, font: { size: 10 } }
+                        },
+                        title: {
+                            display: true,
+                            text: 'Top 20 Scrapped Items'
+                        }
+                    }
+                }
+            });
+        }
+
+        // --- Edit Remark Logic ---
+        function openEditModal(id) {
+            const scraps = JSON.parse(localStorage.getItem('scraps')) || [];
+            const item = scraps.find(s => s.id === id);
+            if (item) {
+                document.getElementById('editRemarkId').value = id;
+                document.getElementById('editRemarkInput').value = item.remarks || '';
+                document.getElementById('editRemarkModal').style.display = 'flex';
+                document.getElementById('editRemarkInput').focus();
+            }
+        }
+
+        function closeEditModal() {
+            document.getElementById('editRemarkModal').style.display = 'none';
+        }
+
+        function confirmSaveRemark() {
+            document.getElementById('editRemarkModal').style.display = 'none';
+            document.getElementById('warningModal').style.display = 'flex';
+        }
+
+        function closeWarningModal() {
+            document.getElementById('warningModal').style.display = 'none';
+            document.getElementById('editRemarkModal').style.display = 'flex'; // Reopen edit modal
+        }
+
+        function saveRemark() {
+            const id = document.getElementById('editRemarkId').value;
+            const val = document.getElementById('editRemarkInput').value;
+            const scraps = JSON.parse(localStorage.getItem('scraps')) || [];
+            const idx = scraps.findIndex(s => s.id === id);
+
+            if (idx > -1) {
+                scraps[idx].remarks = val;
+                localStorage.setItem('scraps', JSON.stringify(scraps));
+            if (typeof apiClient !== 'undefined' && apiClient.saveScrap) apiClient.saveScrap(scraps[idx]).catch(console.warn);
+                document.getElementById('warningModal').style.display = 'none';
+                renderTable(); // Refresh table to show new remark
+            }
+        }
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Logged Out</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #8a9ed6 url("logout.jpg") no-repeat center center fixed;
+      background-size: cover;
+      display: flex;
+      justify-content: center;
+      align-items: flex-end; /* Changed from center to flex-start */
+      padding-top: 100px; /* Add spacing from top */
+      height: 100vh;
+      margin: 0;
+      box-sizing: border-box;
+    }
+    .overlay {
+      background: rgba(255, 255, 255, 0.9);
+      padding: 40px;
+      border-radius: 12px;
+      text-align: center;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+    h1 {
+      color: #333;
+      margin-bottom: 20px;
+    }
+    button {
+      background: #0078d7;
+      border: none;
+      color: white;
+      padding: 10px 20px;
+      font-size: 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-left: 10px;
+    }
+    button:hover {
+      background: #005a9e;
+    }
+    button.close-btn {
+      background: #eba308;
+    }
+
+    /* Custom alert modal */
+    .custom-alert {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.6);
+      justify-content: center;
+      align-items: center;
+    }
+    .custom-alert-content {
+      background: #fff;
+      padding: 20px;
+      border-radius: 10px;
+      text-align: center;
+      max-width: 400px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    }
+    .custom-alert-content img {
+      max-width: 100px;
+      margin-bottom: 15px;
+    }
+    .custom-alert-content p {
+      margin: 10px 0;
+      font-size: 16px;
+    }
+    .custom-alert-content button {
+      background: #0078d7;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="overlay">
+    <h1>You have been logged out ✅</h1>
+    <button onclick="window.location.href='login.html'">Go to Login</button>
+    <button onclick="closeWindow()" class="close-btn">❌ Close</button>
+  </div>
+
+  <!-- Custom Alert Modal -->
+  <div id="customAlert" class="custom-alert">
+    <div class="custom-alert-content">
+      <img src="noclose.jpg" alt="Alert">
+      <p>If this window does not close, please close this manually.</p>
+      <button onclick="closeCustomAlert()">OK</button>
+    </div>
+  </div>
+
+  <script>
+     function closeWindow() {
+    if (confirm("Are you sure you want to close?")) {
+      window.close();
+    
+      } else {
+        showCustomAlert();
+      }
+    }
+
+    function showCustomAlert() {
+      document.getElementById("customAlert").style.display = "flex";
+    }
+
+    function closeCustomAlert() {
+      document.getElementById("customAlert").style.display = "none";
+    }
+  </script>
+</body>
+</html>

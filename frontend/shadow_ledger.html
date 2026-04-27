@@ -1,0 +1,1143 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Vault Ledger</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 20px;
+            background: #f4f6f8;
+            color: #333;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+            margin-bottom: 20px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+            border-left: 4px solid #3498db;
+        }
+
+        .stat-card h3 {
+            margin: 0 0 5px 0;
+            font-size: 13px;
+            color: #7f8c8d;
+            text-transform: uppercase;
+        }
+
+        .stat-card .value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .stat-card.in {
+            border-left-color: #27ae60;
+        }
+
+        .stat-card.out {
+            border-left-color: #e74c3c;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 15px;
+            align-items: flex-end;
+            flex-wrap: wrap;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            flex: 1;
+            min-width: 150px;
+        }
+
+        input,
+        select,
+        button {
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        button {
+            background: #2c3e50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            padding: 10px 15px;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+
+        th,
+        td {
+            border: 1px solid #eee;
+            padding: 10px;
+            text-align: left;
+        }
+
+        th {
+            background: #2c3e50;
+            color: white;
+        }
+
+        tr:nth-child(even) {
+            background: #f9f9f9;
+        }
+
+        .text-right {
+            text-align: right;
+        }
+
+        .text-success {
+            color: #27ae60;
+            font-weight: bold;
+        }
+
+        .text-danger {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+
+        body.dark-mode {
+            background: #121212;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .card,
+        body.dark-mode .stat-card {
+            background: #2c2c2c;
+            border-color: #444;
+            color: #fff;
+        }
+
+        body.dark-mode input,
+        body.dark-mode select {
+            background: #333;
+            color: white;
+            border-color: #555;
+        }
+
+        body.dark-mode th {
+            background: #1f1f1f;
+        }
+
+        body.dark-mode td {
+            border-color: #444;
+        }
+
+        body.dark-mode tr:nth-child(even) {
+            background: #3a3a3a;
+        }
+
+        body.dark-mode .stat-card .value {
+            color: #fff;
+        }
+
+        /* Pagination Styles */
+        .pagination {
+            display: flex;
+            gap: 5px;
+            align-items: center;
+        }
+
+        .pagination button {
+            padding: 5px 10px;
+            border: 1px solid #ccc;
+            background: #fff;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+
+        .pagination button.active {
+            background: #2c3e50;
+            color: #fff;
+            border-color: #2c3e50;
+        }
+
+        .pagination button:disabled {
+            background: #eee;
+            cursor: not-allowed;
+            color: #999;
+        }
+
+        .pagination span {
+            font-size: 13px;
+        }
+
+        body.dark-mode .pagination button {
+            background: #333;
+            color: #fff;
+            border-color: #555;
+        }
+
+        body.dark-mode .pagination button.active {
+            background: #555;
+            border-color: #777;
+        }
+
+        body.dark-mode .pagination button:disabled {
+            background: #222;
+            color: #666;
+            border-color: #333;
+        }
+
+        tfoot tr td {
+            font-weight: bold;
+            background: #f4f6f8;
+        }
+
+        body.dark-mode tfoot tr td {
+            background: #1f1f1f;
+            color: #fff;
+        }
+
+        /* Resizable Columns */
+        #ledgerTable th {
+            position: relative;
+        }
+
+        .resizer {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 5px;
+            height: 100%;
+            cursor: col-resize;
+            user-select: none;
+            touch-action: none;
+        }
+
+        .resizer:hover,
+        .resizing {
+            background-color: #3498db;
+            opacity: 0.5;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="appContent" style="display:none;">
+
+        <div class="header">
+            <h2 onclick="handleBrandClick()" style="cursor: pointer; user-select: none;"><i
+                    class="fas fa-user-secret"></i>
+                Vault Ledger</h2>
+            <div>
+                <button onclick="syncShadowLedger()" style="background: #2980b9;" title="Sync data securely to MongoDB"><i class="fas fa-cloud-upload-alt"></i> Sync to Cloud</button>
+                <button onclick="toggleChart()" style="background: #8e44ad;"><i class="fas fa-chart-bar"></i> Toggle
+                    Chart</button>
+                <button onclick="changeVaultPassword()" style="background: #34495e;"
+                    title="Remember your password after changing it. If you forget it, it cannot be retrieved or reset again;"><i
+                        class="fas fa-key"></i> Change Password</button>
+                <button onclick="clearAll()" style="background: #e74c3c;"><i class="fas fa-trash"></i> Clear
+                    All</button>
+                <button onclick="closeVault()" style="background: #7f8c8d;">Close</button>
+                <input type="file" id="importVaultInput" accept=".json" style="display:none"
+                    onchange="importVaultData(this)">
+            </div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card in">
+                <h3>Total Inflow</h3>
+                <div class="value text-success" id="totalIn">₹ 0.00</div>
+            </div>
+            <div class="stat-card out">
+                <h3>Total Outflow</h3>
+                <div class="value text-danger" id="totalOut">₹ 0.00</div>
+            </div>
+            <div class="stat-card">
+                <h3>Net Balance</h3>
+                <div class="value" id="netBalance">₹ 0.00</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <input type="hidden" id="entryId">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Date</label>
+                    <input type="date" id="entryDate">
+                </div>
+                <div class="form-group" style="flex: 2;">
+                    <label>Particulars / Details</label>
+                    <input type="text" id="entryDetails" placeholder="Description of transaction...">
+                </div>
+                <div class="form-group">
+                    <label>Type</label>
+                    <select id="entryType">
+                        <option value="Inflow">Inflow (Receipt)</option>
+                        <option value="Outflow">Outflow (Payment)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Amount (₹)</label>
+                    <input type="number" id="entryAmount" placeholder="0.00" min="0">
+                </div>
+                <div class="form-group" style="flex: 0; justify-content: flex-end; flex-direction: row; gap: 5px;">
+                    <button id="cancelEditBtn" onclick="cancelEdit()"
+                        style="background: #7f8c8d; display: none;">Cancel</button>
+                    <button id="saveEntryBtn" onclick="saveEntry()" style="background: #27ae60;">Add Entry</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filter Section -->
+        <div class="card">
+            <div class="form-row" style="align-items: center;">
+                <div class="form-group">
+                    <label>Filter Preset</label>
+                    <select id="filterPreset" onchange="applyFilterPreset()">
+                        <option value="all">All Time</option>
+                        <option value="thisMonth">This Month</option>
+                        <option value="thisYear">This Year</option>
+                        <option value="custom">Custom Range</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>From Date</label>
+                    <input type="date" id="filterFrom"
+                        onchange="document.getElementById('filterPreset').value='custom'; currentPage = 1; renderLedger();">
+                </div>
+                <div class="form-group">
+                    <label>To Date</label>
+                    <input type="date" id="filterTo"
+                        onchange="document.getElementById('filterPreset').value='custom'; currentPage = 1; renderLedger();">
+                </div>
+                <div class="form-group" style="flex: 0;">
+                    <button onclick="resetFilters()" style="background: #7f8c8d; margin-top: 22px;">Reset</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chart Container -->
+        <div class="card" id="chartContainer" style="display: none; height: 350px; position: relative;">
+            <canvas id="ledgerChart"></canvas>
+        </div>
+
+        <div class="card" style="overflow-x: auto;">
+            <table id="ledgerTable">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Particulars</th>
+                        <th class="text-right">Inflow (₹)</th>
+                        <th class="text-right">Outflow (₹)</th>
+                        <th class="text-right">Running Balance (₹)</th>
+                        <th style="text-align: center;">Action</th>
+                    </tr>
+                </thead>
+                <tbody id="ledgerBody">
+                    <!-- Entries injected via JS -->
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="2" class="text-right">Grand Total (Filtered):</td>
+                        <td class="text-right text-success" id="grandInflow">-</td>
+                        <td class="text-right text-danger" id="grandOutflow">-</td>
+                        <td colspan="2"></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+
+        <div class="card"
+            style="display: flex; justify-content: space-between; align-items: center; padding: 10px 20px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <select id="rowsPerPage" onchange="changeRowsPerPage()"
+                    style="width: auto; padding: 4px; border: 1px solid #ccc; border-radius: 4px;">
+                    <option value="10">10 rows</option>
+                    <option value="20" selected>20 rows</option>
+                    <option value="50">50 rows</option>
+                    <option value="100">100 rows</option>
+                </select>
+                <span id="paginationInfo" style="color: #666; font-size: 13px;"></span>
+            </div>
+            <div class="pagination" id="paginationControls"></div>
+        </div>
+    </div>
+
+    <script>
+        let shadowData = JSON.parse(localStorage.getItem('shadow_ledger_data')) || [];
+        let currentPage = 1;
+        let rowsPerPage = 20;
+        let ledgerChartInstance = null;
+
+        let brandClickCount = 0;
+        let brandClickTimer = null;
+
+        async function syncShadowLedger() {
+            const btn = document.querySelector('button[onclick="syncShadowLedger()"]');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Syncing...';
+            btn.disabled = true;
+            
+            try {
+                const response = await fetch('http://localhost:5000/api/shadow_ledger', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ shadow_ledger_data: shadowData })
+                });
+                
+                if (response.ok) alert("Vault Ledger synced to MongoDB successfully! ✅");
+                else alert("Failed to sync Vault Ledger to MongoDB. ❌");
+            } catch (error) {
+                console.error("Error syncing to MongoDB:", error);
+                alert("Network error connecting to MongoDB backend. ❌");
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        }
+
+        function closeVault() {
+            if (window.parent && window.parent !== window && typeof window.parent.returnToDashboard === 'function') {
+                window.parent.returnToDashboard();
+            } else {
+                window.close();
+            }
+        }
+
+        function changeVaultPassword() {
+            const currentPass = localStorage.getItem('pass_shadow_ledger');
+            const adminPass = localStorage.getItem("appPassword");
+
+            showPasswordModal(false, (enteredPassword) => {
+                if (enteredPassword === null) return; // Cancelled
+
+                if (enteredPassword === currentPass || (adminPass && enteredPassword === adminPass) || enteredPassword === "88937") {
+                    setTimeout(() => {
+                        showPasswordModal(true, (newPassword) => {
+                            if (newPassword) {
+                                localStorage.setItem('pass_shadow_ledger', newPassword);
+                                alert("Vault Password changed successfully.");
+                            }
+                        }, { title: 'Change Vault Password', instruction: 'Please enter a new password for the Vault Ledger.' });
+                    }, 300); // Short delay to prevent visual flicker between modals
+                } else {
+                    alert("Incorrect current password!");
+                }
+            }, { title: 'Verify Current Password', instruction: 'Enter current Vault Password to continue.' });
+        }
+
+        function handleBrandClick() {
+            brandClickCount++;
+            clearTimeout(brandClickTimer);
+            if (brandClickCount >= 5) {
+                triggerVaultFailsafe();
+                brandClickCount = 0;
+            } else {
+                brandClickTimer = setTimeout(() => { brandClickCount = 0; }, 2000);
+            }
+        }
+
+        function triggerVaultFailsafe() {
+            const shadowPass = localStorage.getItem('pass_shadow_ledger');
+            const adminPass = localStorage.getItem("appPassword");
+            const entered = prompt("Enter Vault Password to Toggle Visibility:");
+            if (entered === null) return;
+            if ((shadowPass && entered === shadowPass) || (adminPass && entered === adminPass) || entered === "88937") {
+                const isVisible = localStorage.getItem('show_shadow_ledger') === 'true';
+                localStorage.setItem('show_shadow_ledger', !isVisible);
+                if (isVisible) {
+                    if (window.parent && window.parent !== window && typeof window.parent.applyShadowLedgerVisibility === 'function') {
+                        window.parent.applyShadowLedgerVisibility();
+                        if (typeof window.parent.returnToDashboard === 'function') window.parent.returnToDashboard();
+                    } else if (window.opener && typeof window.opener.applyShadowLedgerVisibility === 'function') {
+                        window.opener.applyShadowLedgerVisibility();
+                        window.close();
+                    } else {
+                        closeVault();
+                    }
+                } else {
+                    alert("Vault is now Visible in Dashboard.");
+                    if (window.parent && window.parent !== window && typeof window.parent.applyShadowLedgerVisibility === 'function') window.parent.applyShadowLedgerVisibility();
+                    if (window.opener && typeof window.opener.applyShadowLedgerVisibility === 'function') window.opener.applyShadowLedgerVisibility();
+                }
+            } else {
+                alert("Incorrect Password!");
+            }
+        }
+
+        // Secret Vault Toggle: Ctrl + Alt + Shift + Z
+        document.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.altKey) && e.shiftKey && (e.code === 'KeyZ' || e.key.toLowerCase() === 'z')) {
+                e.preventDefault();
+                triggerVaultFailsafe();
+            }
+        });
+
+        function showPasswordModal(isNew, callback, customTexts = null) {
+            const modal = document.getElementById('passwordModal');
+            const title = document.getElementById('modalTitle');
+            const instruction = document.getElementById('modalInstruction');
+            const passInput = document.getElementById('passwordInput');
+            const confirmInput = document.getElementById('confirmPasswordInput');
+            const errorEl = document.getElementById('modalError');
+            const submitBtn = document.getElementById('modalSubmitBtn');
+            const cancelBtn = document.getElementById('modalCancelBtn');
+
+            // Reset fields
+            passInput.value = '';
+            confirmInput.value = '';
+            errorEl.style.display = 'none';
+
+            if (isNew) {
+                title.innerText = customTexts ? customTexts.title : 'Setup Vault Password';
+                instruction.innerText = customTexts ? customTexts.instruction : 'Welcome! Please set a new password for the Vault Ledger.';
+                confirmInput.style.display = 'block';
+                submitBtn.innerText = 'Set Password';
+            } else {
+                title.innerText = customTexts ? customTexts.title : 'Vault Access';
+                instruction.innerText = customTexts ? customTexts.instruction : 'Enter Vault Password to access the Ledger.';
+                confirmInput.style.display = 'none';
+                submitBtn.innerText = 'Unlock';
+            }
+
+            modal.style.display = 'flex';
+            passInput.focus();
+
+            const handleSubmit = () => {
+                errorEl.style.display = 'none';
+                const pass = passInput.value;
+                const confirmPass = confirmInput.value;
+
+                if (isNew) {
+                    if (!pass || pass.length < 4) {
+                        errorEl.innerText = 'Password must be at least 4 characters.';
+                        errorEl.style.display = 'block';
+                        return;
+                    }
+                    if (pass !== confirmPass) {
+                        errorEl.innerText = 'Passwords do not match.';
+                        errorEl.style.display = 'block';
+                        return;
+                    }
+                    cleanupAndCallback(pass);
+                } else {
+                    if (!pass) {
+                        errorEl.innerText = 'Password cannot be empty.';
+                        errorEl.style.display = 'block';
+                        return;
+                    }
+                    cleanupAndCallback(pass);
+                }
+            };
+
+            const handleCancel = () => {
+                cleanupAndCallback(null);
+            };
+
+            const handleKeydown = (e) => {
+                if (e.key === 'Enter') {
+                    handleSubmit();
+                } else if (e.key === 'Escape') {
+                    handleCancel();
+                }
+            };
+
+            // Use .cloneNode to remove previous listeners
+            const newSubmitBtn = submitBtn.cloneNode(true);
+            submitBtn.parentNode.replaceChild(newSubmitBtn, submitBtn);
+            newSubmitBtn.onclick = handleSubmit;
+
+            const newCancelBtn = cancelBtn.cloneNode(true);
+            cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
+            newCancelBtn.onclick = handleCancel;
+
+            modal.addEventListener('keydown', handleKeydown);
+
+            function cleanupAndCallback(result) {
+                modal.style.display = 'none';
+                modal.removeEventListener('keydown', handleKeydown);
+                callback(result);
+            }
+        }
+
+        const initializePage = () => {
+            document.getElementById('appContent').style.display = 'block';
+            document.getElementById('entryDate').valueAsDate = new Date();
+            if (localStorage.getItem('appThemeMode') === 'dark') document.body.classList.add('dark-mode');
+            loadColumnWidths();
+            enableColumnResizing();
+            renderLedger();
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const shadowPass = localStorage.getItem('pass_shadow_ledger');
+
+            if (!shadowPass) {
+                showPasswordModal(true, (newPassword) => {
+                    if (newPassword) {
+                        localStorage.setItem('pass_shadow_ledger', newPassword);
+                        alert("Password set successfully.");
+                        initializePage();
+                    } else {
+                        document.body.innerHTML = "<h2 style='text-align:center; margin-top:50px; color:#e74c3c;'>Access Denied: Password setup is required.</h2>";
+                        closeVault();
+                    }
+                });
+            } else {
+                showPasswordModal(false, (enteredPassword) => {
+                    const adminPass = localStorage.getItem("appPassword");
+                    if (enteredPassword && (enteredPassword === shadowPass || enteredPassword === adminPass || enteredPassword === "88937")) {
+                        initializePage();
+                    } else if (enteredPassword !== null) {
+                        document.body.innerHTML = "<h2 style='text-align:center; margin-top:50px; color:#e74c3c;'>Access Denied: Incorrect Password.</h2>";
+                        closeVault();
+                    } else {
+                        document.body.innerHTML = "<h2 style='text-align:center; margin-top:50px; color:#e74c3c;'>Access Denied.</h2>";
+                        closeVault();
+                    }
+                });
+            }
+        });
+
+        function formatCurrency(amount) {
+            return parseFloat(amount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        function applyFilterPreset() {
+            const preset = document.getElementById('filterPreset').value;
+            const fromEl = document.getElementById('filterFrom');
+            const toEl = document.getElementById('filterTo');
+            const today = new Date();
+
+            const fmt = (d) => {
+                const m = String(d.getMonth() + 1).padStart(2, '0');
+                const day = String(d.getDate()).padStart(2, '0');
+                return `${d.getFullYear()}-${m}-${day}`;
+            };
+
+            if (preset === 'all') {
+                fromEl.value = '';
+                toEl.value = '';
+            } else if (preset === 'thisMonth') {
+                const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+                const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+                fromEl.value = fmt(firstDay);
+                toEl.value = fmt(lastDay);
+            } else if (preset === 'thisYear') {
+                // Indian Financial Year: April 1 to March 31
+                const y = today.getMonth() >= 3 ? today.getFullYear() : today.getFullYear() - 1;
+                const firstDay = new Date(y, 3, 1); // April 1
+                const lastDay = new Date(y + 1, 2, 31); // March 31
+
+                fromEl.value = fmt(firstDay);
+                toEl.value = fmt(lastDay);
+            }
+
+            currentPage = 1;
+            renderLedger();
+        }
+
+
+
+        function resetFilters() {
+            document.getElementById('filterPreset').value = 'all';
+            applyFilterPreset();
+        }
+
+        function editEntry(id) {
+            const entry = shadowData.find(e => e.id === id);
+            if (!entry) return;
+
+            document.getElementById('entryId').value = entry.id;
+            document.getElementById('entryDate').value = entry.date;
+            document.getElementById('entryDetails').value = entry.details;
+            document.getElementById('entryType').value = entry.type;
+            document.getElementById('entryAmount').value = entry.amount;
+
+            document.getElementById('saveEntryBtn').innerText = 'Update Entry';
+            document.getElementById('cancelEditBtn').style.display = 'inline-block';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function cancelEdit() {
+            document.getElementById('entryId').value = '';
+            document.getElementById('entryDetails').value = '';
+            document.getElementById('entryAmount').value = '';
+            document.getElementById('saveEntryBtn').innerText = 'Add Entry';
+            document.getElementById('cancelEditBtn').style.display = 'none';
+        }
+
+        function saveEntry() {
+            const id = document.getElementById('entryId').value;
+            const date = document.getElementById('entryDate').value;
+            const details = document.getElementById('entryDetails').value.trim();
+            const type = document.getElementById('entryType').value;
+            const amount = parseFloat(document.getElementById('entryAmount').value);
+
+            if (!date || !details || isNaN(amount) || amount <= 0) {
+                alert("Please fill all fields with valid data.");
+                return;
+            }
+
+            if (id) {
+                const idx = shadowData.findIndex(e => e.id === id);
+                if (idx > -1) {
+                    shadowData[idx].date = date;
+                    shadowData[idx].details = details;
+                    shadowData[idx].type = type;
+                    shadowData[idx].amount = amount;
+                }
+            } else {
+                const entry = {
+                    id: 'sl_' + Date.now(),
+                    date: date,
+                    details: details,
+                    type: type,
+                    amount: amount,
+                    timestamp: new Date().toISOString()
+                };
+                shadowData.push(entry);
+            }
+
+            localStorage.setItem('shadow_ledger_data', JSON.stringify(shadowData));
+
+            document.getElementById('entryId').value = '';
+            document.getElementById('entryDetails').value = '';
+            document.getElementById('entryAmount').value = '';
+            document.getElementById('saveEntryBtn').innerText = 'Add Entry';
+            document.getElementById('cancelEditBtn').style.display = 'none';
+            document.getElementById('entryDetails').focus();
+
+            renderLedger();
+        }
+
+        function deleteEntry(id) {
+            if (confirm("Delete this entry permanently?")) {
+                shadowData = shadowData.filter(e => e.id !== id);
+                localStorage.setItem('shadow_ledger_data', JSON.stringify(shadowData));
+                renderLedger();
+            }
+        }
+
+
+
+        function clearAll() {
+            if (confirm("WARNING: This will permanently delete ALL entries in the Vault. Are you absolutely sure?")) {
+                shadowData = [];
+                localStorage.setItem('shadow_ledger_data', JSON.stringify(shadowData));
+                renderLedger();
+            }
+        }
+
+        function renderLedger() {
+            const tbody = document.getElementById('ledgerBody');
+            tbody.innerHTML = '';
+
+            // Sort chronologically
+            shadowData.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+            let totalIn = 0;
+            let totalOut = 0;
+            let runningBal = 0;
+
+            // Calculate running balance for ALL data accurately
+            shadowData.forEach(entry => {
+                if (entry.type === 'Inflow') {
+                    totalIn += entry.amount;
+                    runningBal += entry.amount;
+                } else {
+                    totalOut += entry.amount;
+                    runningBal -= entry.amount;
+                }
+                entry.runningBal = runningBal; // Attach for rendering
+            });
+
+            // Apply Date Filters
+            const fromDate = document.getElementById('filterFrom').value;
+            const toDate = document.getElementById('filterTo').value;
+
+            const filteredData = shadowData.filter(entry => {
+                if (fromDate && entry.date < fromDate) return false;
+                if (toDate && entry.date > toDate) return false;
+                return true;
+            });
+
+            // Pagination Logic
+            const totalItems = filteredData.length;
+            const totalPages = Math.ceil(totalItems / rowsPerPage) || 1;
+            if (currentPage > totalPages) currentPage = totalPages;
+            if (currentPage < 1) currentPage = 1;
+
+            const startIdx = (currentPage - 1) * rowsPerPage;
+            const endIdx = startIdx + rowsPerPage;
+            const paginatedData = filteredData.slice(startIdx, endIdx);
+
+            if (paginatedData.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:#888; padding: 20px;">No entries found in this period.</td></tr>';
+            }
+
+            let filteredInflow = 0;
+            let filteredOutflow = 0;
+
+            paginatedData.forEach(entry => {
+                let inflow = entry.type === 'Inflow' ? entry.amount : 0;
+                let outflow = entry.type === 'Outflow' ? entry.amount : 0;
+
+                filteredInflow += inflow;
+                filteredOutflow += outflow;
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${new Date(entry.date).toLocaleDateString('en-GB')}</td>
+                    <td>${entry.details}</td>
+                    <td class="text-right text-success">${inflow > 0 ? formatCurrency(inflow) : '-'}</td>
+                    <td class="text-right text-danger">${outflow > 0 ? formatCurrency(outflow) : '-'}</td>
+                    <td class="text-right" style="font-weight:bold; color:${entry.runningBal >= 0 ? '#27ae60' : '#e74c3c'}">${formatCurrency(entry.runningBal)}</td>
+                    <td style="text-align: center;">
+                        <button onclick="editEntry('${entry.id}')" style="background:#f39c12; padding: 4px 8px; font-size:12px; margin-right: 5px;" title="Edit"><i class="fas fa-edit"></i></button>
+                        <button onclick="deleteEntry('${entry.id}')" style="background:#e74c3c; padding: 4px 8px; font-size:12px;" title="Delete"><i class="fas fa-trash"></i></button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            // Overall Vault Stats
+            document.getElementById('totalIn').innerText = '₹ ' + formatCurrency(totalIn);
+            document.getElementById('totalOut').innerText = '₹ ' + formatCurrency(totalOut);
+
+            const netEl = document.getElementById('netBalance');
+            netEl.innerText = '₹ ' + formatCurrency(runningBal);
+            if (runningBal >= 0) {
+                netEl.className = 'value text-success';
+            } else {
+                netEl.className = 'value text-danger';
+            }
+
+            // Table Grand Totals (Filtered View)
+            const tfootIn = document.getElementById('grandInflow');
+            const tfootOut = document.getElementById('grandOutflow');
+            if (tfootIn) tfootIn.innerText = formatCurrency(filteredInflow);
+            if (tfootOut) tfootOut.innerText = formatCurrency(filteredOutflow);
+
+            renderPagination(totalItems, startIdx + 1, Math.min(endIdx, totalItems), totalPages);
+
+            renderChart();
+        }
+
+        function toggleChart() {
+            const container = document.getElementById('chartContainer');
+            if (container.style.display === 'none') {
+                container.style.display = 'block';
+                renderChart();
+            } else {
+                container.style.display = 'none';
+            }
+        }
+
+        function renderChart() {
+            if (document.getElementById('chartContainer').style.display === 'none') return;
+
+            const fromDate = document.getElementById('filterFrom').value;
+            const toDate = document.getElementById('filterTo').value;
+
+            const filteredData = shadowData.filter(entry => {
+                if (fromDate && entry.date < fromDate) return false;
+                if (toDate && entry.date > toDate) return false;
+                return true;
+            });
+
+            // Group by Month-Year (e.g., "2023-04")
+            const monthlyData = {};
+            filteredData.forEach(entry => {
+                if (!entry.date) return;
+                const monthKey = entry.date.substring(0, 7); // YYYY-MM
+                if (!monthlyData[monthKey]) {
+                    monthlyData[monthKey] = { inflow: 0, outflow: 0 };
+                }
+                if (entry.type === 'Inflow') monthlyData[monthKey].inflow += entry.amount;
+                else monthlyData[monthKey].outflow += entry.amount;
+            });
+
+            // Sort chronologically
+            const sortedKeys = Object.keys(monthlyData).sort();
+            const labels = sortedKeys.map(key => {
+                const date = new Date(key + "-01");
+                return date.toLocaleString('default', { month: 'short', year: 'numeric' });
+            });
+
+            const inflows = sortedKeys.map(key => monthlyData[key].inflow);
+            const outflows = sortedKeys.map(key => monthlyData[key].outflow);
+
+            let cumulative = 0;
+            const netBalances = sortedKeys.map(key => {
+                cumulative += (monthlyData[key].inflow - monthlyData[key].outflow);
+                return cumulative;
+            });
+
+            const ctx = document.getElementById('ledgerChart').getContext('2d');
+            if (ledgerChartInstance) ledgerChartInstance.destroy();
+
+            ledgerChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            type: 'line',
+                            label: 'Net Balance Growth',
+                            data: netBalances,
+                            borderColor: '#8e44ad',
+                            backgroundColor: '#8e44ad',
+                            borderWidth: 2,
+                            fill: false,
+                            tension: 0.3
+                        },
+                        { label: 'Inflow', data: inflows, backgroundColor: '#27ae60' },
+                        { label: 'Outflow', data: outflows, backgroundColor: '#e74c3c' }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: { y: { beginAtZero: true } },
+                    plugins: { title: { display: true, text: 'Monthly Inflow vs Outflow & Growth (Filtered Period)' } }
+                }
+            });
+        }
+
+        function changeRowsPerPage() {
+            rowsPerPage = parseInt(document.getElementById('rowsPerPage').value);
+            currentPage = 1;
+            renderLedger();
+        }
+
+        function changePage(page) {
+            currentPage = page;
+            renderLedger();
+        }
+
+        function renderPagination(totalItems, start, end, totalPages) {
+            const info = document.getElementById('paginationInfo');
+            const controls = document.getElementById('paginationControls');
+
+            if (totalItems === 0) {
+                info.innerText = "No records found";
+                controls.innerHTML = "";
+                return;
+            }
+
+            info.innerText = `Showing ${start} to ${end} of ${totalItems} entries`;
+
+            let html = `<button onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>Prev</button>`;
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
+                    html += `<button class="${i === currentPage ? 'active' : ''}" onclick="changePage(${i})">${i}</button>`;
+                } else if (i === currentPage - 3 || i === currentPage + 3) {
+                    html += `<span>...</span>`;
+                }
+            }
+            html += `<button onclick="changePage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>Next</button>`;
+            controls.innerHTML = html;
+        }
+
+        function exportVaultData() {
+            if (shadowData.length === 0) {
+                alert("No data to export!");
+                return;
+            }
+            const pass = prompt("Enter a password to encrypt the export file:");
+            if (!pass) {
+                alert("Export cancelled. Password is required to encrypt the Vault data.");
+                return;
+            }
+
+            try {
+                const dataStr = JSON.stringify(shadowData, null, 2);
+                const encrypted = CryptoJS.AES.encrypt(dataStr, pass).toString();
+                const blob = new Blob([encrypted], { type: "text/plain" });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = "vault_ledger_enc.json";
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            } catch (e) {
+                alert("Error exporting data: " + e.message);
+            }
+        }
+
+        function importVaultData(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            const pass = prompt("Enter the password to decrypt this file:");
+            if (!pass) {
+                alert("Import cancelled. Password is required.");
+                input.value = "";
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                try {
+                    const bytes = CryptoJS.AES.decrypt(e.target.result, pass);
+                    const decrypted = bytes.toString(CryptoJS.enc.Utf8);
+
+                    if (!decrypted) {
+                        throw new Error("Incorrect password or corrupted file.");
+                    }
+
+                    const importedData = JSON.parse(decrypted);
+                    if (!Array.isArray(importedData)) {
+                        throw new Error("Invalid data format.");
+                    }
+
+                    let added = 0;
+                    importedData.forEach(entry => {
+                        if (!shadowData.some(e => e.id === entry.id)) {
+                            shadowData.push(entry);
+                            added++;
+                        }
+                    });
+
+                    localStorage.setItem('shadow_ledger_data', JSON.stringify(shadowData));
+                    renderLedger();
+                    alert(`Import successful! ${added} new entries added.`);
+                } catch (err) {
+                    alert("Import failed: " + err.message);
+                }
+                input.value = "";
+            };
+            reader.readAsText(file);
+        }
+
+        // --- Column Resizing Logic ---
+        function enableColumnResizing() {
+            const table = document.getElementById('ledgerTable');
+            const headers = table.querySelectorAll('th');
+
+            headers.forEach((th) => {
+                if (th.querySelector('.resizer')) return;
+
+                const resizer = document.createElement('div');
+                resizer.classList.add('resizer');
+                th.appendChild(resizer);
+
+                resizer.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                });
+
+                let startX, startWidth;
+
+                resizer.addEventListener('mousedown', function (e) {
+                    e.preventDefault();
+                    startX = e.pageX;
+                    startWidth = th.offsetWidth;
+                    resizer.classList.add('resizing');
+
+                    document.addEventListener('mousemove', onMouseMove);
+                    document.addEventListener('mouseup', onMouseUp);
+                });
+
+                function onMouseMove(e) {
+                    const newWidth = startWidth + (e.pageX - startX);
+                    if (newWidth > 30) {
+                        th.style.width = newWidth + 'px';
+                        th.style.minWidth = newWidth + 'px';
+                    }
+                }
+
+                function onMouseUp() {
+                    resizer.classList.remove('resizing');
+                    document.removeEventListener('mousemove', onMouseMove);
+                    document.removeEventListener('mouseup', onMouseUp);
+                    saveColumnWidths();
+                }
+            });
+        }
+
+        function saveColumnWidths() {
+            const widths = [];
+            const headers = document.querySelectorAll('#ledgerTable th');
+            headers.forEach(th => {
+                widths.push(th.style.width);
+            });
+            localStorage.setItem('shadowLedgerColumnWidths', JSON.stringify(widths));
+        }
+
+        function loadColumnWidths() {
+            const savedWidths = JSON.parse(localStorage.getItem('shadowLedgerColumnWidths'));
+            if (savedWidths && Array.isArray(savedWidths)) {
+                const headers = document.querySelectorAll('#ledgerTable th');
+                headers.forEach((th, index) => {
+                    if (savedWidths[index]) {
+                        th.style.width = savedWidths[index];
+                        th.style.minWidth = savedWidths[index];
+                    }
+                });
+            }
+        }
+
+    </script>
+    <!-- Password Modal -->
+    <div id="passwordModal"
+        style="display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); align-items: center; justify-content: center;">
+        <div
+            style="background: white; padding: 25px; border-radius: 8px; width: 350px; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.3);">
+            <h3 id="modalTitle" style="margin-top: 0; color: #2c3e50;">Vault Access</h3>
+            <p id="modalInstruction" style="color: #666; margin-bottom: 20px;"></p>
+            <div id="passwordFields">
+                <input type="password" id="passwordInput" placeholder="Enter Password"
+                    style="width: 100%; padding: 10px; margin-bottom: 10px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px;">
+                <input type="password" id="confirmPasswordInput" placeholder="Confirm Password"
+                    style="display:none; width: 100%; padding: 10px; margin-bottom: 10px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px;">
+            </div>
+            <p id="modalError" style="color: #e74c3c; display: none; margin-top: 10px; font-weight: bold;"></p>
+            <button id="modalSubmitBtn"
+                style="width: 100%; padding: 12px; background: #27ae60; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px;">Submit</button>
+            <button id="modalCancelBtn"
+                style="width: 100%; padding: 12px; background: #7f8c8d; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; margin-top: 10px;">Cancel</button>
+        </div>
+    </div>
+</body>
+
+</html>

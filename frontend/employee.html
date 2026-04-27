@@ -1,0 +1,2279 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Employee Management</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+    <script src="settings.js"></script>
+    <script src="brand.service.js"></script>
+    <script src="brandLoader.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            padding: 20px;
+            background: #f8f9fa;
+            color: #333;
+        }
+
+        h2 {
+            margin-bottom: 15px;
+            color: #2c3e50;
+        }
+
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .close-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .controls {
+            margin: 10px 0;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+            background: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+
+        input,
+        select,
+        button {
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+            font-size: 14px;
+        }
+
+        button {
+            cursor: pointer;
+            font-weight: bold;
+            color: white;
+            border: none;
+            transition: opacity 0.2s;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        button.action {
+            background: #0d6efd;
+        }
+
+        button.clear {
+            background: #6c757d;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            background: #fff;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        th,
+        td {
+            padding: 12px;
+            text-align: center;
+            border-bottom: 1px solid #eee;
+        }
+
+        th {
+            background: #2c3e50;
+            color: white;
+        }
+
+        .action-btn {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            margin: 0 2px;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background-color: #fff;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            min-width: 350px;
+            max-width: 600px;
+            max-height: 85vh;
+            overflow-y: auto;
+        }
+
+        .attendance-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .status-select {
+            width: 120px;
+            padding: 4px;
+        }
+
+        /* Dark Mode */
+        body.dark-mode {
+            background: #121212;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .controls,
+        body.dark-mode table,
+        body.dark-mode .modal-content {
+            background: #2c2c2c;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode input,
+        body.dark-mode select {
+            background: #3a3a3a;
+            color: #fff;
+            border: 1px solid #555;
+        }
+
+        body.dark-mode th {
+            background: #1f1f1f;
+        }
+
+        body.dark-mode td {
+            border-color: #444;
+        }
+
+        /* Grey Mode */
+        body.grey-mode button {
+            background-color: #6c757d !important;
+            color: #fff !important;
+        }
+
+        /* Professional Touches */
+        .badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: bold;
+            color: white;
+            display: inline-block;
+            min-width: 60px;
+            text-align: center;
+        }
+
+        .badge-present {
+            background-color: #28a745;
+        }
+
+        .badge-absent {
+            background-color: #dc3545;
+        }
+
+        .badge-half {
+            background-color: #ffc107;
+            color: #000;
+        }
+
+        .badge-leave {
+            background-color: #17a2b8;
+        }
+
+        .badge-late {
+            background-color: #fd7e14;
+        }
+
+        .badge-early {
+            background-color: #e67e22;
+        }
+
+        .badge-secondary {
+            background-color: #6c757d;
+        }
+
+        .badge-holiday {
+            background-color: #e83e8c;
+        }
+
+        .att-summary {
+            display: flex;
+            justify-content: space-around;
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            border: 1px solid #eee;
+        }
+
+        .att-stat {
+            text-align: center;
+        }
+
+        .att-stat span {
+            display: block;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .att-stat small {
+            font-size: 11px;
+            color: #666;
+            text-transform: uppercase;
+        }
+
+        body.dark-mode .att-summary {
+            background: #2c2c2c;
+            border-color: #444;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="top-bar">
+        <h2>Employee Management - <span data-brand="name">RISE Tech Revolution</span></h2>
+        <div style="display:flex; align-items:center; gap:15px;">
+            <label style="cursor:pointer; display:flex; align-items:center; gap:5px; font-size:14px;">
+                <input type="checkbox" id="darkModeToggle" onchange="toggleDarkMode()"> 🌙 Dark Mode
+            </label>
+            <label style="cursor:pointer; display:flex; align-items:center; gap:5px; font-size:14px;">
+                <input type="checkbox" id="greyButtonsToggle" onchange="toggleGreyButtons()"> Grey Buttons Mode
+            </label>
+        </div>
+    </div>
+
+    <!-- Employee Form -->
+    <div class="controls">
+        <input type="hidden" id="empId">
+        <div style="display:flex; flex-direction:column; align-items:center; margin-right:5px;">
+            <img id="empPhotoPreview" src=""
+                style="width:40px; height:40px; object-fit:cover; border-radius:50%; display:none; border:1px solid #ccc; margin-bottom:2px;">
+            <label for="empPhoto" style="cursor:pointer; font-size:20px;" title="Upload Photo">📷</label>
+            <input type="file" id="empPhoto" accept="image/*" style="display:none;" onchange="handlePhotoUpload(this)">
+            <input type="hidden" id="empPhotoBase64">
+            <button onclick="removePhoto()" id="removePhotoBtn"
+                style="display:none; font-size:10px; padding:2px 5px; background:#dc3545; color:white; border:none; border-radius:3px; cursor:pointer; margin-top:2px;">X</button>
+        </div>
+        <input type="text" id="empName" placeholder="Employee Name" style="flex:2;">
+        <input type="text" id="empCode" placeholder="Emp ID (Opt)" style="flex:1;">
+        <div style="flex:1; display:flex; gap:2px;">
+            <select id="empDesignation" style="flex:1; padding:6px; border:1px solid #ccc; border-radius:4px;">
+                <option value="">Designation</option>
+            </select>
+            <button onclick="openMasterModal('designation')"
+                style="padding:0 6px; background:#17a2b8; color:white; border:none; border-radius:4px; cursor:pointer;"
+                title="Manage Designations">⚙️</button>
+        </div>
+        <div style="flex:1; display:flex; gap:2px;">
+            <select id="empDepartment" style="flex:1; padding:6px; border:1px solid #ccc; border-radius:4px;">
+                <option value="">Department</option>
+            </select>
+            <button onclick="openMasterModal('department')"
+                style="padding:0 6px; background:#17a2b8; color:white; border:none; border-radius:4px; cursor:pointer;"
+                title="Manage Departments">⚙️</button>
+        </div>
+        <input type="number" id="empDutyHours" placeholder="Duty Hrs (Def: 8)" style="flex:1;">
+        <input type="text" id="empContact" placeholder="Contact No" style="flex:1;">
+        <input type="email" id="empEmail" placeholder="Email" style="flex:1;">
+        <input type="number" id="empSalary" placeholder="Salary (₹)" style="flex:1;">
+        <input type="date" id="empJoiningDate" style="flex:1;">
+        <div
+            style="flex:2; display:flex; gap:5px; align-items:center; background:#f8f9fa; padding:2px; border-radius:4px; border:1px solid #ddd;">
+            <select id="empShiftSelect" style="flex:1; padding:6px; border:1px solid #ccc; border-radius:4px;"
+                onchange="applyShift()">
+                <option value="">Custom Shift</option>
+            </select>
+            <button onclick="openShiftModal()"
+                style="padding:4px 8px; background:#17a2b8; color:white; border:none; border-radius:4px; cursor:pointer;"
+                title="Manage Shifts">⚙️</button>
+            <input type="time" id="empShiftStart" title="Start Time"
+                style="width:90px; border:1px solid #ccc; border-radius:4px; padding:4px;">
+            <input type="time" id="empShiftEnd" title="End Time"
+                style="width:90px; border:1px solid #ccc; border-radius:4px; padding:4px;">
+        </div>
+        <select id="empWeeklyOff" style="flex:1;">
+            <option value="">Weekly Off</option>
+            <option value="0">Sunday</option>
+            <option value="1">Monday</option>
+            <option value="2">Tuesday</option>
+            <option value="3">Wednesday</option>
+            <option value="4">Thursday</option>
+            <option value="5">Friday</option>
+            <option value="6">Saturday</option>
+        </select>
+        <select id="empHalfDay" style="flex:1;">
+            <option value="">Half Day</option>
+            <option value="0">Sunday</option>
+            <option value="1">Monday</option>
+            <option value="2">Tuesday</option>
+            <option value="3">Wednesday</option>
+            <option value="4">Thursday</option>
+            <option value="5">Friday</option>
+            <option value="6">Saturday</option>
+        </select>
+        <button class="action" onclick="saveEmployee()">💾 Save</button>
+        <button class="clear" onclick="clearForm()">♻️ Clear</button>
+    </div>
+
+    <!-- Actions -->
+    <div class="controls">
+        <input type="text" id="searchBox" placeholder="🔍 Search Employees..." oninput="renderTable()" style="flex:2;">
+        <select id="filterDepartment" onchange="renderTable()" style="flex:1;">
+            <option value="">All Departments</option>
+        </select>
+        <select id="filterDesignation" onchange="renderTable()" style="flex:1;">
+            <option value="">All Designations</option>
+        </select>
+        <button class="action" onclick="openColumnSettings()" style="background:#607d8b;">⚙️ Columns</button>
+        <button class="action" onclick="openAttendanceModal()" style="background:#6f42c1;">📅 Mark Attendance</button>
+        <button class="action" onclick="exportEmployees()" style="background:#198754;">📊 Export Excel</button>
+        <button class="action" onclick="exportAttendance()" style="background:#217346;">📅 Export Attendance</button>
+        <button class="action" onclick="openSummaryModal()" style="background:#fd7e14;">📈 Attendance Summary</button>
+        <button class="action" onclick="openHolidayModal()" style="background:#e83e8c;">🎉 Holiday Calendar</button>
+        <button class="action" onclick="openPayrollModal()" style="background:#6610f2;">💰 Payroll</button>
+    </div>
+
+    <!-- Pagination Controls -->
+    <div class="pagination-container" style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px; margin-bottom: 10px; padding: 10px; background: #fff; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
+        <div style="display: flex; align-items: center; gap: 5px;">
+            <span id="totalEmployeesDisplay" style="font-weight: bold; color: #2c3e50; margin-right: 8px;"></span>
+            <select id="rowsPerPageSelect" onchange="changeRowsPerPage()" style="width: auto; padding: 4px; border: 1px solid #ccc; border-radius: 4px; margin: 0;">
+                <option value="10">10 rows</option>
+                <option value="20" selected>20 rows</option>
+                <option value="50">50 rows</option>
+            </select>
+            <input type="number" id="goToPageInput" style="width: 60px; padding: 4px; border: 1px solid #ccc; border-radius: 4px;" placeholder="Go to" min="1" onchange="goToPage()">
+        </div>
+        <div id="paginationInfo" style="color: #666; font-size: 14px;"></div>
+        <div class="pagination" id="paginationControls" style="display: flex; gap: 5px;"></div>
+    </div>
+
+    <!-- Table -->
+    <div style="overflow-x: auto; background: #fff; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
+        <table id="mainEmployeeTable" style="margin-top: 0;">
+            <thead>
+                <tr id="tableHeaderRow">
+                    <!-- Headers generated by JS -->
+                </tr>
+            </thead>
+            <tbody id="employeeTableBody"></tbody>
+        </table>
+    </div>
+
+    <!-- Mark Attendance Modal -->
+    <div id="attendanceModal" class="modal">
+        <div class="modal-content">
+            <h3 style="color:#6f42c1;">📅 Mark Attendance</h3>
+            <div style="margin-bottom:15px;">
+                <label>Date:</label>
+                <input type="date" id="attDate" onchange="renderAttendanceList()">
+                <label style="margin-left:10px;">Late Time:</label>
+                <input type="time" id="attLateTime" value="09:30" onchange="saveAttSettings()"
+                    style="padding:4px; border:1px solid #ccc; border-radius:4px;">
+                <label style="margin-left:10px;">Grace (min):</label>
+                <input type="number" id="attGracePeriod" value="0" min="0" onchange="saveAttSettings()"
+                    style="width:50px; padding:4px; border:1px solid #ccc; border-radius:4px;">
+                <label style="margin-left:10px;">Exit Time:</label>
+                <input type="time" id="attEarlyTime" value="18:00" onchange="saveAttSettings()"
+                    style="padding:4px; border:1px solid #ccc; border-radius:4px;">
+            </div>
+            <div id="attHolidayMsg" style="color:#e83e8c; font-weight:bold; margin-bottom:10px; text-align:center;">
+            </div>
+            <div style="margin-bottom:10px;">
+                <input type="text" id="attSearch" placeholder="🔍 Search Employee..." oninput="handleAttSearch()"
+                    style="width:100%; padding:8px; box-sizing:border-box; border:1px solid #ccc; border-radius:4px;">
+            </div>
+            <div style="margin-bottom:10px; display:flex; gap:5px;">
+                <button class="action-btn" style="background:#28a745; color:white; border:none; cursor:pointer;"
+                    onclick="markAll('Present')">All Present</button>
+                <button class="action-btn" style="background:#dc3545; color:white; border:none; cursor:pointer;"
+                    onclick="markAll('Absent')">All Absent</button>
+            </div>
+            <div id="attendanceList"
+                style="text-align:left; max-height:400px; overflow-y:auto; margin-bottom:15px; border:1px solid #eee; border-radius:4px;">
+                <table style="width:100%; font-size:13px;">
+                    <thead style="position:sticky; top:0; background:#f8f9fa;">
+                        <tr>
+                            <th>Employee</th>
+                            <th>In Time</th>
+                            <th>Out Time</th>
+                            <th>Status</th>
+                            <th>OT</th>
+                        </tr>
+                    </thead>
+                    <tbody id="attendanceTableBody"></tbody>
+                </table>
+            </div>
+            <div id="attPagination"
+                style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; font-size:13px;">
+                <!-- Pagination controls -->
+            </div>
+            <div class="modal-buttons">
+                <button class="action" onclick="saveAttendance()">Save Attendance</button>
+                <button class="clear" onclick="closeModal('attendanceModal')">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- View Attendance Modal -->
+    <div id="viewAttendanceModal" class="modal">
+        <div class="modal-content">
+            <h3 id="viewAttTitle" style="color:#17a2b8;">👤 Attendance History</h3>
+            <div style="display:flex; gap:5px; justify-content:center; margin-bottom:10px; align-items:center;">
+                <input type="date" id="filterAttFrom" style="padding:4px; font-size:12px;">
+                <span>to</span>
+                <input type="date" id="filterAttTo" style="padding:4px; font-size:12px;">
+                <button class="action-btn" style="background:#17a2b8; color:white;"
+                    onclick="renderAttendanceHistory()">Filter</button>
+            </div>
+            <div id="viewAttSummary"></div>
+            <div id="viewAttHistory" style="text-align:left; max-height:300px; overflow-y:auto; margin-bottom:15px;">
+                <table style="font-size:13px;">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>In</th>
+                            <th>Out</th>
+                            <th>Status</th>
+                            <th>OT</th>
+                        </tr>
+                    </thead>
+                    <tbody id="viewAttBody"></tbody>
+                </table>
+            </div>
+            <div class="modal-buttons">
+                <button class="clear" onclick="closeModal('viewAttendanceModal')">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Attendance Summary Modal -->
+    <div id="summaryModal" class="modal">
+        <div class="modal-content" style="max-width: 800px;">
+            <h3 style="color:#fd7e14;">📈 Attendance Summary Report</h3>
+            <div style="display:flex; gap:10px; justify-content:center; margin-bottom:15px; align-items:center;">
+                <label>From:</label>
+                <input type="date" id="sumFromDate">
+                <label>To:</label>
+                <input type="date" id="sumToDate">
+                <select id="sumFilterDepartment" style="padding:8px; border:1px solid #ccc; border-radius:4px;">
+                    <option value="">All Departments</option>
+                </select>
+                <input type="text" id="sumSearchName" placeholder="Search Employee..."
+                    style="padding:8px; border:1px solid #ccc; border-radius:4px;">
+                <button class="action-btn"
+                    style="background:#fd7e14; color:white; border:none; padding:8px 16px; cursor:pointer;"
+                    onclick="generateSummary()">Generate</button>
+            </div>
+            <div id="summaryResult" style="text-align:left; max-height:400px; overflow-y:auto;">
+                <table style="font-size:13px;">
+                    <thead>
+                        <tr>
+                            <th>Employee</th>
+                            <th>Present</th>
+                            <th>Absent</th>
+                            <th>Half-Day</th>
+                            <th>Leave</th>
+                            <th>Late</th>
+                            <th>Early</th>
+                            <th>Total Days</th>
+                        </tr>
+                    </thead>
+                    <tbody id="summaryTableBody"></tbody>
+                </table>
+            </div>
+            <div class="modal-buttons">
+                <button class="clear" onclick="closeModal('summaryModal')">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Holiday Calendar Modal -->
+    <div id="holidayModal" class="modal">
+        <div class="modal-content" style="max-width: 600px;">
+            <h3 style="color:#e83e8c;">🎉 Holiday Calendar</h3>
+            <div style="display:flex; gap:10px; justify-content:center; margin-bottom:15px; align-items:center;">
+                <label>Year:</label>
+                <input type="number" id="holidayYear"
+                    style="width:80px; padding:4px; border:1px solid #ccc; border-radius:4px;"
+                    onchange="renderHolidayList()">
+            </div>
+            <div style="display:flex; gap:10px; margin-bottom:15px;">
+                <input type="date" id="newHolidayDate" style="flex:1;">
+                <input type="text" id="newHolidayDesc" placeholder="Description (e.g. Diwali)" style="flex:2;">
+                <button id="holidayAddBtn" class="action-btn"
+                    style="background:#28a745; color:white; border:none; cursor:pointer;"
+                    onclick="addHoliday()">Add</button>
+            </div>
+            <div id="holidayList"
+                style="text-align:left; max-height:400px; overflow-y:auto; margin-bottom:15px; border:1px solid #eee; border-radius:4px;">
+                <table style="width:100%; font-size:13px;">
+                    <thead style="position:sticky; top:0; background:#f8f9fa;">
+                        <tr>
+                            <th>Date</th>
+                            <th>Day</th>
+                            <th>Description</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="holidayTableBody"></tbody>
+                </table>
+            </div>
+            <div class="modal-buttons">
+                <button class="action" onclick="printHolidayCalendar()" style="background:#2980b9;">🖨️ Print</button>
+                <button class="clear" onclick="closeModal('holidayModal')">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payroll Modal -->
+    <div id="payrollModal" class="modal">
+        <div class="modal-content" style="max-width: 900px;">
+            <h3 style="color:#6610f2;">💰 Monthly Payroll Calculator</h3>
+            <div style="display:flex; gap:10px; justify-content:center; margin-bottom:15px; align-items:center;">
+                <label>Select Month:</label>
+                <input type="month" id="payrollMonth">
+                <button class="action-btn" style="background:#6610f2; color:white;"
+                    onclick="calculatePayroll()">Calculate</button>
+                <button class="action-btn" style="background:#198754; color:white;" onclick="exportPayroll()">Export
+                    Excel</button>
+                <button class="action-btn" style="background:#0d6efd; color:white;" onclick="generateBulkPayslip()">📄
+                    Bulk Payslip</button>
+                <input type="text" id="payrollSearch" placeholder="Search Employee..." oninput="filterPayrollTable()"
+                    style="padding:6px; border:1px solid #ccc; border-radius:4px; width: 150px;">
+            </div>
+            <div id="payrollResult" style="text-align:left; max-height:400px; overflow-y:auto;">
+                <table style="font-size:13px;">
+                    <thead>
+                        <tr>
+                            <th>Employee</th>
+                            <th>Basic Salary</th>
+                            <th>Present</th>
+                            <th>Half-Day</th>
+                            <th>Absent</th>
+                            <th>W.Off</th>
+                            <th>Deduction</th>
+                            <th>OT Hrs</th>
+                            <th>OT Amt</th>
+                            <th>Bonus</th>
+                            <th>Net Salary</th>
+                            <th>Payslip</th>
+                        </tr>
+                    </thead>
+                    <tbody id="payrollTableBody"></tbody>
+                </table>
+            </div>
+            <div class="modal-buttons">
+                <button class="clear" onclick="closeModal('payrollModal')">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Column Settings Modal -->
+    <div id="columnSettingsModal" class="modal">
+        <div class="modal-content" style="width: 300px;">
+            <h3>⚙️ Table Columns</h3>
+            <div id="columnToggles"
+                style="text-align: left; max-height: 300px; overflow-y: auto; display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            </div>
+            <div class="modal-buttons">
+                <button class="action" onclick="saveColumnSettings()">Apply</button>
+                <button class="clear" onclick="closeModal('columnSettingsModal')">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Master Manager Modal (Designation/Department) -->
+    <div id="masterModal" class="modal">
+        <div class="modal-content" style="width: 600px; max-width: 95%;">
+            <h3 id="masterModalTitle" style="color:#17a2b8;">Manage</h3>
+            <div style="margin-bottom:10px;">
+                <input type="text" id="masterSearch" placeholder="Search..." oninput="renderMasterList()"
+                    style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;">
+            </div>
+            <div style="display:flex; gap:5px; margin-bottom:15px;">
+                <input type="text" id="newMasterItem" placeholder="Enter Name" style="flex:1;">
+                <input type="color" id="newMasterColor" value="#6c757d"
+                    style="width:50px; padding:0; border:none; cursor:pointer; display:none;" title="Choose Color">
+                <div id="deptTimeInputs" style="display:none; gap:2px; align-items:center;">
+                    <input type="time" id="newDeptHalfStart" title="Half Day Start"
+                        style="padding:4px; border:1px solid #ccc; border-radius:4px;">
+                    <span style="font-size:10px;">to</span>
+                    <input type="time" id="newDeptHalfEnd" title="Half Day End"
+                        style="padding:4px; border:1px solid #ccc; border-radius:4px;">
+                </div>
+                <button id="masterAddBtn" class="action-btn"
+                    style="background:#28a745; color:white; border:none; cursor:pointer;"
+                    onclick="addMasterItem()">Add</button>
+            </div>
+            <div id="masterList"
+                style="text-align:left; max-height:300px; overflow-y:auto; border:1px solid #eee; padding:5px; border-radius:4px; margin-bottom:15px;">
+                <!-- Items -->
+            </div>
+            <div class="modal-buttons">
+                <button class="clear" onclick="closeModal('masterModal')">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Shift Manager Modal -->
+    <div id="shiftModal" class="modal">
+        <div class="modal-content" style="width: 550px;">
+            <h3 style="color:#17a2b8;">Manage Shifts</h3>
+            <div style="display:flex; gap:5px; margin-bottom:15px;">
+                <input type="text" id="newShiftName" placeholder="Name (e.g. Morning)" style="flex:2;">
+                <input type="time" id="newShiftStart" style="flex:1;">
+                <input type="time" id="newShiftEnd" style="flex:1;">
+                <button class="action-btn" style="background:#28a745; color:white; border:none; cursor:pointer;"
+                    onclick="addShift()">Add</button>
+            </div>
+            <div id="shiftList"
+                style="text-align:left; max-height:300px; overflow-y:auto; border:1px solid #eee; padding:5px; border-radius:4px; margin-bottom:15px;">
+                <!-- Items -->
+            </div>
+            <div class="modal-buttons">
+                <button class="clear" onclick="closeModal('shiftModal')">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let employees = JSON.parse(localStorage.getItem("employees")) || [];
+        let holidays = JSON.parse(localStorage.getItem("holidays")) || [];
+        let currentViewEmpId = null;
+        let attPage = 1;
+        const attRowsPerPage = 20;
+        let attSearchQuery = "";
+        
+        let currentPage = 1;
+        let rowsPerPage = 20;
+
+        function changeRowsPerPage() {
+            rowsPerPage = parseInt(document.getElementById('rowsPerPageSelect').value);
+            currentPage = 1;
+            renderTable();
+        }
+
+        function goToPage() {
+            const pageInput = document.getElementById("goToPageInput");
+            const page = parseInt(pageInput.value);
+            if (page >= 1) {
+                currentPage = page;
+                renderTable();
+            }
+            pageInput.value = "";
+        }
+
+        function changePage(page) {
+            currentPage = page;
+            renderTable();
+        }
+
+        function renderPagination(totalItems, start, end, totalPages) {
+            const info = document.getElementById("paginationInfo");
+            const controls = document.getElementById("paginationControls");
+            const totalDisplay = document.getElementById("totalEmployeesDisplay");
+
+            if (totalDisplay) totalDisplay.innerText = `Total Employees: ${totalItems}`;
+
+            if (totalItems === 0) {
+                if (info) info.innerText = "No employees found";
+                if (controls) controls.innerHTML = "";
+                return;
+            }
+
+            if (info) info.innerText = `Showing ${start} to ${end} of ${totalItems} entries`;
+
+            let html = "";
+            html += `<button class="clear" onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''} style="padding: 4px 8px; margin: 0 2px;">Prev</button>`;
+
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
+                    const activeStyle = i === currentPage ? 'background: #0d6efd; color: #fff;' : 'background: #fff; color: #333;';
+                    html += `<button class="clear" onclick="changePage(${i})" style="padding: 4px 8px; margin: 0 2px; ${activeStyle}">${i}</button>`;
+                } else if (i === currentPage - 3 || i === currentPage + 3) {
+                    html += `<span style="padding: 4px 8px;">...</span>`;
+                }
+            }
+
+            html += `<button class="clear" onclick="changePage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''} style="padding: 4px 8px; margin: 0 2px;">Next</button>`;
+            
+            if (controls) controls.innerHTML = html;
+        }
+
+        // Master Lists
+        let designations = JSON.parse(localStorage.getItem("designations")) || [];
+        let departments = JSON.parse(localStorage.getItem("departments")) || [];
+        let shifts = JSON.parse(localStorage.getItem("shifts")) || [];
+        let masterType = '';
+        let editingMasterIndex = null;
+        let editingHolidayId = null;
+        let isGreyButtons = localStorage.getItem("employeeGreyButtons") === "true";
+
+        // Init Master Lists from existing data if empty
+        if (designations.length === 0) {
+            const s = new Set(employees.map(e => e.designation).filter(d => d));
+            designations = Array.from(s).sort();
+            localStorage.setItem("designations", JSON.stringify(designations));
+        }
+        if (departments.length === 0) {
+            const s = new Set(employees.map(e => e.department).filter(d => d));
+            departments = Array.from(s).sort().map(d => ({ name: d, color: '#6c757d' }));
+            localStorage.setItem("departments", JSON.stringify(departments));
+        } else if (typeof departments[0] === 'string') {
+            // Migrate legacy string array to object array
+            departments = departments.map(d => ({ name: d, color: '#6c757d' }));
+            localStorage.setItem("departments", JSON.stringify(departments));
+        }
+
+        // Column Definitions
+        const allColumns = [
+            { id: 'photo', label: 'Photo' },
+            { id: 'name', label: 'Name' },
+            { id: 'empCode', label: 'Emp ID' },
+            { id: 'designation', label: 'Designation' },
+            { id: 'department', label: 'Department' },
+            { id: 'dutyHours', label: 'Duty Hrs' },
+            { id: 'contact', label: 'Contact' },
+            { id: 'email', label: 'Email' },
+            { id: 'salary', label: 'Salary' },
+            { id: 'joiningDate', label: 'Joining Date' },
+            { id: 'shift', label: 'Shift' },
+            { id: 'weeklyOff', label: 'Weekly Off' },
+            { id: 'halfDay', label: 'Half Day' },
+            { id: 'status', label: "Today's Status" },
+            { id: 'actions', label: 'Actions' }
+        ];
+
+        let columnVisibility = JSON.parse(localStorage.getItem("empColumnVisibility")) || {
+            photo: true, name: true, empCode: true, designation: true, department: true,
+            dutyHours: true, contact: true, email: false, salary: false, joiningDate: false,
+            shift: true, weeklyOff: true, halfDay: true, status: true, actions: true
+        };
+
+        async function loadEmployeesData() {
+            try {
+                const res = await fetch('http://localhost:5000/api/employees');
+                const data = await res.json();
+                if (data.success && data.data) {
+                    employees = data.data;
+                    localStorage.setItem("employees", JSON.stringify(employees));
+                }
+            } catch (e) {
+                console.warn("Failed to fetch employees from DB, falling back to local storage.", e);
+            }
+        }
+
+        // Initialize
+        document.addEventListener("DOMContentLoaded", async () => {
+            await loadEmployeesData();
+            populateDepartmentFilter();
+            populateDesignationFilter();
+            renderDropdowns();
+            renderShiftDropdown();
+            renderTable();
+
+            const savedLateTime = localStorage.getItem('attLateTime');
+            if (savedLateTime) document.getElementById('attLateTime').value = savedLateTime;
+            const savedGrace = localStorage.getItem('attGracePeriod');
+            if (savedGrace) document.getElementById('attGracePeriod').value = savedGrace;
+            const savedEarlyTime = localStorage.getItem('attEarlyTime');
+            if (savedEarlyTime) document.getElementById('attEarlyTime').value = savedEarlyTime;
+
+            document.getElementById('attDate').valueAsDate = new Date();
+
+            // Apply Theme
+            if (localStorage.getItem("appThemeMode") === "dark") {
+                document.body.classList.add("dark-mode");
+                document.getElementById("darkModeToggle").checked = true;
+            }
+            applyGreyButtons();
+        });
+
+        function toggleDarkMode() {
+            const isDark = document.getElementById("darkModeToggle").checked;
+            if (isDark) document.body.classList.add("dark-mode");
+            else document.body.classList.remove("dark-mode");
+            localStorage.setItem("appThemeMode", isDark ? "dark" : "light");
+        }
+
+        function toggleGreyButtons() {
+            isGreyButtons = document.getElementById("greyButtonsToggle").checked;
+            localStorage.setItem("employeeGreyButtons", isGreyButtons);
+            applyGreyButtons();
+        }
+
+        function applyGreyButtons() {
+            if (isGreyButtons) document.body.classList.add("grey-mode");
+            else document.body.classList.remove("grey-mode");
+            const toggle = document.getElementById("greyButtonsToggle");
+            if (toggle) toggle.checked = isGreyButtons;
+        }
+
+        function populateDepartmentFilter() {
+            const filter = document.getElementById('filterDepartment');
+            const currentVal = filter.value;
+            const departments = new Set();
+            employees.forEach(e => {
+                if (e.department) departments.add(e.department);
+            });
+            filter.innerHTML = '<option value="">All Departments</option>';
+            Array.from(departments).sort().forEach(dept => {
+                const opt = document.createElement('option');
+                opt.value = dept;
+                opt.innerText = dept;
+                filter.appendChild(opt);
+            });
+            if (Array.from(departments).includes(currentVal)) filter.value = currentVal;
+        }
+
+        function populateDesignationFilter() {
+            const filter = document.getElementById('filterDesignation');
+            const currentVal = filter.value;
+            const designations = new Set();
+            employees.forEach(e => {
+                if (e.designation) designations.add(e.designation);
+            });
+            filter.innerHTML = '<option value="">All Designations</option>';
+            Array.from(designations).sort().forEach(desig => {
+                const opt = document.createElement('option');
+                opt.value = desig;
+                opt.innerText = desig;
+                filter.appendChild(opt);
+            });
+            if (Array.from(designations).includes(currentVal)) filter.value = currentVal;
+        }
+
+        async function saveEmployee() {
+            const id = document.getElementById('empId').value;
+            const name = document.getElementById('empName').value.trim();
+            const photo = document.getElementById('empPhotoBase64').value;
+            const empCode = document.getElementById('empCode').value.trim();
+            const designation = document.getElementById('empDesignation').value.trim();
+            const department = document.getElementById('empDepartment').value.trim();
+            const dutyHours = document.getElementById('empDutyHours').value;
+            const contact = document.getElementById('empContact').value.trim();
+            const email = document.getElementById('empEmail').value.trim();
+            const salary = document.getElementById('empSalary').value;
+            const joiningDate = document.getElementById('empJoiningDate').value;
+            const shiftStart = document.getElementById('empShiftStart').value;
+            const shiftEnd = document.getElementById('empShiftEnd').value;
+            const weeklyOff = document.getElementById('empWeeklyOff').value;
+            const halfDay = document.getElementById('empHalfDay').value;
+
+            if (!name) return alert("Name is required!");
+            if (!confirm("Are you sure you want to save this employee?")) return;
+
+            const empData = {
+                id: id || Date.now().toString(),
+                name, photo, empCode, designation, department, dutyHours: dutyHours || 8, contact, email, salary, joiningDate, shiftStart, shiftEnd, weeklyOff, halfDay,
+                attendance: id ? (employees.find(e => e.id === id)?.attendance || {}) : {}
+            };
+
+            // Save to MongoDB via API
+            try {
+                await fetch('http://localhost:5000/api/employees', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(empData)
+                });
+            } catch (e) {
+                console.error('Failed to sync employee to DB', e);
+            }
+
+            if (id) {
+                const index = employees.findIndex(e => e.id === id);
+                if (index > -1) employees[index] = empData;
+            } else {
+                employees.push(empData);
+            }
+
+            localStorage.setItem("employees", JSON.stringify(employees));
+            clearForm();
+            populateDepartmentFilter();
+            populateDesignationFilter();
+            renderTable();
+            alert("Employee Saved Successfully!");
+        }
+
+        function renderTable() {
+            // Render Header
+            const theadRow = document.getElementById('tableHeaderRow');
+            let headerHtml = '<th>Sl No</th>';
+            allColumns.forEach(col => {
+                if (columnVisibility[col.id]) {
+                    headerHtml += `<th>${col.label}</th>`;
+                }
+            });
+            theadRow.innerHTML = headerHtml;
+
+            const tbody = document.getElementById('employeeTableBody');
+            tbody.innerHTML = '';
+            const search = document.getElementById('searchBox').value.toLowerCase();
+            const filterDept = document.getElementById('filterDepartment').value;
+            const filterDesig = document.getElementById('filterDesignation').value;
+            const today = new Date().toISOString().split('T')[0];
+            const dayOfWeek = new Date().getDay().toString();
+            let slNo = 1;
+
+            const daysMap = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+            let filtered = employees.filter(emp => {
+                if (filterDept && (emp.department || "") !== filterDept) return false;
+                if (filterDesig && (emp.designation || "") !== filterDesig) return false;
+                if (emp.name.toLowerCase().includes(search) || (emp.designation || '').toLowerCase().includes(search) || (emp.department || '').toLowerCase().includes(search) || (emp.empCode || '').toLowerCase().includes(search)) {
+                    return true;
+                }
+                return false;
+            });
+
+            const totalItems = filtered.length;
+            const totalPages = Math.ceil(totalItems / rowsPerPage) || 1;
+
+            if (currentPage > totalPages) currentPage = totalPages;
+            if (currentPage < 1) currentPage = 1;
+
+            const startIndex = (currentPage - 1) * rowsPerPage;
+            const endIndex = Math.min(startIndex + rowsPerPage, totalItems);
+            const paginatedData = filtered.slice(startIndex, endIndex);
+
+            slNo = startIndex + 1;
+
+            paginatedData.forEach(emp => {
+                    let defaultStatus = '-';
+                    if (emp.weeklyOff === dayOfWeek) defaultStatus = 'Weekly Off';
+                    else if (emp.halfDay === dayOfWeek) defaultStatus = 'Half-Day';
+
+                    const todayStatus = (emp.attendance && emp.attendance[today]) ? emp.attendance[today] : defaultStatus;
+
+                    let badgeClass = 'badge-secondary';
+                    if (todayStatus === 'Present') badgeClass = 'badge-present';
+                    else if (todayStatus === 'Absent') badgeClass = 'badge-absent';
+                    else if (todayStatus === 'Half-Day') badgeClass = 'badge-half';
+                    else if (todayStatus === 'Leave') badgeClass = 'badge-leave';
+                    else if (todayStatus === 'Late Arrival') badgeClass = 'badge-late';
+                    else if (todayStatus === 'Early Departure') badgeClass = 'badge-early';
+                    else if (todayStatus === 'Holiday') badgeClass = 'badge-holiday';
+
+                    const statusHtml = todayStatus === '-' ? '<span style="color:#999;">-</span>' : `<span class="badge ${badgeClass}">${todayStatus}</span>`;
+
+                    const photoHtml = emp.photo
+                        ? `<img src="${emp.photo}" style="width:35px; height:35px; border-radius:50%; object-fit:cover; border:1px solid #eee;">`
+                        : `<span style="font-size:24px; color:#ccc;">👤</span>`;
+
+                    let rowHtml = `<td>${slNo++}</td>`;
+                    if (columnVisibility.photo) rowHtml += `<td>${photoHtml}</td>`;
+                    if (columnVisibility.name) rowHtml += `<td>${emp.name}</td>`;
+                    if (columnVisibility.empCode) rowHtml += `<td>${emp.empCode || '-'}</td>`;
+                    if (columnVisibility.designation) rowHtml += `<td>${emp.designation || '-'}</td>`;
+                    if (columnVisibility.department) {
+                        const deptObj = departments.find(d => d.name === emp.department);
+                        const deptColor = deptObj ? deptObj.color : '#6c757d';
+                        rowHtml += `<td>${emp.department ? `<span class="badge" style="background-color:${deptColor}">${emp.department}</span>` : '-'}</td>`;
+                    }
+                    if (columnVisibility.dutyHours) rowHtml += `<td>${emp.dutyHours || '8'}</td>`;
+                    if (columnVisibility.contact) rowHtml += `<td>${emp.contact || '-'}</td>`;
+                    if (columnVisibility.email) rowHtml += `<td>${emp.email || '-'}</td>`;
+                    if (columnVisibility.salary) rowHtml += `<td>₹ ${emp.salary || '0'}</td>`;
+                    if (columnVisibility.joiningDate) rowHtml += `<td>${emp.joiningDate || '-'}</td>`;
+                    if (columnVisibility.shift) rowHtml += `<td>${emp.shiftStart || ''} - ${emp.shiftEnd || ''}</td>`;
+                    if (columnVisibility.weeklyOff) rowHtml += `<td>${daysMap[emp.weeklyOff] || '-'}</td>`;
+                    if (columnVisibility.halfDay) rowHtml += `<td>${daysMap[emp.halfDay] || '-'}</td>`;
+                    if (columnVisibility.status) rowHtml += `<td>${statusHtml}</td>`;
+
+                    if (columnVisibility.actions) {
+                        rowHtml += `<td>
+                            <button class="action-btn" style="background:#17a2b8;" onclick="viewAttendance('${emp.id}')">👁️ Log</button>
+                            <button class="action-btn" style="background:#ffc107; color:black;" onclick="editEmployee('${emp.id}')">✎ Edit</button>
+                            <button class="action-btn" style="background:#dc3545;" onclick="deleteEmployee('${emp.id}')">🗑️ Del</button>
+                        </td>`;
+                    }
+
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = rowHtml;
+                    tbody.appendChild(tr);
+            });
+            
+            renderPagination(totalItems, startIndex + 1, endIndex, totalPages);
+        }
+
+        function editEmployee(id) {
+            const emp = employees.find(e => e.id === id);
+            if (!emp) return;
+
+            // Ensure values exist in dropdowns
+            if (emp.designation && !designations.includes(emp.designation)) {
+                designations.push(emp.designation);
+                designations.sort();
+                localStorage.setItem("designations", JSON.stringify(designations));
+                renderDropdowns();
+            }
+            if (emp.department && !departments.some(d => d.name === emp.department)) {
+                departments.push({ name: emp.department, color: '#6c757d' });
+                departments.sort((a, b) => a.name.localeCompare(b.name));
+                localStorage.setItem("departments", JSON.stringify(departments));
+                renderDropdowns();
+            }
+
+            document.getElementById('empId').value = emp.id;
+            document.getElementById('empPhotoBase64').value = emp.photo || "";
+            if (emp.photo) {
+                document.getElementById('empPhotoPreview').src = emp.photo;
+                document.getElementById('empPhotoPreview').style.display = 'block';
+                document.getElementById('removePhotoBtn').style.display = 'block';
+            } else {
+                removePhoto();
+            }
+            document.getElementById('empName').value = emp.name;
+            document.getElementById('empCode').value = emp.empCode || '';
+            document.getElementById('empDesignation').value = emp.designation || '';
+            document.getElementById('empDepartment').value = emp.department || '';
+            document.getElementById('empDutyHours').value = emp.dutyHours || '';
+            document.getElementById('empContact').value = emp.contact || '';
+            document.getElementById('empEmail').value = emp.email || '';
+            document.getElementById('empSalary').value = emp.salary || '';
+            document.getElementById('empJoiningDate').value = emp.joiningDate || '';
+            document.getElementById('empShiftStart').value = emp.shiftStart || '';
+            document.getElementById('empShiftEnd').value = emp.shiftEnd || '';
+            document.getElementById('empWeeklyOff').value = emp.weeklyOff || '';
+            document.getElementById('empHalfDay').value = emp.halfDay || '';
+
+            // Match shift
+            const shiftSelect = document.getElementById('empShiftSelect');
+            const matchedShift = shifts.find(s => s.start === emp.shiftStart && s.end === emp.shiftEnd);
+            if (matchedShift) {
+                shiftSelect.value = matchedShift.id;
+            } else {
+                shiftSelect.value = "";
+            }
+        }
+
+        async function deleteEmployee(id) {
+            if (confirm("Are you sure you want to delete this employee?")) {
+                try {
+                    await fetch(`http://localhost:5000/api/employees/${id}`, { method: 'DELETE' });
+                } catch (e) {
+                    console.error('Failed to delete employee from DB', e);
+                }
+                employees = employees.filter(e => e.id !== id);
+                localStorage.setItem("employees", JSON.stringify(employees));
+                populateDepartmentFilter();
+                populateDesignationFilter();
+                renderTable();
+            }
+        }
+
+        function clearForm() {
+            if (!confirm("Are you sure you want to clear the form?")) return;
+            document.querySelectorAll('.controls input').forEach(i => i.value = '');
+            removePhoto();
+        }
+
+        function handlePhotoUpload(input) {
+            const file = input.files[0];
+            if (file) {
+                if (file.size > 500 * 1024) { // 500KB limit
+                    alert("File too large. Max 500KB.");
+                    input.value = "";
+                    return;
+                }
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    document.getElementById('empPhotoBase64').value = e.target.result;
+                    document.getElementById('empPhotoPreview').src = e.target.result;
+                    document.getElementById('empPhotoPreview').style.display = 'block';
+                    document.getElementById('removePhotoBtn').style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function removePhoto() {
+            document.getElementById('empPhoto').value = "";
+            document.getElementById('empPhotoBase64').value = "";
+            document.getElementById('empPhotoPreview').src = "";
+            document.getElementById('empPhotoPreview').style.display = 'none';
+            document.getElementById('removePhotoBtn').style.display = 'none';
+        }
+
+        // --- Attendance Logic ---
+        async function openAttendanceModal() {
+            // Reload employees to ensure fresh state and discard unsaved changes from previous open
+            await loadEmployeesData();
+            employees = JSON.parse(localStorage.getItem("employees")) || [];
+            attPage = 1;
+            attSearchQuery = "";
+            if (document.getElementById('attSearch')) document.getElementById('attSearch').value = "";
+
+            renderAttendanceList();
+            document.getElementById('attendanceModal').style.display = 'flex';
+        }
+
+        function handleAttSearch() {
+            attSearchQuery = document.getElementById('attSearch').value.toLowerCase();
+            attPage = 1;
+            renderAttendanceList();
+        }
+
+        function renderAttendanceList() {
+            const date = document.getElementById('attDate').value;
+            const tbody = document.getElementById('attendanceTableBody');
+            const holidayMsg = document.getElementById('attHolidayMsg');
+            const isHoliday = holidays.find(h => h.date === date);
+
+            holidayMsg.innerText = isHoliday ? `🎉 Holiday: ${isHoliday.description}` : "";
+            tbody.innerHTML = '';
+
+            const filtered = employees.filter(emp => emp.name.toLowerCase().includes(attSearchQuery));
+
+            const totalItems = filtered.length;
+            const totalPages = Math.ceil(totalItems / attRowsPerPage) || 1;
+            if (attPage > totalPages) attPage = totalPages;
+            if (attPage < 1) attPage = 1;
+
+            const start = (attPage - 1) * attRowsPerPage;
+            const end = start + attRowsPerPage;
+            const pageItems = filtered.slice(start, end);
+
+            if (pageItems.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="padding:10px; text-align:center; color:#666;">No employees found.</td></tr>';
+            } else {
+                pageItems.forEach(emp => {
+                    const status = (emp.attendance && emp.attendance[date]) ? emp.attendance[date] : (isHoliday ? 'Holiday' : 'Present');
+                    const log = (emp.attendanceLog && emp.attendanceLog[date]) ? emp.attendanceLog[date] : { inTime: '', outTime: '', ot: 0 };
+
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td style="text-align:left;"><strong>${emp.name}</strong><br><small style="color:#666">Duty: ${emp.dutyHours || 8}h</small></td>
+                        <td><input type="time" id="in_${emp.id}" value="${log.inTime || ''}" onchange="calculateTime('${emp.id}')" style="width:85px; padding:2px;"></td>
+                        <td><input type="time" id="out_${emp.id}" value="${log.outTime || ''}" onchange="calculateTime('${emp.id}')" style="width:85px; padding:2px;"></td>
+                        <td><select class="status-select" id="status_${emp.id}" onchange="updateEmpAttendance('${emp.id}', this.value)">
+                            <option value="Present" ${status === 'Present' ? 'selected' : ''}>Present</option>
+                            <option value="Absent" ${status === 'Absent' ? 'selected' : ''}>Absent</option>
+                            <option value="Half-Day" ${status === 'Half-Day' ? 'selected' : ''}>Half-Day</option>
+                            <option value="Leave" ${status === 'Leave' ? 'selected' : ''}>Leave</option>
+                            <option value="Late Arrival" ${status === 'Late Arrival' ? 'selected' : ''}>Late Arrival</option>
+                            <option value="Early Departure" ${status === 'Early Departure' ? 'selected' : ''}>Early Departure</option>
+                            <option value="Holiday" ${status === 'Holiday' ? 'selected' : ''}>Holiday</option>
+                        </select></td>
+                        <td><input type="number" id="ot_${emp.id}" value="${log.ot || 0}" style="width:50px; padding:2px;" step="0.5"></td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+
+            const pagContainer = document.getElementById('attPagination');
+            if (pagContainer) {
+                pagContainer.innerHTML = `
+                    <span>Page ${attPage} of ${totalPages} (${totalItems})</span>
+                    <div style="display:flex; gap:5px;">
+                        <button class="action-btn" style="background:#6c757d; color:white;" onclick="changeAttPage(-1)" ${attPage === 1 ? 'disabled' : ''}>Prev</button>
+                        <button class="action-btn" style="background:#6c757d; color:white;" onclick="changeAttPage(1)" ${attPage === totalPages ? 'disabled' : ''}>Next</button>
+                    </div>
+                `;
+            }
+        }
+
+        function calculateTime(empId) {
+            const inTime = document.getElementById(`in_${empId}`).value;
+            const outTime = document.getElementById(`out_${empId}`).value;
+            const statusSelect = document.getElementById(`status_${empId}`);
+            const otInput = document.getElementById(`ot_${empId}`);
+            const graceMins = parseInt(document.getElementById('attGracePeriod').value) || 0;
+
+            const date = document.getElementById('attDate').value;
+            const dayOfWeek = new Date(date).getDay().toString();
+
+            const emp = employees.find(e => e.id === empId);
+            let lateTime = emp.shiftStart || document.getElementById('attLateTime').value;
+            let earlyTime = emp.shiftEnd || document.getElementById('attEarlyTime').value;
+
+            // Check for Half Day Department Settings
+            if (emp.halfDay === dayOfWeek) {
+                const dept = departments.find(d => d.name === emp.department);
+                if (dept) {
+                    if (dept.halfDayStart) lateTime = dept.halfDayStart;
+                    if (dept.halfDayEnd) earlyTime = dept.halfDayEnd;
+                }
+            }
+
+            if (inTime && outTime) {
+                const start = new Date(`1970-01-01T${inTime}Z`);
+                const end = new Date(`1970-01-01T${outTime}Z`);
+                let diffMs = end - start;
+                if (diffMs < 0) diffMs += 24 * 60 * 60 * 1000; // Handle overnight
+
+                const diffHrs = diffMs / (1000 * 60 * 60);
+                const duty = parseFloat(emp.dutyHours) || 8;
+
+                // Auto-set status
+                if (diffHrs >= duty) {
+                    let isLate = false;
+                    let isEarly = false;
+
+                    if (lateTime) {
+                        const [inH, inM] = inTime.split(':').map(Number);
+                        const [lateH, lateM] = lateTime.split(':').map(Number);
+                        if ((inH * 60 + inM) > (lateH * 60 + lateM + graceMins)) isLate = true;
+                    }
+                    if (earlyTime) {
+                        const [outH, outM] = outTime.split(':').map(Number);
+                        const [earlyH, earlyM] = earlyTime.split(':').map(Number);
+                        if ((outH * 60 + outM) < (earlyH * 60 + earlyM)) isEarly = true;
+                    }
+
+                    if (isLate) {
+                        statusSelect.value = 'Late Arrival';
+                    } else if (isEarly) {
+                        statusSelect.value = 'Early Departure';
+                    } else {
+                        statusSelect.value = 'Present';
+                    }
+                    otInput.value = (diffHrs - duty).toFixed(1);
+                } else if (diffHrs >= (duty / 2)) {
+                    statusSelect.value = 'Half-Day';
+                    otInput.value = 0;
+                } else {
+                    // Optional: Auto-mark absent if very short duration? Keeping manual for now.
+                    otInput.value = 0;
+                }
+            }
+        }
+
+        function saveAttSettings() {
+            localStorage.setItem('attLateTime', document.getElementById('attLateTime').value);
+            localStorage.setItem('attGracePeriod', document.getElementById('attGracePeriod').value);
+            localStorage.setItem('attEarlyTime', document.getElementById('attEarlyTime').value);
+        }
+
+        function changeAttPage(delta) {
+            attPage += delta;
+            renderAttendanceList();
+        }
+
+        function updateEmpAttendance(id, status) {
+            const date = document.getElementById('attDate').value;
+            if (!date) return;
+            const emp = employees.find(e => e.id === id);
+            if (emp) {
+                if (!emp.attendance) emp.attendance = {};
+                emp.attendance[date] = status;
+            }
+        }
+
+        function markAll(status) {
+            if (!confirm(`Mark all visible employees as '${status}'?`)) return;
+            const selects = document.querySelectorAll('.status-select');
+            selects.forEach(sel => sel.value = status);
+        }
+
+        async function saveAttendance() {
+            const date = document.getElementById('attDate').value;
+            if (!date) return alert("Select a date!");
+            if (!confirm("Save attendance for " + date + "?")) return;
+
+            // Iterate over currently displayed rows (pagination handling requires saving per page or careful state mgmt)
+            // For simplicity in this context, we save visible inputs to the main data array
+            const tbody = document.getElementById('attendanceTableBody');
+            const rows = tbody.querySelectorAll('tr');
+
+            const syncPromises = [];
+
+            // We need to map back to employees. Since we render based on filtered/paginated list, 
+            // we can use the IDs embedded in element IDs.
+            employees.forEach(emp => {
+                const statusEl = document.getElementById(`status_${emp.id}`);
+                if (statusEl) {
+                    if (!emp.attendance) emp.attendance = {};
+                    if (!emp.attendanceLog) emp.attendanceLog = {};
+
+                    emp.attendance[date] = statusEl.value;
+                    emp.attendanceLog[date] = {
+                        inTime: document.getElementById(`in_${emp.id}`).value,
+                        outTime: document.getElementById(`out_${emp.id}`).value,
+                        ot: parseFloat(document.getElementById(`ot_${emp.id}`).value) || 0
+                    };
+
+                    syncPromises.push(
+                        fetch('http://localhost:5000/api/employees', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(emp)
+                        }).catch(e => console.error("Failed to sync attendance to DB", e))
+                    );
+                }
+            });
+            
+            await Promise.all(syncPromises);
+            
+            localStorage.setItem("employees", JSON.stringify(employees));
+            alert("Attendance Saved!");
+            closeModal('attendanceModal');
+            renderTable(); // Refresh to show today's status if applicable
+        }
+
+        function viewAttendance(id) {
+            currentViewEmpId = id;
+            const emp = employees.find(e => e.id === id);
+            if (!emp) return;
+
+            document.getElementById('viewAttTitle').innerText = `👤 Attendance: ${emp.name}`;
+
+            // Reset filters
+            document.getElementById('filterAttFrom').value = '';
+            document.getElementById('filterAttTo').value = '';
+
+            renderAttendanceHistory();
+            document.getElementById('viewAttendanceModal').style.display = 'flex';
+        }
+
+        function renderAttendanceHistory() {
+            if (!currentViewEmpId) return;
+            const emp = employees.find(e => e.id === currentViewEmpId);
+            if (!emp) return;
+
+            const tbody = document.getElementById('viewAttBody');
+            tbody.innerHTML = '';
+
+            let stats = { Present: 0, Absent: 0, 'Half-Day': 0, Leave: 0, 'Late Arrival': 0, 'Early Departure': 0 };
+            const fromDate = document.getElementById('filterAttFrom').value;
+            const toDate = document.getElementById('filterAttTo').value;
+
+            const dates = Object.keys(emp.attendance || {}).sort().reverse();
+            dates.forEach(date => {
+                if (fromDate && date < fromDate) return;
+                if (toDate && date > toDate) return;
+
+                const tr = document.createElement('tr');
+                const status = emp.attendance[date];
+                const log = (emp.attendanceLog && emp.attendanceLog[date]) ? emp.attendanceLog[date] : {};
+
+                if (stats[status] !== undefined) stats[status]++;
+
+                let badgeClass = 'badge-present';
+                if (status === 'Absent') badgeClass = 'badge-absent';
+                else if (status === 'Half-Day') badgeClass = 'badge-half';
+                else if (status === 'Leave') badgeClass = 'badge-leave';
+                else if (status === 'Late Arrival') badgeClass = 'badge-late';
+                else if (status === 'Early Departure') badgeClass = 'badge-early';
+                else if (status === 'Holiday') badgeClass = 'badge-holiday';
+
+                tr.innerHTML = `
+                    <td>${new Date(date).toLocaleDateString('en-GB')}</td>
+                    <td>${log.inTime || '-'}</td>
+                    <td>${log.outTime || '-'}</td>
+                    <td><span class="badge ${badgeClass}">${status}</span></td>
+                    <td>${log.ot ? log.ot + 'h' : '-'}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            document.getElementById('viewAttSummary').innerHTML = `
+                <div class="att-summary">
+                    <div class="att-stat"><span style="color:#28a745">${stats.Present}</span><small>Present</small></div>
+                    <div class="att-stat"><span style="color:#dc3545">${stats.Absent}</span><small>Absent</small></div>
+                    <div class="att-stat"><span style="color:#ffc107">${stats['Half-Day']}</span><small>Half-Day</small></div>
+                    <div class="att-stat"><span style="color:#17a2b8">${stats.Leave}</span><small>Leave</small></div>
+                    <div class="att-stat"><span style="color:#fd7e14">${stats['Late Arrival']}</span><small>Late</small></div>
+                    <div class="att-stat"><span style="color:#e67e22">${stats['Early Departure']}</span><small>Early</small></div>
+                </div>
+            `;
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).style.display = 'none';
+        }
+
+        function exportEmployees() {
+            const ws = XLSX.utils.json_to_sheet(employees.map((e, i) => ({
+                "Sl No": i + 1,
+                Name: e.name,
+                "Emp ID": e.empCode || "-",
+                Designation: e.designation,
+                Department: e.department || "-",
+                "Duty Hours": e.dutyHours || 8,
+                Contact: e.contact,
+                Email: e.email,
+                Salary: e.salary,
+                JoiningDate: e.joiningDate,
+                "Shift Start": e.shiftStart || "",
+                "Shift End": e.shiftEnd || ""
+            })));
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Employees");
+            XLSX.writeFile(wb, "Employees.xlsx");
+        }
+
+        function exportAttendance() {
+            // 1. Collect all unique dates
+            const allDates = new Set();
+            employees.forEach(emp => {
+                if (emp.attendance) {
+                    Object.keys(emp.attendance).forEach(date => allDates.add(date));
+                }
+            });
+            const sortedDates = Array.from(allDates).sort().reverse(); // Newest first
+
+            if (sortedDates.length === 0) {
+                alert("No attendance records found to export.");
+                return;
+            }
+
+            // 2. Build Data
+            const data = employees.map((emp, i) => {
+                const row = {
+                    "Sl No": i + 1,
+                    "Employee Name": emp.name,
+                    "Emp ID": emp.empCode || "-",
+                    "Designation": emp.designation || "",
+                    "Department": emp.department || ""
+                };
+
+                let present = 0, absent = 0, leave = 0, half = 0;
+
+                sortedDates.forEach(date => {
+                    const status = (emp.attendance && emp.attendance[date]) ? emp.attendance[date] : "-";
+                    row[date] = status;
+                    if (status === 'Present') present++;
+                    else if (status === 'Absent') absent++;
+                    else if (status === 'Leave') leave++;
+                    else if (status === 'Half-Day') half++;
+                });
+
+                row["Total Present"] = present;
+                row["Total Absent"] = absent;
+                row["Total Leave"] = leave;
+                row["Total Half-Day"] = half;
+
+                return row;
+            });
+
+            // 3. Export
+            const ws = XLSX.utils.json_to_sheet(data);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Attendance_Report");
+            XLSX.writeFile(wb, "Attendance_Report.xlsx");
+        }
+
+        function openSummaryModal() {
+            const attDateVal = document.getElementById('attDate').value;
+            let y, m;
+
+            if (attDateVal) {
+                const parts = attDateVal.split('-');
+                y = parseInt(parts[0]);
+                m = parseInt(parts[1]) - 1;
+            } else {
+                const now = new Date();
+                y = now.getFullYear();
+                m = now.getMonth();
+            }
+
+            const toLocalISO = (d) => {
+                const year = d.getFullYear();
+                const month = String(d.getMonth() + 1).padStart(2, '0');
+                const day = String(d.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
+            };
+
+            const firstDay = toLocalISO(new Date(y, m, 1));
+            const lastDay = toLocalISO(new Date(y, m + 1, 0));
+
+            document.getElementById('sumFromDate').value = firstDay;
+            document.getElementById('sumToDate').value = lastDay;
+
+            populateSummaryDepartmentFilter();
+            generateSummary();
+            document.getElementById('summaryModal').style.display = 'flex';
+        }
+
+        function generateSummary() {
+            const fromDate = document.getElementById('sumFromDate').value;
+            const toDate = document.getElementById('sumToDate').value;
+            const searchName = document.getElementById('sumSearchName').value.toLowerCase();
+            const filterDept = document.getElementById('sumFilterDepartment').value;
+            const tbody = document.getElementById('summaryTableBody');
+            tbody.innerHTML = '';
+
+            if (!fromDate || !toDate) return;
+
+            employees.forEach(emp => {
+                if (searchName && !emp.name.toLowerCase().includes(searchName)) return;
+                if (filterDept && (emp.department || "") !== filterDept) return;
+
+                let stats = { Present: 0, Absent: 0, 'Half-Day': 0, Leave: 0, 'Late Arrival': 0, 'Early Departure': 0 };
+                let totalDays = 0;
+
+                if (emp.attendance) {
+                    Object.keys(emp.attendance).forEach(date => {
+                        if (date >= fromDate && date <= toDate) {
+                            const status = emp.attendance[date];
+                            if (stats[status] !== undefined) stats[status]++;
+                            totalDays++;
+                        }
+                    });
+                }
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td style="text-align:left; font-weight:bold;">${emp.name}</td>
+                    <td style="color:#28a745; font-weight:bold;">${stats.Present}</td>
+                    <td style="color:#dc3545; font-weight:bold;">${stats.Absent}</td>
+                    <td style="color:#ffc107; font-weight:bold;">${stats['Half-Day']}</td>
+                    <td style="color:#17a2b8; font-weight:bold;">${stats.Leave}</td>
+                    <td style="color:#fd7e14; font-weight:bold;">${stats['Late Arrival']}</td>
+                    <td style="color:#e67e22; font-weight:bold;">${stats['Early Departure']}</td>
+                    <td>${totalDays}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function populateSummaryDepartmentFilter() {
+            const filter = document.getElementById('sumFilterDepartment');
+            const currentVal = filter.value;
+            const departments = new Set();
+            employees.forEach(e => {
+                if (e.department) departments.add(e.department);
+            });
+            filter.innerHTML = '<option value="">All Departments</option>';
+            Array.from(departments).sort().forEach(dept => {
+                const opt = document.createElement('option');
+                opt.value = dept;
+                opt.innerText = dept;
+                filter.appendChild(opt);
+            });
+            if (Array.from(departments).includes(currentVal)) filter.value = currentVal;
+        }
+
+        // --- Holiday Calendar Logic ---
+        function openHolidayModal() {
+            document.getElementById('holidayYear').value = new Date().getFullYear();
+            editingHolidayId = null;
+            document.getElementById('holidayAddBtn').innerText = "Add";
+            document.getElementById('newHolidayDate').value = '';
+            document.getElementById('newHolidayDesc').value = '';
+            renderHolidayList();
+            document.getElementById('holidayModal').style.display = 'flex';
+        }
+
+        function renderHolidayList() {
+            const year = parseInt(document.getElementById('holidayYear').value);
+            const tbody = document.getElementById('holidayTableBody');
+            tbody.innerHTML = '';
+
+            const filtered = holidays.filter(h => new Date(h.date).getFullYear() === year);
+            filtered.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#666;">No holidays found for this year.</td></tr>';
+            } else {
+                filtered.forEach(h => {
+                    const dateObj = new Date(h.date);
+                    const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${dateObj.toLocaleDateString('en-GB')}</td>
+                        <td>${dayName}</td>
+                        <td>${h.description}</td>
+                        <td><button class="action-btn" style="background:#ffc107; color:black;" onclick="editHoliday('${h.id}')">✎</button>
+                        <button class="action-btn" style="background:#dc3545;" onclick="deleteHoliday('${h.id}')">🗑️</button></td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+        }
+
+        function addHoliday() {
+            const date = document.getElementById('newHolidayDate').value;
+            const desc = document.getElementById('newHolidayDesc').value.trim();
+            if (!date || !desc) return alert("Date and Description required!");
+
+            if (editingHolidayId) {
+                if (!confirm("Update this holiday?")) return;
+                const idx = holidays.findIndex(h => h.id === editingHolidayId);
+                if (idx > -1) {
+                    holidays[idx].date = date;
+                    holidays[idx].description = desc;
+                    localStorage.setItem("holidays", JSON.stringify(holidays));
+                }
+                editingHolidayId = null;
+                document.getElementById('holidayAddBtn').innerText = "Add";
+            } else {
+                if (!confirm("Add this holiday?")) return;
+                holidays.push({ id: Date.now().toString(), date, description: desc });
+                localStorage.setItem("holidays", JSON.stringify(holidays));
+            }
+
+            document.getElementById('newHolidayDate').value = '';
+            document.getElementById('newHolidayDesc').value = '';
+            renderHolidayList();
+            renderTable(); // Update main table if today is holiday
+        }
+
+        function deleteHoliday(id) {
+            if (!confirm("Delete this holiday?")) return;
+            holidays = holidays.filter(h => h.id !== id);
+            localStorage.setItem("holidays", JSON.stringify(holidays));
+            renderHolidayList();
+            renderTable();
+        }
+
+        function editHoliday(id) {
+            const h = holidays.find(x => x.id === id);
+            if (!h) return;
+            editingHolidayId = id;
+            document.getElementById('newHolidayDate').value = h.date;
+            document.getElementById('newHolidayDesc').value = h.description;
+            document.getElementById('holidayAddBtn').innerText = "Update";
+        }
+
+        function printHolidayCalendar() {
+            const year = parseInt(document.getElementById('holidayYear').value);
+            const filtered = holidays.filter(h => new Date(h.date).getFullYear() === year);
+            filtered.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+            if (filtered.length === 0) {
+                alert("No holidays found for the selected year.");
+                return;
+            }
+
+            let companyName = "Company Name";
+            const brandEl = document.querySelector('[data-brand="name"]');
+            if (brandEl && brandEl.innerText) {
+                companyName = brandEl.innerText;
+            } else if (typeof APP_SETTINGS !== 'undefined' && APP_SETTINGS.COMPANY_NAME) {
+                companyName = APP_SETTINGS.COMPANY_NAME;
+            }
+
+            let html = `
+                <html>
+                <head>
+                    <title>Holiday Calendar - ${year}</title>
+                    <style>
+                        body { font-family: 'Segoe UI', sans-serif; padding: 20px; color: #333; }
+                        h2 { text-align: center; margin-bottom: 5px; color: #2c3e50; }
+                        h3 { text-align: center; margin-top: 0; color: #666; margin-bottom: 20px; }
+                        table { width: 100%; border-collapse: collapse; font-size: 14px; }
+                        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+                        th { background-color: #f0f0f0; }
+                        @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+                    </style>
+                </head>
+                <body>
+                    <h2>${companyName}</h2>
+                    <h3>Holiday Calendar - ${year}</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th style="width: 50px; text-align:center;">Sl No</th>
+                                <th style="width: 100px;">Date</th>
+                                <th style="width: 120px;">Day</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+
+            filtered.forEach((h, i) => {
+                const dateObj = new Date(h.date);
+                const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
+                html += `<tr><td style="text-align:center;">${i + 1}</td><td>${dateObj.toLocaleDateString('en-GB')}</td><td>${dayName}</td><td>${h.description}</td></tr>`;
+            });
+
+            html += `</tbody></table></body></html>`;
+
+            const printWin = window.open('', '', 'width=800,height=600');
+            printWin.document.write(html);
+            printWin.document.close();
+            printWin.focus();
+            setTimeout(() => {
+                printWin.print();
+                printWin.close();
+            }, 250);
+        }
+
+        // --- Shift Manager Logic ---
+        function openShiftModal() {
+            renderShiftList();
+            document.getElementById('shiftModal').style.display = 'flex';
+        }
+
+        function renderShiftList() {
+            const list = document.getElementById('shiftList');
+            list.innerHTML = '';
+            if (shifts.length === 0) list.innerHTML = '<div style="padding:10px; color:#666; text-align:center;">No shifts found.</div>';
+            shifts.forEach((s, index) => {
+                const div = document.createElement('div');
+                div.style.cssText = "display:flex; justify-content:space-between; padding:8px; border-bottom:1px solid #eee; align-items:center;";
+                div.innerHTML = `<span><strong>${s.name}</strong> (${s.start} - ${s.end})</span><button onclick="deleteShift(${index})" style="background:#dc3545; color:white; border:none; padding:2px 6px; border-radius:3px; cursor:pointer;">🗑️</button>`;
+                list.appendChild(div);
+            });
+        }
+
+        function addShift() {
+            const name = document.getElementById('newShiftName').value.trim();
+            const start = document.getElementById('newShiftStart').value;
+            const end = document.getElementById('newShiftEnd').value;
+            if (!name || !start || !end) return alert("All fields required!");
+            if (!confirm("Save this shift?")) return;
+
+            shifts.push({ id: Date.now().toString(), name, start, end });
+            localStorage.setItem("shifts", JSON.stringify(shifts));
+
+            document.getElementById('newShiftName').value = '';
+            document.getElementById('newShiftStart').value = '';
+            document.getElementById('newShiftEnd').value = '';
+            renderShiftList();
+            renderShiftDropdown();
+        }
+
+        function deleteShift(index) {
+            if (!confirm("Delete this shift?")) return;
+            shifts.splice(index, 1);
+            localStorage.setItem("shifts", JSON.stringify(shifts));
+            renderShiftList();
+            renderShiftDropdown();
+        }
+
+        function renderShiftDropdown() {
+            const sel = document.getElementById('empShiftSelect');
+            const current = sel.value;
+            sel.innerHTML = '<option value="">Custom Shift</option>';
+            shifts.forEach(s => {
+                const opt = document.createElement('option');
+                opt.value = s.id;
+                opt.innerText = `${s.name} (${s.start} - ${s.end})`;
+                sel.appendChild(opt);
+            });
+            sel.value = current;
+        }
+
+        function applyShift() {
+            const id = document.getElementById('empShiftSelect').value;
+            if (id) {
+                const s = shifts.find(x => x.id === id);
+                if (s) {
+                    document.getElementById('empShiftStart').value = s.start;
+                    document.getElementById('empShiftEnd').value = s.end;
+                }
+            }
+        }
+
+        // --- Master Manager Logic ---
+        function renderDropdowns() {
+            const desSel = document.getElementById('empDesignation');
+            const depSel = document.getElementById('empDepartment');
+            const curDes = desSel.value;
+            const curDep = depSel.value;
+
+            desSel.innerHTML = '<option value="">Designation</option>';
+            designations.forEach(d => {
+                const opt = document.createElement('option');
+                opt.value = d;
+                opt.innerText = d;
+                desSel.appendChild(opt);
+            });
+            if (curDes && designations.includes(curDes)) desSel.value = curDes;
+
+            depSel.innerHTML = '<option value="">Department</option>';
+            departments.forEach(d => {
+                const opt = document.createElement('option');
+                opt.value = d.name;
+                opt.innerText = d.name;
+                depSel.appendChild(opt);
+            });
+            if (curDep && departments.some(d => d.name === curDep)) depSel.value = curDep;
+        }
+
+        function openMasterModal(type) {
+            masterType = type;
+            document.getElementById('masterModalTitle').innerText = type === 'designation' ? 'Manage Designations' : 'Manage Departments';
+            document.getElementById('newMasterItem').value = '';
+            document.getElementById('newMasterColor').style.display = type === 'department' ? 'block' : 'none';
+            document.getElementById('deptTimeInputs').style.display = type === 'department' ? 'flex' : 'none';
+            document.getElementById('newDeptHalfStart').value = '';
+            document.getElementById('newDeptHalfEnd').value = '';
+            editingMasterIndex = null;
+            document.getElementById('masterAddBtn').innerText = "Add";
+            if (document.getElementById('masterSearch')) document.getElementById('masterSearch').value = '';
+            renderMasterList();
+            document.getElementById('masterModal').style.display = 'flex';
+        }
+
+        function renderMasterList() {
+            const list = document.getElementById('masterList');
+            list.innerHTML = '';
+            const searchQuery = document.getElementById('masterSearch') ? document.getElementById('masterSearch').value.toLowerCase() : '';
+            const arr = masterType === 'designation' ? designations : departments;
+
+            const filtered = arr.map((item, index) => ({ item, index })).filter(obj => {
+                const val = masterType === 'designation' ? obj.item : obj.item.name;
+                return val.toLowerCase().includes(searchQuery);
+            });
+            if (filtered.length === 0) list.innerHTML = '<div style="padding:10px; color:#666; text-align:center;">No items found.</div>';
+            filtered.forEach(({ item, index }) => {
+                const div = document.createElement('div');
+                div.style.cssText = "display:flex; justify-content:space-between; padding:5px; border-bottom:1px solid #eee; align-items:center;";
+                const displayHtml = masterType === 'department'
+                    ? `<span style="display:flex; align-items:center; gap:5px;"><span style="width:12px; height:12px; background:${item.color}; border-radius:50%; display:inline-block;"></span> ${item.name} ${item.halfDayStart ? `<small style="color:#666; font-size:10px;">(${item.halfDayStart}-${item.halfDayEnd})</small>` : ''}</span>`
+                    : `<span>${item}</span>`;
+                div.innerHTML = `${displayHtml}<div><button onclick="editMasterItem(${index})" style="background:#ffc107; color:black; border:none; padding:2px 6px; border-radius:3px; cursor:pointer; margin-right:5px;">✎</button>
+                <button onclick="deleteMasterItem(${index})" style="background:#dc3545; color:white; border:none; padding:2px 6px; border-radius:3px; cursor:pointer;">🗑️</button></div>`;
+                list.appendChild(div);
+            });
+        }
+
+        function addMasterItem() {
+            const val = document.getElementById('newMasterItem').value.trim();
+            if (!val) return;
+
+            if (masterType === 'designation') {
+                if (editingMasterIndex !== null) {
+                    if (designations.some((d, i) => d === val && i !== editingMasterIndex)) return alert("Item already exists!");
+                    if (!confirm("Update designation?")) return;
+                    designations[editingMasterIndex] = val;
+                    designations.sort();
+                    localStorage.setItem("designations", JSON.stringify(designations));
+                } else {
+                    if (designations.includes(val)) return alert("Item already exists!");
+                    if (!confirm("Add new designation?")) return;
+                    designations.push(val);
+                    designations.sort();
+                    localStorage.setItem("designations", JSON.stringify(designations));
+                }
+            } else {
+                const color = document.getElementById('newMasterColor').value;
+                const hdStart = document.getElementById('newDeptHalfStart').value;
+                const hdEnd = document.getElementById('newDeptHalfEnd').value;
+
+                if (editingMasterIndex !== null) {
+                    if (departments.some((d, i) => d.name === val && i !== editingMasterIndex)) return alert("Item already exists!");
+                    if (!confirm("Update department?")) return;
+                    departments[editingMasterIndex] = { name: val, color: color, halfDayStart: hdStart, halfDayEnd: hdEnd };
+                } else {
+                    if (departments.some(d => d.name === val)) return alert("Item already exists!");
+                    if (!confirm("Add new department?")) return;
+                    departments.push({ name: val, color: color, halfDayStart: hdStart, halfDayEnd: hdEnd });
+                }
+                departments.sort((a, b) => a.name.localeCompare(b.name));
+                localStorage.setItem("departments", JSON.stringify(departments));
+            }
+
+            editingMasterIndex = null;
+            document.getElementById('masterAddBtn').innerText = "Add";
+            document.getElementById('newMasterItem').value = '';
+            renderMasterList();
+            renderDropdowns();
+            renderTable();
+        }
+
+        function editMasterItem(index) {
+            editingMasterIndex = index;
+            const arr = masterType === 'designation' ? designations : departments;
+            const item = arr[index];
+
+            if (masterType === 'designation') {
+                document.getElementById('newMasterItem').value = item;
+            } else {
+                document.getElementById('newMasterItem').value = item.name;
+                document.getElementById('newMasterColor').value = item.color || '#6c757d';
+                document.getElementById('newDeptHalfStart').value = item.halfDayStart || '';
+                document.getElementById('newDeptHalfEnd').value = item.halfDayEnd || '';
+            }
+            document.getElementById('masterAddBtn').innerText = "Update";
+        }
+
+        function deleteMasterItem(index) {
+            if (!confirm("Delete this item?")) return;
+            if (masterType === 'designation') {
+                designations.splice(index, 1);
+                localStorage.setItem("designations", JSON.stringify(designations));
+            } else {
+                departments.splice(index, 1);
+                localStorage.setItem("departments", JSON.stringify(departments));
+            }
+            renderMasterList();
+            renderDropdowns();
+            renderTable();
+        }
+        // --- Column Settings Logic ---
+        function openColumnSettings() {
+            const container = document.getElementById('columnToggles');
+            container.innerHTML = '';
+            allColumns.forEach(col => {
+                const div = document.createElement('div');
+                div.innerHTML = `
+                    <label style="cursor:pointer; display:flex; align-items:center; gap:5px;">
+                        <input type="checkbox" id="col_${col.id}" ${columnVisibility[col.id] ? 'checked' : ''}> ${col.label}
+                    </label>
+                `;
+                container.appendChild(div);
+            });
+            document.getElementById('columnSettingsModal').style.display = 'flex';
+        }
+
+        function saveColumnSettings() {
+            allColumns.forEach(col => {
+                const cb = document.getElementById(`col_${col.id}`);
+                columnVisibility[col.id] = cb.checked;
+            });
+            localStorage.setItem("empColumnVisibility", JSON.stringify(columnVisibility));
+            renderTable();
+            closeModal('columnSettingsModal');
+        }
+
+
+
+
+
+        let currentPayrollData = [];
+
+        async function openPayrollModal() {
+            await loadEmployeesData();
+            const today = new Date();
+            const monthStr = today.toISOString().slice(0, 7); // YYYY-MM
+            document.getElementById('payrollMonth').value = monthStr;
+            calculatePayroll();
+            document.getElementById('payrollModal').style.display = 'flex';
+        }
+
+        function calculatePayroll() {
+            const monthInput = document.getElementById('payrollMonth').value; // YYYY-MM
+            if (!monthInput) return;
+
+            // Clear search filter
+            if (document.getElementById('payrollSearch')) document.getElementById('payrollSearch').value = '';
+
+            const [year, month] = monthInput.split('-').map(Number);
+            const daysInMonth = new Date(year, month, 0).getDate(); // Get last day of month
+
+            const tbody = document.getElementById('payrollTableBody');
+            tbody.innerHTML = '';
+            currentPayrollData = [];
+
+            employees.forEach(emp => {
+                let present = 0, absent = 0, half = 0, leave = 0, weeklyOff = 0, holiday = 0;
+                let totalOT = 0;
+
+                // Iterate all days in month to handle defaults and saved data
+                for (let d = 1; d <= daysInMonth; d++) {
+                    const dateStr = `${monthInput}-${String(d).padStart(2, '0')}`;
+                    const dateObj = new Date(dateStr);
+                    const dayOfWeek = dateObj.getDay().toString();
+
+                    // 1. Determine Default Status
+                    let status = 'Present'; // Default assumption for payroll (paid day)
+
+                    const isHoliday = holidays.find(h => h.date === dateStr);
+
+                    if (isHoliday) status = 'Holiday';
+                    else if (emp.weeklyOff === dayOfWeek) status = 'Weekly Off';
+                    else if (emp.halfDay === dayOfWeek) status = 'Half-Day';
+
+                    // 2. Check Saved Attendance (Overrides default)
+                    if (emp.attendance && emp.attendance[dateStr]) {
+                        status = emp.attendance[dateStr];
+                    }
+
+                    // 3. Aggregate Counts
+                    if (status === 'Present') present++;
+                    else if (status === 'Absent') absent++;
+                    else if (status === 'Half-Day') {
+                        if (emp.halfDay === dayOfWeek) {
+                            present++; // Scheduled Half-Day worked = Full Pay (Present)
+                        } else {
+                            half++; // Unscheduled Half-Day = Deduction
+                        }
+                    }
+                    else if (status === 'Leave') leave++;
+                    else if (status === 'Late Arrival') present++; // Treated as Present
+                    else if (status === 'Early Departure') present++; // Treated as Present
+                    else if (status === 'Weekly Off') weeklyOff++;
+                    else if (status === 'Holiday') holiday++;
+
+                    // 4. Aggregate OT
+                    if (emp.attendanceLog && emp.attendanceLog[dateStr]) {
+                        totalOT += (parseFloat(emp.attendanceLog[dateStr].ot) || 0);
+                    }
+                }
+
+                const salary = parseFloat(emp.salary) || 0;
+                const dutyHours = parseFloat(emp.dutyHours) || 8;
+                const perDaySalary = salary / daysInMonth;
+                const hourlyRate = perDaySalary / dutyHours;
+
+                // Deduction logic: Absent = 1 day pay, Half-Day = 0.5 day pay. Weekly Off/Holiday are paid.
+                const deductionDays = absent + (half * 0.5);
+                const deductionAmount = Math.round(deductionDays * perDaySalary);
+                const otAmount = Math.round(totalOT * hourlyRate);
+                const bonus = 0;
+                const netSalary = Math.max(0, salary - deductionAmount + otAmount + bonus);
+
+                currentPayrollData.push({
+                    name: emp.name,
+                    department: emp.department || "",
+                    salary: salary,
+                    present, half, absent, leave, weeklyOff, holiday,
+                    deduction: deductionAmount,
+                    dutyHours: dutyHours,
+                    hourlyRate: hourlyRate,
+                    otHours: totalOT,
+                    otAmount: otAmount,
+                    bonus: bonus,
+                    netSalary: netSalary,
+                    empCode: emp.empCode,
+                    designation: emp.designation,
+                    joiningDate: emp.joiningDate
+                });
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td style="text-align:left;">${emp.name}</td>
+                    <td>₹ ${salary.toLocaleString()}</td>
+                    <td style="color:green;">${present}</td>
+                    <td style="color:orange;">${half}</td>
+                    <td style="color:red;">${absent}</td>
+                    <td style="color:#6610f2;">${weeklyOff}</td>
+                    <td style="color:red;">₹ ${deductionAmount.toLocaleString()}</td>
+                    <td><input type="number" style="width:60px; padding:4px; border:1px solid #ccc; border-radius:4px;" min="0" value="${totalOT}" oninput="updatePayrollRow(${currentPayrollData.length - 1}, this.value)"></td>
+                    <td id="otAmt_${currentPayrollData.length - 1}" style="color:green;">₹ ${Math.round(totalOT * hourlyRate).toLocaleString()}</td>
+                    <td><input type="number" style="width:70px; padding:4px; border:1px solid #ccc; border-radius:4px;" min="0" value="0" oninput="updatePayrollBonus(${currentPayrollData.length - 1}, this.value)"></td>
+                    <td id="netSal_${currentPayrollData.length - 1}" style="font-weight:bold; color:#2c3e50;">₹ ${netSalary.toLocaleString()}</td>
+                    <td><button class="action-btn" style="background:#17a2b8;" onclick="generatePayslip(${currentPayrollData.length - 1})" title="Download Payslip">📄</button></td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function updatePayrollRow(index, otHoursVal) {
+            const data = currentPayrollData[index];
+            const otHours = parseFloat(otHoursVal) || 0;
+            const otAmount = Math.round(otHours * data.hourlyRate);
+
+            data.otHours = otHours;
+            data.otAmount = otAmount;
+            data.netSalary = Math.max(0, data.salary - data.deduction + otAmount + (data.bonus || 0));
+
+            document.getElementById(`otAmt_${index}`).innerText = `₹ ${otAmount.toLocaleString()}`;
+            document.getElementById(`netSal_${index}`).innerText = `₹ ${data.netSalary.toLocaleString()}`;
+        }
+
+        function updatePayrollBonus(index, bonusVal) {
+            const data = currentPayrollData[index];
+            const bonus = parseFloat(bonusVal) || 0;
+            data.bonus = bonus;
+            data.netSalary = Math.max(0, data.salary - data.deduction + data.otAmount + bonus);
+            document.getElementById(`netSal_${index}`).innerText = `₹ ${data.netSalary.toLocaleString()}`;
+        }
+
+        function exportPayroll() {
+            if (currentPayrollData.length === 0) return alert("No data to export");
+
+            const ws = XLSX.utils.json_to_sheet(currentPayrollData.map(d => ({
+                "Employee Name": d.name,
+                "Department": d.department,
+                "Basic Salary": d.salary,
+                "Present Days": d.present,
+                "Half Days": d.half,
+                "Absent Days": d.absent,
+                "Weekly Offs": d.weeklyOff,
+                "Holidays": d.holiday,
+                "Leave Days": d.leave,
+                "Deduction Amount": d.deduction,
+                "Duty Hours": d.dutyHours,
+                "OT Hours": d.otHours,
+                "OT Amount": d.otAmount,
+                "Bonus": d.bonus,
+                "Net Salary": d.netSalary
+            })));
+
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Payroll");
+            XLSX.writeFile(wb, `Payroll_${document.getElementById('payrollMonth').value}.xlsx`);
+        }
+
+
+        function generateBulkPayslip() {
+            if (currentPayrollData.length === 0) return alert("No payroll data to generate. Please calculate payroll first.");
+
+            const monthInput = document.getElementById('payrollMonth').value;
+            const [year, month] = monthInput.split('-');
+            const monthName = new Date(year, month - 1).toLocaleString('default', { month: 'long', year: 'numeric' });
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            let companyName = "Company Name";
+            if (typeof APP_SETTINGS !== 'undefined' && APP_SETTINGS.COMPANY_NAME) {
+                companyName = APP_SETTINGS.COMPANY_NAME;
+            } else {
+                companyName = localStorage.getItem('companyName') || "My Company";
+            }
+
+            currentPayrollData.forEach((data, index) => {
+                // Add a new page for every employee except the first one
+                if (index > 0) doc.addPage();
+
+                // Header
+                doc.setFontSize(18);
+                doc.text(companyName, 105, 15, { align: 'center' });
+                doc.setFontSize(12);
+                doc.text(`Payslip for ${monthName}`, 105, 22, { align: 'center' });
+
+                // Employee Details
+                doc.setFontSize(10);
+                doc.text(`Employee Name: ${data.name}`, 14, 35);
+                doc.text(`Employee ID: ${data.empCode || '-'}`, 14, 40);
+                doc.text(`Designation: ${data.designation || '-'}`, 14, 45);
+                doc.text(`Department: ${data.department || '-'}`, 14, 50);
+                doc.text(`Joining Date: ${data.joiningDate || '-'}`, 14, 55);
+
+                // Attendance Summary
+                doc.text(`Present: ${data.present}`, 120, 35);
+                doc.text(`Absent: ${data.absent}`, 120, 40);
+                doc.text(`Half Days: ${data.half}`, 120, 45);
+                doc.text(`Weekly Off: ${data.weeklyOff}`, 120, 50);
+                doc.text(`Holidays: ${data.holiday}`, 120, 55);
+
+                // Earnings & Deductions Table
+                const body = [
+                    ["Basic Salary", `Rs. ${data.salary.toLocaleString()}`, "Deductions (Absent/Half)", `Rs. ${data.deduction.toLocaleString()}`],
+                    ["Overtime Amount", `Rs. ${data.otAmount.toLocaleString()}`, "", ""],
+                    ["Bonus", `Rs. ${(data.bonus || 0).toLocaleString()}`, "", ""],
+                    [{ content: "Gross Earnings", styles: { fontStyle: 'bold' } }, `Rs. ${(data.salary + data.otAmount + (data.bonus || 0)).toLocaleString()}`, { content: "Total Deductions", styles: { fontStyle: 'bold' } }, `Rs. ${data.deduction.toLocaleString()}`],
+                    [{ content: "Net Salary", colSpan: 2, styles: { fontStyle: 'bold', halign: 'center', fillColor: [220, 220, 220] } }, { content: `Rs. ${data.netSalary.toLocaleString()}`, colSpan: 2, styles: { fontStyle: 'bold', halign: 'center', fillColor: [220, 220, 220] } }]
+                ];
+
+                doc.autoTable({
+                    startY: 65,
+                    head: [['Earnings', 'Amount', 'Deductions', 'Amount']],
+                    body: body,
+                    theme: 'grid',
+                    headStyles: { fillColor: [50, 50, 50] }
+                });
+
+                // Footer
+                const finalY = doc.lastAutoTable.finalY + 30;
+                doc.text("Employee Signature", 30, finalY);
+                doc.text("Employer Signature", 150, finalY);
+            });
+
+            doc.save(`Bulk_Payslips_${monthInput}.pdf`);
+        }
+
+
+
+
+        function generatePayslip(index) {
+            const data = currentPayrollData[index];
+            const monthInput = document.getElementById('payrollMonth').value;
+            const [year, month] = monthInput.split('-');
+            const monthName = new Date(year, month - 1).toLocaleString('default', { month: 'long', year: 'numeric' });
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            // Company Name
+            let companyName = "Company Name";
+            if (typeof APP_SETTINGS !== 'undefined' && APP_SETTINGS.COMPANY_NAME) {
+                companyName = APP_SETTINGS.COMPANY_NAME;
+            } else {
+                companyName = localStorage.getItem('companyName') || "My Company";
+            }
+
+            // Header
+            doc.setFontSize(18);
+            doc.text(companyName, 105, 15, { align: 'center' });
+            doc.setFontSize(12);
+            doc.text(`Payslip for ${monthName}`, 105, 22, { align: 'center' });
+
+            // Employee Details
+            doc.setFontSize(10);
+            doc.text(`Employee Name: ${data.name}`, 14, 35);
+            doc.text(`Employee ID: ${data.empCode || '-'}`, 14, 40);
+            doc.text(`Designation: ${data.designation || '-'}`, 14, 45);
+            doc.text(`Department: ${data.department || '-'}`, 14, 50);
+            doc.text(`Joining Date: ${data.joiningDate || '-'}`, 14, 55);
+
+            // Attendance Summary
+            doc.text(`Present: ${data.present}`, 120, 35);
+            doc.text(`Absent: ${data.absent}`, 120, 40);
+            doc.text(`Half Days: ${data.half}`, 120, 45);
+            doc.text(`Weekly Off: ${data.weeklyOff}`, 120, 50);
+            doc.text(`Holidays: ${data.holiday}`, 120, 55);
+
+            // Earnings & Deductions Table
+            const body = [
+                ["Basic Salary", `Rs. ${data.salary.toLocaleString()}`, "Deductions (Absent/Half)", `Rs. ${data.deduction.toLocaleString()}`],
+                ["Overtime Amount", `Rs. ${data.otAmount.toLocaleString()}`, "", ""],
+                ["Bonus", `Rs. ${(data.bonus || 0).toLocaleString()}`, "", ""],
+                [{ content: "Gross Earnings", styles: { fontStyle: 'bold' } }, `Rs. ${(data.salary + data.otAmount + (data.bonus || 0)).toLocaleString()}`, { content: "Total Deductions", styles: { fontStyle: 'bold' } }, `Rs. ${data.deduction.toLocaleString()}`],
+                [{ content: "Net Salary", colSpan: 2, styles: { fontStyle: 'bold', halign: 'center', fillColor: [220, 220, 220] } }, { content: `Rs. ${data.netSalary.toLocaleString()}`, colSpan: 2, styles: { fontStyle: 'bold', halign: 'center', fillColor: [220, 220, 220] } }]
+            ];
+
+            doc.autoTable({
+                startY: 65,
+                head: [['Earnings', 'Amount', 'Deductions', 'Amount']],
+                body: body,
+                theme: 'grid',
+                headStyles: { fillColor: [50, 50, 50] }
+            });
+
+            // Footer
+            const finalY = doc.lastAutoTable.finalY + 30;
+            doc.text("Employee Signature", 30, finalY);
+            doc.text("Employer Signature", 150, finalY);
+
+            doc.save(`Payslip_${data.name}_${monthInput}.pdf`);
+        }
+
+        function filterPayrollTable() {
+            const query = document.getElementById('payrollSearch').value.toLowerCase();
+            const rows = document.querySelectorAll('#payrollTableBody tr');
+            rows.forEach(row => {
+                const name = row.cells[0].innerText.toLowerCase();
+                if (name.includes(query)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
+    </script>
+</body>
+
+</html>

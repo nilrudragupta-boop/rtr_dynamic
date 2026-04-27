@@ -1,0 +1,1830 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>GST Return Report</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+    <script src="settings.js"></script>
+    <script src="brand.service.js"></script>
+    <script src="brandLoader.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            padding: 20px;
+            background: #f4f6f8;
+            color: #333;
+        }
+
+        h2 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 20px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            align-items: center;
+            background: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+
+        input,
+        select,
+        button {
+            padding: 8px 12px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        button {
+            cursor: pointer;
+            color: #fff;
+            border: none;
+            font-weight: bold;
+            transition: opacity 0.2s;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        .btn-primary {
+            background: #0d6efd;
+        }
+
+        .btn-success {
+            background: #198754;
+        }
+
+        .btn-info {
+            background: #0dcaf0;
+            color: #000;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            margin-bottom: 0;
+            border-bottom: 2px solid #ddd;
+        }
+
+        .tab-btn {
+            padding: 10px 20px;
+            background: #e9ecef;
+            border: 1px solid #ddd;
+            border-bottom: none;
+            border-radius: 6px 6px 0 0;
+            cursor: pointer;
+            margin-right: 5px;
+            color: #555;
+        }
+
+        .tab-btn.active {
+            background: #fff;
+            color: #0d6efd;
+            font-weight: bold;
+            border-bottom: 2px solid #fff;
+            margin-bottom: -2px;
+        }
+
+        .tab-content {
+            display: none;
+            background: #fff;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-top: none;
+            border-radius: 0 0 8px 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            overflow-y: auto;
+            max-height: 65vh;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            font-size: 13px;
+        }
+
+        th,
+        td {
+            border: 1px solid #dee2e6;
+            padding: 8px;
+            text-align: center;
+        }
+
+        th {
+            background: #f8f9fa;
+            color: #495057;
+            position: sticky;
+            top: 0;
+            z-index: 5;
+        }
+
+        .summary-box {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .card {
+            background: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 5px solid #0d6efd;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .card h4 {
+            margin: 0 0 10px 0;
+            color: #666;
+            font-size: 14px;
+        }
+
+        .card .val {
+            font-size: 20px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: #fff;
+            padding: 25px;
+            border-radius: 8px;
+            width: 80%;
+            max-width: 800px;
+            max-height: 85vh;
+            overflow-y: auto;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .guide-section {
+            margin-bottom: 20px;
+        }
+
+        .guide-section h3 {
+            color: #0d6efd;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+        }
+
+        .guide-section ul {
+            padding-left: 20px;
+            line-height: 1.6;
+        }
+
+        .formula-box {
+            background: #f8f9fa;
+            padding: 10px;
+            border-left: 3px solid #ffc107;
+            font-family: monospace;
+            margin: 5px 0;
+        }
+
+        /* Dark Mode */
+        body.dark-mode {
+            background: #121212;
+            color: #e0e0e0;
+        }
+
+        /* Grey Mode */
+        body.grey-mode button {
+            background-color: #6c757d !important;
+            color: #fff !important;
+        }
+
+        body.dark-mode .controls,
+        body.dark-mode .tab-content,
+        body.dark-mode .modal-content,
+        body.dark-mode .card {
+            background: #2c2c2c;
+            color: #e0e0e0;
+            border-color: #444;
+        }
+
+        body.dark-mode input,
+        body.dark-mode select {
+            background: #3a3a3a;
+            color: #fff;
+            border: 1px solid #555;
+        }
+
+        body.dark-mode th {
+            background: #333;
+            color: #fff;
+            border-color: #444;
+        }
+
+        body.dark-mode td {
+            border-color: #444;
+        }
+
+        body.dark-mode .tab-btn {
+            background: #333;
+            color: #aaa;
+            border-color: #444;
+        }
+
+        body.dark-mode .tab-btn.active {
+            background: #2c2c2c;
+            color: #fff;
+            border-bottom-color: #2c2c2c;
+        }
+
+        body.dark-mode .formula-box {
+            background: #333;
+            border-left-color: #ffc107;
+            color: #ddd;
+        }
+
+        .summary-row {
+            font-weight: bold;
+            background-color: #e9ecef;
+        }
+
+        body.dark-mode .summary-row {
+            background-color: #3a3a3a;
+            color: #fff;
+        }
+
+        @media print {
+
+            .controls,
+            .tabs,
+            .modal {
+                display: none !important;
+            }
+
+            body {
+                background: #fff;
+                color: #000;
+                padding: 0;
+            }
+
+            .tab-content {
+                display: block !important;
+                border: none;
+                box-shadow: none;
+                padding: 0;
+                margin-bottom: 30px;
+            }
+
+            .tab-content:not(.active) {
+                page-break-before: always;
+            }
+
+            th {
+                background: #f0f0f0 !important;
+                color: #000 !important;
+            }
+
+            .card {
+                border: 1px solid #ccc;
+                break-inside: avoid;
+            }
+
+            h2 {
+                color: #000 !important;
+                margin-top: 0;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <img id="invoiceLogo" src="logo.png" style="display:none !important;" data-brand="logo" alt="Company Logo">
+
+    <h2>GST Return Report - <span data-brand="name">RISE Tech Revolution</span></h2>
+
+    <div class="controls">
+        <label>From:</label>
+        <input type="date" id="fromDate">
+        <label>To:</label>
+        <input type="date" id="toDate">
+        <label>FY:</label>
+        <select id="fySelect" onchange="applyQuarterFilter()" style="width: 100px;"></select>
+        <label>Qtr:</label>
+        <select id="quarterSelect" onchange="applyQuarterFilter()" style="width: 110px;">
+            <option value="">Full FY</option>
+            <option value="1">Q1 (Apr-Jun)</option>
+            <option value="2">Q2 (Jul-Sep)</option>
+            <option value="3">Q3 (Oct-Dec)</option>
+            <option value="4">Q4 (Jan-Mar)</option>
+        </select>
+        <label>Customer:</label>
+        <select id="customerSearch" onchange="renderGstr1Table()" style="width: 120px;">
+            <option value="">All Customers</option>
+        </select>
+        <label>Supplier:</label>
+        <select id="supplierSearch" onchange="renderGstr2Table()" style="width: 120px;">
+            <option value="">All Suppliers</option>
+        </select>
+        <button class="btn-primary" onclick="generateReport()">Generate Report</button>
+        <button class="btn-success" onclick="exportToExcel()" data-permission-id="perm_export_excel">Export to
+            Excel</button>
+        <button class="btn-success" onclick="exportGSTR2CSV()" style="background: #20c997;"
+            data-permission-id="perm_export_excel">Export GSTR-2 CSV</button>
+        <button class="btn-primary" onclick="generatePDF()" style="background: #6610f2;"
+            data-permission-id="perm_print">🖨️ Print PDF</button>
+        <button class="btn-info" onclick="openGuideModal()">📘 Best Practices & Guide</button>
+        <button class="btn-secondary" onclick="openSettingsModal()" style="background:#607d8b;">⚙️ Settings</button>
+        <label
+            style="cursor:pointer; display:flex; align-items:center; gap:5px; font-size:14px; margin-left:10px; font-weight:bold;">
+            <input type="checkbox" id="greyButtonsToggle" onchange="toggleGreyButtons()"> Grey Mode
+        </label>
+        <div style="flex:1;"></div>
+    </div>
+
+    <div class="tabs">
+        <div class="tab-btn active" onclick="switchTab('gstr1')">GSTR-1 (Sales)</div>
+        <div class="tab-btn" onclick="switchTab('gstr2')">GSTR-2 (Purchases)</div>
+        <div class="tab-btn" onclick="switchTab('gstr3b')">GSTR-3B (Summary)</div>
+    </div>
+
+    <!-- GSTR-1 Content -->
+    <div id="gstr1" class="tab-content active">
+        <div class="summary-box">
+            <div class="card">
+                <h4>Total Taxable Value</h4>
+                <div class="val" id="g1_taxable">₹ 0.00</div>
+            </div>
+            <div class="card" style="border-left-color: #198754;">
+                <h4>Total IGST</h4>
+                <div class="val" id="g1_igst">₹ 0.00</div>
+            </div>
+            <div class="card" style="border-left-color: #ffc107;">
+                <h4>Total CGST</h4>
+                <div class="val" id="g1_cgst">₹ 0.00</div>
+            </div>
+            <div class="card" style="border-left-color: #dc3545;">
+                <h4>Total SGST</h4>
+                <div class="val" id="g1_sgst">₹ 0.00</div>
+            </div>
+        </div>
+        <div class="pagination-container"
+            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding: 10px; background: #fff; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
+            <div style="display: flex; align-items: center; gap: 5px;">
+                <span id="gstr1TotalDisplay" style="font-weight: bold; color: #2c3e50; margin-right: 8px;"></span>
+                <select id="gstr1RowsSelect" onchange="changeGstr1Rows()"
+                    style="width: auto; padding: 4px; border: 1px solid #ccc; border-radius: 4px; margin: 0;">
+                    <option value="10">10 rows</option>
+                    <option value="20" selected>20 rows</option>
+                    <option value="50">50 rows</option>
+                </select>
+                <input type="number" id="gstr1GoToInput"
+                    style="width: 60px; padding: 4px; border: 1px solid #ccc; border-radius: 4px;" placeholder="Go to"
+                    min="1" onchange="goToGstr1Page()">
+            </div>
+            <div id="gstr1PaginationInfo" style="color: #666; font-size: 14px;"></div>
+            <div class="pagination" id="gstr1PaginationControls" style="display: flex; gap: 5px;"></div>
+        </div>
+        <div class="table-container">
+            <table id="table_gstr1">
+                <thead>
+                    <tr>
+                        <th style="cursor:pointer;" onclick="sortGstr1('invNo')">Invoice No <i id="sort-icon-g1-invNo"
+                                class="fas fa-sort"></i></th>
+                        <th style="cursor:pointer;" onclick="sortGstr1('date')">Date <i id="sort-icon-g1-date"
+                                class="fas fa-sort"></i></th>
+                        <th style="cursor:pointer;" onclick="sortGstr1('custName')">Customer Name <i
+                                id="sort-icon-g1-custName" class="fas fa-sort"></i></th>
+                        <th>Customer GSTIN</th>
+                        <th>Place of Supply</th>
+                        <th>Type</th>
+                        <th>Taxable Value</th>
+                        <th>Rate (%)</th>
+                        <th>IGST</th>
+                        <th>CGST</th>
+                        <th>SGST</th>
+                        <th>Total Tax</th>
+                        <th>Invoice Total</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+                <tfoot></tfoot>
+            </table>
+        </div>
+    </div>
+
+    <!-- GSTR-2 Content -->
+    <div id="gstr2" class="tab-content">
+        <div class="summary-box">
+            <div class="card">
+                <h4>Total Taxable (Est)</h4>
+                <div class="val" id="g2_taxable">₹ 0.00</div>
+            </div>
+            <div class="card" style="border-left-color: #198754;">
+                <h4>Input IGST (Est)</h4>
+                <div class="val" id="g2_igst">₹ 0.00</div>
+            </div>
+            <div class="card" style="border-left-color: #ffc107;">
+                <h4>Input CGST (Est)</h4>
+                <div class="val" id="g2_cgst">₹ 0.00</div>
+            </div>
+            <div class="card" style="border-left-color: #dc3545;">
+                <h4>Input SGST (Est)</h4>
+                <div class="val" id="g2_sgst">₹ 0.00</div>
+            </div>
+        </div>
+        <p style="font-size:12px; color:#666;">* Note: Purchase tax is calculated based on entry. Verify with actual
+            bills.</p>
+        <div class="pagination-container"
+            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding: 10px; background: #fff; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
+            <div style="display: flex; align-items: center; gap: 5px;">
+                <span id="gstr2TotalDisplay" style="font-weight: bold; color: #2c3e50; margin-right: 8px;"></span>
+                <select id="gstr2RowsSelect" onchange="changeGstr2Rows()"
+                    style="width: auto; padding: 4px; border: 1px solid #ccc; border-radius: 4px; margin: 0;">
+                    <option value="10">10 rows</option>
+                    <option value="20" selected>20 rows</option>
+                    <option value="50">50 rows</option>
+                </select>
+                <input type="number" id="gstr2GoToInput"
+                    style="width: 60px; padding: 4px; border: 1px solid #ccc; border-radius: 4px;" placeholder="Go to"
+                    min="1" onchange="goToGstr2Page()">
+            </div>
+            <div id="gstr2PaginationInfo" style="color: #666; font-size: 14px;"></div>
+            <div class="pagination" id="gstr2PaginationControls" style="display: flex; gap: 5px;"></div>
+        </div>
+        <div class="table-container">
+            <table id="table_gstr2">
+                <thead>
+                    <tr>
+                        <th style="cursor:pointer;" onclick="sortGstr2('supplierName')">Supplier Name <i
+                                id="sort-icon-g2-supplierName" class="fas fa-sort"></i></th>
+                        <th>Inv No</th>
+                        <th style="cursor:pointer;" onclick="sortGstr2('date')">Date <i id="sort-icon-g2-date"
+                                class="fas fa-sort"></i></th>
+                        <th>Item</th>
+                        <th>Supply Type</th>
+                        <th>Taxable Value</th>
+                        <th>Rate (Est)</th>
+                        <th>IGST</th>
+                        <th>CGST</th>
+                        <th>SGST</th>
+                        <th>Total Tax</th>
+                        <th>Eligibility</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+                <tfoot></tfoot>
+            </table>
+        </div>
+    </div>
+
+    <!-- GSTR-3B Content -->
+    <div id="gstr3b" class="tab-content">
+        <h3>3.1 Details of Outward Supplies and inward supplies liable to reverse charge</h3>
+        <table id="table_3b_outward" style="margin-bottom: 30px;">
+            <thead>
+                <tr>
+                    <th style="text-align:left;">Nature of Supplies</th>
+                    <th>Total Taxable Value</th>
+                    <th>Integrated Tax</th>
+                    <th>Central Tax</th>
+                    <th>State/UT Tax</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td style="text-align:left;">(a) Outward taxable supplies (other than zero rated, nil rated and
+                        exempted)</td>
+                    <td id="3b_out_taxable">0.00</td>
+                    <td id="3b_out_igst">0.00</td>
+                    <td id="3b_out_cgst">0.00</td>
+                    <td id="3b_out_sgst">0.00</td>
+                </tr>
+                <tr>
+                    <td style="text-align:left;">(b) Outward taxable supplies (zero rated)</td>
+                    <td>0.00</td>
+                    <td>0.00</td>
+                    <td>0.00</td>
+                    <td>0.00</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>4. Eligible ITC</h3>
+        <table id="table_3b_itc">
+            <thead>
+                <tr>
+                    <th style="text-align:left;">Details</th>
+                    <th>Integrated Tax</th>
+                    <th>Central Tax</th>
+                    <th>State/UT Tax</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td style="text-align:left;">(A) ITC Available (whether in full or part)</td>
+                    <td id="3b_itc_igst">0.00</td>
+                    <td id="3b_itc_cgst">0.00</td>
+                    <td id="3b_itc_sgst">0.00</td>
+                </tr>
+                <tr>
+                    <td style="text-align:left;">(B) ITC Reversed</td>
+                    <td>0.00</td>
+                    <td>0.00</td>
+                    <td>0.00</td>
+                </tr>
+                <tr style="background:#e8f5e9; font-weight:bold;">
+                    <td style="text-align:left;">(C) Net ITC Available (A - B)</td>
+                    <td id="3b_net_igst">0.00</td>
+                    <td id="3b_net_cgst">0.00</td>
+                    <td id="3b_net_sgst">0.00</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div
+            style="margin-top: 20px; padding: 15px; background: #fff3cd; border: 1px solid #ffeeba; border-radius: 4px;">
+            <strong>Net Tax Liability:</strong>
+            <span id="net_liability_msg">Calculating...</span>
+        </div>
+    </div>
+
+    <!-- Guide Modal -->
+    <div id="guideModal" class="modal">
+        <div class="modal-content">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                <h2 style="margin:0;">GST Admin Best Practices</h2>
+                <button class="btn-danger" onclick="closeGuideModal()">Close</button>
+            </div>
+
+            <div class="guide-section">
+                <h3>1. Reconciliation (GSTR-2A/2B vs Books)</h3>
+                <p>Always reconcile the Input Tax Credit (ITC) claimed in your books (Purchase Register) with the
+                    GSTR-2B generated by the GST portal.</p>
+                <ul>
+                    <li><strong>Match:</strong> Ensure Invoice No, Date, and GSTIN match exactly.</li>
+                    <li><strong>Mismatch:</strong> If a supplier hasn't filed, follow up immediately. You cannot claim
+                        ITC if it doesn't appear in GSTR-2B.</li>
+                    <li><strong>Formula:</strong>
+                        <div class="formula-box">Net Payable = Output Tax (Sales) - Eligible Input Tax (Purchases)</div>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="guide-section">
+                <h3>2. Reverse Charge Mechanism (RCM)</h3>
+                <p>For supplies from unregistered dealers or specific services (like GTA, Legal services), the recipient
+                    is liable to pay tax.</p>
+                <ul>
+                    <li>Create a "Self-Invoice" for such expenses.</li>
+                    <li>Pay the tax in cash (cannot use ITC balance).</li>
+                    <li>Claim the paid amount as ITC in the same month.</li>
+                </ul>
+            </div>
+
+            <div class="guide-section">
+                <h3>3. Zero-Rated Exports</h3>
+                <p>Exports can be made either under Bond/LUT (without tax payment) or with payment of IGST (refundable).
+                </p>
+                <ul>
+                    <li><strong>With LUT:</strong> Taxable Value is reported, Tax Amount is 0.</li>
+                    <li><strong>With Payment:</strong> Pay IGST and claim refund. Ensure Shipping Bill details match
+                        GSTR-1.</li>
+                </ul>
+            </div>
+
+            <div class="guide-section">
+                <h3>4. Ineligible Credits (Section 17(5))</h3>
+                <p>ITC is not available for:</p>
+                <ul>
+                    <li>Motor vehicles (seating capacity &le; 13).</li>
+                    <li>Food, beverages, outdoor catering, beauty treatment.</li>
+                    <li>Goods lost, stolen, destroyed, or written off.</li>
+                    <li>Goods used for personal consumption.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="modal">
+        <div class="modal-content" style="width: 400px; max-width: 90%;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom: 1px solid #eee; padding-bottom: 10px;">
+                <h3 style="margin:0; color: #607d8b;">⚙️ PDF Settings</h3>
+                <button class="btn-danger" onclick="closeSettingsModal()" style="padding: 2px 8px;">X</button>
+            </div>
+            <div style="text-align: left; margin-bottom: 15px;">
+                <label style="cursor:pointer; display:flex; align-items:center; gap:5px; font-weight:bold; margin-top:10px;"><input type="checkbox" id="showDiscountToggle" onchange="togglePdfSetting('showDiscountInPdf', this)"> Show Discount in PDF</label>
+                <label style="cursor:pointer; display:flex; align-items:center; gap:5px; font-weight:bold; margin-top:10px;"><input type="checkbox" id="showItemCodeToggle" onchange="togglePdfSetting('showItemCodeInPdf', this)"> Show Item Code in PDF</label>
+                <label style="cursor:pointer; display:flex; align-items:center; gap:5px; font-weight:bold; margin-top:10px;"><input type="checkbox" id="showBankDetailsToggle" onchange="togglePdfSetting('showBankDetailsInPdf', this)"> Show Bank Details in PDF</label>
+                <label style="cursor:pointer; display:flex; align-items:center; gap:5px; font-weight:bold; margin-top:10px;"><input type="checkbox" id="showTimestampPdfToggle" onchange="togglePdfSetting('showTimestampInPdf', this)"> Show Time in PDF</label>
+                <label style="cursor:pointer; display:flex; align-items:center; gap:5px; font-weight:bold; margin-top:10px;"><input type="checkbox" id="showPaidStampToggle" onchange="togglePdfSetting('showPaidStampInPdf', this)"> Show PAID Stamp in PDF</label>
+            </div>
+            <div style="text-align: right; margin-top: 15px;">
+                <button class="btn-secondary" onclick="closeSettingsModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Configuration ---
+        // Pagination & Sorting Globals
+        let gstr1Data = [];
+        let gstr2Data = [];
+        let g1Page = 1, g1Rows = 20;
+        let g2Page = 1, g2Rows = 20;
+        let g1Sort = { col: 'date', dir: 'desc' };
+        let g2Sort = { col: 'date', dir: 'desc' };
+
+        // Default Seller State (should match Settings)
+        let SELLER_STATE = "West Bengal";
+        if (typeof APP_SETTINGS !== 'undefined' && APP_SETTINGS.SELLER_STATE) {
+            SELLER_STATE = APP_SETTINGS.SELLER_STATE;
+        }
+
+        let isGreyButtons = localStorage.getItem("gstReportGreyButtons") === "true";
+
+        function toggleGreyButtons() {
+            isGreyButtons = document.getElementById("greyButtonsToggle").checked;
+            localStorage.setItem("gstReportGreyButtons", isGreyButtons);
+            applyGreyButtons();
+        }
+
+        function applyGreyButtons() {
+            if (isGreyButtons) document.body.classList.add("grey-mode");
+            else document.body.classList.remove("grey-mode");
+            const toggle = document.getElementById("greyButtonsToggle");
+            if (toggle) toggle.checked = isGreyButtons;
+        }
+
+        // --- Initialization ---
+        document.addEventListener("DOMContentLoaded", () => {
+            // Populate Financial Year Dropdown
+            const fySelect = document.getElementById('fySelect');
+            const currYear = new Date().getFullYear();
+            const currMonth = new Date().getMonth(); // 0-11
+            let startFy = (currMonth < 3) ? currYear - 1 : currYear;
+            for (let i = 0; i < 3; i++) {
+                let y = startFy - i;
+                let opt = document.createElement('option');
+                opt.value = y;
+                opt.text = `FY ${y}-${(y + 1).toString().slice(-2)}`;
+                fySelect.appendChild(opt);
+            }
+
+            document.getElementById('fromDate').addEventListener('change', () => document.getElementById('quarterSelect').value = "");
+            document.getElementById('toDate').addEventListener('change', () => document.getElementById('quarterSelect').value = "");
+
+            // Apply Theme
+            const currentTheme = localStorage.getItem("appThemeMode") || "system";
+            const isDark = currentTheme === "dark" || (currentTheme === "system" && window.matchMedia('(prefers-color-scheme: dark)').matches);
+            if (isDark) document.body.classList.add("dark-mode");
+
+            applyGreyButtons();
+            
+            // Populate dropdowns
+            populateDropdowns();
+            
+            // Initialize settings toggles
+            initializeSettingsToggles();
+
+            // Set default filter to Full FY
+            document.getElementById('quarterSelect').value = "";
+            applyQuarterFilter();
+        });
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            document.querySelector(`.tab-btn[onclick="switchTab('${tabId}')"]`).classList.add('active');
+        }
+
+    function populateDropdowns() {
+        const custSelect = document.getElementById('customerSearch');
+        const suppSelect = document.getElementById('supplierSearch');
+        const customers = JSON.parse(localStorage.getItem('customers')) || [];
+        const suppliers = JSON.parse(localStorage.getItem('suppliers')) || [];
+
+        customers.sort((a,b) => a.name.localeCompare(b.name)).forEach(c => {
+            const opt = document.createElement('option'); opt.value = c.name; opt.text = c.name;
+            if(custSelect) custSelect.appendChild(opt);
+        });
+
+        suppliers.sort((a,b) => a.name.localeCompare(b.name)).forEach(s => {
+            const opt = document.createElement('option'); opt.value = s.name; opt.text = s.name;
+            if(suppSelect) suppSelect.appendChild(opt);
+        });
+    }
+
+        function openGuideModal() { document.getElementById('guideModal').style.display = 'flex'; }
+        function closeGuideModal() { document.getElementById('guideModal').style.display = 'none'; }
+
+    function openSettingsModal() { document.getElementById('settingsModal').style.display = 'flex'; }
+    function closeSettingsModal() { document.getElementById('settingsModal').style.display = 'none'; }
+
+        function applyQuarterFilter() {
+            const q = document.getElementById('quarterSelect').value;
+            const y = parseInt(document.getElementById('fySelect').value);
+
+            let startMonth, endMonth, year = y;
+        const formatDate = (d) => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, '0') + "-" + String(d.getDate()).padStart(2, '0');
+
+        if (!q) { // Full FY
+            const startDate = new Date(y, 3, 1);
+            const endDate = new Date(y + 1, 2, 31);
+            document.getElementById('fromDate').value = formatDate(startDate);
+            document.getElementById('toDate').value = formatDate(endDate);
+            generateReport();
+            return;
+        }
+
+            if (q === "1") { startMonth = 3; endMonth = 5; } // Apr-Jun
+            else if (q === "2") { startMonth = 6; endMonth = 8; } // Jul-Sep
+            else if (q === "3") { startMonth = 9; endMonth = 11; } // Oct-Dec
+            else if (q === "4") { startMonth = 0; endMonth = 2; year = y + 1; } // Jan-Mar (Next Calendar Year)
+
+            const startDate = new Date(year, startMonth, 1);
+            const endDate = new Date(year, endMonth + 1, 0);
+
+            document.getElementById('fromDate').value = formatDate(startDate);
+            document.getElementById('toDate').value = formatDate(endDate);
+            generateReport();
+        }
+
+        function filterCustomer(name) {
+            if (document.getElementById('customerSearch')) document.getElementById('customerSearch').value = name;
+            renderGstr1Table();
+        }
+        function filterSupplier(name) {
+            if (document.getElementById('supplierSearch')) document.getElementById('supplierSearch').value = name;
+            renderGstr2Table();
+        }
+        async function openInvoice(invNo) {
+            const invoices = JSON.parse(localStorage.getItem("invoices")) || [];
+            const invoice = invoices.find(i => (i.invoice_no || i.invoiceNo) === invNo);
+            if (invoice) {
+                await directPrintInvoicePDF(invoice);
+            } else {
+                alert('Invoice not found in local storage.');
+            }
+        }
+
+        function getSupplierState(name) {
+            const suppliers = JSON.parse(localStorage.getItem("suppliers")) || [];
+            const sup = suppliers.find(s => s.name === name);
+            return sup ? sup.state : SELLER_STATE; // Default to local if not found
+        }
+
+        function generateReport() {
+            const fromDate = document.getElementById('fromDate').value;
+            const toDate = document.getElementById('toDate').value;
+
+            const invoices = JSON.parse(localStorage.getItem("invoices")) || [];
+            const purchases = JSON.parse(localStorage.getItem("purchases")) || [];
+
+            // --- GSTR-1 Logic (Sales) ---
+            gstr1Data = [];
+            invoices.forEach(inv => {
+                const d = inv.invoice_date || inv.date;
+                if (d < fromDate || d > toDate) return;
+
+                const invNo = inv.invoice_no || inv.invoiceNo;
+                const custName = inv.customer_name || (inv.customer ? inv.customer.name : "") || "";
+                const custGST = inv.gst_no || (inv.customer ? inv.customer.gst : "") || "";
+                const state = inv.state || (inv.customer ? inv.customer.state : "") || SELLER_STATE;
+
+                // Determine Supply Type
+                let isInterState = (state.toLowerCase() !== SELLER_STATE.toLowerCase());
+                if (inv.gstType === "Intra-State") isInterState = false;
+                if (inv.gstType === "Inter-State") isInterState = true;
+
+                const supplyType = isInterState ? "Inter-State" : "Intra-State";
+
+                let totalTaxable = 0, totalIgst = 0, totalCgst = 0, totalSgst = 0, totalTaxAmt = 0;
+                let rates = new Set();
+
+                // Process Items
+                if (inv.items && Array.isArray(inv.items)) {
+                    inv.items.forEach(item => {
+                        const qty = parseFloat(item.qty) || 0;
+                        const price = parseFloat(item.price) || 0;
+                        const disc = parseFloat(item.disc) || 0;
+                        const discType = item.discType || '%';
+
+                        // Calculate Taxable
+                        const base = qty * price;
+                        const discAmt = (discType === 'flat') ? disc : (base * disc / 100);
+                        const taxable = Math.max(0, base - discAmt);
+
+                        const rate = parseFloat(item.gst) || 0;
+                        const taxAmt = taxable * (rate / 100);
+
+                        let igst = 0, cgst = 0, sgst = 0;
+                        if (isInterState) {
+                            igst = taxAmt;
+                        } else {
+                            cgst = taxAmt / 2;
+                            sgst = taxAmt / 2;
+                        }
+
+                        totalTaxable += taxable;
+                        totalIgst += igst;
+                        totalCgst += cgst;
+                        totalSgst += sgst;
+                        totalTaxAmt += taxAmt;
+                        rates.add(rate);
+                    });
+                }
+
+                const freightBefore = parseFloat(inv.freightBeforeGst) || 0;
+                const freightBeforeRate = parseFloat(inv.freightBeforeGstRate) || 0;
+                if (freightBefore > 0) {
+                    const taxAmt = freightBefore * (freightBeforeRate / 100);
+                    let igst = 0, cgst = 0, sgst = 0;
+                    if (isInterState) {
+                        igst = taxAmt;
+                    } else {
+                        cgst = taxAmt / 2;
+                        sgst = taxAmt / 2;
+                    }
+                    totalTaxable += freightBefore;
+                    totalIgst += igst;
+                    totalCgst += cgst;
+                    totalSgst += sgst;
+                    totalTaxAmt += taxAmt;
+                    rates.add(freightBeforeRate);
+                }
+
+                let overallDiscountVal = parseFloat(inv.overallDiscountAmount || inv.overallDiscount || 0);
+                if (overallDiscountVal > 0 && totalTaxable > 0) {
+                    let gstReduction = totalTaxAmt * (overallDiscountVal / totalTaxable);
+                    totalTaxAmt -= gstReduction;
+                    if (isInterState) { totalIgst -= gstReduction; } else { totalCgst -= gstReduction / 2; totalSgst -= gstReduction / 2; }
+                    totalTaxable -= overallDiscountVal;
+                }
+
+                gstr1Data.push({
+                    invNo, date: d, custName, custGST, state, supplyType, taxable: totalTaxable, rate: Array.from(rates).join(', '), igst: totalIgst, cgst: totalCgst, sgst: totalSgst, taxAmt: totalTaxAmt, total: totalTaxable + totalTaxAmt
+                });
+            });
+
+            renderGstr1Table();
+
+            // --- GSTR-2 Logic (Purchases) ---
+            gstr2Data = [];
+
+            let gstr2Groups = {};
+            purchases.forEach(p => {
+                const d = p.date;
+                if (d < fromDate || d > toDate) return;
+
+                const supplierState = getSupplierState(p.supplierName);
+                const isInterState = (supplierState.toLowerCase() !== SELLER_STATE.toLowerCase());
+                const supplyType = isInterState ? "Inter-State" : "Intra-State";
+
+                const qty = parseFloat(p.qty) || 0;
+                const price = parseFloat(p.price) || 0;
+                const taxable = qty * price;
+
+                // Use stored GST rate or default to 18 if missing (legacy data)
+                const rate = (p.gst !== undefined && p.gst !== null) ? parseFloat(p.gst) : 18;
+                const taxAmt = taxable * (rate / 100);
+
+                let igst = 0, cgst = 0, sgst = 0;
+                if (isInterState) {
+                    igst = taxAmt;
+                } else {
+                    cgst = taxAmt / 2;
+                    sgst = taxAmt / 2;
+                }
+
+                const totalTax = igst + cgst + sgst;
+                const key = p.supplierName + "|" + p.supplierInv + "|" + d;
+
+                if (!gstr2Groups[key]) {
+                    gstr2Groups[key] = {
+                        supplierName: p.supplierName, supplierInv: p.supplierInv, date: d, itemName: p.itemName, supplyType, taxable: 0, rates: new Set(), igst: 0, cgst: 0, sgst: 0, totalTax: 0
+                    };
+                } else {
+                    gstr2Groups[key].itemName = "Multiple Items";
+                }
+
+                gstr2Groups[key].taxable += taxable;
+                gstr2Groups[key].igst += igst;
+                gstr2Groups[key].cgst += cgst;
+                gstr2Groups[key].sgst += sgst;
+                gstr2Groups[key].totalTax += totalTax;
+                gstr2Groups[key].rates.add(rate);
+            });
+
+            gstr2Data = Object.values(gstr2Groups).map(g => { g.rate = Array.from(g.rates).join(', '); return g; });
+
+            renderGstr2Table();
+            renderGstr3b();
+        }
+
+        function renderGstr3b() {
+            let g1_taxable = 0, g1_igst = 0, g1_cgst = 0, g1_sgst = 0;
+            gstr1Data.forEach(r => {
+                g1_taxable += r.taxable; g1_igst += r.igst; g1_cgst += r.cgst; g1_sgst += r.sgst;
+            });
+
+            let g2_igst = 0, g2_cgst = 0, g2_sgst = 0;
+            gstr2Data.forEach(r => {
+                g2_igst += r.igst; g2_cgst += r.cgst; g2_sgst += r.sgst;
+            });
+
+            // --- GSTR-3B Logic ---
+            // 3.1 Outward
+            document.getElementById('3b_out_taxable').innerText = g1_taxable.toFixed(2);
+            document.getElementById('3b_out_igst').innerText = g1_igst.toFixed(2);
+            document.getElementById('3b_out_cgst').innerText = g1_cgst.toFixed(2);
+            document.getElementById('3b_out_sgst').innerText = g1_sgst.toFixed(2);
+
+            // 4. ITC
+            document.getElementById('3b_itc_igst').innerText = g2_igst.toFixed(2);
+            document.getElementById('3b_itc_cgst').innerText = g2_cgst.toFixed(2);
+            document.getElementById('3b_itc_sgst').innerText = g2_sgst.toFixed(2);
+
+            document.getElementById('3b_net_igst').innerText = g2_igst.toFixed(2);
+            document.getElementById('3b_net_cgst').innerText = g2_cgst.toFixed(2);
+            document.getElementById('3b_net_sgst').innerText = g2_sgst.toFixed(2);
+
+            // Net Liability
+            const netIGST = g1_igst - g2_igst;
+            const netCGST = g1_cgst - g2_cgst;
+            const netSGST = g1_sgst - g2_sgst;
+            const totalPayable = Math.max(0, netIGST) + Math.max(0, netCGST) + Math.max(0, netSGST);
+
+            let msg = "";
+            if (totalPayable > 0) {
+                msg = `Payable: ₹${totalPayable.toFixed(2)} (IGST: ${netIGST.toFixed(2)}, CGST: ${netCGST.toFixed(2)}, SGST: ${netSGST.toFixed(2)})`;
+                document.getElementById('net_liability_msg').style.color = "#dc3545";
+            } else {
+                msg = `Excess Credit Carried Forward: ₹${Math.abs(netIGST + netCGST + netSGST).toFixed(2)}`;
+                document.getElementById('net_liability_msg').style.color = "#198754";
+            }
+            document.getElementById('net_liability_msg').innerText = msg;
+        }
+
+        function renderGstr1Table() {
+            const tbody1 = document.querySelector("#table_gstr1 tbody");
+            const tfoot1 = document.querySelector("#table_gstr1 tfoot");
+            tbody1.innerHTML = "";
+            tfoot1.innerHTML = "";
+
+            let customerSearch = document.getElementById('customerSearch') ? document.getElementById('customerSearch').value.toLowerCase() : "";
+            let filteredData = gstr1Data.filter(r => r.custName.toLowerCase().includes(customerSearch));
+
+            let g1_taxable = 0, g1_igst = 0, g1_cgst = 0, g1_sgst = 0;
+
+            filteredData.sort((a, b) => {
+                let valA = a[g1Sort.col] || "";
+                let valB = b[g1Sort.col] || "";
+                return g1Sort.dir === 'asc' ? String(valA).localeCompare(String(valB)) : String(valB).localeCompare(String(valA));
+            });
+
+            filteredData.forEach(r => {
+                g1_taxable += r.taxable; g1_igst += r.igst; g1_cgst += r.cgst; g1_sgst += r.sgst;
+            });
+
+            const totalItems = filteredData.length;
+            const totalPages = Math.ceil(totalItems / g1Rows) || 1;
+            if (g1Page > totalPages) g1Page = totalPages;
+            if (g1Page < 1) g1Page = 1;
+
+            const start = (g1Page - 1) * g1Rows;
+            const end = Math.min(start + g1Rows, totalItems);
+            const paginated = filteredData.slice(start, end);
+
+            paginated.forEach(r => {
+                const row = `<tr>
+                    <td><a href="#" onclick="openInvoice('${r.invNo}'); return false;" style="color: #0d6efd; text-decoration: none; font-weight: bold;">${r.invNo}</a></td>
+                    <td>${new Date(r.date).toLocaleDateString()}</td>
+                    <td><a href="#" onclick="filterCustomer('${escapeHtml(r.custName)}'); return false;" style="color: #0d6efd; text-decoration: none;">${r.custName}</a></td>
+                    <td>${r.custGST}</td>
+                    <td>${r.state}</td>
+                    <td>${r.supplyType}</td>
+                    <td>${r.taxable.toFixed(2)}</td>
+                    <td>${r.rate}</td>
+                    <td>${r.igst.toFixed(2)}</td>
+                    <td>${r.cgst.toFixed(2)}</td>
+                    <td>${r.sgst.toFixed(2)}</td>
+                    <td>${r.taxAmt.toFixed(2)}</td>
+                    <td>${r.total.toFixed(2)}</td>
+                </tr>`;
+                tbody1.insertAdjacentHTML('beforeend', row);
+            });
+
+            const g1_total_tax_val = g1_igst + g1_cgst + g1_sgst;
+            const g1_grand_total = g1_taxable + g1_total_tax_val;
+            tfoot1.innerHTML = `
+                <tr class="summary-row">
+                    <td colspan="6" style="text-align:right;">Grand Total:</td>
+                    <td>${g1_taxable.toFixed(2)}</td>
+                    <td>-</td>
+                    <td>${g1_igst.toFixed(2)}</td>
+                    <td>${g1_cgst.toFixed(2)}</td>
+                    <td>${g1_sgst.toFixed(2)}</td>
+                    <td>${g1_total_tax_val.toFixed(2)}</td>
+                    <td>${g1_grand_total.toFixed(2)}</td>
+                </tr>
+            `;
+
+            document.getElementById('g1_taxable').innerText = "₹ " + g1_taxable.toFixed(2);
+            document.getElementById('g1_igst').innerText = "₹ " + g1_igst.toFixed(2);
+            document.getElementById('g1_cgst').innerText = "₹ " + g1_cgst.toFixed(2);
+            document.getElementById('g1_sgst').innerText = "₹ " + g1_sgst.toFixed(2);
+
+            renderPagination('gstr1', totalItems, start + 1, end, totalPages, g1Page);
+        }
+
+        function renderGstr2Table() {
+            const tbody2 = document.querySelector("#table_gstr2 tbody");
+            const tfoot2 = document.querySelector("#table_gstr2 tfoot");
+            tbody2.innerHTML = "";
+            tfoot2.innerHTML = "";
+
+            let supplierSearch = document.getElementById('supplierSearch') ? document.getElementById('supplierSearch').value.toLowerCase() : "";
+            let filteredData = gstr2Data.filter(r => r.supplierName.toLowerCase().includes(supplierSearch));
+
+            let g2_taxable = 0, g2_igst = 0, g2_cgst = 0, g2_sgst = 0, g2_total_tax = 0;
+
+            filteredData.sort((a, b) => {
+                let valA = a[g2Sort.col] || "";
+                let valB = b[g2Sort.col] || "";
+                return g2Sort.dir === 'asc' ? String(valA).localeCompare(String(valB)) : String(valB).localeCompare(String(valA));
+            });
+
+            filteredData.forEach(r => {
+                g2_taxable += r.taxable; g2_igst += r.igst; g2_cgst += r.cgst; g2_sgst += r.sgst; g2_total_tax += r.totalTax;
+            });
+
+            const totalItems = filteredData.length;
+            const totalPages = Math.ceil(totalItems / g2Rows) || 1;
+            if (g2Page > totalPages) g2Page = totalPages;
+            if (g2Page < 1) g2Page = 1;
+
+            const start = (g2Page - 1) * g2Rows;
+            const end = Math.min(start + g2Rows, totalItems);
+            const paginated = filteredData.slice(start, end);
+
+            paginated.forEach(r => {
+                const row = `<tr>
+                    <td><a href="#" onclick="filterSupplier('${escapeHtml(r.supplierName)}'); return false;" style="color: #0d6efd; text-decoration: none;">${r.supplierName}</a></td>
+                    <td>${r.supplierInv || '-'}</td>
+                    <td>${new Date(r.date).toLocaleDateString()}</td>
+                    <td>${r.itemName}</td>
+                    <td>${r.supplyType}</td>
+                    <td>${r.taxable.toFixed(2)}</td>
+                    <td>${r.rate}</td>
+                    <td>${r.igst.toFixed(2)}</td>
+                    <td>${r.cgst.toFixed(2)}</td>
+                    <td>${r.sgst.toFixed(2)}</td>
+                    <td>${r.totalTax.toFixed(2)}</td>
+                    <td>Input Goods</td>
+                </tr>`;
+                tbody2.insertAdjacentHTML('beforeend', row);
+            });
+
+            document.getElementById('g2_taxable').innerText = "₹ " + g2_taxable.toFixed(2);
+            document.getElementById('g2_igst').innerText = "₹ " + g2_igst.toFixed(2);
+            document.getElementById('g2_cgst').innerText = "₹ " + g2_cgst.toFixed(2);
+            document.getElementById('g2_sgst').innerText = "₹ " + g2_sgst.toFixed(2);
+
+            tfoot2.innerHTML = `
+                <tr class="summary-row">
+                    <td colspan="5" style="text-align:right;">Grand Total:</td>
+                    <td>${g2_taxable.toFixed(2)}</td>
+                    <td>-</td>
+                    <td>${g2_igst.toFixed(2)}</td>
+                    <td>${g2_cgst.toFixed(2)}</td>
+                    <td>${g2_sgst.toFixed(2)}</td>
+                    <td>${g2_total_tax.toFixed(2)}</td>
+                    <td></td>
+                </tr>
+            `;
+
+            renderPagination('gstr2', totalItems, start + 1, end, totalPages, g2Page);
+        }
+
+        function sortGstr1(col) {
+            if (g1Sort.col === col) g1Sort.dir = g1Sort.dir === 'asc' ? 'desc' : 'asc';
+            else { g1Sort.col = col; g1Sort.dir = 'asc'; }
+            document.querySelectorAll('#table_gstr1 thead i').forEach(i => i.className = 'fas fa-sort');
+            const icon = document.getElementById(`sort-icon-g1-${col}`);
+            if (icon) icon.className = g1Sort.dir === 'asc' ? 'fas fa-sort-up' : 'fas fa-sort-down';
+            renderGstr1Table();
+        }
+
+        function sortGstr2(col) {
+            if (g2Sort.col === col) g2Sort.dir = g2Sort.dir === 'asc' ? 'desc' : 'asc';
+            else { g2Sort.col = col; g2Sort.dir = 'asc'; }
+            document.querySelectorAll('#table_gstr2 thead i').forEach(i => i.className = 'fas fa-sort');
+            const icon = document.getElementById(`sort-icon-g2-${col}`);
+            if (icon) icon.className = g2Sort.dir === 'asc' ? 'fas fa-sort-up' : 'fas fa-sort-down';
+            renderGstr2Table();
+        }
+
+        function changeGstr1Rows() {
+            g1Rows = parseInt(document.getElementById('gstr1RowsSelect').value);
+            g1Page = 1;
+            renderGstr1Table();
+        }
+        function goToGstr1Page() {
+            const page = parseInt(document.getElementById('gstr1GoToInput').value);
+            if (page >= 1) { g1Page = page; renderGstr1Table(); }
+            document.getElementById('gstr1GoToInput').value = '';
+        }
+        function changeGstr2Rows() {
+            g2Rows = parseInt(document.getElementById('gstr2RowsSelect').value);
+            g2Page = 1;
+            renderGstr2Table();
+        }
+        function goToGstr2Page() {
+            const page = parseInt(document.getElementById('gstr2GoToInput').value);
+            if (page >= 1) { g2Page = page; renderGstr2Table(); }
+            document.getElementById('gstr2GoToInput').value = '';
+        }
+
+        function renderPagination(prefix, totalItems, start, end, totalPages, currPage) {
+            const info = document.getElementById(`${prefix}PaginationInfo`);
+            const controls = document.getElementById(`${prefix}PaginationControls`);
+            const totalDisplay = document.getElementById(`${prefix}TotalDisplay`);
+
+            if (totalDisplay) totalDisplay.innerText = `Total Records: ${totalItems}`;
+
+            if (totalItems === 0) {
+                if (info) info.innerText = "No records found";
+                if (controls) controls.innerHTML = "";
+                return;
+            }
+
+            if (info) info.innerText = `Showing ${start} to ${end} of ${totalItems} entries`;
+
+            let html = "";
+            const fnName = prefix === 'gstr1' ? 'changeGstr1Page' : 'changeGstr2Page';
+            html += `<button class="btn-secondary" onclick="${fnName}(${currPage - 1})" ${currPage === 1 ? 'disabled' : ''} style="padding: 4px 8px; margin: 0 2px;">Prev</button>`;
+
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === 1 || i === totalPages || (i >= currPage - 2 && i <= currPage + 2)) {
+                    const activeStyle = i === currPage ? 'background: #0d6efd; color: #fff;' : 'background: #fff; color: #333;';
+                    html += `<button class="btn-secondary" onclick="${fnName}(${i})" style="padding: 4px 8px; margin: 0 2px; ${activeStyle}">${i}</button>`;
+                } else if (i === currPage - 3 || i === currPage + 3) {
+                    html += `<span style="padding: 4px 8px;">...</span>`;
+                }
+            }
+
+            html += `<button class="btn-secondary" onclick="${fnName}(${currPage + 1})" ${currPage === totalPages ? 'disabled' : ''} style="padding: 4px 8px; margin: 0 2px;">Next</button>`;
+
+            if (controls) controls.innerHTML = html;
+        }
+
+        function escapeHtml(text) {
+            if (text == null) return "";
+            return String(text)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        function changeGstr1Page(p) { g1Page = p; renderGstr1Table(); }
+        function changeGstr2Page(p) { g2Page = p; renderGstr2Table(); }
+        // PDF Generation Settings
+        let showDiscountInPdf = localStorage.getItem("gstReportShowDiscountInPdf") !== "false";
+        let showItemCodeInPdf = localStorage.getItem("gstReportShowItemCodeInPdf") !== "false";
+        let showBankDetailsInPdf = localStorage.getItem("gstReportShowBankDetailsInPdf") === "true";
+        let showTimestampInPdf = localStorage.getItem("gstReportShowTimestampInPdf") !== "false";
+        let showPaidStampInPdf = localStorage.getItem("gstReportShowPaidStampInPdf") === "true";
+        let showSubDetailsInPdf = localStorage.getItem("gstReportShowSubDetailsInPdf") !== "false";
+
+        function initializeSettingsToggles() {
+            if(document.getElementById('showDiscountToggle')) document.getElementById('showDiscountToggle').checked = showDiscountInPdf;
+            if(document.getElementById('showItemCodeToggle')) document.getElementById('showItemCodeToggle').checked = showItemCodeInPdf;
+            if(document.getElementById('showBankDetailsToggle')) document.getElementById('showBankDetailsToggle').checked = showBankDetailsInPdf;
+            if(document.getElementById('showTimestampPdfToggle')) document.getElementById('showTimestampPdfToggle').checked = showTimestampInPdf;
+            if(document.getElementById('showPaidStampToggle')) document.getElementById('showPaidStampToggle').checked = showPaidStampInPdf;
+        }
+
+        function togglePdfSetting(settingName, checkbox) {
+            localStorage.setItem("gstReport" + settingName.charAt(0).toUpperCase() + settingName.slice(1), checkbox.checked);
+            if (settingName === 'showDiscountInPdf') showDiscountInPdf = checkbox.checked;
+            if (settingName === 'showItemCodeInPdf') showItemCodeInPdf = checkbox.checked;
+            if (settingName === 'showBankDetailsInPdf') showBankDetailsInPdf = checkbox.checked;
+            if (settingName === 'showTimestampInPdf') showTimestampInPdf = checkbox.checked;
+            if (settingName === 'showPaidStampInPdf') showPaidStampInPdf = checkbox.checked;
+        }
+
+        // PDF Generation Functions
+        function formatDate(d) {
+            if (!d) return "";
+            return d.split('T')[0].split('-').reverse().join('/');
+        }
+
+        function convertNumberToWords(amount) {
+            var a = ['', 'One ', 'Two ', 'Three ', 'Four ', 'Five ', 'Six ', 'Seven ', 'Eight ', 'Nine ', 'Ten ', 'Eleven ', 'Twelve ', 'Thirteen ', 'Fourteen ', 'Fifteen ', 'Sixteen ', 'Seventeen ', 'Eighteen ', 'Nineteen '];
+            var b = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+
+            function numToWords(n) {
+                if ((n = n.toString()).length > 9) return 'overflow';
+                var n_array = ('000000000' + n).substr(-9).match(/^(\d{2})(\d{2})(\d{2})(\d{1})(\d{2})$/);
+                if (!n_array) return;
+                var str = '';
+                str += (n_array[1] != 0) ? (a[Number(n_array[1])] || b[n_array[1][0]] + ' ' + a[n_array[1][1]]) + 'Crore ' : '';
+                str += (n_array[2] != 0) ? (a[Number(n_array[2])] || b[n_array[2][0]] + ' ' + a[n_array[2][1]]) + 'Lakh ' : '';
+                str += (n_array[3] != 0) ? (a[Number(n_array[3])] || b[n_array[3][0]] + ' ' + a[n_array[3][1]]) + 'Thousand ' : '';
+                str += (n_array[4] != 0) ? (a[Number(n_array[4])] || b[n_array[4][0]] + ' ' + a[n_array[4][1]]) + 'Hundred ' : '';
+                str += (n_array[5] != 0) ? ((str != '') ? 'and ' : '') + (a[Number(n_array[5])] || b[n_array[5][0]] + ' ' + a[n_array[5][1]]) : '';
+                return str;
+            }
+            const [intPart, decPart] = parseFloat(amount).toFixed(2).split('.');
+            let words = numToWords(parseInt(intPart));
+            if (!words || words.trim() === '') words = "Zero ";
+            words += "Rupees";
+            if (parseInt(decPart) > 0) words += " and " + numToWords(parseInt(decPart)) + "Paise";
+            return words + " Only";
+        }
+
+        function getFormattedBankDetails() {
+            const raw = localStorage.getItem("invoiceBankDetails");
+            if (!raw) return null;
+            try {
+                const data = JSON.parse(raw);
+                if (typeof data === 'object' && data !== null && (data.bankName || data.accountNumber)) {
+                    let lines = [];
+                    if (data.bankName) lines.push(`Bank: ${data.bankName}`);
+                    if (data.accountName) lines.push(`A/c Name: ${data.accountName}`);
+                    if (data.accountNumber) lines.push(`A/c No: ${data.accountNumber}`);
+                    if (data.ifscCode) lines.push(`IFSC: ${data.ifscCode}`);
+                    if (data.branchName) lines.push(`Branch: ${data.branchName}`);
+                    if (data.upiId) lines.push(`UPI ID: ${data.upiId}`);
+                    return lines.join("\n");
+                }
+                return raw;
+            } catch (e) {
+                return raw;
+            }
+        }
+
+        async function generateDynamicQr(amount, invoiceNo, companyNameOverride) {
+            const bankText = localStorage.getItem("invoiceBankDetails") || "";
+            const upiMatch = bankText.match(/(?:UPI ID|VPA|UPI)\s*[:\-]\s*([a-zA-Z0-9.\-_]+@[a-zA-Z0-9]+)/i);
+            if (!upiMatch) return null;
+
+            const upiId = upiMatch[1];
+            const companyName = companyNameOverride || ((typeof APP_SETTINGS !== 'undefined' && APP_SETTINGS.COMPANY_NAME) ? APP_SETTINGS.COMPANY_NAME : "RISE Tech Revolution");
+            const note = `Inv:${invoiceNo}`;
+            const upiData = `upi://pay?pa=${upiId}&pn=${encodeURIComponent(companyName)}&am=${amount.toFixed(2)}&tn=${encodeURIComponent(note)}&cu=INR`;
+
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.crossOrigin = "Anonymous";
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0);
+                    resolve(canvas.toDataURL('image/png'));
+                };
+                img.onerror = () => resolve(null);
+                img.src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(upiData)}`;
+            });
+        }
+
+        async function previewInvoicePDF(invoice) {
+            await generateAndSavePDF(invoice, "Customer Copy", "_customer", true);
+        }
+
+        async function directPrintInvoicePDF(invoice) {
+            await generateAndSavePDF(invoice, "Customer Copy", "_customer", false, true);
+        }
+
+        async function generateAndSavePDF(invoice, copyLabel, suffix, isPreview = false, isDirectPrint = false) {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            const isSaleInvoice = (invoice.invoiceType === "SALE INVOICE");
+
+            let invColVis = JSON.parse(localStorage.getItem("invoiceColumnVisibility"));
+            if (!invColVis || invColVis.length !== 18) {
+                invColVis = new Array(18).fill(true);
+                [3, 4, 5, 6, 7].forEach(i => invColVis[i] = false);
+            }
+
+            doc.setFontSize(10);
+            doc.setTextColor(0);
+            doc.setFont(undefined, 'bold');
+            doc.text(copyLabel, 195, 10, { align: "right" });
+            doc.setFont(undefined, 'normal');
+
+            const logoImg = document.getElementById('invoiceLogo');
+            if (logoImg && logoImg.complete && logoImg.naturalHeight !== 0) {
+                try {
+                    doc.addImage(logoImg, 'PNG', 14, 5, 25, 25);
+                } catch (e) { console.warn("Error adding logo to PDF:", e); }
+            }
+
+            let companyName = "RISE Tech Revolution";
+            let addressLine1 = "Memari, New Bus Stand (near SBI)";
+            let addressLine2 = "Barddhaman (E), Pin: 713146";
+            let contactNumber = "Mo: 96141 73988";
+            let companyGstin = "";
+            let companyEmail = "";
+            let sellerDistrict = localStorage.getItem('district') || "";
+            let sellerState = localStorage.getItem('sellerState') || "";
+
+            if (window.getBrandSettings) {
+                const brand = window.getBrandSettings() || {};
+                companyName = brand.companyName || companyName;
+                addressLine1 = brand.addressLine1 || addressLine1;
+                addressLine2 = brand.addressLine2 || addressLine2;
+                contactNumber = brand.contactNumber ? `Mo: ${brand.contactNumber}` : contactNumber;
+                companyGstin = brand.companyGstin || companyGstin;
+                companyEmail = brand.companyEmail || companyEmail;
+                sellerDistrict = brand.district || sellerDistrict;
+                sellerState = brand.sellerState || sellerState;
+            }
+
+            doc.setFontSize(20);
+            doc.setTextColor(44, 62, 80);
+            doc.text(companyName, 105, 15, { align: "center" });
+
+            doc.setFontSize(10);
+            doc.setTextColor(100);
+
+            let nextY = 22;
+            if (addressLine1) { doc.text(addressLine1, 105, nextY, { align: "center" }); nextY += 5; }
+            if (addressLine2) { doc.text(addressLine2, 105, nextY, { align: "center" }); nextY += 5; }
+
+            let distStateParts = [];
+            if (sellerDistrict) distStateParts.push(`Dist: ${sellerDistrict}`);
+            if (sellerState) distStateParts.push(`State: ${sellerState}`);
+            let distState = distStateParts.join(", ");
+            if (distState) { doc.text(distState, 105, nextY, { align: "center" }); nextY += 5; }
+
+            let contactParts = [];
+            if (contactNumber) contactParts.push(contactNumber);
+            if (companyEmail) contactParts.push(`E-Mail: ${companyEmail}`);
+
+            if (contactParts.length > 0) { doc.text(contactParts.join(" | "), 105, nextY, { align: "center" }); nextY += 5; }
+            if (companyGstin) { doc.text(`GSTIN: ${companyGstin}`, 105, nextY, { align: "center" }); nextY += 4; } else { nextY += 4; }
+
+            doc.setDrawColor(200);
+            doc.line(10, nextY, 200, nextY);
+
+            let offset = nextY - 36;
+            if (offset < 0) offset = 0;
+
+            doc.setFontSize(11);
+            doc.setTextColor(0);
+            doc.text(`Invoice No: ${invoice.invoice_no || invoice.invoiceNo || '-'}`, 14, 45 + offset);
+            doc.text(`Invoice Type: ${invoice.invoiceType || 'TAX INVOICE'}`, 14, 50 + offset);
+            const d = invoice.invoice_date || invoice.date;
+
+            let dateStr = d ? formatDate(d) : '-';
+            if (showTimestampInPdf && (invoice.invoice_time || invoice.time)) {
+                const [h, m] = (invoice.invoice_time || invoice.time).split(':');
+                const tObj = new Date(); tObj.setHours(h); tObj.setMinutes(m);
+                const tStr = tObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                dateStr += " " + tStr;
+            }
+            doc.text(`Date: ${dateStr}`, 160, 45 + offset);
+
+            doc.setFont(undefined, 'bold');
+            doc.text("Bill To:", 14, 55 + offset);
+            doc.setFont(undefined, 'normal');
+
+            const custName = invoice.customer_name || (invoice.customer && invoice.customer.name) || "-";
+            doc.text(custName, 14, 62 + offset);
+
+            const address = invoice.address || (invoice.customer && invoice.customer.address) || "";
+            const contact = invoice.contact || (invoice.customer && invoice.customer.contact) || "";
+            const pin = invoice.pin || (invoice.customer && invoice.customer.pin) || "";
+            const district = invoice.district || (invoice.customer && invoice.customer.district) || "";
+            const state = invoice.state || (invoice.customer && invoice.customer.state) || "";
+            const gst = invoice.gst_no || invoice.gst || (invoice.customer && invoice.customer.gst) || "";
+            const stateCode = invoice.stateCode || (invoice.customer && invoice.customer.stateCode) || "";
+
+            let y = 67 + offset;
+            const maxColWidth = 90;
+
+            if (address) {
+                const splitAddr = doc.splitTextToSize(address, maxColWidth);
+                doc.text(splitAddr, 14, y);
+                y += (splitAddr.length * 5);
+            }
+
+            let line1 = [];
+            if (pin) line1.push(`PIN: ${pin}`);
+            if (district) line1.push(`Dist: ${district}`);
+            if (line1.length > 0) { doc.text(line1.join(", "), 14, y); y += 5; }
+
+            let line2 = [];
+            if (state) line2.push(`State: ${state}`);
+            if (stateCode) line2.push(`Code: ${stateCode}`);
+            if (line2.length > 0) { doc.text(line2.join(", "), 14, y); y += 5; }
+
+            let line3 = [];
+            if (contact) line3.push(`Mob: ${contact}`);
+            if (gst && !isSaleInvoice) line3.push(`GST: ${gst}`);
+            if (line3.length > 0) {
+                const splitLine3 = doc.splitTextToSize(line3.join(", "), maxColWidth);
+                doc.text(splitLine3, 14, y);
+                y += 5;
+            }
+
+            const items = invoice.items || [];
+            let calculatedTotal = 0;
+            let calculatedTotalDiscount = 0;
+            let totalCGST = 0;
+            let totalSGST = 0;
+            let totalIGST = 0;
+            let totalTaxable = 0;
+            const gstType = invoice.gstType || "Intra-State";
+
+            let headers = ['Sl', 'Item'];
+            if (invColVis[7]) headers.push('HSN/SAC');
+            headers.push('Qty', 'UOM', 'Price');
+
+            const tableData = items.map((it, i) => {
+                const row = [i + 1];
+                let itemPdfDisplay = (it.item || "") + (showItemCodeInPdf && it.itemCode ? ` (${it.itemCode})` : "");
+                row.push(itemPdfDisplay);
+                if (invColVis[7]) row.push(it.hsn || "");
+                const qty = parseFloat(it.qty) || 0;
+                const price = parseFloat(it.price) || 0;
+                const gst = parseFloat(it.gst) || 0;
+                row.push(qty);
+                row.push(it.uom || "");
+                row.push(price.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+
+                let rowTotal = 0;
+                let gstAmt = 0;
+                const disc = parseFloat(it.disc) || 0;
+                const discType = it.discType || '%';
+                const base = qty * price;
+                let discVal = (discType === 'flat') ? disc : (base * disc / 100);
+                const taxable = Math.max(0, base - discVal);
+
+                calculatedTotalDiscount += discVal;
+                totalTaxable += taxable;
+                gstAmt = taxable * (gst / 100);
+                rowTotal = taxable + gstAmt;
+                calculatedTotal += rowTotal;
+
+                if (showDiscountInPdf) {
+                    row.push(disc > 0 ? `${disc}${discType === 'flat' ? '₹' : '%'}` : '-');
+                }
+
+                if (!isSaleInvoice) {
+                    if (gstType === "Intra-State") {
+                        const halfRate = gst / 2;
+                        const halfAmt = gstAmt / 2;
+                        totalCGST += halfAmt;
+                        totalSGST += halfAmt;
+                        row.push(halfRate ? halfRate + '%' : '-');
+                        row.push(halfAmt ? halfAmt.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-');
+                        row.push(halfRate ? halfRate + '%' : '-');
+                        row.push(halfAmt ? halfAmt.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-');
+                    } else {
+                        totalIGST += gstAmt;
+                        row.push(gst ? gst + '%' : '-');
+                        row.push(gstAmt ? gstAmt.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-');
+                    }
+                }
+                row.push(rowTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+                return row;
+            });
+
+            let overallDiscountValPdf = parseFloat(invoice.overallDiscountAmount || invoice.overallDiscount || 0);
+            if (overallDiscountValPdf > 0 && totalTaxable > 0) {
+                const prop = overallDiscountValPdf / totalTaxable;
+                totalCGST -= totalCGST * prop;
+                totalSGST -= totalSGST * prop;
+                totalIGST -= totalIGST * prop;
+            }
+
+            if (showDiscountInPdf) headers.push('Disc');
+            if (!isSaleInvoice) {
+                if (gstType === "Intra-State") {
+                    headers.push('CGST%', 'CGST Amt', 'SGST%', 'SGST Amt');
+                } else {
+                    headers.push('IGST%', 'IGST Amt');
+                }
+            }
+            headers.push('Total');
+
+            doc.autoTable({
+                startY: Math.max(y + 5, 85),
+                head: [headers],
+                body: tableData,
+                theme: 'striped',
+                headStyles: { fillColor: [255, 255, 255], textColor: 0 },
+                styles: { fontSize: 10, cellPadding: 3, lineColor: 200, lineWidth: 0.5 },
+                bodyStyles: { minCellHeight: 8 },
+                rowPageBreak: 'avoid'
+            });
+
+            const finalY = doc.lastAutoTable.finalY + 10;
+            let currentY = finalY;
+
+            let total = calculatedTotal;
+            if (invoice.invoice_total !== undefined) {
+                total = parseFloat(invoice.invoice_total);
+            }
+            const paid = parseFloat(invoice.total_paid || invoice.paid_amount || invoice.paid) || 0;
+            const due = total - paid;
+
+            doc.setFontSize(10);
+            doc.setFont(undefined, 'bold');
+            doc.text("Amount in Words:", 14, currentY);
+            doc.setFont(undefined, 'normal');
+            const amtWords = convertNumberToWords(total);
+            const splitWords = doc.splitTextToSize(amtWords, 110);
+            doc.text(splitWords, 14, currentY + 6);
+
+            doc.setFontSize(10);
+            let rightY = finalY;
+
+            if (!isSaleInvoice && totalTaxable > 0) {
+                doc.text("Taxable Amount:", 140, rightY);
+                doc.text(totalTaxable.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }), 195, rightY, { align: "right" });
+                rightY += 6;
+
+                if (gstType === "Intra-State") {
+                    doc.text("Add: CGST:", 140, rightY);
+                    doc.text(totalCGST.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }), 195, rightY, { align: "right" });
+                    rightY += 6;
+                    doc.text("Add: SGST:", 140, rightY);
+                    doc.text(totalSGST.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }), 195, rightY, { align: "right" });
+                    rightY += 6;
+                } else {
+                    doc.text("Add: IGST:", 140, rightY);
+                    doc.text(totalIGST.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }), 195, rightY, { align: "right" });
+                    rightY += 6;
+                }
+            }
+
+            doc.setFont(undefined, 'bold');
+            doc.text("Total Amount:", 140, rightY);
+            doc.text(total.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }), 195, rightY, { align: "right" });
+            rightY += 6;
+
+            doc.setFont(undefined, 'normal');
+            doc.text("Paid Amount:", 140, rightY);
+            doc.text(paid.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }), 195, rightY, { align: "right" });
+            rightY += 8;
+
+            doc.setFont(undefined, 'bold');
+            doc.text("Balance Due:", 140, rightY);
+            doc.text(due.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }), 195, rightY, { align: "right" });
+
+            doc.setDrawColor(0);
+            doc.line(145, 270, 195, 270);
+            doc.setFont(undefined, 'normal');
+            doc.setFontSize(10);
+            doc.text(`For ${companyName}`, 170, 265, { align: "center" });
+            doc.text("Authorized Signatory", 170, 276, { align: "center" });
+
+            if (isDirectPrint) {
+                doc.autoPrint();
+                window.open(doc.output('bloburl'), '_blank');
+            } else if (isPreview) {
+                window.open(doc.output('bloburl'), '_blank');
+            } else {
+                doc.save(`Invoice_${invoice.invoice_no || 'new'}_${suffix}.pdf`);
+            }
+        }
+
+
+
+        function exportToExcel() {
+            const wb = XLSX.utils.book_new();
+
+            // GSTR-1 Sheet
+            const ws1 = XLSX.utils.table_to_sheet(document.getElementById('table_gstr1'));
+            XLSX.utils.book_append_sheet(wb, ws1, "GSTR-1 Sales");
+
+            // GSTR-2 Sheet
+            const ws2 = XLSX.utils.table_to_sheet(document.getElementById('table_gstr2'));
+            XLSX.utils.book_append_sheet(wb, ws2, "GSTR-2 Purchases");
+
+            // GSTR-3B Sheet (Custom Data)
+            const g3bData = [
+                ["Section", "Details", "Taxable Value", "IGST", "CGST", "SGST"],
+                ["3.1", "Outward Supplies", document.getElementById('3b_out_taxable').innerText, document.getElementById('3b_out_igst').innerText, document.getElementById('3b_out_cgst').innerText, document.getElementById('3b_out_sgst').innerText],
+                ["4", "Eligible ITC", "-", document.getElementById('3b_itc_igst').innerText, document.getElementById('3b_itc_cgst').innerText, document.getElementById('3b_itc_sgst').innerText],
+                ["", "Net Liability", "", document.getElementById('net_liability_msg').innerText]
+            ];
+            const ws3 = XLSX.utils.aoa_to_sheet(g3bData);
+            XLSX.utils.book_append_sheet(wb, ws3, "GSTR-3B Summary");
+
+            XLSX.writeFile(wb, "GST_Return_Report.xlsx");
+        }
+
+        function exportGSTR2CSV() {
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.table_to_sheet(document.getElementById('table_gstr2'));
+            XLSX.utils.book_append_sheet(wb, ws, "GSTR-2");
+            XLSX.writeFile(wb, "GSTR-2_Purchases.csv");
+        }
+
+        async function generatePDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('l', 'mm', 'a4'); // Landscape A4 for wide reports
+
+            // Brand Info
+            let companyName = "Company Name";
+            let addressLine1 = "";
+            let addressLine2 = "";
+            let contact = "";
+
+            if (window.getBrandSettings) {
+                const brand = window.getBrandSettings();
+                if (brand.companyName) companyName = brand.companyName;
+                if (brand.addressLine1) addressLine1 = brand.addressLine1;
+                if (brand.addressLine2) addressLine2 = brand.addressLine2;
+                if (brand.contactNumber) contact = `Mo: ${brand.contactNumber}`;
+            }
+
+            const fromDate = document.getElementById('fromDate').value;
+            const toDate = document.getElementById('toDate').value;
+            
+            const formatPdfDate = (d) => {
+                if (!d) return "";
+                return d.split('T')[0].split('-').reverse().join('/');
+            };
+
+            const periodStr = (fromDate && toDate) ? `Period: ${formatPdfDate(fromDate)} to ${formatPdfDate(toDate)}` : "Period: All Time";
+
+            let y = 15;
+
+            // Tally ERP 9 Style Header Helper
+            function addHeader(title) {
+                doc.setFontSize(10);
+                doc.setFont("helvetica", "bold");
+                doc.setTextColor(0, 0, 0);
+                doc.text(companyName, 148.5, 15, { align: "center" }); // Center of landscape A4 (297/2)
+
+                doc.setFontSize(10);
+                doc.setFont("helvetica", "normal");
+                let nextY = 20;
+                if (addressLine1) { doc.text(addressLine1, 148.5, nextY, { align: "center" }); nextY += 5; }
+                if (addressLine2) { doc.text(addressLine2, 148.5, nextY, { align: "center" }); nextY += 5; }
+                if (contact) { doc.text(contact, 148.5, nextY, { align: "center" }); nextY += 5; }
+
+                doc.setDrawColor(0);
+                doc.setLineWidth(0.5);
+                doc.line(10, nextY, 287, nextY); // Margin 10mm from edges
+                nextY += 7;
+
+                doc.setFontSize(12);
+                doc.setFont("helvetica", "bold");
+                doc.text(title, 148.5, nextY, { align: "center" });
+
+                doc.setFontSize(9);
+                doc.setFont("helvetica", "normal");
+                nextY += 5;
+                doc.text(periodStr, 148.5, nextY, { align: "center" });
+                
+                return nextY + 5;
+            }
+
+            // Standard Tally Table Styles
+            const tallyStyles = {
+                theme: 'grid',
+                styles: { fontSize: 8, font: 'helvetica', cellPadding: 2, lineColor: [0, 0, 0], lineWidth: 0.1, textColor: [0, 0, 0] },
+                headStyles: { fillColor: [255, 255, 255], textColor: [0, 0, 0], fontStyle: 'bold', halign: 'center' },
+                footStyles: { fillColor: [255, 255, 255], textColor: [0, 0, 0], fontStyle: 'bold' },
+                margin: { top: 10, left: 10, right: 10 }
+            };
+
+            // --- GSTR-1 ---
+            y = addHeader("GST Return Report - GSTR-1 (Sales)");
+
+            let g1_taxable = 0, g1_igst = 0, g1_cgst = 0, g1_sgst = 0, g1_total_tax = 0, g1_grand_total = 0;
+            const g1Body = gstr1Data.map(r => {
+                g1_taxable += r.taxable; g1_igst += r.igst; g1_cgst += r.cgst; g1_sgst += r.sgst; g1_total_tax += r.taxAmt; g1_grand_total += r.total;
+                return [
+                    r.invNo, formatPdfDate(r.date), r.custName, r.custGST, r.state, r.supplyType, 
+                    r.taxable.toFixed(2), r.rate, r.igst.toFixed(2), r.cgst.toFixed(2), r.sgst.toFixed(2), r.taxAmt.toFixed(2), r.total.toFixed(2)
+                ];
+            });
+
+            doc.autoTable({
+                startY: y,
+                head: [['Invoice No', 'Date', 'Customer Name', 'GSTIN', 'Place of Supply', 'Type', 'Taxable Value', 'Rate (%)', 'IGST', 'CGST', 'SGST', 'Total Tax', 'Invoice Total']],
+                body: g1Body,
+                foot: [['Grand Total', '', '', '', '', '', g1_taxable.toFixed(2), '-', g1_igst.toFixed(2), g1_cgst.toFixed(2), g1_sgst.toFixed(2), g1_total_tax.toFixed(2), g1_grand_total.toFixed(2)]],
+                ...tallyStyles,
+                columnStyles: { 6: {halign:'right'}, 7: {halign:'center'}, 8: {halign:'right'}, 9: {halign:'right'}, 10: {halign:'right'}, 11: {halign:'right'}, 12: {halign:'right'} }
+            });
+
+            // --- GSTR-2 ---
+            doc.addPage();
+            y = addHeader("GST Return Report - GSTR-2 (Purchases)");
+
+            let g2_taxable = 0, g2_igst = 0, g2_cgst = 0, g2_sgst = 0, g2_total_tax = 0;
+            const g2Body = gstr2Data.map(r => {
+                g2_taxable += r.taxable; g2_igst += r.igst; g2_cgst += r.cgst; g2_sgst += r.sgst; g2_total_tax += r.totalTax;
+                return [
+                    r.supplierName, r.supplierInv || '-', formatPdfDate(r.date), r.itemName, r.supplyType, 
+                    r.taxable.toFixed(2), r.rate, r.igst.toFixed(2), r.cgst.toFixed(2), r.sgst.toFixed(2), r.totalTax.toFixed(2), 'Input Goods'
+                ];
+            });
+
+            doc.autoTable({
+                startY: y,
+                head: [['Supplier Name', 'Inv No', 'Date', 'Item', 'Supply Type', 'Taxable Value', 'Rate', 'IGST', 'CGST', 'SGST', 'Total Tax', 'Eligibility']],
+                body: g2Body,
+                foot: [['Grand Total', '', '', '', '', g2_taxable.toFixed(2), '-', g2_igst.toFixed(2), g2_cgst.toFixed(2), g2_sgst.toFixed(2), g2_total_tax.toFixed(2), '']],
+                ...tallyStyles,
+                columnStyles: { 5: {halign:'right'}, 6: {halign:'center'}, 7: {halign:'right'}, 8: {halign:'right'}, 9: {halign:'right'}, 10: {halign:'right'} }
+            });
+
+            // --- GSTR-3B ---
+            doc.addPage();
+            y = addHeader("GST Return Report - GSTR-3B");
+
+            doc.setFontSize(10);
+            doc.setFont(undefined, 'bold');
+            doc.text("3.1 Details of Outward Supplies and inward supplies liable to reverse charge", 10, y);
+            y += 5;
+
+            doc.autoTable({
+                startY: y,
+                head: [['Nature of Supplies', 'Total Taxable Value', 'Integrated Tax', 'Central Tax', 'State/UT Tax']],
+                body: [
+                    ['(a) Outward taxable supplies (other than zero rated, nil rated and exempted)', g1_taxable.toFixed(2), g1_igst.toFixed(2), g1_cgst.toFixed(2), g1_sgst.toFixed(2)],
+                    ['(b) Outward taxable supplies (zero rated)', '0.00', '0.00', '0.00', '0.00']
+                ],
+                ...tallyStyles,
+                columnStyles: { 1: {halign:'right'}, 2: {halign:'right'}, 3: {halign:'right'}, 4: {halign:'right'} }
+            });
+
+            y = doc.lastAutoTable.finalY + 10;
+            doc.text("4. Eligible ITC", 10, y);
+            y += 5;
+
+            doc.autoTable({
+                startY: y,
+                head: [['Details', 'Integrated Tax', 'Central Tax', 'State/UT Tax']],
+                body: [
+                    ['(A) ITC Available (whether in full or part)', g2_igst.toFixed(2), g2_cgst.toFixed(2), g2_sgst.toFixed(2)],
+                    ['(B) ITC Reversed', '0.00', '0.00', '0.00'],
+                    [{content: '(C) Net ITC Available (A - B)', styles: {fontStyle: 'bold'}}, {content: g2_igst.toFixed(2), styles: {fontStyle: 'bold'}}, {content: g2_cgst.toFixed(2), styles: {fontStyle: 'bold'}}, {content: g2_sgst.toFixed(2), styles: {fontStyle: 'bold'}}]
+                ],
+                ...tallyStyles,
+                columnStyles: { 1: {halign:'right'}, 2: {halign:'right'}, 3: {halign:'right'} }
+            });
+
+            y = doc.lastAutoTable.finalY + 10;
+            const netLiability = document.getElementById('net_liability_msg').innerText;
+            doc.setFontSize(10);
+            doc.text(`Net Tax Liability: ${netLiability}`, 10, y);
+
+            doc.save("GST_Return_Report.pdf");
+        }
+    </script>
+</body>
+
+</html>

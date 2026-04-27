@@ -1,0 +1,1557 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Order Copy</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="apiClient.js"></script>
+    <script src="settings.js"></script>
+    <script src="brandLoader.js"></script>
+    <script src="brand.service.js"></script>
+
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f4f6f8;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        h2 {
+            color: #2c3e50;
+            margin: 0;
+        }
+
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+            margin-bottom: 20px;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+
+        }
+
+        .form-group {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            min-width: 200px;
+        }
+
+        label {
+            font-weight: 600;
+            font-size: 13px;
+            color: #555;
+        }
+
+        input,
+        select {
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 14px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        input:focus,
+        select:focus {
+            border-color: #3498db;
+            outline: none;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            color: white;
+            transition: opacity 0.2s;
+
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+        }
+
+        .btn-primary {
+            background: #3498db;
+        }
+
+        .btn-success {
+            background: #27ae60;
+        }
+
+        .btn-danger {
+            background: #e74c3c;
+        }
+
+        .btn-warning {
+            background: #f39c12;
+            color: #000;
+        }
+
+        .btn-secondary {
+            background: #7f8c8d;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            background: white;
+        }
+
+        th,
+        td {
+            border: 1px solid #eee;
+            padding: 10px;
+            text-align: left;
+            font-size: 14px;
+        }
+
+        th {
+            background: #2c3e50;
+            color: white;
+        }
+
+        .item-table th,
+        .item-table td {
+            padding: 6px;
+        }
+
+        .item-table input,
+        .item-table select {
+            margin: 0;
+            padding: 6px;
+        }
+
+        .amount-col {
+            text-align: right;
+            font-weight: bold;
+            width: 120px;
+        }
+
+        .total-box {
+            float: right;
+            width: 350px;
+            margin-top: 20px;
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid #ddd;
+        }
+
+        .total-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .total-row.grand {
+            font-weight: bold;
+            font-size: 16px;
+            border-top: 1px solid #ccc;
+            padding-top: 8px;
+            margin-top: 8px;
+        }
+
+        .clearfix {
+            clear: both;
+        }
+
+        .footer-signatures {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 60px;
+            padding-top: 20px;
+            text-align: center;
+        }
+
+        .sign-box {
+            width: 200px;
+            border-top: 1px solid #333;
+            padding-top: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            width: 350px;
+        }
+
+        /* Pagination Styles */
+        .pagination button {
+            padding: 4px 10px;
+            border: 1px solid #ccc;
+            background: #fff;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        .pagination button.active {
+            background: #3498db;
+            color: #fff;
+            border-color: #3498db;
+        }
+
+        .pagination button:disabled {
+            background: #eee;
+            cursor: not-allowed;
+        }
+
+        .print-only-label {
+            display: none;
+        }
+
+        @media print {
+            @page {
+                margin: 10mm;
+            }
+
+            ::placeholder {
+                color: transparent !important;
+            }
+
+            body {
+                background: white;
+                padding: 0;
+                font-size: 12px;
+            }
+
+            .no-print {
+                display: none !important;
+            }
+
+            .card {
+                box-shadow: none;
+                border: none;
+                padding: 0;
+                margin: 0;
+            }
+
+            .form-row {
+                margin-bottom: 5px !important;
+                gap: 10px !important;
+            }
+
+            .form-group {
+                min-width: auto;
+                flex: 1;
+            }
+
+            label {
+                font-size: 11px !important;
+                margin-bottom: 2px !important;
+            }
+
+            h3 {
+                font-size: 14px !important;
+                margin: 10px 0 5px 0 !important;
+                padding-bottom: 5px !important;
+            }
+
+            .item-table {
+                table-layout: auto !important;
+                width: 100% !important;
+            }
+
+            .item-table th,
+            .item-table td {
+                padding: 4px 2px !important;
+                font-size: 10px !important;
+                width: auto !important;
+                word-wrap: break-word !important;
+                overflow-wrap: break-word !important;
+            }
+
+            .total-box {
+                width: 250px !important;
+                padding: 10px !important;
+                margin-top: 10px !important;
+            }
+
+            .total-row {
+                font-size: 12px !important;
+                margin-bottom: 4px !important;
+            }
+
+            .footer-signatures {
+                margin-top: 30px !important;
+                padding-top: 10px !important;
+            }
+
+            .sign-box {
+                font-size: 12px !important;
+            }
+
+            input,
+            select {
+                border: none;
+                background: transparent;
+                padding: 0;
+                -webkit-appearance: none;
+                appearance: none;
+                font-size: 10px !important;
+                padding: 1px !important;
+                height: auto !important;
+                width: 100% !important;
+                min-width: 0 !important;
+                box-sizing: border-box !important;
+            }
+
+            .item-table th {
+                background: #eee !important;
+                color: #000 !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            .btn-danger {
+                background: #e74c3c;
+            }
+
+            .btn-warning {
+                background: #f39c12;
+                color: #000;
+            }
+
+            .btn-secondary {
+                background: #7f8c8d;
+            }
+
+            .btn-info {
+                background: #6f42c1;
+                color: #ffffff;
+            }
+
+            table {
+                width: 100%;
+            }
+
+            th,
+            td {
+                border: 1px solid #ccc !important;
+            }
+
+            #termsConditions {
+                border: none !important;
+                background: transparent !important;
+                resize: none;
+                padding: 0;
+                overflow: hidden;
+            }
+
+            .print-only-label {
+                display: block !important;
+            }
+        }
+    </style>
+
+</head>
+
+<body>
+
+    <div class="header no-print">
+        <div style="flex: 1;"></div>
+        <h2 style="flex: 1; text-align: center; white-space: nowrap;"><i class="fas fa-file-invoice"></i> Order Copy -
+            <span data-brand="name"></span></h2>
+        <div style="flex: 1; text-align: right;">
+            <button class="btn btn-secondary" onclick="openSettingsModal()"><i class="fas fa-cog"></i> Settings</button>
+            <button class="btn btn-info" onclick="toggleView()" id="viewToggleBtn"
+                style="font-size: 15px; padding: 10px 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.15); border-radius: 6px; background-color: #6f42c1; color: white; border: none;"><i
+                    class="fas fa-list"></i> View Orders</button>
+            <button class="btn btn-warning" onclick="clearForm()"><i class="fas fa-eraser"></i> Clear</button>
+            <button class="btn btn-success" onclick="saveOrder()"><i class="fas fa-save"></i> Save Order</button>
+            <button class="btn btn-primary" onclick="window.print()"><i class="fas fa-print"></i> Print / PDF</button>
+        </div>
+    </div>
+
+    <div id="formView">
+        <div class="card" id="printArea">
+            <div style="text-align:center; margin-bottom:20px; display:none;" class="print-header">
+                <h1 style="margin:0;" data-brand="name">Company Name</h1>
+                <p style="margin:5px 0 0 0; font-size:14px;" data-brand="address">Address</p>
+                <h2
+                    style="margin-top:10px; font-size: 18px; border-bottom:1px solid #000; display:inline-block; padding-bottom:5px;">
+                    ORDER COPY</h2>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Order No</label>
+                    <input type="text" id="orderNo" placeholder="ORD-0001">
+                    <small id="lastOrderNoDisplay" class="no-print"
+                        style="font-weight:bold; color:#555; margin-top: 2px;">Last Order: -</small>
+                </div>
+                <div class="form-group">
+                    <label>Order Date</label>
+                    <input type="date" id="orderDate">
+                </div>
+                <div class="form-group">
+                    <label>Delivery Date</label>
+                    <input type="date" id="deliveryDate">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group" style="flex: 2;">
+                    <label>Supplier Name</label>
+                    <input type="text" id="supplierName" list="supplierList" placeholder="Search Supplier..."
+                        onchange="autofillSupplier()">
+                    <datalist id="supplierList"></datalist>
+                </div>
+                <div class="form-group">
+                    <label>Contact Number</label>
+                    <input type="text" id="contact" placeholder="10-digit number">
+                </div>
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="email" placeholder="Email ID">
+                </div>
+                <div class="form-group">
+                    <label>GSTIN</label>
+                    <input type="text" id="gstin" placeholder="GST Number">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group" style="flex: 2;">
+                    <label>Address</label>
+                    <input type="text" id="address" placeholder="Address">
+                </div>
+                <div class="form-group">
+                    <label>PIN Code</label>
+                    <input type="text" id="pin" placeholder="PIN Code">
+                </div>
+                <div class="form-group">
+                    <label>State</label>
+                    <input type="text" id="state" placeholder="State">
+                </div>
+                <div class="form-group" style="flex: 1.5;">
+                    <label>State Type</label>
+                    <select id="stateType" onchange="calculate()">
+                        <option value="Intra-State">Intra-State (CGST + SGST)</option>
+                        <option value="Inter-State">Inter-State (IGST)</option>
+                    </select>
+                </div>
+            </div>
+
+            <h3 style="margin-top: 20px; border-bottom: 1px solid #eee; padding-bottom: 10px;">Item Details</h3>
+
+            <table class="item-table" id="itemTable">
+                <thead>
+                    <tr>
+                        <th style="width: 40px; text-align:center;">Sl</th>
+                        <th>Item Name</th>
+                        <th style="width: 100px;">HSN</th>
+                        <th style="width: 100px;">IMEI</th>
+                        <th style="width: 100px;">Batch</th>
+                        <th style="width: 100px;">Lot</th>
+                        <th style="width: 100px;">Serial</th>
+                        <th style="width: 80px;">Qty</th>
+                        <th style="width: 80px;">UOM</th>
+                        <th style="width: 120px;">Rate (₹)</th>
+                        <th style="width: 80px;">Tax %</th>
+                        <th style="width: 120px; text-align:right;">Amount (₹)</th>
+                        <th style="width: 50px; text-align:center;" class="no-print">Action</th>
+                    </tr>
+                </thead>
+                <tbody id="itemBody">
+                    <!-- Rows injected by JS -->
+                </tbody>
+            </table>
+
+            <div class="no-print" style="margin-top: 10px;">
+                <button class="btn btn-secondary" onclick="addRow()">+ Add Item</button>
+            </div>
+
+            <div class="terms-section" style="margin-top: 20px; float: left; width: 55%;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 5px;"
+                    class="no-print">
+                    <label style="text-decoration: underline; margin:0;">Terms & Conditions:</label>
+                    <button id="editTermsBtn" class="btn btn-secondary" style="padding: 2px 8px; font-size: 12px;"
+                        onclick="toggleTermsEdit()">✏️ Edit</button>
+                </div>
+                <div class="print-only-label"
+                    style="display:none; font-weight:bold; margin-bottom:5px; font-size: 13px;">Terms & Conditions:
+                </div>
+                <textarea id="termsConditions" rows="5" readonly
+                    style="width: 100%; font-family: inherit; border: 1px solid #ccc; padding: 8px; border-radius: 4px; background-color: #f9f9f9;"
+                    placeholder="Enter terms here..." oninput="saveTerms(this)"></textarea>
+            </div>
+
+            <div class="total-box">
+                <div class="total-row">
+                    <span>Sub Total:</span>
+                    <span id="subTotal">0.00</span>
+                </div>
+                <div class="total-row" id="cgstRow">
+                    <span>CGST:</span>
+                    <span id="cgst">0.00</span>
+                </div>
+                <div class="total-row" id="sgstRow">
+                    <span>SGST:</span>
+                    <span id="sgst">0.00</span>
+                </div>
+                <div class="total-row" id="igstRow" style="display:none;">
+                    <span>IGST:</span>
+                    <span id="igst">0.00</span>
+                </div>
+                <div class="total-row grand">
+                    <span>Grand Total:</span>
+                    <span id="grandTotal">0.00</span>
+                </div>
+            </div>
+
+            <div class="clearfix"></div>
+
+            <div class="footer-signatures">
+                <div class="sign-box">Prepared By</div>
+                <div class="sign-box">Authorized Signatory</div>
+                <div class="sign-box">Supplier Signature</div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- List View -->
+    <div id="listView" class="card" style="display:none;">
+        <div
+            style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 10px;">
+            <h3 style="margin: 0; border: none; padding: 0;">Saved Orders</h3>
+            <div style="display: flex; gap: 10px;">
+                <input type="date" id="orderFilterDate" onchange="currentPage=1; renderOrderList()"
+                    style="padding: 6px; border: 1px solid #ccc; border-radius: 4px;" title="Filter by Order Date">
+                <input type="text" id="orderSearchInput" placeholder="Search Order No or Supplier..."
+                    oninput="currentPage=1; renderOrderList()"
+                    style="width: 250px; padding: 6px; border: 1px solid #ccc; border-radius: 4px;">
+            </div>
+        </div>
+        <table id="savedOrdersTable">
+            <thead>
+                <tr>
+                    <th>Order No</th>
+                    <th>Order Date</th>
+                    <th>Supplier Name</th>
+                    <th style="text-align:center;">Status</th>
+                    <th style="text-align:right;">Grand Total (₹)</th>
+                    <th style="text-align:center;" class="no-print">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="savedOrdersBody"></tbody>
+        </table>
+
+        <!-- Pagination Controls -->
+        <div class="pagination-container"
+            style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px;">
+            <div style="display: flex; align-items: center; gap: 5px;">
+                <span id="totalOrdersDisplay" style="font-weight: bold; color: #3498db; margin-right: 8px;"></span>
+                <select id="rowsPerPageSelect" onchange="changeRowsPerPage()"
+                    style="width: auto; padding: 4px; border: 1px solid #ccc; border-radius: 4px; margin: 0;">
+                    <option value="10">10 rows</option>
+                    <option value="20" selected>20 rows</option>
+                    <option value="50">50 rows</option>
+                </select>
+            </div>
+            <div id="paginationInfo" style="color: #666; font-size:13px;"></div>
+            <div class="pagination" id="paginationControls" style="display: flex; gap: 5px;"></div>
+        </div>
+    </div>
+
+    <!-- Success Modal -->
+    <div id="successModal" class="modal no-print">
+        <div class="modal-content">
+            <h3 style="color: #27ae60; margin-top:0;">✅ Success</h3>
+            <p id="successMsg">Order saved successfully.</p>
+            <button class="btn btn-success" style="margin-top:15px; width:100%;"
+                onclick="closeModal('successModal')">OK</button>
+        </div>
+    </div>
+
+    <!-- Action Confirmation Modal -->
+    <div id="actionConfirmModal" class="modal no-print">
+        <div class="modal-content">
+            <h3 id="actionConfirmTitle" style="color: #d35400; margin-top:0;">⚠️ Confirmation</h3>
+            <p id="actionConfirmMsg"></p>
+            <div style="margin-top: 20px; display: flex; justify-content: center; gap: 10px;">
+                <button id="actionConfirmBtnYes" class="btn btn-warning">Yes</button>
+                <button id="actionConfirmBtnNo" class="btn btn-secondary">No</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Warning Modal -->
+    <div id="warningModal" class="modal no-print">
+        <div class="modal-content">
+            <h3 style="color: #d35400; margin-top:0;">⚠️ Warning</h3>
+            <p id="warningMsg">Please fill required fields.</p>
+            <button class="btn btn-warning" style="margin-top:15px; width:100%;"
+                onclick="closeModal('warningModal')">OK</button>
+        </div>
+
+    </div>
+
+    <!-- View & Print Modal -->
+    <div id="viewModal" class="modal no-print">
+        <div class="modal-content" style="width: 800px; max-width: 95%;">
+            <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                <h3 style="margin:0;">Order Details</h3>
+                <span style="cursor:pointer; font-size:24px;" onclick="closeModal('viewModal')">&times;</span>
+            </div>
+            <div id="viewContent"
+                style="text-align:left; max-height: 60vh; overflow-y:auto; border:1px solid #ccc; padding:15px; border-radius: 4px;">
+            </div>
+            <div style="margin-top:15px; text-align:right;">
+                <button class="btn btn-primary" id="viewModalPrintBtn"><i class="fas fa-print"></i> Print
+                    PDF</button>
+                <button class="btn btn-secondary" onclick="closeModal('viewModal')">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="modal no-print">
+        <div class="modal-content" style="width: 400px;">
+            <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                <h3 style="margin:0;">⚙️ Table Settings</h3>
+                <span style="cursor:pointer; font-size:24px;" onclick="closeModal('settingsModal')">&times;</span>
+            </div>
+            <p style="font-size:14px; color:#666; margin-bottom:10px; text-align: left;">Select columns to display:</p>
+            <div id="columnToggles"
+                style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; text-align:left; max-height:300px; overflow-y:auto; padding-bottom: 10px;">
+            </div>
+            <div style="margin-top: 15px; text-align: right;">
+                <button class="btn btn-danger" onclick="resetSettings()">Reset</button>
+                <button class="btn btn-secondary" onclick="closeModal('settingsModal')">Close</button>
+            </div>
+        </div>
+    </div>
+
+    ---
+
+    <datalist id="itemList"></datalist>
+    <datalist id="uomList"></datalist>
+
+    <style>
+        @media print {
+            .print-header {
+                display: block !important;
+            }
+        }
+    </style>
+
+    <script>
+        let currentMode = 'form';
+        let currentPage = 1;
+        let rowsPerPage = 20;
+
+        let defaultVisibility = new Array(13).fill(true);
+        // Hide IMEI, Batch, Lot, Serial, UOM by default
+        [3, 4, 5, 6, 8].forEach(i => defaultVisibility[i] = false);
+        let columnVisibility = JSON.parse(localStorage.getItem("orderColumnVisibility")) || defaultVisibility;
+        if (columnVisibility.length !== 13) {
+            columnVisibility = defaultVisibility;
+        }
+
+        // --- Initialization ---
+        document.addEventListener("DOMContentLoaded", () => {
+            document.getElementById('orderDate').valueAsDate = new Date();
+            loadSuppliers();
+            loadItems();
+            generateOrderNo();
+            addRow(); // Initial row
+
+            // Populate UOM List
+            const uomList = document.getElementById('uomList');
+            if (uomList && window.UNIT_MASTER_LIST) {
+                window.UNIT_MASTER_LIST.forEach(uom => {
+                    const opt = document.createElement('option');
+                    opt.value = uom;
+                    uomList.appendChild(opt);
+                });
+            }
+
+            // Setup Terms
+            const savedTerms = localStorage.getItem("orderTerms");
+            const termsEl = document.getElementById("termsConditions");
+            if (savedTerms && termsEl) {
+                termsEl.value = savedTerms;
+                setTimeout(() => { termsEl.style.height = 'auto'; termsEl.style.height = termsEl.scrollHeight + 'px'; }, 100);
+            }
+
+            updateColumnStyles();
+        });
+
+        function toggleView() {
+            const formView = document.getElementById('formView');
+            const listView = document.getElementById('listView');
+            const toggleBtn = document.getElementById('viewToggleBtn');
+
+            if (currentMode === 'form') {
+                formView.style.display = 'none';
+                listView.style.display = 'block';
+                toggleBtn.innerHTML = '<i class="fas fa-plus"></i> New Order';
+                currentMode = 'list';
+                renderOrderList();
+            } else {
+                formView.style.display = 'block';
+                listView.style.display = 'none';
+                toggleBtn.innerHTML = '<i class="fas fa-list"></i> View Orders';
+                currentMode = 'form';
+                clearForm();
+            }
+        }
+
+        function renderOrderList() {
+            const orders = JSON.parse(localStorage.getItem("order_sheets")) || [];
+            const tbody = document.getElementById("savedOrdersBody");
+            const searchInput = document.getElementById("orderSearchInput");
+            const searchTerm = searchInput ? searchInput.value.toLowerCase() : "";
+            const filterDate = document.getElementById("orderFilterDate") ? document.getElementById("orderFilterDate").value : "";
+
+            tbody.innerHTML = '';
+
+            let filteredOrders = orders;
+            if (filterDate) {
+                filteredOrders = filteredOrders.filter(o => o.orderDate === filterDate);
+            }
+            if (searchTerm) {
+                filteredOrders = orders.filter(o =>
+                    (o.orderNo && o.orderNo.toLowerCase().includes(searchTerm)) ||
+                    (o.supplierName && o.supplierName.toLowerCase().includes(searchTerm)) ||
+                    (o.customerName && o.customerName.toLowerCase().includes(searchTerm)) // Fallback for legacy
+                );
+            }
+
+            if (filteredOrders.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">No saved orders found.</td></tr>';
+                return;
+            }
+
+            // Show latest first
+            const sortedOrders = [...filteredOrders].reverse();
+
+            const totalItems = sortedOrders.length;
+            const totalPages = Math.ceil(totalItems / rowsPerPage) || 1;
+
+            if (currentPage > totalPages) currentPage = totalPages;
+            if (currentPage < 1) currentPage = 1;
+
+            const startIndex = (currentPage - 1) * rowsPerPage;
+            const endIndex = Math.min(startIndex + rowsPerPage, totalItems);
+            const paginatedOrders = sortedOrders.slice(startIndex, endIndex);
+
+            if (paginatedOrders.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">No saved orders found for this page.</td></tr>';
+            } else {
+                paginatedOrders.forEach(o => {
+                    let statusColor = '#333';
+                    if (o.status === 'Completed') statusColor = '#27ae60';
+                    else if (o.status === 'Pending') statusColor = '#f39c12';
+                    else if (o.status === 'Cancelled') statusColor = '#e74c3c';
+                    else if (o.status === 'Processing') statusColor = '#3498db';
+
+                    const tr = document.createElement("tr");
+                    tr.innerHTML = `
+                    <td>${o.orderNo}</td>
+                    <td>${o.orderDate ? new Date(o.orderDate).toLocaleDateString('en-GB') : '-'}</td>
+                    <td>${o.supplierName || o.customerName || '-'}</td>
+                    <td style="text-align:center;" class="no-print">
+                        <select onchange="updateOrderStatus('${o.orderNo}', this.value, this)" style="padding:4px; border-radius:4px; font-weight:bold; color:${statusColor}; border: 1px solid ${statusColor}; outline: none; background: transparent; cursor: pointer;">
+                            <option value="Pending" ${o.status === 'Pending' || !o.status ? 'selected' : ''}>Pending</option>
+                            <option value="Processing" ${o.status === 'Processing' ? 'selected' : ''}>Processing</option>
+                            <option value="Completed" ${o.status === 'Completed' ? 'selected' : ''}>Completed</option>
+                            <option value="Cancelled" ${o.status === 'Cancelled' ? 'selected' : ''}>Cancelled</option>
+                        </select>
+                    </td>
+                    <td class="print-only-label" style="display:none; text-align:center; font-weight:bold; color:${statusColor};">${o.status || 'Pending'}</td>
+                    <td style="text-align:right; font-weight:bold;">${parseFloat(o.grandTotal || 0).toFixed(2)}</td>
+                    <td style="text-align:center;" class="no-print">
+                        <button class="btn" style="padding:4px 8px; font-size:12px; background:#8e44ad; color:white;" onclick="viewOrder('${o.orderNo}')"><i class="fas fa-eye"></i> View</button>
+                        <button class="btn btn-secondary" style="padding:4px 8px; font-size:12px; background:#607d8b;" onclick="printOrderFromList('${o.orderNo}')"><i class="fas fa-print"></i> Print</button>
+                        <button class="btn btn-primary" style="padding:4px 8px; font-size:12px;" onclick="editOrder('${o.orderNo}')"><i class="fas fa-edit"></i> Edit</button>
+                        <button class="btn btn-danger" style="padding:4px 8px; font-size:12px;" onclick="deleteOrder('${o.orderNo}')"><i class="fas fa-trash"></i> Delete</button>
+                    </td>
+                `;
+                    tbody.appendChild(tr);
+                });
+            }
+
+            renderPagination(totalItems, startIndex + 1, endIndex, totalPages);
+        }
+
+        function updateOrderStatus(orderNo, newStatus, selectElement) {
+            let orders = JSON.parse(localStorage.getItem("order_sheets")) || [];
+            const order = orders.find(o => o.orderNo === orderNo);
+            if (order) {
+                const oldStatus = order.status || 'Pending';
+
+                askConfirm("Change Status", `Are you sure you want to change the status of ${orderNo} from ${oldStatus} to ${newStatus}?`,
+                    () => {
+                        order.status = newStatus;
+                        localStorage.setItem("order_sheets", JSON.stringify(orders));
+
+                        let statusColor = '#333';
+                        if (newStatus === 'Completed') statusColor = '#27ae60';
+                        else if (newStatus === 'Pending') statusColor = '#f39c12';
+                        else if (newStatus === 'Cancelled') statusColor = '#e74c3c';
+                        else if (newStatus === 'Processing') statusColor = '#3498db';
+
+                        selectElement.style.color = statusColor;
+                        selectElement.style.borderColor = statusColor;
+                    },
+                    () => {
+                        selectElement.value = oldStatus;
+                    });
+            }
+        }
+
+        function askConfirm(title, msg, onConfirm, onCancel) {
+            const modal = document.getElementById('actionConfirmModal');
+            document.getElementById('actionConfirmTitle').textContent = title;
+            document.getElementById('actionConfirmMsg').textContent = msg;
+
+            const yesBtn = document.getElementById('actionConfirmBtnYes');
+            const noBtn = document.getElementById('actionConfirmBtnNo');
+
+            const newYesBtn = yesBtn.cloneNode(true);
+            yesBtn.parentNode.replaceChild(newYesBtn, yesBtn);
+
+            const newNoBtn = noBtn.cloneNode(true);
+            noBtn.parentNode.replaceChild(newNoBtn, noBtn);
+
+            newYesBtn.onclick = () => {
+                closeModal('actionConfirmModal');
+                if (onConfirm) onConfirm();
+            };
+
+            newNoBtn.onclick = () => {
+                closeModal('actionConfirmModal');
+                if (onCancel) onCancel();
+            };
+
+            modal.style.display = "flex";
+        }
+
+        function changePage(page) {
+            currentPage = page;
+            renderOrderList();
+        }
+
+        function changeRowsPerPage() {
+            rowsPerPage = parseInt(document.getElementById("rowsPerPageSelect").value);
+            currentPage = 1;
+            renderOrderList();
+        }
+
+        function renderPagination(totalItems, start, end, totalPages) {
+            const info = document.getElementById("paginationInfo");
+            const controls = document.getElementById("paginationControls");
+            const totalDisplay = document.getElementById("totalOrdersDisplay");
+
+            if (totalDisplay) totalDisplay.innerText = `Total Orders: ${totalItems}`;
+
+            if (totalItems === 0) {
+                if (info) info.innerText = "No orders found";
+                if (controls) controls.innerHTML = "";
+                return;
+            }
+
+            if (info) info.innerText = `Showing ${start} to ${end} of ${totalItems} entries`;
+
+            let html = "";
+            html += `<button onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>Prev</button>`;
+
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
+                    const activeStyle = i === currentPage ? 'class="active"' : '';
+                    html += `<button ${activeStyle} onclick="changePage(${i})">${i}</button>`;
+                } else if (i === currentPage - 3 || i === currentPage + 3) {
+                    html += `<span style="padding:0 5px;">...</span>`;
+                }
+            }
+
+            html += `<button onclick="changePage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>Next</button>`;
+            if (controls) controls.innerHTML = html;
+        }
+
+        function viewOrder(orderNo) {
+            const orders = JSON.parse(localStorage.getItem("order_sheets")) || [];
+            const order = orders.find(o => o.orderNo === orderNo);
+            if (!order) return;
+
+            let itemsHtml = `
+            <table id="viewItemTable" style="width:100%; border-collapse:collapse; margin-top:10px; font-size:13px;">
+                <thead>
+                    <tr style="background:#eee;">
+                        <th style="border:1px solid #ccc; padding:6px; text-align:center;">Sl</th>
+                        <th style="border:1px solid #ccc; padding:6px;">Item Name</th>
+                        <th style="border:1px solid #ccc; padding:6px;">HSN</th>
+                        <th style="border:1px solid #ccc; padding:6px;">IMEI</th>
+                        <th style="border:1px solid #ccc; padding:6px;">Batch</th>
+                        <th style="border:1px solid #ccc; padding:6px;">Lot</th>
+                        <th style="border:1px solid #ccc; padding:6px;">Serial</th>
+                        <th style="border:1px solid #ccc; padding:6px; text-align:center;">Qty</th>
+                        <th style="border:1px solid #ccc; padding:6px; text-align:center;">UOM</th>
+                        <th style="border:1px solid #ccc; padding:6px; text-align:right;">Rate</th>
+                        <th style="border:1px solid #ccc; padding:6px; text-align:center;">Tax %</th>
+                        <th style="border:1px solid #ccc; padding:6px; text-align:right;">Amount</th>
+                        <th style="display:none;">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+            `;
+
+            if (order.items && order.items.length > 0) {
+                order.items.forEach((item, idx) => {
+                    itemsHtml += `
+                        <tr>
+                            <td style="border:1px solid #ccc; padding:6px; text-align:center;">${idx + 1}</td>
+                            <td style="border:1px solid #ccc; padding:6px;">${item.name || ''}</td>
+                            <td style="border:1px solid #ccc; padding:6px;">${item.hsn || ''}</td>
+                            <td style="border:1px solid #ccc; padding:6px;">${item.imei || ''}</td>
+                            <td style="border:1px solid #ccc; padding:6px;">${item.batch || ''}</td>
+                            <td style="border:1px solid #ccc; padding:6px;">${item.lot || ''}</td>
+                            <td style="border:1px solid #ccc; padding:6px;">${item.serial || ''}</td>
+                            <td style="border:1px solid #ccc; padding:6px; text-align:center;">${item.qty || 1}</td>
+                            <td style="border:1px solid #ccc; padding:6px; text-align:center;">${item.uom || ''}</td>
+                            <td style="border:1px solid #ccc; padding:6px; text-align:right;">${item.rate || 0}</td>
+                            <td style="border:1px solid #ccc; padding:6px; text-align:center;">${item.tax || 0}%</td>
+                            <td style="border:1px solid #ccc; padding:6px; text-align:right;">${item.amount || 0}</td>
+                            <td style="display:none;"></td>
+                        </tr>
+                    `;
+                });
+            }
+
+            itemsHtml += `</tbody></table>`;
+
+            let companyName = "Company Name";
+            let companyAddr = "Address";
+            let companyPhone = "";
+            let companyGst = "";
+
+            if (window.getBrandSettings) {
+                const brand = window.getBrandSettings();
+                companyName = brand.companyName || companyName;
+                let addrLines = [];
+                if (brand.addressLine1) addrLines.push(brand.addressLine1);
+                if (brand.addressLine2) addrLines.push(brand.addressLine2);
+                if (addrLines.length) companyAddr = addrLines.join("<br>");
+                companyPhone = brand.contactNumber ? `Ph: ${brand.contactNumber}` : "";
+                companyGst = brand.companyGstin || "";
+            }
+
+            let statusColor = '#333';
+            if (order.status === 'Completed') statusColor = '#27ae60';
+            else if (order.status === 'Pending') statusColor = '#f39c12';
+            else if (order.status === 'Cancelled') statusColor = '#e74c3c';
+            else if (order.status === 'Processing') statusColor = '#3498db';
+
+            let gstText = companyGst;
+            if (gstText && !gstText.toUpperCase().includes('GST')) {
+                gstText = 'GSTIN: ' + gstText;
+            }
+
+            const headerHtml = `
+                <div style="text-align:center; margin-bottom:20px;">
+                    <h2 style="margin:0; color:#2c3e50;">${companyName}</h2>
+                    <p style="margin:5px 0 0 0;">${companyAddr}</p>
+                    ${(companyPhone || gstText) ? `<p style="margin:5px 0 0 0;">${[companyPhone, gstText].filter(Boolean).join(' | ')}</p>` : ''}
+                    <h3 style="margin-top:10px; text-decoration:underline;">ORDER COPY</h3>
+                </div>
+            `;
+
+            let html = `
+                ${headerHtml}
+                <div style="display:flex; justify-content:space-between; margin-bottom:15px; font-size:13px;">
+                    <div>
+                        <strong>Order No:</strong> ${order.orderNo}<br>
+                        <strong>Order Date:</strong> ${order.orderDate ? new Date(order.orderDate).toLocaleDateString('en-GB') : '-'}<br>
+                        <strong>Delivery Date:</strong> ${order.deliveryDate ? new Date(order.deliveryDate).toLocaleDateString('en-GB') : '-'}
+                    </div>
+                    <div style="text-align:right;">
+                        <strong>Status:</strong> <span style="font-weight:bold; color:white; background:${statusColor}; padding:2px 6px; border-radius:4px;">${order.status || 'Pending'}</span><br>
+                        <strong>State Type:</strong> ${order.stateType || 'Intra-State'}
+                    </div>
+                </div>
+                <div style="margin-bottom:15px; border:1px solid #ccc; padding:10px; border-radius:4px; font-size:13px;">
+                    <h4 style="margin:0 0 5px 0; color:#2c3e50;">Supplier Details</h4>
+                    <strong>Name:</strong> ${order.supplierName || order.customerName || '-'}<br>
+                    <strong>Contact:</strong> ${order.contact || '-'}<br>
+                    <strong>Email:</strong> ${order.email || '-'}<br>
+                    <strong>GSTIN:</strong> ${order.gstin || '-'}<br>
+                    <strong>Address:</strong> ${order.address || '-'}<br>
+                    <strong>State:</strong> ${order.state || '-'} | <strong>PIN:</strong> ${order.pin || '-'}
+                </div>
+                ${itemsHtml}
+                <div style="display:flex; justify-content:space-between; margin-top:20px; font-size:13px;">
+                    <div style="width:50%;">
+                        <strong>Terms & Conditions:</strong><br>
+                        <p style="white-space:pre-wrap; margin:5px 0; font-size:12px;">${order.terms || '-'}</p>
+                    </div>
+                    <div style="width:40%; text-align:right;">
+                        <div style="display:flex; justify-content:space-between; margin-bottom:5px;"><span>Sub Total:</span><span>${parseFloat(order.subTotal || 0).toFixed(2)}</span></div>
+                        <div style="display:flex; justify-content:space-between; margin-bottom:5px;"><span>CGST:</span><span>${parseFloat(order.cgst || 0).toFixed(2)}</span></div>
+                        <div style="display:flex; justify-content:space-between; margin-bottom:5px;"><span>SGST:</span><span>${parseFloat(order.sgst || 0).toFixed(2)}</span></div>
+                        <div style="display:flex; justify-content:space-between; margin-bottom:5px;"><span>IGST:</span><span>${parseFloat(order.igst || 0).toFixed(2)}</span></div>
+                        <div style="display:flex; justify-content:space-between; font-weight:bold; font-size:15px; border-top:1px solid #000; padding-top:5px; margin-top:5px;"><span>Grand Total:</span><span>${parseFloat(order.grandTotal || 0).toFixed(2)}</span></div>
+                    </div>
+                </div>
+                <div style="display:flex; justify-content:space-between; margin-top:60px; text-align:center; font-size:13px;">
+                    <div style="width:180px; border-top:1px solid #000; padding-top:5px;">Prepared By</div>
+                    <div style="width:180px; border-top:1px solid #000; padding-top:5px;">Authorized Signatory</div>
+                    <div style="width:180px; border-top:1px solid #000; padding-top:5px;">Supplier Signature</div>
+                </div>
+            `;
+
+            document.getElementById("viewContent").innerHTML = html;
+            document.getElementById("viewModalPrintBtn").onclick = () => {
+                closeModal('viewModal');
+                printOrderFromList(orderNo);
+            };
+            document.getElementById("viewModal").style.display = "flex";
+        }
+
+        function printOrderFromList(orderNo) {
+            editOrder(orderNo);
+            setTimeout(() => {
+                window.print();
+            }, 500);
+        }
+
+        function deleteOrder(orderNo) {
+            if (!confirm(`Are you sure you want to delete order ${orderNo}?`)) return;
+
+            let orders = JSON.parse(localStorage.getItem("order_sheets")) || [];
+            orders = orders.filter(o => o.orderNo !== orderNo);
+            localStorage.setItem("order_sheets", JSON.stringify(orders));
+
+            renderOrderList();
+            showSuccess(`Order ${orderNo} deleted.`);
+        }
+
+        function showWarning(msg) {
+            document.getElementById('warningMsg').innerText = msg;
+            document.getElementById('warningModal').style.display = 'flex';
+        }
+
+        function showSuccess(msg) {
+            document.getElementById('successMsg').innerText = msg;
+            document.getElementById('successModal').style.display = 'flex';
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).style.display = 'none';
+        }
+
+        function saveTerms(el) {
+            localStorage.setItem("orderTerms", el.value);
+            el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px';
+        }
+
+        function toggleTermsEdit() {
+            const el = document.getElementById("termsConditions");
+            const btn = document.getElementById("editTermsBtn");
+            if (el.hasAttribute("readonly")) {
+                el.removeAttribute("readonly");
+                el.style.backgroundColor = "#fff";
+                el.focus();
+                btn.innerText = "🔒 Lock";
+                btn.classList.remove("btn-secondary");
+                btn.classList.add("btn-success");
+            } else {
+                el.setAttribute("readonly", true);
+                el.style.backgroundColor = "#f9f9f9";
+                btn.innerText = "✏️ Edit";
+                btn.classList.remove("btn-success");
+                btn.classList.add("btn-secondary");
+            }
+        }
+
+        function generateOrderNo() {
+            const orders = JSON.parse(localStorage.getItem("order_sheets")) || [];
+            let max = 0;
+            let lastOrderStr = "-";
+            orders.forEach(o => {
+                if (o.orderNo) {
+                    const num = parseInt(o.orderNo.replace(/\D/g, ''));
+                    if (!isNaN(num) && num > max) max = num;
+                }
+            });
+            document.getElementById('orderNo').value = `ORD-${String(max + 1).padStart(4, '0')}`;
+
+            if (orders.length > 0) {
+                const last = orders[orders.length - 1];
+                let d = last.orderDate || "-";
+                if (d !== "-") {
+                    const parts = d.split("T")[0].split("-");
+                    if (parts.length === 3) d = `${parts[2]}/${parts[1]}/${parts[0]}`;
+                }
+                lastOrderStr = `${last.orderNo || "-"} (${d})`;
+            }
+            const lastDisp = document.getElementById('lastOrderNoDisplay');
+            if (lastDisp) lastDisp.innerText = `Last Order: ${lastOrderStr}`;
+        }
+
+        function loadSuppliers() {
+            const suppliers = JSON.parse(localStorage.getItem('suppliers')) || [];
+            const dl = document.getElementById('supplierList');
+            dl.innerHTML = '';
+            suppliers.forEach(s => {
+                const opt = document.createElement('option');
+                opt.value = s.name;
+                dl.appendChild(opt);
+            });
+        }
+
+        function autofillSupplier() {
+            const name = document.getElementById('supplierName').value;
+            const suppliers = JSON.parse(localStorage.getItem('suppliers')) || [];
+            const s = suppliers.find(x => x.name === name);
+            if (s) {
+                document.getElementById('contact').value = s.contact || '';
+                document.getElementById('email').value = s.email || '';
+                document.getElementById('gstin').value = s.gstin || s.gst || '';
+                document.getElementById('address').value = s.address || '';
+                document.getElementById('pin').value = s.pin || '';
+                document.getElementById('state').value = s.state || '';
+
+                // Auto-detect State Type based on SELLER_STATE
+                let sellerState = "West Bengal";
+                if (window.APP_SETTINGS && window.APP_SETTINGS.SELLER_STATE) {
+                    sellerState = window.APP_SETTINGS.SELLER_STATE;
+                } else if (localStorage.getItem("settings")) {
+                    try {
+                        sellerState = JSON.parse(localStorage.getItem("settings")).SELLER_STATE || sellerState;
+                    } catch (e) { }
+                }
+                const supplierState = s.state || "";
+                if (supplierState && sellerState.toLowerCase() !== supplierState.toLowerCase()) {
+                    document.getElementById('stateType').value = "Inter-State";
+                } else {
+                    document.getElementById('stateType').value = "Intra-State";
+                }
+                calculate();
+            }
+        }
+
+        function loadItems() {
+            const items = JSON.parse(localStorage.getItem('items')) || [];
+            const dl = document.getElementById('itemList');
+            dl.innerHTML = '';
+            items.forEach(i => {
+                const opt = document.createElement('option');
+                opt.value = i.name;
+                dl.appendChild(opt);
+            });
+        }
+
+
+        function autofillItem(input) {
+            const name = input.value;
+            const items = JSON.parse(localStorage.getItem('items')) || [];
+            const item = items.find(x => x.name === name);
+            if (item) {
+                const row = input.closest('tr');
+                if (row.querySelector('.hsn')) row.querySelector('.hsn').value = item.hsn || '';
+                if (row.querySelector('.imei')) row.querySelector('.imei').value = item.imei || '';
+                if (row.querySelector('.batch')) row.querySelector('.batch').value = item.batch || '';
+                if (row.querySelector('.lot')) row.querySelector('.lot').value = item.lot || '';
+                if (row.querySelector('.serial')) row.querySelector('.serial').value = item.serial || '';
+                if (row.querySelector('.uom')) row.querySelector('.uom').value = item.uom || '';
+                row.querySelector('.rate').value = item.salePrice || item.price || 0;
+                row.querySelector('.tax').value = item.gst || 0;
+                calculate();
+            }
+        }
+
+        function editOrder(orderNo) {
+            const orders = JSON.parse(localStorage.getItem("order_sheets")) || [];
+            const order = orders.find(o => o.orderNo === orderNo);
+            if (!order) return;
+
+            const supplierName = document.getElementById("supplierName").value.trim();
+            let hasItems = false;
+            document.querySelectorAll("#itemBody tr").forEach(r => {
+                if (r.querySelector(".item-name").value.trim()) hasItems = true;
+            });
+
+            const isDirty = supplierName || hasItems;
+
+            if (isDirty) {
+                askConfirm("Confirm Edit", "Loading this order will overwrite any unsaved data in the form. Proceed?", () => {
+                    performEditOrder(order);
+                });
+            } else {
+                performEditOrder(order);
+            }
+        }
+
+        function performEditOrder(order) {
+
+            if (currentMode === 'list') {
+                const formView = document.getElementById('formView');
+                const listView = document.getElementById('listView');
+                const toggleBtn = document.getElementById('viewToggleBtn');
+                formView.style.display = 'block';
+                listView.style.display = 'none';
+                toggleBtn.innerHTML = '<i class="fas fa-list"></i> View Orders';
+                currentMode = 'form';
+            }
+
+            document.getElementById("orderNo").value = order.orderNo || '';
+            document.getElementById("orderDate").value = order.orderDate || '';
+            document.getElementById("deliveryDate").value = order.deliveryDate || '';
+            document.getElementById("supplierName").value = order.supplierName || order.customerName || '';
+            document.getElementById("contact").value = order.contact || '';
+            document.getElementById("email").value = order.email || '';
+            document.getElementById("gstin").value = order.gstin || '';
+            document.getElementById("address").value = order.address || '';
+            document.getElementById("pin").value = order.pin || '';
+            document.getElementById("state").value = order.state || '';
+            document.getElementById("stateType").value = order.stateType || 'Intra-State';
+            if (order.terms !== undefined) document.getElementById("termsConditions").value = order.terms;
+
+            const tbody = document.getElementById("itemBody");
+            tbody.innerHTML = '';
+            if (order.items && order.items.length > 0) {
+                order.items.forEach((item, index) => {
+                    const tr = document.createElement("tr");
+                    tr.innerHTML = `
+                    <td style="text-align:center;" class="sl-no">${index + 1}</td>
+                    <td><input type="text" class="item-name" list="itemList" onchange="autofillItem(this)" placeholder="Select Item" value="${item.name || ''}"></td>
+                    <td><input type="text" class="hsn" placeholder="HSN" value="${item.hsn || ''}"></td>
+                    <td><input type="text" class="imei" placeholder="IMEI" value="${item.imei || ''}"></td>
+                    <td><input type="text" class="batch" placeholder="Batch" value="${item.batch || ''}"></td>
+                    <td><input type="text" class="lot" placeholder="Lot" value="${item.lot || ''}"></td>
+                    <td><input type="text" class="serial" placeholder="Serial" value="${item.serial || ''}"></td>
+                    <td><input type="number" class="qty" value="${item.qty || 1}" min="1" oninput="calculate()"></td>
+                    <td><input type="text" class="uom" list="uomList" placeholder="UOM" value="${item.uom || ''}"></td>
+                    <td><input type="number" class="rate" value="${item.rate || 0}" oninput="calculate()"></td>
+                    <td>
+                        <select class="tax" onchange="calculate()">
+                            <option value="0" ${item.tax === 0 ? 'selected' : ''}>0%</option>
+                            <option value="5" ${item.tax === 5 ? 'selected' : ''}>5%</option>
+                            <option value="12" ${item.tax === 12 ? 'selected' : ''}>12%</option>
+                            <option value="18" ${item.tax === 18 ? 'selected' : ''}>18%</option>
+                            <option value="28" ${item.tax === 28 ? 'selected' : ''}>28%</option>
+                        </select>
+                    </td>
+                    <td class="amount-col amount">${parseFloat(item.amount || 0).toFixed(2)}</td>
+                    <td style="text-align:center;" class="no-print">
+                        <button class="btn btn-danger" style="padding:4px 8px;" onclick="deleteRow(this)"><i class="fas fa-trash"></i></button>
+                    </td>
+        `;
+                    tbody.appendChild(tr);
+                });
+            } else {
+                addRow();
+            }
+
+            calculate();
+        }
+
+        function addRow() {
+            const tbody = document.getElementById("itemBody");
+            const tr = document.createElement("tr");
+
+            tr.innerHTML = `
+            <td style="text-align:center;" class="sl-no">${tbody.children.length + 1}</td>
+            <td><input type="text" class="item-name" list="itemList" onchange="autofillItem(this)" placeholder="Select Item"></td>
+            <td><input type="text" class="hsn" placeholder="HSN"></td>
+            <td><input type="text" class="imei" placeholder="IMEI"></td>
+            <td><input type="text" class="batch" placeholder="Batch"></td>
+            <td><input type="text" class="lot" placeholder="Lot"></td>
+            <td><input type="text" class="serial" placeholder="Serial"></td>
+            <td><input type="number" class="qty" value="1" min="1" oninput="calculate()"></td>
+            <td><input type="text" class="uom" list="uomList" placeholder="UOM"></td>
+            <td><input type="number" class="rate" value="0.00" oninput="calculate()"></td>
+            <td>
+                <select class="tax" onchange="calculate()">
+                    <option value="0">0%</option>
+                    <option value="5">5%</option>
+                    <option value="12">12%</option>
+                    <option value="18">18%</option>
+                    <option value="28">28%</option>
+                </select>
+            </td>
+            <td class="amount-col amount">0.00</td>
+            <td style="text-align:center;" class="no-print">
+                <button class="btn btn-danger" style="padding:4px 8px;" onclick="deleteRow(this)"><i class="fas fa-trash"></i></button>
+            </td>
+        `;
+            tbody.appendChild(tr);
+            updateSlNos();
+        }
+
+        function deleteRow(btn) {
+            const tbody = document.getElementById("itemBody");
+            if (tbody.children.length > 1) {
+                btn.closest('tr').remove();
+                updateSlNos();
+                calculate();
+            } else {
+                showWarning("At least one item is required.");
+            }
+        }
+
+        function updateSlNos() {
+            const rows = document.querySelectorAll("#itemBody tr");
+            rows.forEach((row, index) => {
+                row.querySelector(".sl-no").innerText = index + 1;
+            });
+        }
+
+        function calculate() {
+            const rows = document.querySelectorAll("#itemBody tr");
+            let subTotal = 0;
+            let totalTax = 0;
+
+            rows.forEach(r => {
+                const qty = parseFloat(r.querySelector(".qty").value) || 0;
+                const rate = parseFloat(r.querySelector(".rate").value) || 0;
+                const tax = parseFloat(r.querySelector(".tax").value) || 0;
+
+                const amount = qty * rate;
+                const taxAmount = amount * (tax / 100);
+
+                r.querySelector(".amount").innerText = amount.toFixed(2);
+
+                subTotal += amount;
+                totalTax += taxAmount;
+            });
+
+            const stateType = document.getElementById("stateType").value;
+            const cgstEl = document.getElementById("cgstRow");
+            const sgstEl = document.getElementById("sgstRow");
+            const igstEl = document.getElementById("igstRow");
+
+            if (stateType === "Inter-State") {
+                cgstEl.style.display = "none";
+                sgstEl.style.display = "none";
+                igstEl.style.display = "flex";
+
+                document.getElementById("igst").innerText = totalTax.toFixed(2);
+                document.getElementById("cgst").innerText = "0.00";
+                document.getElementById("sgst").innerText = "0.00";
+            } else {
+                cgstEl.style.display = "flex";
+                sgstEl.style.display = "flex";
+                igstEl.style.display = "none";
+
+                const halfTax = totalTax / 2;
+                document.getElementById("cgst").innerText = halfTax.toFixed(2);
+                document.getElementById("sgst").innerText = halfTax.toFixed(2);
+                document.getElementById("igst").innerText = "0.00";
+            }
+
+            document.getElementById("subTotal").innerText = subTotal.toFixed(2);
+            document.getElementById("grandTotal").innerText = (subTotal + totalTax).toFixed(2);
+        }
+
+        function saveOrder() {
+            const orderNo = document.getElementById("orderNo").value.trim();
+            const supplierName = document.getElementById("supplierName").value.trim();
+            const orderDate = document.getElementById("orderDate").value;
+
+            if (!orderNo || !supplierName || !orderDate) {
+                showWarning("Order No, Supplier Name, and Order Date are required.");
+                return;
+            }
+
+            const items = [];
+            const rows = document.querySelectorAll("#itemBody tr");
+            rows.forEach(r => {
+                const name = r.querySelector(".item-name").value.trim();
+                if (name) {
+                    items.push({
+                        name: name,
+                        hsn: r.querySelector(".hsn") ? r.querySelector(".hsn").value : "",
+                        imei: r.querySelector(".imei") ? r.querySelector(".imei").value : "",
+                        batch: r.querySelector(".batch") ? r.querySelector(".batch").value : "",
+                        lot: r.querySelector(".lot") ? r.querySelector(".lot").value : "",
+                        serial: r.querySelector(".serial") ? r.querySelector(".serial").value : "",
+                        qty: parseFloat(r.querySelector(".qty").value) || 0,
+                        uom: r.querySelector(".uom") ? r.querySelector(".uom").value : "",
+                        rate: parseFloat(r.querySelector(".rate").value) || 0,
+                        tax: parseFloat(r.querySelector(".tax").value) || 0,
+                        amount: parseFloat(r.querySelector(".amount").innerText) || 0
+                    });
+                }
+            });
+
+            if (items.length === 0) {
+                showWarning("Please add at least one valid item.");
+                return;
+            }
+
+            const orders = JSON.parse(localStorage.getItem("order_sheets")) || [];
+            const existingIdx = orders.findIndex(o => o.orderNo === orderNo);
+            const currentStatus = existingIdx >= 0 ? (orders[existingIdx].status || 'Pending') : 'Pending';
+
+            const orderData = {
+                id: 'ord_' + Date.now(),
+                orderNo: orderNo,
+                orderDate: orderDate,
+                deliveryDate: document.getElementById("deliveryDate").value,
+                status: currentStatus,
+                supplierName: supplierName,
+                contact: document.getElementById("contact").value,
+                email: document.getElementById("email").value,
+                gstin: document.getElementById("gstin").value,
+                address: document.getElementById("address").value,
+                pin: document.getElementById("pin").value,
+                state: document.getElementById("state").value,
+                stateType: document.getElementById("stateType").value,
+                terms: document.getElementById("termsConditions").value,
+                items: items,
+                subTotal: parseFloat(document.getElementById("subTotal").innerText),
+                cgst: parseFloat(document.getElementById("cgst").innerText),
+                sgst: parseFloat(document.getElementById("sgst").innerText),
+                igst: parseFloat(document.getElementById("igst").innerText),
+                grandTotal: parseFloat(document.getElementById("grandTotal").innerText),
+                createdAt: new Date().toISOString()
+            };
+
+            if (existingIdx >= 0) {
+                orders[existingIdx] = orderData;
+            } else {
+                orders.push(orderData);
+            }
+
+            localStorage.setItem("order_sheets", JSON.stringify(orders));
+
+            // Also add to audit if possible
+            if (window.getAuditTrail) {
+                orderData.audit = window.getAuditTrail(false);
+            }
+
+            showSuccess(`Order ${orderNo} saved successfully!`);
+        }
+
+        function clearForm() {
+            document.getElementById("orderNo").value = '';
+            document.getElementById("supplierName").value = '';
+            document.getElementById("contact").value = '';
+            document.getElementById("email").value = '';
+            document.getElementById("gstin").value = '';
+            document.getElementById("address").value = '';
+            document.getElementById("pin").value = '';
+            document.getElementById("state").value = '';
+            document.getElementById("deliveryDate").value = '';
+            document.getElementById("stateType").value = 'Intra-State';
+            document.getElementById("itemBody").innerHTML = '';
+            generateOrderNo();
+            addRow();
+            calculate();
+        }
+
+        function openSettingsModal() {
+            renderColumnToggles();
+            document.getElementById('settingsModal').style.display = 'flex';
+        }
+
+        function renderColumnToggles() {
+            const container = document.getElementById("columnToggles");
+            container.innerHTML = "";
+            const headers = Array.from(document.querySelectorAll("#itemTable thead th"));
+
+            const items = headers.map((th, index) => {
+                let text = th.innerText.trim();
+                if (!text && index === 0) text = "Sl";
+                return { index, text };
+            });
+
+            items.forEach(item => {
+                const label = document.createElement("label");
+                label.style.display = "flex";
+                label.style.alignItems = "center";
+                label.style.gap = "5px";
+                label.style.cursor = "pointer";
+                label.style.fontSize = "13px";
+
+                const cb = document.createElement("input");
+                cb.type = "checkbox";
+                cb.checked = columnVisibility[item.index];
+                cb.onchange = () => toggleColumn(item.index, cb.checked);
+
+                label.appendChild(cb);
+                label.appendChild(document.createTextNode(item.text));
+                container.appendChild(label);
+            });
+        }
+
+        function toggleColumn(index, isVisible) {
+            columnVisibility[index] = isVisible;
+            localStorage.setItem("orderColumnVisibility", JSON.stringify(columnVisibility));
+            updateColumnStyles();
+        }
+
+        function updateColumnStyles() {
+            let style = document.getElementById('dynamicColumnStyles');
+            if (!style) {
+                style = document.createElement('style');
+                style.id = 'dynamicColumnStyles';
+                document.head.appendChild(style);
+            }
+            let css = '';
+            columnVisibility.forEach((visible, i) => {
+                if (!visible) {
+                    css += `#itemTable th:nth-child(${i + 1}), #itemTable td:nth-child(${i + 1}) { display: none !important; }\n`;
+                    css += `#viewItemTable th:nth-child(${i + 1}), #viewItemTable td:nth-child(${i + 1}) { display: none !important; }\n`;
+                }
+            });
+            style.textContent = css;
+        }
+
+        function resetSettings() {
+            columnVisibility = [...defaultVisibility];
+            localStorage.setItem("orderColumnVisibility", JSON.stringify(columnVisibility));
+            updateColumnStyles();
+            renderColumnToggles();
+        }
+    </script>
+
+</body>
+
+</html>

@@ -1,0 +1,139 @@
+<style>
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background-color: #f4f6f8;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        margin: 0;
+    }
+
+    .download-section {
+        background: #ffffff;
+        padding: 30px;
+        border-radius: 12px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+        width: 100%;
+        max-width: 350px;
+        text-align: center;
+    }
+
+    .download-section h3 {
+        margin-top: 0;
+        margin-bottom: 20px;
+        color: #2c3e50;
+        font-size: 1.5rem;
+    }
+
+    .options-container {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        text-align: left;
+        margin-bottom: 25px;
+    }
+
+    .container {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 16px;
+        color: #444;
+        cursor: pointer;
+        padding: 12px;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        transition: background-color 0.2s, border-color 0.2s;
+    }
+
+    .container:hover {
+        background-color: #f8fafc;
+        border-color: #cbd5e1;
+    }
+
+    .container input[type="radio"] {
+        margin: 0;
+        cursor: pointer;
+        width: 18px;
+        height: 18px;
+    }
+
+    .download-btn {
+        background-color: #3498db;
+        color: white;
+        border: none;
+        padding: 12px 20px;
+        font-size: 16px;
+        font-weight: 600;
+        border-radius: 8px;
+        cursor: pointer;
+        width: 100%;
+        transition: background-color 0.2s, transform 0.1s;
+    }
+
+    .download-btn:hover {
+        background-color: #2980b9;
+    }
+
+    .download-btn:active {
+        transform: scale(0.98);
+    }
+</style>
+
+<div class="download-section">
+    <h3>Download Utilities</h3>
+    
+    <div class="options-container">
+        <label class="container">
+            <input type="radio" name="software" value="ultraviewer" id="btnUltra">
+            UltraViewer
+        </label>
+        
+        <label class="container">
+            <input type="radio" name="software" value="googledrive" id="btnDrive">
+            Google Drive
+        </label>
+        
+        <label class="container">
+            <input type="radio" name="software" value="adobereader" id="btnAdobe">
+            Adobe Reader
+        </label>
+        
+        <label class="container">
+            <input type="radio" name="software" value="whatsapp" id="btnWhatsapp">
+            WhatsApp
+        </label>
+        
+        <label class="container">
+            <input type="radio" name="software" value="teamviewer" id="btnTeamviewer">
+            TeamViewer
+        </label>
+    </div>
+    
+    <button onclick="handleDownload()" class="download-btn">Download Selected</button>
+</div>
+
+<script>
+    function handleDownload() {
+        const isUltra = document.getElementById('btnUltra').checked;
+        const isDrive = document.getElementById('btnDrive').checked;
+        const isAdobe = document.getElementById('btnAdobe').checked;
+        const isWhatsapp = document.getElementById('btnWhatsapp').checked;
+        const isTeamviewer = document.getElementById('btnTeamviewer').checked;
+
+        if (isUltra) {
+            window.open('https://www.ultraviewer.net/en/download.html', '_blank');
+        } else if (isDrive) {
+            window.open('https://ipv4.google.com/intl/en_zm/drive/download/', '_blank');
+        } else if (isAdobe) {
+            window.open('https://get.adobe.com/reader/', '_blank');
+        } else if (isWhatsapp) {
+            window.open('https://www.whatsapp.com/download?lang=en', '_blank');
+        } else if (isTeamviewer) {
+            window.open('https://www.teamviewer.com/en-in/download/windows/?utm_source=google&utm_medium=cpc&utm_campaign=in%7Cb%7Cpr%7C22%7Caug%7Ctv-core-brand-only-exact-sn%7Cfree%7Ct0%7C0&utm_content=Exact&utm_term=teamviewer', '_blank');
+        } else {
+            alert("Please select an option first!");
+        }
+    }
+</script>

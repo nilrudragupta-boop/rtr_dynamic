@@ -1,0 +1,1401 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Production Stock Report</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="apiClient.js"></script>
+    <script src="settings.js"></script>
+    <script src="brand.service.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="brandLoader.js"></script>
+    <script>
+        function openWindow(url, width, height) {
+            const windowName = url.split('?')[0].split('/').pop().replace('.html', '').replace(/[^a-zA-Z0-9]/g, '_');
+            window.open(url, windowName, `width=${width},height=${height},resizable=yes,scrollbars=yes`).focus();
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            padding: 20px;
+            background: #f8f9fa;
+        }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        input,
+        button {
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+        }
+
+        button {
+            cursor: pointer;
+            color: #fff;
+            border: none;
+            font-weight: bold;
+        }
+
+        .btn-print {
+            background: #2980b9;
+        }
+
+        .btn-close {
+            background: #dc3545;
+        }
+
+        .btn-export {
+            background: #27ae60;
+        }
+
+        .btn-reset {
+            background: #f39c12;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: #fff;
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: center;
+        }
+
+        th {
+            background: #343a40;
+            color: #fff;
+            position: sticky;
+            top: 0;
+            z-index: 5;
+        }
+
+        tr:nth-child(even) {
+            background: #f2f2f2;
+        }
+
+        .low-stock {
+            color: #d35400;
+            font-weight: bold;
+        }
+
+        .out-stock {
+            color: #c0392b;
+            font-weight: bold;
+        }
+
+        .good-stock {
+            color: #27ae60;
+            font-weight: bold;
+        }
+
+        .table-container {
+            max-height: 750px;
+            overflow-y: auto;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        @media print {
+            .controls {
+                display: none;
+            }
+
+            #printDateRange {
+                display: block !important;
+            }
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            min-width: 300px;
+        }
+
+        .modal-buttons {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        /* Dark Mode */
+        body.dark-mode {
+            background: #121212;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode h2,
+        body.dark-mode h4 {
+            color: #e0e0e0 !important;
+        }
+
+        body.dark-mode table {
+            background: #2c2c2c;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode th,
+        body.dark-mode td {
+            border-color: #444;
+        }
+
+        body.dark-mode tr:nth-child(even) {
+            background: #3a3a3a;
+        }
+
+        body.dark-mode input,
+        body.dark-mode select {
+            background: #2c2c2c;
+            color: #fff;
+            border: 1px solid #444;
+        }
+
+        body.dark-mode .modal-content {
+            background: #2c2c2c;
+            color: #e0e0e0;
+        }
+
+        #columnToggles div.dragging {
+            opacity: 0.5;
+            background: #e0e0e0 !important;
+        }
+
+        /* Compact View */
+        table.compact-table th,
+        table.compact-table td {
+            padding: 4px 5px;
+            font-size: 13px;
+        }
+
+        /* Grey Mode */
+        body.grey-mode button {
+            background-color: #6c757d !important;
+            color: #fff !important;
+        }
+
+        /* Freeze Panes */
+        .freeze-panes th.frozen,
+        .freeze-panes td.frozen {
+            position: sticky;
+            z-index: 4;
+        }
+
+        .freeze-panes thead th.frozen {
+            z-index: 6;
+            /* Above the regular sticky header */
+        }
+
+        body:not(.dark-mode) .freeze-panes tbody td.frozen {
+            background-color: #fff;
+        }
+
+        body:not(.dark-mode) .freeze-panes tbody tr:nth-child(even) td.frozen {
+            background-color: #f2f2f2;
+        }
+
+        body.dark-mode .freeze-panes tbody td.frozen {
+            background-color: #2c2c2c;
+        }
+
+        body.dark-mode .freeze-panes tbody tr:nth-child(even) td.frozen {
+            background-color: #3a3a3a;
+        }
+
+        /* Resizable Columns */
+        .resizer {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 5px;
+            height: 100%;
+            cursor: col-resize;
+            user-select: none;
+            touch-action: none;
+        }
+
+        .resizer:hover,
+        .resizing {
+            background-color: #2980b9;
+            opacity: 0.5;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h2><span id="brandName" data-brand="name"></span> -🏭 Production Stock Report</h2>
+    <h4 id="printDateRange" style="text-align:center; margin:0 0 15px 0; display:none; color:#555;"></h4>
+
+    <div class="controls">
+        <input type="text" id="searchBox" placeholder="Search Item..." oninput="renderStockTable()"
+            style="flex:1; max-width:300px;">
+        <input type="date" id="fromDate" onchange="renderStockTable()" title="From Date" style="width:130px;">
+        <input type="date" id="toDate" onchange="renderStockTable()" title="To Date" style="width:130px;">
+        <select id="statusFilter" onchange="renderStockTable()" title="Filter by Status" style="width:150px;">
+            <option value="">All Status</option>
+            <option value="In Stock">In Stock</option>
+            <option value="Low Stock">Low Stock</option>
+            <option value="Out of Stock">Out of Stock</option>
+            <option value="Negative Stock">Negative Stock</option>
+        </select>
+        <select id="categoryFilter" onchange="renderStockTable()" title="Filter by Category" style="width:150px;">
+            <option value="">All Categories</option>
+        </select>
+        <select id="itemTypeFilter" onchange="renderStockTable()" title="Filter by Item Type" style="width:150px;">
+            <option value="">All Item Types</option>
+        </select>
+
+        <button class="btn-reset" onclick="location.reload()" style="background:#17a2b8;">🔄 Refresh</button>
+        <button class="btn-print" onclick="window.print()" data-permission-id="perm_print">🖨️ Print</button>
+        <button class="btn-export" onclick="exportToExcel()" data-permission-id="perm_export_excel">📊 Export
+            Excel</button>
+        <button id="btnFreezePanes" onclick="toggleFreezePanesAction()" style="background:#9b59b6;">❄️ Freeze
+            Panes</button>
+        <button onclick="openSettingsModal()" style="background:#607d8b;">⚙️ Table Settings</button>
+
+        <div style="display:flex; align-items:center; gap:5px; background:#6c757d; padding:4px 8px; border-radius:4px;">
+            <label style="font-weight:bold; font-size:14px; color:white;">Theme:</label>
+            <select id="themeSelect" onchange="changeTheme()"
+                style="padding:4px; border-radius:4px; border:none; font-size:13px;">
+                <option value="light">Light</option>
+                <option value="dark">Dark</option>
+                <option value="system">System</option>
+            </select>
+        </div>
+        <label
+            style="cursor:pointer; display:flex; align-items:center; gap:5px; font-size:14px; user-select:none; background:#6c757d; color:white; padding:8px; border-radius:4px;">
+            <input type="checkbox" id="compactViewToggle" onchange="toggleCompactView()"> Compact View
+        </label>
+
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="modal">
+        <div class="modal-content" style="width: 400px; text-align: left;">
+            <h3 style="color: #607d8b; text-align: center; margin-top: 0;">⚙️ Table Settings</h3>
+            <div style="margin-bottom: 15px; text-align: left; padding-left: 20px;">
+                <label
+                    style="cursor:pointer; display:flex; align-items:center; gap:5px; font-weight:bold; margin-top: 5px;">
+                    <input type="checkbox" id="greyButtonsToggle" onchange="toggleGreyButtons()"> Grey Buttons Mode
+                </label>
+                <label
+                    style="cursor:pointer; display:flex; align-items:center; gap:5px; font-weight:bold; margin-top: 5px;">
+                    <input type="checkbox" id="freezePanesToggle" onchange="toggleFreezePanes()"> Freeze Panes:
+                    <input type="number" id="freezePanesCount" value="3" min="1" max="15"
+                        style="width: 50px; padding: 2px; font-size: 13px; font-weight: normal; border: 1px solid #ccc; border-radius: 4px;"
+                        onchange="updateFreezePanesCount()"> cols
+                </label>
+            </div>
+            <p style="font-size:14px; color:#666; margin-bottom:10px; text-align: center;">Select columns to display:
+            </p>
+            <div style="margin-bottom: 10px; display: flex; gap: 10px; justify-content: center;">
+                <button onclick="toggleAllColumns(true)"
+                    style="background:#007bff; color:white; padding: 6px 12px; font-size: 12px;">Select All</button>
+                <button onclick="toggleAllColumns(false)"
+                    style="background:#6c757d; color:white; padding: 6px 12px; font-size: 12px;">Deselect All</button>
+            </div>
+            <div id="columnToggles"
+                style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; max-height:300px; overflow-y:auto;">
+                <!-- Checkboxes generated by JS -->
+            </div>
+            <div class="modal-buttons">
+                <button onclick="closeSettingsModal()" class="btn-close" style="background:#6c757d;">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="table-container">
+        <table id="stockTable">
+            <thead>
+                <tr id="tableHeaderRow">
+                    <!-- Headers injected by JS -->
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <!-- Pagination Controls -->
+    <div class="pagination-container"
+        style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px;">
+        <div style="display: flex; align-items: center; gap: 5px;">
+            <span id="totalItemsDisplay" style="font-weight: bold; color: #0d6efd; margin-right: 8px;"></span>
+            <select id="rowsPerPageSelect" onchange="changeRowsPerPage()"
+                style="width: auto; padding: 4px; border: 1px solid #ccc; border-radius: 4px; margin: 0;">
+                <option value="10">10 rows</option>
+                <option value="20" selected>20 rows</option>
+                <option value="50">50 rows</option>
+            </select>
+            <input type="number" id="goToPageInput"
+                style="width: 60px; padding: 4px; border: 1px solid #ccc; border-radius: 4px;" placeholder="Go to"
+                min="1" onchange="goToPage()">
+        </div>
+        <div id="paginationInfo" style="color: #666;"></div>
+        <div class="pagination" id="paginationControls" style="display: flex; gap: 5px;"></div>
+    </div>
+
+    <script>
+        function getStockData() {
+            const invoices = JSON.parse(localStorage.getItem("invoices")) || [];
+            const itemsList = JSON.parse(localStorage.getItem("items")) || [];
+            const returns = JSON.parse(localStorage.getItem("returns")) || [];
+            const scraps = JSON.parse(localStorage.getItem("scraps")) || [];
+            const productions = JSON.parse(localStorage.getItem("production")) || [];
+
+            const fromDate = document.getElementById("fromDate").value;
+            const toDate = document.getElementById("toDate").value;
+
+            const stockMap = {};
+
+            // 1. Initialize ONLY from production logs to ensure we only list produced items.
+            productions.forEach(prod => {
+                const stage = prod.stage || 'Completed';
+                if (stage !== 'Completed') return; // Only show finished goods from completed productions
+
+                if (fromDate && prod.date < fromDate) return;
+                if (toDate && prod.date > toDate) return;
+
+                const nameRaw = (prod.finishedGood || "").trim();
+                const codeRaw = (prod.fgCode || "").trim();
+                const uomRaw = (prod.fgUom || "").trim();
+                const key = nameRaw.toLowerCase() + "|" + codeRaw.toLowerCase() + "|" + uomRaw.toLowerCase();
+
+                if (nameRaw) {
+                    if (!stockMap[key]) {
+                        const masterItem = itemsList.find(i =>
+                            (i.name || "").trim().toLowerCase() === nameRaw.toLowerCase() &&
+                            (i.itemCode || "").trim().toLowerCase() === codeRaw.toLowerCase()
+                        ) || itemsList.find(i => (i.name || "").trim().toLowerCase() === nameRaw.toLowerCase()) || {};
+
+                        stockMap[key] = {
+                            name: nameRaw,
+                            itemCode: codeRaw || masterItem.itemCode || "",
+                            indexNo: masterItem.indexNo || "",
+                            description: masterItem.description || "",
+                            category: masterItem.category || "",
+                            uom: uomRaw || "-",
+                            produced: 0,
+                            sold: 0,
+                            itemType: masterItem.itemType || 'Finished Good',
+                            stock: 0,
+                            totalCost: 0,
+                            salePrice: parseFloat(masterItem.salePrice) || 0
+                        };
+                    }
+                    stockMap[key].produced += (parseFloat(prod.fgQtyProduced) || 0);
+                    stockMap[key].totalCost += (parseFloat(prod.totalCost) || 0);
+                }
+
+                if (prod.additionalOutputsProduced && Array.isArray(prod.additionalOutputsProduced)) {
+                    prod.additionalOutputsProduced.forEach(out => {
+                        const outName = (out.item || "").trim();
+                        const outCode = (out.code || "").trim();
+                        const outUom = (out.uom || "-").trim();
+                        const outKey = outName.toLowerCase() + "|" + outCode.toLowerCase() + "|" + outUom.toLowerCase();
+
+                        if (outName) {
+                            if (!stockMap[outKey]) {
+                                const masterItem = itemsList.find(i =>
+                                    (i.name || "").trim().toLowerCase() === outName.toLowerCase() &&
+                                    (i.itemCode || "").trim().toLowerCase() === outCode.toLowerCase()
+                                ) || itemsList.find(i => (i.name || "").trim().toLowerCase() === outName.toLowerCase()) || {};
+
+                                stockMap[outKey] = {
+                                    name: outName,
+                                    itemCode: outCode || masterItem.itemCode || "",
+                                    indexNo: masterItem.indexNo || "",
+                                    description: masterItem.description || "",
+                                    category: masterItem.category || "",
+                                    uom: outUom || "-",
+                                    produced: 0,
+                                    sold: 0,
+                                    itemType: masterItem.itemType || 'Finished Good',
+                                    stock: 0,
+                                    totalCost: 0, // By-product costs default to 0 for simplicity
+                                    salePrice: parseFloat(masterItem.salePrice) || 0
+                                };
+                            }
+                            stockMap[outKey].produced += (parseFloat(out.qty) || 0);
+                        }
+                    });
+                }
+            });
+
+            // 2. Subtract Sales (Invoices)
+            invoices.forEach(inv => {
+                const invDate = inv.invoice_date || inv.date;
+                if (fromDate && invDate < fromDate) return;
+                if (toDate && invDate > toDate) return;
+
+                if (inv.items && Array.isArray(inv.items)) {
+                    inv.items.forEach(item => {
+                        const nameRaw = (item.item || "").trim();
+                        const codeRaw = (item.itemCode || "").trim();
+                        const uomRaw = (item.uom || "").trim();
+                        const key = nameRaw.toLowerCase() + "|" + codeRaw.toLowerCase() + "|" + uomRaw.toLowerCase();
+
+                        if (stockMap[key]) { // Only process if it's a produced item
+                            stockMap[key].sold += (parseFloat(item.qty) || 0);
+                        }
+                    });
+                }
+            });
+
+            // 3. Process Returns (Adjust Stock)
+            returns.forEach(ret => {
+                const retDate = ret.return_date || ret.date;
+                if (fromDate && retDate < fromDate) return;
+                if (toDate && retDate > toDate) return;
+
+                if (ret.items && Array.isArray(ret.items)) {
+                    ret.items.forEach(item => {
+                        const nameRaw = (item.item_name || "").trim();
+                        const codeRaw = (item.itemCode || "").trim();
+                        const uomRaw = (item.uom || "").trim();
+                        const key = nameRaw.toLowerCase() + "|" + codeRaw.toLowerCase() + "|" + uomRaw.toLowerCase();
+
+                        if (stockMap[key]) { // Only process if it's a produced item
+                            const qty = parseFloat(item.qty) || 0;
+                            if (ret.return_type === 'Sales Return') {
+                                stockMap[key].sold -= qty;
+                            } else if (ret.return_type === 'Damage') {
+                                stockMap[key].produced -= qty;
+                            }
+                        }
+                    });
+                }
+            });
+
+            // 4. Process Scraps (Reduce Stock)
+            scraps.forEach(s => {
+                const sDate = s.date;
+                if (fromDate && sDate < fromDate) return;
+                if (toDate && sDate > toDate) return;
+
+                const nameRaw = (s.itemName || "").trim();
+                const codeRaw = (s.itemCode || "").trim();
+                const uomRaw = (s.uom || "").trim();
+                const key = nameRaw.toLowerCase() + "|" + codeRaw.toLowerCase() + "|" + uomRaw.toLowerCase();
+
+                if (stockMap[key]) { // Only process if it's a produced item
+                    stockMap[key].produced -= (parseFloat(s.qty) || 0);
+                }
+            });
+
+            // 5. Calculate Net Stock
+            return Object.values(stockMap).map(item => {
+                item.stock = item.produced - item.sold;
+                const avgCost = item.produced > 0 ? (item.totalCost / item.produced) : 0;
+                item.avgCost = avgCost;
+                item.stockValue = item.stock * avgCost;
+                item.retailValue = item.stock * item.salePrice;
+                return item;
+            }).sort((a, b) => a.name.localeCompare(b.name));
+        }
+
+        function formatDate(dateStr) {
+            if (!dateStr) return "";
+            const [y, m, d] = dateStr.split("-");
+            return `${d}/${m}/${y}`;
+        }
+
+        function escapeHtml(text) {
+            if (text == null) return "";
+            return String(text)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        function highlightMatch(text, term) {
+            if (!text) return "";
+            text = String(text);
+            if (!term) return escapeHtml(text);
+            const escapedTerm = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const regex = new RegExp(`(${escapedTerm})`, 'g');
+            return text.split(regex).map(part => {
+                return part === term
+                    ? `<span class="highlight">${escapeHtml(part)}</span>`
+                    : escapeHtml(part);
+            }).join('');
+        }
+
+        function getRawMaterialStockMap() {
+            const purchases = JSON.parse(localStorage.getItem("purchases")) || [];
+            const invoices = JSON.parse(localStorage.getItem("invoices")) || [];
+            const returns = JSON.parse(localStorage.getItem("returns")) || [];
+            const scraps = JSON.parse(localStorage.getItem("scraps")) || [];
+            const productions = JSON.parse(localStorage.getItem("production")) || [];
+            const stockMap = {};
+
+            purchases.forEach(p => {
+                const name = (p.itemName || "").trim().toLowerCase();
+                stockMap[name] = (stockMap[name] || 0) + (parseFloat(p.qty) || 0);
+            });
+            invoices.forEach(inv => {
+                if (inv.items) inv.items.forEach(it => {
+                    const name = (it.item || "").trim().toLowerCase();
+                    stockMap[name] = (stockMap[name] || 0) - (parseFloat(it.qty) || 0);
+                });
+            });
+            returns.forEach(ret => {
+                if (ret.items) ret.items.forEach(item => {
+                    const name = (item.item_name || "").trim().toLowerCase();
+                    const qty = parseFloat(item.qty) || 0;
+                    if (ret.return_type === 'Sales Return') stockMap[name] = (stockMap[name] || 0) + qty;
+                    else if (ret.return_type === 'Damage' || ret.return_type === 'Purchase Return') stockMap[name] = (stockMap[name] || 0) - qty;
+                });
+            });
+            scraps.forEach(s => {
+                const name = (s.itemName || "").trim().toLowerCase();
+                stockMap[name] = (stockMap[name] || 0) - (parseFloat(s.qty) || 0);
+            });
+            productions.forEach(prod => {
+                const stage = prod.stage || 'Completed';
+                if (stage === 'Completed') {
+                    const fgName = (prod.finishedGood || "").trim().toLowerCase();
+                    stockMap[fgName] = (stockMap[fgName] || 0) + (parseFloat(prod.fgQtyProduced) || 0);
+                    if (prod.additionalOutputsProduced) {
+                        prod.additionalOutputsProduced.forEach(out => {
+                            const outName = (out.item || "").trim().toLowerCase();
+                            stockMap[outName] = (stockMap[outName] || 0) + (parseFloat(out.qty) || 0);
+                        });
+                    }
+                }
+                if (stage === 'WIP' || stage === 'Completed') {
+                    if (prod.materialsConsumed) {
+                        prod.materialsConsumed.forEach(rm => {
+                            const rmName = (rm.item || "").trim().toLowerCase();
+                            stockMap[rmName] = (stockMap[rmName] || 0) - (parseFloat(rm.qty) || 0);
+                        });
+                    }
+                }
+            });
+            return stockMap;
+        }
+
+        function calculateMaxPossible(bom, rmStockMap) {
+            let maxBatches = Infinity;
+            if (!bom.rawMaterials || bom.rawMaterials.length === 0) return 0;
+
+            for (const rm of bom.rawMaterials) {
+                const rmName = (rm.itemName || "").trim().toLowerCase();
+                const requiredQty = parseFloat(rm.qty) || 0;
+                if (requiredQty <= 0) continue;
+
+                const availableStock = rmStockMap[rmName] || 0;
+                const possibleBatches = availableStock / requiredQty;
+
+                if (possibleBatches < maxBatches) {
+                    maxBatches = possibleBatches;
+                }
+            }
+
+            if (maxBatches === Infinity || maxBatches < 0) return 0;
+            return maxBatches * (parseFloat(bom.outputQty) || 1);
+        }
+
+        let selectedKeys = new Set();
+        let currentStockData = [];
+        let currentPage = 1;
+        let rowsPerPage = 20;
+        let currentSortColumn = 'name';
+        let currentSortDirection = 'asc';
+
+        const headerTexts = [
+            "Select", "Sl No", "Item Code", "Index No", "Item Name", "Description", "Category", "Item Type", "UOM", "Total Produced", "Total Sold", "Current Stock", "Avg. Prod. Cost (₹)", "Value of Stock (₹)", "Status", "Sale Price (₹)", "Retail Value (₹)"
+        ];
+
+        const defaultHeaders = [
+            `<th style="width: 40px;"><input type="checkbox" id="selectAll" onclick="toggleSelectAll()"></th>`,
+            `<th>Sl No</th>`,
+            `<th style="cursor:pointer;" onclick="handleSort('itemCode')">Item Code <span id="sort-icon-itemCode"></span></th>`,
+            `<th style="cursor:pointer;" onclick="handleSort('indexNo')">Index No <span id="sort-icon-indexNo"></span></th>`,
+            `<th style="cursor:pointer;" onclick="handleSort('name')">Item Name <span id="sort-icon-name"></span></th>`,
+            `<th style="cursor:pointer;" onclick="handleSort('description')">Description <span id="sort-icon-description"></span></th>`,
+            `<th style="cursor:pointer;" onclick="handleSort('category')">Category <span id="sort-icon-category"></span></th>`,
+            `<th style="cursor:pointer;" onclick="handleSort('itemType')">Item Type <span id="sort-icon-itemType"></span></th>`,
+            `<th style="cursor:pointer;" onclick="handleSort('uom')">UOM <span id="sort-icon-uom"></span></th>`,
+            `<th style="cursor:pointer;" onclick="handleSort('produced')">Total Produced <span id="sort-icon-produced"></span></th>`,
+            `<th style="cursor:pointer;" onclick="handleSort('sold')">Total Sold <span id="sort-icon-sold"></span></th>`,
+            `<th style="cursor:pointer;" onclick="handleSort('stock')">Current Stock <span id="sort-icon-stock"></span></th>`,
+            `<th style="cursor:pointer;" onclick="handleSort('avgCost')">Avg. Prod. Cost (₹) <span id="sort-icon-avgCost"></span></th>`,
+            `<th style="cursor:pointer;" onclick="handleSort('stockValue')">Value of Stock (₹) <span id="sort-icon-stockValue"></span></th>`,
+            `<th>Status</th>`,
+            `<th style="cursor:pointer;" onclick="handleSort('salePrice')">Sale Price (₹) <span id="sort-icon-salePrice"></span></th>`,
+            `<th style="cursor:pointer;" onclick="handleSort('retailValue')">Retail Value (₹) <span id="sort-icon-retailValue"></span></th>`
+        ];
+
+        let columnOrder = JSON.parse(localStorage.getItem('prodStockColumnOrder')) || [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 15, 16, 14];
+
+        let defaultVisibility = new Array(17).fill(true);
+        [3, 5, 6, 7].forEach(i => defaultVisibility[i] = false);
+        let columnVisibility = JSON.parse(localStorage.getItem("prodStockReportColumnVisibility")) || defaultVisibility;
+        if (columnVisibility.length !== 17) {
+            columnVisibility = defaultVisibility;
+            localStorage.setItem("prodStockReportColumnVisibility", JSON.stringify(columnVisibility));
+        }
+
+        if (columnOrder.length !== 17) {
+            columnOrder = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 15, 16, 14];
+            localStorage.setItem('prodStockColumnOrder', JSON.stringify(columnOrder));
+        }
+
+        // --- Settings Logic ---
+        let isGreyButtons = localStorage.getItem("prodStockReportGreyButtons") === "true";
+        let isFreezePanes = localStorage.getItem("prodStockFreezePanes") === "true";
+        let numFreezeCols = parseInt(localStorage.getItem("prodStockFreezeCols")) || 3;
+
+        function toggleGreyButtons() {
+            isGreyButtons = document.getElementById("greyButtonsToggle").checked;
+            localStorage.setItem("prodStockReportGreyButtons", isGreyButtons);
+            applyGreyButtons();
+        }
+
+        function applyGreyButtons() {
+            if (isGreyButtons) document.body.classList.add("grey-mode");
+            else document.body.classList.remove("grey-mode");
+        }
+
+        function toggleFreezePanesAction() {
+            isFreezePanes = !isFreezePanes;
+            localStorage.setItem("prodStockFreezePanes", isFreezePanes);
+            const toggle = document.getElementById("freezePanesToggle");
+            if (toggle) toggle.checked = isFreezePanes;
+            applyFreezePanes();
+        }
+
+        function toggleFreezePanes() {
+            isFreezePanes = document.getElementById("freezePanesToggle").checked;
+            localStorage.setItem("prodStockFreezePanes", isFreezePanes);
+            applyFreezePanes();
+        }
+
+        function updateFreezePanesCount() {
+            numFreezeCols = parseInt(document.getElementById("freezePanesCount").value) || 3;
+            localStorage.setItem("prodStockFreezeCols", numFreezeCols);
+            if (isFreezePanes) {
+                updateFreezePanesPositions();
+            }
+        }
+
+        function applyFreezePanes() {
+            const table = document.getElementById("stockTable");
+            const btn = document.getElementById("btnFreezePanes");
+            if (!table) return;
+
+            if (isFreezePanes) {
+                table.classList.add("freeze-panes");
+                if (btn) btn.style.background = "#007bff";
+            } else {
+                table.classList.remove("freeze-panes");
+                if (btn) btn.style.background = "#9b59b6";
+            }
+            updateFreezePanesPositions();
+        }
+
+        function updateFreezePanesPositions() {
+            const table = document.getElementById("stockTable");
+            if (!table) return;
+
+            if (!table.classList.contains("freeze-panes")) {
+                table.querySelectorAll('.frozen').forEach(el => {
+                    el.classList.remove('frozen');
+                    el.style.left = '';
+                });
+                return;
+            }
+
+            const numColsToFreeze = numFreezeCols;
+            const headerRow = table.querySelector('thead tr');
+            if (!headerRow) return;
+
+            let currentLeft = 0;
+            let freezeIndices = [];
+
+            const ths = headerRow.children;
+            for (let i = 0; i < ths.length && freezeIndices.length < numColsToFreeze; i++) {
+                const th = ths[i];
+                const style = window.getComputedStyle(th);
+                if (style.display !== 'none') {
+                    freezeIndices.push({ index: i, left: currentLeft });
+                    currentLeft += th.offsetWidth;
+                }
+            }
+
+            const rows = table.querySelectorAll('tr');
+            rows.forEach(row => {
+                row.querySelectorAll('.frozen').forEach(el => {
+                    if (!freezeIndices.some(fi => row.children[fi.index] === el)) {
+                        el.classList.remove('frozen');
+                        el.style.left = '';
+                    }
+                });
+
+                freezeIndices.forEach(fi => {
+                    const cell = row.children[fi.index];
+                    if (cell) {
+                        cell.classList.add('frozen');
+                        cell.style.left = fi.left + 'px';
+                    }
+                });
+            });
+        }
+
+        function renderHeaders() {
+            const theadTr = document.getElementById("tableHeaderRow");
+            let html = '';
+            columnOrder.forEach(idx => {
+                html += defaultHeaders[idx];
+            });
+            theadTr.innerHTML = html;
+            updateHeaderIcons();
+            requestAnimationFrame(() => {
+                loadColumnWidths();
+                enableColumnResizing();
+                updateFreezePanesPositions();
+            });
+        }
+
+        function handleSort(column) {
+            if (currentSortColumn === column) {
+                currentSortDirection = currentSortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSortColumn = column;
+                currentSortDirection = 'asc';
+            }
+            renderHeaders();
+            renderStockTable();
+        }
+
+        function updateHeaderIcons() {
+            const cols = ['itemCode', 'indexNo', 'name', 'description', 'category', 'itemType', 'uom', 'produced', 'sold', 'stock', 'avgCost', 'stockValue', 'salePrice', 'retailValue'];
+            cols.forEach(col => {
+                const icon = document.getElementById(`sort-icon-${col}`);
+                if (icon) icon.innerHTML = (currentSortColumn === col) ? (currentSortDirection === 'asc' ? ' &#9650;' : ' &#9660;') : '';
+            });
+        }
+
+        function renderStockTable() {
+            const tbody = document.querySelector("#stockTable tbody");
+            tbody.innerHTML = "";
+            const searchInput = document.getElementById("searchBox").value.trim();
+            const searchTerm = searchInput.toLowerCase();
+            const statusFilter = document.getElementById("statusFilter").value;
+            const categoryFilter = document.getElementById("categoryFilter") ? document.getElementById("categoryFilter").value : "";
+            const itemTypeFilter = document.getElementById("itemTypeFilter") ? document.getElementById("itemTypeFilter").value : "";
+
+            const fromDate = document.getElementById("fromDate").value;
+            const toDate = document.getElementById("toDate").value;
+            const printHeader = document.getElementById("printDateRange");
+            if (fromDate && toDate) printHeader.innerText = `Period: ${formatDate(fromDate)} to ${formatDate(toDate)}`;
+            else if (fromDate) printHeader.innerText = `Period: From ${formatDate(fromDate)}`;
+            else if (toDate) printHeader.innerText = `Period: Upto ${formatDate(toDate)}`;
+            else printHeader.innerText = "Period: All Time";
+
+            const data = getStockData();
+            let totalValue = 0;
+            let totalRetailValue = 0;
+
+            // Filter data first
+            currentStockData = data.filter(item => {
+                if (searchTerm && !item.name.toLowerCase().includes(searchTerm)) return false;
+                if (!item.uom || item.uom === "-" || item.uom.trim() === "") return false;
+                if (categoryFilter && item.category !== categoryFilter) return false;
+                if (itemTypeFilter && item.itemType !== itemTypeFilter) return false;
+
+                const status = getStockStatus(item.stock, item.uom, item.produced);
+                if (statusFilter && status.text !== statusFilter) return false;
+                return true;
+            });
+
+            // Sort data
+            currentStockData.sort((a, b) => {
+                let valA = a[currentSortColumn];
+                let valB = b[currentSortColumn];
+
+                if (currentSortColumn === 'indexNo') {
+                    return currentSortDirection === 'asc' ? (valA || "").localeCompare(valB || "", undefined, { numeric: true }) : (valB || "").localeCompare(valA || "", undefined, { numeric: true });
+                }
+                if (typeof valA === 'string') valA = valA.toLowerCase();
+                if (typeof valB === 'string') valB = valB.toLowerCase();
+                if (valA < valB) return currentSortDirection === 'asc' ? -1 : 1;
+                if (valA > valB) return currentSortDirection === 'asc' ? 1 : -1;
+                return 0;
+            });
+
+            // Calculate totals on filtered data
+            currentStockData.forEach(item => {
+                totalValue += item.stockValue;
+                totalRetailValue += item.retailValue;
+            });
+
+            // Pagination Logic
+            const totalItems = currentStockData.length;
+            const totalPages = Math.ceil(totalItems / rowsPerPage);
+            if (currentPage > totalPages) currentPage = totalPages || 1;
+            if (currentPage < 1) currentPage = 1;
+
+            const startIndex = (currentPage - 1) * rowsPerPage;
+            const endIndex = startIndex + rowsPerPage;
+            const paginatedData = currentStockData.slice(startIndex, endIndex);
+
+            let sl = startIndex + 1;
+
+            const rmStockMap = getRawMaterialStockMap();
+            const boms = JSON.parse(localStorage.getItem("boms")) || [];
+
+            paginatedData.forEach(item => {
+                const key = item.name + "|" + (item.itemCode || "") + "|" + item.uom;
+                const isChecked = selectedKeys.has(key) ? "checked" : "";
+                const status = getStockStatus(item.stock, item.uom, item.produced);
+                const currentSl = sl++;
+
+                let maxPotentialText = '';
+                const itemBoms = boms.filter(b => b.finishedGoodName === item.name);
+                if (itemBoms.length > 0) {
+                    let bestPotential = 0;
+                    itemBoms.forEach(bom => {
+                        const potential = calculateMaxPossible(bom, rmStockMap);
+                        if (potential > bestPotential) bestPotential = potential;
+                    });
+                    if (bestPotential > 0) {
+                        maxPotentialText = `<br><small style="color: #27ae60; font-weight: bold;" title="Max Potential from BOM">Potential: +${bestPotential.toFixed(2)} ${item.uom}</small>`;
+                    }
+                }
+
+                const tr = document.createElement("tr");
+                if (item.stock < 0) tr.style.backgroundColor = "#ffe6e6";
+
+                let trHtml = '';
+                columnOrder.forEach(idx => {
+                    switch (idx) {
+                        case 0: trHtml += `<td><input type="checkbox" class="stock-checkbox" value="${key}" ${isChecked} onchange="toggleRowSelection('${key}')"></td>`; break;
+                        case 1: trHtml += `<td>${currentSl}</td>`; break;
+                        case 2: trHtml += `<td>${escapeHtml(item.itemCode)}</td>`; break;
+                        case 3: trHtml += `<td>${escapeHtml(item.indexNo)}</td>`; break;
+                        case 4: trHtml += `<td style="text-align:left; padding-left:15px;">${highlightMatch(item.name, searchInput)}</td>`; break;
+                        case 5: trHtml += `<td style="text-align:left; max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${escapeHtml(item.description)}">${escapeHtml(item.description)}</td>`; break;
+                        case 6: trHtml += `<td>${escapeHtml(item.category)}</td>`; break;
+                        case 7: trHtml += `<td>${escapeHtml(item.itemType)}</td>`; break;
+                        case 8: trHtml += `<td>${item.uom}</td>`; break;
+                        case 9: trHtml += `<td>${item.produced.toLocaleString('en-IN')} ${item.uom}</td>`; break;
+                        case 10: trHtml += `<td>${item.sold.toLocaleString('en-IN')} ${item.uom}</td>`; break;
+                        case 11: trHtml += `<td style="font-size:1.1em; font-weight:bold; color:${item.stock < 0 ? 'red' : 'inherit'}">${item.stock.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${item.uom}${maxPotentialText}</td>`; break;
+                        case 12: trHtml += `<td>${item.avgCost.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>`; break;
+                        case 13: trHtml += `<td>${item.stockValue.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>`; break;
+                        case 14: trHtml += `<td class="${status.class}">${status.text}</td>`; break;
+                        case 15: trHtml += `<td>${item.salePrice.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>`; break;
+                        case 16: trHtml += `<td style="font-weight:bold; color:#0d6efd;">${item.retailValue.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>`; break;
+                    }
+                });
+                tr.innerHTML = trHtml;
+                tbody.appendChild(tr);
+            });
+
+            if (totalItems === 0) tbody.innerHTML = `<tr><td colspan="${columnOrder.length}">No items found</td></tr>`;
+            else {
+                const trTotal = document.createElement("tr");
+                trTotal.style.fontWeight = "bold";
+                trTotal.style.background = "#e8f6f3";
+
+                let html = '';
+                let firstTotalLogical = columnOrder.find(idx => (idx === 13 || idx === 16) && columnVisibility[idx]);
+                let lastVisibleBeforeTotal = -1;
+                if (firstTotalLogical !== undefined) {
+                    const firstTotalVisIdx = columnOrder.indexOf(firstTotalLogical);
+                    for (let i = firstTotalVisIdx - 1; i >= 0; i--) {
+                        if (columnVisibility[columnOrder[i]]) {
+                            lastVisibleBeforeTotal = columnOrder[i];
+                            break;
+                        }
+                    }
+                }
+
+                columnOrder.forEach((logicalIdx) => {
+                    if (logicalIdx === 13) {
+                        html += `<td>${totalValue.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>`;
+                    } else if (logicalIdx === 16) {
+                        html += `<td style="color:#0d6efd;">${totalRetailValue.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>`;
+                    } else if (logicalIdx === lastVisibleBeforeTotal) {
+                        html += `<td style="text-align:right;">Total Value:</td>`;
+                    } else {
+                        html += `<td></td>`;
+                    }
+                });
+
+                trTotal.innerHTML = html;
+                tbody.appendChild(trTotal);
+            }
+
+            updateSelectAllState();
+            renderPagination(totalItems, startIndex + 1, Math.min(endIndex, totalItems), totalPages);
+            requestAnimationFrame(() => {
+                updateFreezePanesPositions();
+            });
+        }
+
+        function exportToExcel() {
+            if (!currentStockData || currentStockData.length === 0) {
+                alert("No data to export!");
+                return;
+            }
+
+            const wb = XLSX.utils.book_new();
+            const exportData = [];
+
+            const headers = [];
+            columnOrder.forEach(idx => {
+                if (idx !== 0 && columnVisibility[idx]) {
+                    headers.push(headerTexts[idx]);
+                }
+            });
+            exportData.push(headers);
+
+            let sl = 1;
+            let totalValue = 0;
+            let totalRetailValue = 0;
+            currentStockData.forEach(item => {
+                const status = getStockStatus(item.stock, item.uom, item.produced);
+                const currentSl = sl++;
+                const row = [];
+
+                totalValue += item.stockValue;
+                totalRetailValue += item.retailValue;
+
+                columnOrder.forEach(idx => {
+                    if (idx === 0 || !columnVisibility[idx]) return;
+                    switch (idx) {
+                        case 1: row.push(currentSl); break;
+                        case 2: row.push(item.itemCode || ''); break;
+                        case 3: row.push(item.indexNo || ''); break;
+                        case 4: row.push(item.name); break;
+                        case 5: row.push(item.description || ''); break;
+                        case 6: row.push(item.category || ''); break;
+                        case 7: row.push(item.itemType || ''); break;
+                        case 8: row.push(item.uom); break;
+                        case 9: row.push(item.produced); break;
+                        case 10: row.push(item.sold); break;
+                        case 11: row.push(item.stock); break;
+                        case 12: row.push(item.avgCost || 0); break;
+                        case 13: row.push(item.stockValue || 0); break;
+                        case 14: row.push(status.text); break;
+                        case 15: row.push(item.salePrice || 0); break;
+                        case 16: row.push(item.retailValue || 0); break;
+                    }
+                });
+                exportData.push(row);
+            });
+
+            const totalRow = [];
+            let firstTotalLogical = columnOrder.find(idx => (idx === 13 || idx === 16) && columnVisibility[idx]);
+            let lastVisibleBeforeTotal = -1;
+            if (firstTotalLogical !== undefined) {
+                const firstTotalVisIdx = columnOrder.indexOf(firstTotalLogical);
+                for (let i = firstTotalVisIdx - 1; i >= 0; i--) {
+                    if (columnVisibility[columnOrder[i]]) {
+                        lastVisibleBeforeTotal = columnOrder[i];
+                        break;
+                    }
+                }
+            }
+
+            columnOrder.forEach(idx => {
+                if (idx === 0 || !columnVisibility[idx]) return;
+                if (idx === 13) {
+                    totalRow.push(totalValue);
+                } else if (idx === 16) {
+                    totalRow.push(totalRetailValue);
+                } else if (idx === lastVisibleBeforeTotal) {
+                    totalRow.push("Total Value:");
+                } else {
+                    totalRow.push("");
+                }
+            });
+            exportData.push(totalRow);
+
+            const ws = XLSX.utils.aoa_to_sheet(exportData);
+            XLSX.utils.book_append_sheet(wb, ws, "Production Stock Report");
+            XLSX.writeFile(wb, "Production_Stock_Report.xlsx");
+        }
+
+        function getStockStatus(qty, uom, produced) {
+            if (qty < 0) return { class: "out-stock", text: "Negative Stock" };
+            if (qty === 0 && produced > 0) return { class: "out-stock", text: "Out of Stock" };
+            if (produced === 0) return { class: "", text: "N/A" };
+
+            let threshold = 5;
+            if (uom) {
+                const u = uom.toLowerCase().trim();
+                if (['gm', 'ml', 'gram', 'grams'].includes(u)) threshold = 500;
+            }
+
+            if (qty < threshold) return { class: "low-stock", text: "Low Stock" };
+            return { class: "good-stock", text: "In Stock" };
+        }
+
+        function populateCategoryFilter() {
+            const items = JSON.parse(localStorage.getItem("items")) || [];
+            const managed = JSON.parse(localStorage.getItem("managed_item_categories")) || [];
+            const categories = new Set();
+
+            items.forEach(item => {
+                if (item.category && item.category.trim() !== "") categories.add(item.category.trim());
+            });
+            managed.forEach(c => categories.add(c));
+
+            const select = document.getElementById("categoryFilter");
+            if (!select) return;
+
+            Array.from(categories).sort().forEach(cat => {
+                const opt = document.createElement("option");
+                opt.value = cat;
+                opt.textContent = cat;
+                select.appendChild(opt);
+            });
+        }
+
+        function populateItemTypeFilter() {
+            const items = JSON.parse(localStorage.getItem("items")) || [];
+            const managed = JSON.parse(localStorage.getItem("managed_item_types")) || ["Finished Good", "Raw Material", "Consumable", "Service"];
+            const itemTypes = new Set();
+
+            items.forEach(item => {
+                if (item.itemType && item.itemType.trim() !== "") itemTypes.add(item.itemType.trim());
+            });
+            managed.forEach(t => itemTypes.add(t));
+
+            const select = document.getElementById("itemTypeFilter");
+            if (!select) return;
+
+            Array.from(itemTypes).sort().forEach(type => {
+                const opt = document.createElement("option");
+                opt.value = type;
+                opt.textContent = type;
+                select.appendChild(opt);
+            });
+        }
+
+        function toggleSelectAll() {
+            const selectAll = document.getElementById("selectAll");
+            const isChecked = selectAll.checked;
+
+            currentStockData.forEach(item => {
+                const key = item.name + "|" + (item.itemCode || "") + "|" + item.uom;
+                if (isChecked) selectedKeys.add(key);
+                else selectedKeys.delete(key);
+            });
+            renderStockTable();
+        }
+
+        function toggleRowSelection(key) {
+            if (selectedKeys.has(key)) selectedKeys.delete(key);
+            else selectedKeys.add(key);
+            updateSelectAllState();
+        }
+
+        function updateSelectAllState() {
+            const selectAll = document.getElementById("selectAll");
+            if (currentStockData.length > 0) {
+                const allSelected = currentStockData.every(item => selectedKeys.has(item.name + "|" + (item.itemCode || "") + "|" + item.uom));
+                selectAll.checked = allSelected;
+            } else {
+                selectAll.checked = false;
+            }
+        }
+
+        function renderPagination(totalItems, start, end, totalPages) {
+            const info = document.getElementById("paginationInfo");
+            const controls = document.getElementById("paginationControls");
+            const totalDisplay = document.getElementById("totalItemsDisplay");
+
+            if (totalDisplay) totalDisplay.innerText = `Total Items: ${totalItems}`;
+
+            if (totalItems === 0) {
+                info.innerText = "No items found";
+                controls.innerHTML = "";
+                return;
+            }
+
+            info.innerText = `Showing ${start} to ${end} of ${totalItems} entries`;
+            let html = `<button onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''} style="padding: 6px 12px; border: 1px solid #ccc; background: #fff; cursor: pointer; border-radius: 4px;">Previous</button>`;
+
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
+                    const activeStyle = i === currentPage ? 'background: #2980b9; color: #fff; border-color: #2980b9;' : 'background: #fff; color: #333;';
+                    html += `<button onclick="changePage(${i})" style="padding: 6px 12px; border: 1px solid #ccc; cursor: pointer; border-radius: 4px; ${activeStyle}">${i}</button>`;
+                } else if (i === currentPage - 3 || i === currentPage + 3) {
+                    html += `<span style="padding: 6px 12px;">...</span>`;
+                }
+            }
+
+            html += `<button onclick="changePage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''} style="padding: 6px 12px; border: 1px solid #ccc; background: #fff; cursor: pointer; border-radius: 4px;">Next</button>`;
+            controls.innerHTML = html;
+        }
+
+        function changePage(page) {
+            currentPage = page;
+            renderStockTable();
+        }
+
+        function changeRowsPerPage() {
+            rowsPerPage = parseInt(document.getElementById("rowsPerPageSelect").value);
+            currentPage = 1;
+            renderStockTable();
+        }
+
+        function goToPage() {
+            const page = parseInt(document.getElementById("goToPageInput").value);
+            if (page >= 1) {
+                currentPage = page;
+                renderStockTable();
+            }
+            document.getElementById("goToPageInput").value = "";
+        }
+
+        // --- Settings Modal Logic ---
+        function openSettingsModal() {
+            document.getElementById('settingsModal').style.display = 'flex';
+
+            const greyToggle = document.getElementById("greyButtonsToggle");
+            if (greyToggle) greyToggle.checked = isGreyButtons;
+
+            const freezeToggle = document.getElementById("freezePanesToggle");
+            if (freezeToggle) freezeToggle.checked = isFreezePanes;
+
+            const freezeCount = document.getElementById("freezePanesCount");
+            if (freezeCount) freezeCount.value = numFreezeCols;
+
+            renderColumnToggles();
+        }
+
+        function closeSettingsModal() {
+            document.getElementById('settingsModal').style.display = 'none';
+        }
+
+        function renderColumnToggles() {
+            const container = document.getElementById("columnToggles");
+            container.innerHTML = "";
+
+            columnOrder.forEach((logicalIdx) => {
+                if (logicalIdx === 0) return; // Skip select checkbox
+
+                const div = document.createElement("div");
+                div.dataset.logicalIdx = logicalIdx;
+                div.style.padding = "8px";
+                div.style.margin = "4px 0";
+                div.style.background = "#f9f9f9";
+                div.style.border = "1px solid #ddd";
+                div.style.borderRadius = "4px";
+                div.style.display = "flex";
+                div.style.alignItems = "center";
+                div.style.gap = "10px";
+
+                const cb = document.createElement("input");
+                cb.type = "checkbox";
+                cb.checked = columnVisibility[logicalIdx];
+                cb.style.margin = "0";
+                cb.onchange = () => {
+                    toggleColumn(logicalIdx, cb.checked);
+                };
+
+                div.appendChild(cb);
+                div.appendChild(document.createTextNode(headerTexts[logicalIdx]));
+                container.appendChild(div);
+            });
+        }
+
+        function toggleAllColumns(isVisible) {
+            for (let i = 1; i < columnVisibility.length; i++) {
+                columnVisibility[i] = isVisible;
+            }
+            localStorage.setItem("prodStockReportColumnVisibility", JSON.stringify(columnVisibility));
+            updateColumnStyles();
+            renderColumnToggles();
+            renderStockTable();
+        }
+
+        function toggleColumn(index, isVisible) {
+            columnVisibility[index] = isVisible;
+            localStorage.setItem("prodStockReportColumnVisibility", JSON.stringify(columnVisibility));
+            updateColumnStyles();
+            renderStockTable();
+        }
+
+        function updateColumnStyles() {
+            let style = document.getElementById('dynamicColumnStyles');
+            if (!style) {
+                style = document.createElement('style');
+                style.id = 'dynamicColumnStyles';
+                document.head.appendChild(style);
+            }
+            let css = '';
+            columnOrder.forEach((logicalIdx, visualIdx) => {
+                if (!columnVisibility[logicalIdx]) {
+                    css += `#stockTable th:nth-child(${visualIdx + 1}), #stockTable td:nth-child(${visualIdx + 1}) { display: none; }\n`;
+                }
+            });
+            style.textContent = css;
+            requestAnimationFrame(() => {
+                updateFreezePanesPositions();
+            });
+        }
+
+        let currentTheme = localStorage.getItem("appThemeMode") || "system";
+
+        function changeTheme() {
+            currentTheme = document.getElementById("themeSelect").value;
+            localStorage.setItem("appThemeMode", currentTheme);
+            applyTheme();
+        }
+
+        function applyTheme() {
+            const isDark = currentTheme === "dark" || (currentTheme === "system" && window.matchMedia('(prefers-color-scheme: dark)').matches);
+            if (isDark) document.body.classList.add("dark-mode");
+            else document.body.classList.remove("dark-mode");
+
+            const sel = document.getElementById("themeSelect");
+            if (sel) sel.value = currentTheme;
+        }
+
+        let isCompactView = localStorage.getItem("prodStockCompactView") === "true";
+
+        function toggleCompactView() {
+            isCompactView = document.getElementById("compactViewToggle").checked;
+            localStorage.setItem("prodStockCompactView", isCompactView);
+            applyCompactView();
+        }
+
+        function applyCompactView() {
+            const table = document.getElementById("stockTable");
+            if (isCompactView) table.classList.add("compact-table");
+            else table.classList.remove("compact-table");
+
+            const toggle = document.getElementById("compactViewToggle");
+            if (toggle) toggle.checked = isCompactView;
+        }
+
+        function enableColumnResizing() {
+            const table = document.getElementById('stockTable');
+            const headers = table.querySelectorAll('th');
+
+            headers.forEach((th) => {
+                if (th.querySelector('.resizer')) return;
+
+                const resizer = document.createElement('div');
+                resizer.classList.add('resizer');
+                th.appendChild(resizer);
+
+                resizer.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                });
+
+                let startX, startWidth;
+
+                resizer.addEventListener('mousedown', function (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    startX = e.pageX;
+                    startWidth = th.offsetWidth;
+                    resizer.classList.add('resizing');
+
+                    document.addEventListener('mousemove', onMouseMove);
+                    document.addEventListener('mouseup', onMouseUp);
+                });
+
+                function onMouseMove(e) {
+                    const newWidth = startWidth + (e.pageX - startX);
+                    if (newWidth > 30) {
+                        th.style.width = newWidth + 'px';
+                        th.style.minWidth = newWidth + 'px';
+                        if (isFreezePanes) updateFreezePanesPositions();
+                    }
+                }
+
+                function onMouseUp() {
+                    resizer.classList.remove('resizing');
+                    document.removeEventListener('mousemove', onMouseMove);
+                    document.removeEventListener('mouseup', onMouseUp);
+                    saveColumnWidths();
+                }
+            });
+        }
+
+        function saveColumnWidths() {
+            const widths = Array.from(document.querySelectorAll('#stockTable th')).map(th => th.style.width);
+            localStorage.setItem('prodStockColumnWidths', JSON.stringify(widths));
+        }
+
+        function loadColumnWidths() {
+            const savedWidths = JSON.parse(localStorage.getItem('prodStockColumnWidths'));
+            if (savedWidths && Array.isArray(savedWidths)) {
+                document.querySelectorAll('#stockTable th').forEach((th, index) => {
+                    if (savedWidths[index]) {
+                        th.style.width = savedWidths[index];
+                        th.style.minWidth = savedWidths[index];
+                    }
+                });
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            populateCategoryFilter();
+            populateItemTypeFilter();
+            renderHeaders();
+            renderStockTable();
+            applyTheme();
+            updateColumnStyles();
+            applyCompactView();
+            applyGreyButtons();
+            applyFreezePanes();
+            const freezeToggle = document.getElementById("freezePanesToggle");
+            if (freezeToggle) freezeToggle.checked = isFreezePanes;
+
+            window.addEventListener('resize', updateFreezePanesPositions);
+
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+                if (currentTheme === "system") {
+                    applyTheme();
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>

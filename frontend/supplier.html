@@ -1,0 +1,1924 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Supplier Entries</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <script src="settings.js"></script>
+    <script src="brand.service.js"></script>
+    <script src="brandLoader.js"></script>
+    <script src="apiClient.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            padding: 20px;
+            background: #f8f9fa;
+            color: #333;
+        }
+
+        h2 {
+            margin-bottom: 15px;
+            color: #2c3e50;
+        }
+
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .close-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .controls {
+            margin: 10px 0;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+            background: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+
+        input,
+        select,
+        button {
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+            font-size: 14px;
+        }
+
+        button {
+            cursor: pointer;
+            font-weight: bold;
+            color: white;
+            border: none;
+            transition: opacity 0.2s;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        button.action {
+            background: #0d6efd;
+        }
+
+        button.clear {
+            background: #6c757d;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            background: #fff;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        th,
+        td {
+            padding: 12px;
+            text-align: center;
+            border-bottom: 1px solid #eee;
+        }
+
+        th {
+            background: #2c3e50;
+            color: white;
+        }
+
+        .action-btn {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            margin: 0 2px;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background-color: #fff;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            min-width: 350px;
+            max-width: 600px;
+            max-height: 85vh;
+            overflow-y: auto;
+        }
+
+        .modal-buttons {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        /* Pagination Styles */
+        .pagination-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 15px;
+        }
+
+        .pagination {
+            display: flex;
+            gap: 5px;
+        }
+
+        .pagination button {
+            padding: 6px 12px;
+            border: 1px solid #ccc;
+            background: #fff;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        .pagination button.active {
+            background: #0d6efd;
+            color: #fff;
+            border-color: #0d6efd;
+        }
+
+        .pagination button:disabled {
+            background: #e9ecef;
+            cursor: not-allowed;
+        }
+
+        .highlight {
+            background-color: #fff176;
+            font-weight: bold;
+        }
+
+        /* Dark Mode */
+        body.dark-mode {
+            background: #121212;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .controls,
+        body.dark-mode table,
+        body.dark-mode .modal-content {
+            background: #2c2c2c;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode input,
+        body.dark-mode select {
+            background: #3a3a3a;
+            color: #fff;
+            border: 1px solid #555;
+        }
+
+        body.dark-mode th {
+            background: #1f1f1f;
+        }
+
+        body.dark-mode td {
+            border-color: #444;
+        }
+
+        /* Compact View */
+        table.compact-table th,
+        table.compact-table td {
+            padding: 4px 5px;
+            font-size: 13px;
+        }
+
+        /* Grey Mode */
+        body.grey-mode button {
+            background-color: #6c757d !important;
+            color: #fff !important;
+        }
+
+        /* Action Dropdown Menu */
+        .action-dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .action-btn-main {
+            background-color: #607d8b;
+            color: white;
+            padding: 6px 12px;
+            font-size: 13px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .action-dropdown-content {
+            display: none;
+            position: fixed;
+            background-color: #fff;
+            min-width: 120px;
+            box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
+            z-index: 9999;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 4px 0;
+            text-align: left;
+        }
+
+        .action-dropdown-content button {
+            color: #333 !important;
+            background: none !important;
+            padding: 8px 16px !important;
+            text-decoration: none !important;
+            display: block !important;
+            width: 100% !important;
+            text-align: left !important;
+            border: none !important;
+            border-radius: 0 !important;
+            margin: 0 !important;
+            box-shadow: none !important;
+            font-weight: normal !important;
+            font-size: 13px !important;
+        }
+
+        .action-dropdown-content button:hover {
+            background-color: #f1f1f1 !important;
+            color: #000 !important;
+        }
+
+        .action-dropdown.active .action-dropdown-content {
+            display: block;
+        }
+
+        body.dark-mode .action-dropdown-content {
+            background-color: #2c2c2c;
+            border-color: #444;
+        }
+
+        body.dark-mode .action-dropdown-content button {
+            color: #e0e0e0 !important;
+        }
+
+        body.dark-mode .action-dropdown-content button:hover {
+            background-color: #3a3a3a !important;
+            color: #fff !important;
+        }
+    </style>
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+</head>
+
+<body>
+
+    <div class="top-bar">
+        <h2>Supplier Manager - <span data-brand="name">RISE Tech Revolution</span></h2>
+        <div style="display:flex; align-items:center; gap:15px;">
+            <label style="cursor:pointer; display:flex; align-items:center; gap:5px; font-size:14px; user-select:none;">
+                <input type="checkbox" id="darkModeToggle" onchange="toggleDarkMode()"> 🌙 Dark Mode
+            </label>
+            <label style="cursor:pointer; display:flex; align-items:center; gap:5px; font-size:14px; user-select:none;">
+                <input type="checkbox" id="compactViewToggle" onchange="toggleCompactView()"> Compact View
+            </label>
+        </div>
+    </div>
+
+    <!-- 🔹 Add Supplier Form -->
+    <div class="controls">
+        <input type="hidden" id="supplierId">
+        <input type="text" id="newSupplierName" placeholder="Supplier Name">
+        <input type="text" id="newContact" placeholder="Contact No.">
+        <input type="email" id="newEmail" placeholder="Email ID">
+        <div style="display:flex; align-items:center;">
+            <input type="text" id="newGSTIN" placeholder="GSTIN" oninput="this.value = this.value.toUpperCase()"
+                style="border-top-right-radius:0; border-bottom-right-radius:0; flex:1;">
+            <button class="action" onclick="verifySupplierGST()" title="Verify GSTIN"
+                style="border-top-left-radius:0; border-bottom-left-radius:0; background: #6c757d; margin-left:-1px; padding: 6px 10px;">🔍</button>
+        </div>
+        <input type="text" id="newAddress" placeholder="Address">
+        <input type="text" id="newPin" placeholder="PIN Code">
+        <select id="newDistrict">
+            <option value="">Select District</option>
+            <option>Purba Bardhaman</option>
+            <option>Paschim Bardhaman</option>
+            <option>Hooghly</option>
+            <option>Howrah</option>
+            <option>Bankura</option>
+            <option>Birbhum</option>
+            <option>North 24 Parganas</option>
+            <option>South 24 Parganas</option>
+            <option>Purulia</option>
+            <option>Nadia</option>
+            <option>Malda</option>
+        </select>
+        <div style="display:flex; gap:5px;">
+            <select id="newState" style="width:150px;"></select>
+            <input type="text" id="newStateCode" placeholder="Code" readonly
+                style="width: 60px; background-color: #e9ecef;">
+        </div>
+        <div style="display:flex; gap:2px;">
+            <select id="newSupplierType" style="width:140px;">
+                <option value="">Supplier Type</option>
+            </select>
+            <button class="action" onclick="openSupplierTypeManager()" title="Manage Types"
+                style="padding: 6px 10px; background: #17a2b8;">⚙️</button>
+        </div>
+        <input type="text" id="newDescription" placeholder="Description">
+
+        <!-- Add Attachments -->
+        <div style="flex-basis: 100%; display: flex; flex-direction: column; gap: 5px; margin-top: 10px;">
+            <label style="font-size: 13px; font-weight: bold; color: #555;">Attachments (Max 500KB each)</label>
+            <input type="file" id="supplierAttachments" multiple onchange="handleSupplierAttachments(this)"
+                accept="image/*,.pdf" style="padding: 4px;">
+            <div id="supplierAttachmentPreviews" style="display: flex; gap: 10px; flex-wrap: wrap;"></div>
+        </div>
+
+        <button class="action" id="saveBtn" onclick="saveSupplier()">Save</button>
+        <button class="clear" id="clearBtn" onclick="confirmClearForm()">Clear</button>
+    </div>
+
+    <!-- 🔹 Search & Actions -->
+    <div class="controls">
+        <input type="text" id="searchName" placeholder="Search..." oninput="applyFilters()">
+        <select id="filterState" onchange="applyFilters()"></select>
+        <select id="filterDistrict" onchange="applyFilters()"></select>
+        <select id="sortOption" onchange="applyFilters()">
+            <option value="">Sort by...</option>
+            <option value="nameAsc">Name (A → Z)</option>
+            <option value="nameDesc">Name (Z → A)</option>
+        </select>
+
+        <button class="action" onclick="refreshData()" style="background:#17a2b8;">Refresh</button>
+        <button class="action" id="btnExportCsv" onclick="exportSuppliersCSV()" style="background:#28a745;"
+            data-permission-id="perm_backup_data">Export CSV</button>
+        <button class="action" id="btnImportCsv" onclick="document.getElementById('importCsvFile').click()"
+            style="background:#20c997;" data-permission-id="perm_restore_data">Import CSV</button>
+        <input type="file" id="importCsvFile" style="display:none" onchange="importSuppliersCSV(this)" accept=".csv">
+        <button class="action" onclick="openSettingsModal()" style="background:#607d8b;">⚙️ Table Settings</button>
+        <button class="action" onclick="deleteSelectedSuppliers()" style="background:#dc3545;"
+            data-permission-id="perm_delete_action">Delete Selected</button>
+    </div>
+
+    <!-- Datalist for Searchable State Dropdown -->
+    <datalist id="stateList"></datalist>
+
+    <!-- 🔹 Supplier Table -->
+    <div class="table-responsive" style="max-height: 600px; overflow-y: auto; margin-top: 15px;">
+        <table id="mainSupplierTable">
+            <thead>
+                <tr>
+                    <th style="width: 40px;"><input type="checkbox" id="selectAll" onclick="toggleSelectAll()">
+                    </th>
+                    <th style="width: 50px;">Sl No</th>
+                    <th style="cursor:pointer;" onclick="handleHeaderClick('name')">Name <span
+                            id="sort-icon-name"></span></th>
+                    <th style="cursor:pointer;" onclick="handleHeaderClick('contact')">Contact No. <span
+                            id="sort-icon-contact"></span></th>
+                    <th style="cursor:pointer;" onclick="handleHeaderClick('email')">Email <span
+                            id="sort-icon-email"></span></th>
+                    <th style="cursor:pointer;" onclick="handleHeaderClick('gstin')">GSTIN <span
+                            id="sort-icon-gstin"></span></th>
+                    <th style="cursor:pointer;" onclick="handleHeaderClick('address')">Address <span
+                            id="sort-icon-address"></span></th>
+                    <th style="cursor:pointer;" onclick="handleHeaderClick('pin')">PIN <span id="sort-icon-pin"></span>
+                    </th>
+                    <th style="cursor:pointer;" onclick="handleHeaderClick('district')">District <span
+                            id="sort-icon-district"></span></th>
+                    <th style="cursor:pointer;" onclick="handleHeaderClick('state')">State <span
+                            id="sort-icon-state"></span></th>
+                    <th style="cursor:pointer;" onclick="handleHeaderClick('supplierType')">Type <span
+                            id="sort-icon-supplierType"></span></th>
+                    <th style="cursor:pointer;" onclick="handleHeaderClick('description')">Description <span
+                            id="sort-icon-description"></span></th>
+                    <th style="cursor:pointer;" onclick="handleHeaderClick('totalDue')">Total Due <span
+                            id="sort-icon-totalDue"></span></th>
+                    <th style="width: 120px;">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="supplierTable"></tbody>
+        </table>
+    </div>
+
+    <!-- Pagination Controls -->
+    <div class="pagination-container">
+        <div style="display: flex; align-items: center; gap: 5px;">
+            <span id="totalSuppliersDisplay" style="font-weight: bold; color: #0d6efd; margin-right: 8px;"></span>
+            <select id="rowsPerPageSelect" onchange="changeRowsPerPage()"
+                style="width: auto; padding: 4px; border: 1px solid #ccc; border-radius: 4px; margin: 0;">
+                <option value="10">10 rows</option>
+                <option value="20" selected>20 rows</option>
+                <option value="50">50 rows</option>
+            </select>
+            <input type="number" id="goToPageInput"
+                style="width: 60px; padding: 4px; border: 1px solid #ccc; border-radius: 4px;" placeholder="Go to"
+                min="1" onchange="goToPage()">
+        </div>
+        <div id="paginationInfo" style="color: #666;"></div>
+        <div class="pagination" id="paginationControls" style="display: flex; gap: 5px;"></div>
+    </div>
+
+    <!-- Clear Confirmation Modal -->
+    <div id="clearConfirmModal" class="modal">
+        <div class="modal-content">
+            <h3 style="color: #6c757d;">🧹 Confirm Clear</h3>
+            <p>Are you sure you want to clear the form? Unsaved changes will be lost.</p>
+            <div class="modal-buttons">
+                <button class="action" style="background:#6c757d;" onclick="performClear()">Yes, Clear</button>
+                <button class="clear" onclick="closeClearModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="modal">
+        <div class="modal-content" style="width: 400px; text-align: left; max-height: 85vh; overflow-y: auto;">
+            <h3 style="color: #607d8b; text-align: center; margin-top: 0;">⚙️ Table Settings</h3>
+            <div
+                style="margin: 15px 0; text-align: left; padding-left: 20px; border-bottom: 1px solid #eee; padding-bottom: 10px;">
+                <h5 style="font-size: 1rem;" class="text-secondary">Button Visibility</h5>
+                <label
+                    style="cursor:pointer; display:flex; align-items:center; gap:10px; font-weight:bold; margin-top: 5px;">
+                    <input type="checkbox" id="showBtnExportCsvToggle"
+                        onchange="toggleButtonVisibility('btnExportCsv', this.checked)"> Show Export CSV
+                </label>
+                <label
+                    style="cursor:pointer; display:flex; align-items:center; gap:10px; font-weight:bold; margin-top: 5px;">
+                    <input type="checkbox" id="showBtnImportCsvToggle"
+                        onchange="toggleButtonVisibility('btnImportCsv', this.checked)"> Show Import CSV
+                </label>
+
+                <h5 style="font-size: 1rem; margin-top: 15px;" class="text-secondary">Action Buttons</h5>
+                <div
+                    style="margin-left: 15px; margin-top: 5px; display: grid; grid-template-columns: 1fr 1fr; gap: 5px;">
+                    <label style="cursor:pointer; display:flex; align-items:center; gap:5px; font-size: 13px;">
+                        <input type="checkbox" id="showActionEdit" onchange="toggleActionButton('edit', this.checked)">
+                        Edit
+                    </label>
+                    <label style="cursor:pointer; display:flex; align-items:center; gap:5px; font-size: 13px;">
+                        <input type="checkbox" id="showActionLedger"
+                            onchange="toggleActionButton('ledger', this.checked)"> Ledger
+                    </label>
+                    <label style="cursor:pointer; display:flex; align-items:center; gap:5px; font-size: 13px;">
+                        <input type="checkbox" id="showActionView" onchange="toggleActionButton('view', this.checked)">
+                        View
+                    </label>
+                    <label style="cursor:pointer; display:flex; align-items:center; gap:5px; font-size: 13px;">
+                        <input type="checkbox" id="showActionDelete"
+                            onchange="toggleActionButton('delete', this.checked)"> Delete
+                    </label>
+                </div>
+
+                <label
+                    style="cursor:pointer; display:flex; align-items:center; gap:10px; font-weight:bold; margin-top: 15px;">
+                    <input type="checkbox" id="greyButtonsToggle" onchange="toggleGreyButtons()"> Grey Buttons Mode
+                </label>
+            </div>
+            <p style="font-size:14px; color:#666; margin-bottom:10px; text-align: center;">Select columns to
+                display:</p>
+            <div style="margin-bottom: 10px; display: flex; gap: 10px; justify-content: center;">
+                <button onclick="toggleAllColumns(true)" class="action"
+                    style="background:#0d6efd; font-size: 12px;">Select All</button>
+                <button onclick="toggleAllColumns(false)" class="action"
+                    style="background:#6c757d; font-size: 12px;">Deselect All</button>
+            </div>
+            <div id="columnToggles" style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                <!-- Checkboxes generated by JS -->
+            </div>
+            <div class="modal-buttons">
+                <button onclick="closeSettingsModal()" class="action" style="background:#6c757d;">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- View Modal -->
+    <div id="viewModal" class="modal">
+        <div class="modal-content" style="text-align: left; max-width: 500px;">
+            <h3 style="color: #0d6efd; text-align: center;">Supplier Details</h3>
+            <div id="viewContent" style="margin-top: 15px;"></div>
+            <div class="modal-buttons">
+                <button class="action" style="background:#6c757d;" onclick="closeViewModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Supplier Type Manager Modal -->
+    <div id="supplierTypeModal" class="modal">
+        <div class="modal-content" style="width: 400px;">
+            <h3 style="color: #17a2b8;">Manage Supplier Types</h3>
+            <div style="display:flex; gap:5px; margin-bottom:15px;">
+                <input type="text" id="newTypeInput" placeholder="Enter new type"
+                    style="flex:1; padding:8px; border:1px solid #ccc; border-radius:4px;">
+                <button class="action" onclick="addSupplierType()" style="background:#28a745;">Add</button>
+            </div>
+            <div id="supplierTypeList"
+                style="text-align:left; max-height:300px; overflow-y:auto; border:1px solid #eee; padding:5px; border-radius:4px; margin-bottom:15px;">
+                <!-- Items -->
+            </div>
+            <div class="modal-buttons">
+                <button class="clear"
+                    onclick="document.getElementById('supplierTypeModal').style.display='none'">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="loadingOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999; align-items:center; justify-content:center; flex-direction:column;">
+        <div style="border: 5px solid #f3f3f3; border-top: 5px solid #3498db; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite;"></div>
+        <p style="color:white; margin-top:15px; font-size:18px; font-weight:bold;">Processing...</p>
+    </div>
+    <style>
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+
+    <!-- Generic Action Confirmation Modal -->
+    <div id="actionConfirmModal" class="modal">
+        <div class="modal-content">
+            <h3 id="actionConfirmTitle" style="color: #d35400;">⚠️ Confirmation</h3>
+            <p id="actionConfirmMsg"></p>
+            <div class="modal-buttons">
+                <button id="actionConfirmBtnYes" class="action" style="background:#f39c12;">Yes</button>
+                <button class="action" style="background:#6c757d;" onclick="closeActionConfirmModal()">No</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div id="confirmationModal" class="modal">
+        <div class="modal-content">
+            <h3 style="color: #c0392b;">🗑️ Confirm Deletion</h3>
+            <p id="modalMessage">Are you sure you want to delete this supplier?</p>
+            <div class="modal-buttons">
+                <button class="action" style="background:#dc3545;" onclick="confirmDelete()">Yes, Delete</button>
+                <button class="action" style="background:#6c757d;" onclick="closeModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success Modal -->
+    <div id="successModal" class="modal">
+        <div class="modal-content">
+            <h3 style="color: #27ae60;">✅ Success</h3>
+            <p id="successMsg">Operation successful.</p>
+            <div class="modal-buttons">
+                <button class="action" onclick="closeSuccessModal()">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Warning Modal -->
+    <div id="warningModal" class="modal">
+        <div class="modal-content">
+            <h3 style="color: #d35400;">⚠️ Warning</h3>
+            <p id="warningMsg"></p>
+            <div class="modal-buttons">
+                <button class="action" onclick="closeWarningModal()">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Attachment Preview Modal -->
+    <div id="attachmentPreviewModal" class="modal" style="z-index: 2000;">
+        <div class="modal-content"
+            style="max-width: 800px; width: 90%; max-height: 90vh; display: flex; flex-direction: column;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <h3 style="margin: 0; color: #0d6efd;" id="previewAttachmentTitle">Attachment Preview</h3>
+                <button class="close-btn"
+                    onclick="document.getElementById('attachmentPreviewModal').style.display='none'">Close</button>
+            </div>
+            <div id="previewAttachmentContent"
+                style="flex: 1; overflow: auto; text-align: center; background: #eee; border-radius: 4px;">
+            </div>
+            <div style="margin-top: 15px; text-align: center;">
+                <button class="action" id="downloadAttachmentBtn">Download</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Firebase Configuration ---
+        const FIREBASE_CONFIG = {
+            apiKey: 'YOUR_API_KEY',
+            authDomain: 'YOUR_PROJECT.firebaseapp.com',
+            projectId: 'YOUR_PROJECT',
+            storageBucket: 'YOUR_PROJECT.appspot.com',
+            messagingSenderId: 'SENDER_ID',
+            appId: 'APP_ID'
+        };
+
+        function populateFilters() {
+            const stateSel = document.getElementById("filterState");
+            const distSel = document.getElementById("filterDistrict");
+
+            stateSel.innerHTML = '<option value="">All States</option>';
+            STATE_MASTER_LIST.forEach(s => {
+                stateSel.innerHTML += `<option value="${s.name}">${s.name}</option>`;
+            });
+
+            // Populate filter districts based on all available districts or just generic list?
+            // For simplicity, let's just list all unique districts found in suppliers data + West Bengal defaults
+            distSel.innerHTML = '<option value="">All Districts</option>';
+            // Combine default WB districts with any existing in data
+            const allDistricts = new Set(DISTRICTS_MASTER_LIST["West Bengal"]);
+            suppliers.forEach(s => { if (s.district) allDistricts.add(s.district); });
+
+            Array.from(allDistricts).sort().forEach(d => {
+                distSel.innerHTML += `<option value="${d}">${d}</option>`;
+            });
+        }
+
+        function populateStateDropdown() {
+            const select = document.getElementById("newState");
+            const codeInput = document.getElementById("newStateCode");
+            select.innerHTML = '<option value="">Select State</option>';
+            STATE_MASTER_LIST.forEach(s => {
+                const opt = document.createElement('option');
+                opt.value = s.name;
+                opt.textContent = `${s.name} (${s.code})`;
+                opt.dataset.code = s.code;
+                select.appendChild(opt);
+            });
+            select.addEventListener('change', () => {
+                const selectedOpt = select.options[select.selectedIndex];
+                codeInput.value = selectedOpt.dataset.code || '';
+                populateDistrictDropdown(select.value);
+            });
+            select.value = "West Bengal";
+            select.dispatchEvent(new Event('change'));
+        }
+
+        function populateDistrictDropdown(stateName, selectedDist = "") {
+            const distSelect = document.getElementById("newDistrict");
+            distSelect.innerHTML = '<option value="">Select District</option>';
+
+            const districts = DISTRICTS_MASTER_LIST[stateName] || [];
+            districts.sort().forEach(d => {
+                const opt = document.createElement('option');
+                opt.value = d;
+                opt.textContent = d;
+                distSelect.appendChild(opt);
+            });
+
+            if (selectedDist && districts.includes(selectedDist)) {
+                distSelect.value = selectedDist;
+            } else if (selectedDist) {
+                // If district exists in data but not in master list, add it
+                const opt = document.createElement('option');
+                opt.value = selectedDist;
+                opt.textContent = selectedDist;
+                opt.selected = true;
+                distSelect.appendChild(opt);
+            }
+        }
+
+        let suppliers = [];
+
+        async function fetchSuppliersData() {
+            let localSuppliers = JSON.parse(localStorage.getItem("suppliers")) || [];
+            const overlay = document.getElementById('loadingOverlay');
+            if (overlay && localSuppliers.length === 0) {
+                overlay.style.display = 'flex';
+                await new Promise(resolve => setTimeout(resolve, 15));
+            }
+
+            const remoteData = await apiClient.getSuppliers();
+            if (remoteData && remoteData.length > 0) {
+                suppliers = remoteData;
+                localStorage.setItem("suppliers", JSON.stringify(suppliers));
+            } else {
+                suppliers = localSuppliers;
+            }
+            if (!suppliers.some(s => s.name === "ANONYMOUS")) {
+                const anon = { id: Date.now().toString() + Math.random().toString(36).substr(2, 5), name: "ANONYMOUS", contact: "0000000000", gstin: "", address: "N/A", pin: "", district: "", state: "West Bengal", stateCode: "19", supplierType: "Retailer", createdAt: new Date().toISOString() };
+                suppliers.push(anon);
+                localStorage.setItem("suppliers", JSON.stringify(suppliers));
+                apiClient.saveSupplier(anon).catch(e => console.warn(e));
+            }
+            populateFilters();
+            applyFilters();
+
+            if (overlay) overlay.style.display = 'none';
+        }
+
+        // Column visibility state (14 columns total)
+        let columnVisibility = JSON.parse(localStorage.getItem("supplierColumnVisibility")) || new Array(14).fill(true);
+        if (columnVisibility.length !== 14) {
+            columnVisibility = new Array(14).fill(true);
+        }
+        let isGreyButtons = localStorage.getItem("supplierGreyButtons") === "true";
+
+        // Action Button Visibility
+        let actionButtonVisibility = JSON.parse(localStorage.getItem("supplierActionButtons")) || {
+            edit: true,
+            ledger: true,
+            view: true,
+            delete: true
+        };
+
+        // --- Button Visibility Logic ---
+        let savedButtonVisibility = JSON.parse(localStorage.getItem("supplierButtonVisibility")) || {};
+        let buttonVisibility = {
+            btnExportCsv: true,
+            btnImportCsv: true,
+            ...savedButtonVisibility
+        };
+
+        // Hook global applyUIPermissions to enforce local visibility settings after permissions are applied
+        const _globalApplyUIPermissions = window.applyUIPermissions;
+        window.applyUIPermissions = function () {
+            if (typeof _globalApplyUIPermissions === 'function') {
+                _globalApplyUIPermissions();
+            }
+            enforceButtonVisibility();
+        };
+
+        function openWindow(url, width, height) {
+            const windowName = url.split('?')[0].split('/').pop().replace('.html', '').replace(/[^a-zA-Z0-9]/g, '_');
+            const win = window.open(url, windowName, `width=${width},height=${height},resizable=yes,scrollbars=yes`);
+            if (win) win.focus();
+        }
+
+        function enforceButtonVisibility() {
+            for (const btnId in buttonVisibility) {
+                const btn = document.getElementById(btnId);
+                if (btn) {
+                    if (!buttonVisibility[btnId]) {
+                        btn.style.display = 'none';
+                    } else {
+                        const hasPermission = btn.hasAttribute('data-permission-id');
+                        if (!hasPermission) {
+                            btn.style.display = '';
+                        }
+                    }
+                }
+            }
+        }
+
+        function toggleButtonVisibility(btnId, isVisible) {
+            buttonVisibility[btnId] = isVisible;
+            localStorage.setItem("supplierButtonVisibility", JSON.stringify(buttonVisibility));
+            applyButtonVisibility();
+        }
+
+        function applyButtonVisibility() {
+            if (typeof window.applyUIPermissions === 'function') {
+                window.applyUIPermissions();
+            } else {
+                enforceButtonVisibility();
+            }
+        }
+
+        function toggleGreyButtons() {
+            isGreyButtons = document.getElementById("greyButtonsToggle").checked;
+            localStorage.setItem("supplierGreyButtons", isGreyButtons);
+            applyGreyButtons();
+        }
+
+        function applyGreyButtons() {
+            if (isGreyButtons) document.body.classList.add("grey-mode");
+            else document.body.classList.remove("grey-mode");
+        }
+
+        let currentSupplierAttachments = [];
+        let currentViewAttachments = [];
+
+        function handleSupplierAttachments(input) {
+            const files = input.files;
+            if (!files.length) return;
+
+            Array.from(files).forEach(file => {
+                if (file.size > 500 * 1024) {
+                    openWarningModal(`File ${file.name} is too large (Max 500KB).`);
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    currentSupplierAttachments.push({
+                        name: file.name,
+                        data: e.target.result,
+                        type: file.type
+                    });
+                    renderSupplierAttachments();
+                };
+                reader.readAsDataURL(file);
+            });
+            input.value = "";
+        }
+
+        function renderSupplierAttachments() {
+            const container = document.getElementById("supplierAttachmentPreviews");
+            container.innerHTML = "";
+            currentSupplierAttachments.forEach((att, index) => {
+                const div = document.createElement("div");
+                div.style.cssText = "position: relative; border: 1px solid #ccc; padding: 5px; border-radius: 4px; display: flex; flex-direction: column; align-items: center; width: 80px;";
+
+                let previewHtml = "";
+                if (att.type.startsWith("image/")) {
+                    previewHtml = `<img src="${att.data}" style="width: 60px; height: 60px; object-fit: cover; cursor: pointer;" onclick="previewAttachment(${index}, 'form')" title="${att.name}">`;
+                } else if (att.type === "application/pdf") {
+                    previewHtml = `<div style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; background: #eee; cursor: pointer; font-weight: bold; color: #dc3545;" onclick="previewAttachment(${index}, 'form')" title="${att.name}">PDF</div>`;
+                } else {
+                    previewHtml = `<div style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; background: #eee; cursor: pointer; font-size: 10px; overflow: hidden;" onclick="previewAttachment(${index}, 'form')" title="${att.name}">FILE</div>`;
+                }
+
+                div.innerHTML = `
+                    ${previewHtml}
+                    <span style="font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; text-align: center;" title="${att.name}">${att.name}</span>
+                    <button onclick="removeSupplierAttachment(${index})" style="position: absolute; top: -5px; right: -5px; background: #dc3545; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer; font-size: 10px; padding: 0;">X</button>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function removeSupplierAttachment(index) {
+            currentSupplierAttachments.splice(index, 1);
+            renderSupplierAttachments();
+        }
+
+        function previewAttachment(index, context) {
+            let att;
+            if (context === 'form') {
+                att = currentSupplierAttachments[index];
+            } else if (context === 'view') {
+                att = currentViewAttachments[index];
+            }
+            if (!att) return;
+
+            document.getElementById('previewAttachmentTitle').innerText = att.name;
+            const content = document.getElementById('previewAttachmentContent');
+
+            if (att.type.startsWith('image/')) {
+                content.innerHTML = `<img src="${att.data}" style="max-width: 100%; max-height: 60vh; object-fit: contain;">`;
+            } else if (att.type === 'application/pdf') {
+                content.innerHTML = `<iframe src="${att.data}" style="width: 100%; height: 60vh; border: none;"></iframe>`;
+            } else {
+                content.innerHTML = `<p style="padding: 20px;">Preview not available for this file type.</p>`;
+            }
+
+            const downloadBtn = document.getElementById('downloadAttachmentBtn');
+            downloadBtn.onclick = function () {
+                const a = document.createElement('a');
+                a.href = att.data;
+                a.download = att.name;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            };
+
+            document.getElementById('attachmentPreviewModal').style.display = 'flex';
+        }
+
+
+
+        let db = null;
+        let idToDelete = null;
+        let idsToDelete = [];
+        let currentPage = 1;
+        let rowsPerPage = 20;
+        let currentSortColumn = 'name';
+        let currentSortDirection = 'asc';
+
+        function escapeHtml(text) {
+            if (text == null) return "";
+            return String(text)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        function highlightMatch(text, term) {
+            if (!text) return "";
+            text = String(text);
+            if (!term) return escapeHtml(text);
+            const escapedTerm = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const regex = new RegExp(`(${escapedTerm})`, 'gi');
+            return text.split(regex).map(part => {
+                return part.toLowerCase() === term.toLowerCase()
+                    ? `<span class="highlight">${escapeHtml(part)}</span>`
+                    : escapeHtml(part);
+            }).join('');
+        }
+
+        // --- Settings Modal Logic ---
+        function openSettingsModal() {
+            document.getElementById('settingsModal').style.display = 'flex';
+            for (const btnId in buttonVisibility) {
+                const toggleId = `show${btnId.charAt(0).toUpperCase() + btnId.slice(1)}Toggle`;
+                const toggle = document.getElementById(toggleId);
+                if (toggle) {
+                    toggle.checked = buttonVisibility[btnId];
+                }
+            }
+
+            document.getElementById("showActionEdit").checked = actionButtonVisibility.edit;
+            document.getElementById("showActionLedger").checked = actionButtonVisibility.ledger;
+            document.getElementById("showActionView").checked = actionButtonVisibility.view;
+            document.getElementById("showActionDelete").checked = actionButtonVisibility.delete;
+
+            const greyToggle = document.getElementById("greyButtonsToggle");
+            if (greyToggle) greyToggle.checked = isGreyButtons;
+
+            renderColumnToggles();
+        }
+
+        function closeSettingsModal() {
+            document.getElementById('settingsModal').style.display = 'none';
+        }
+
+        function renderColumnToggles() {
+            const container = document.getElementById("columnToggles");
+            container.innerHTML = "";
+            const headers = Array.from(document.querySelectorAll("#mainSupplierTable thead th"));
+
+            const items = headers.map((th, index) => {
+                let text = th.innerText.trim();
+                // Skip checkbox (0) only
+                if (index === 0) return null;
+                return { index, text };
+            }).filter(item => item !== null);
+
+            items.forEach(item => {
+                const label = document.createElement("label");
+                label.style.cursor = "pointer";
+                label.style.display = "flex";
+                label.style.alignItems = "center";
+                label.style.gap = "5px";
+                label.style.marginBottom = "5px";
+
+                const cb = document.createElement("input");
+                cb.type = "checkbox";
+                cb.checked = columnVisibility[item.index];
+                cb.style.margin = "0";
+                cb.onchange = () => toggleColumn(item.index, cb.checked);
+
+                label.appendChild(cb);
+                label.appendChild(document.createTextNode(item.text));
+                container.appendChild(label);
+            });
+        }
+
+        function toggleAllColumns(isVisible) {
+            for (let i = 1; i < columnVisibility.length; i++) {
+                columnVisibility[i] = isVisible;
+            }
+            localStorage.setItem("supplierColumnVisibility", JSON.stringify(columnVisibility));
+            updateColumnStyles();
+            renderColumnToggles();
+        }
+
+        function toggleColumn(index, isVisible) {
+            columnVisibility[index] = isVisible;
+            localStorage.setItem("supplierColumnVisibility", JSON.stringify(columnVisibility));
+            updateColumnStyles();
+        }
+
+        function updateColumnStyles() {
+            let style = document.getElementById('dynamicColumnStyles');
+            if (!style) {
+                style = document.createElement('style');
+                style.id = 'dynamicColumnStyles';
+                document.head.appendChild(style);
+            }
+            let css = '';
+            columnVisibility.forEach((visible, i) => {
+                if (!visible) {
+                    css += `#mainSupplierTable th:nth-child(${i + 1}), #mainSupplierTable td:nth-child(${i + 1}) { display: none; }\n`;
+                }
+            });
+            style.textContent = css;
+        }
+
+        function toggleActionButton(type, isVisible) {
+            actionButtonVisibility[type] = isVisible;
+            localStorage.setItem("supplierActionButtons", JSON.stringify(actionButtonVisibility));
+            updateActionButtonsVisibility();
+        }
+
+        function updateActionButtonsVisibility() {
+            let style = document.getElementById('actionButtonsStyle');
+            if (!style) {
+                style = document.createElement('style');
+                style.id = 'actionButtonsStyle';
+                document.head.appendChild(style);
+            }
+            let css = '';
+            if (!actionButtonVisibility.edit) css += `.btn-action-edit { display: none !important; }\n`;
+            if (!actionButtonVisibility.ledger) css += `.btn-action-ledger { display: none !important; }\n`;
+            if (!actionButtonVisibility.view) css += `.btn-action-view { display: none !important; }\n`;
+            if (!actionButtonVisibility.delete) css += `.btn-action-delete { display: none !important; }\n`;
+            style.textContent = css;
+        }
+
+        // Initialize Firebase
+        function initFirebase() {
+            // Prevent wiping local data if Firebase is not configured
+            if (FIREBASE_CONFIG.apiKey === 'YOUR_API_KEY') {
+                console.log("Firebase not configured. Using local storage only.");
+                return;
+            }
+            try {
+                firebase.initializeApp(FIREBASE_CONFIG);
+                db = firebase.firestore();
+                // Enable offline persistence
+                db.enablePersistence().catch(err => console.warn("Persistence error", err));
+
+                // Listen for real-time updates
+                db.collection('suppliers').onSnapshot(snapshot => {
+                    const remoteSuppliers = [];
+                    snapshot.forEach(doc => {
+                        remoteSuppliers.push({ id: doc.id, ...doc.data() });
+                    });
+                    suppliers = remoteSuppliers;
+                    localStorage.setItem("suppliers", JSON.stringify(suppliers));
+                    applyFilters();
+                }, err => {
+                    console.error("Firestore listener error:", err);
+                    alert("Error connecting to Firestore");
+                });
+
+            } catch (e) {
+                console.error("Firebase init error", e);
+                alert("Failed to initialize Firebase. Check console.");
+            }
+        }
+
+        // 🔹 Render supplier table
+        function renderSuppliers(list, startIndex = 0) {
+            const table = document.getElementById("supplierTable");
+            table.innerHTML = "";
+            const searchTerm = document.getElementById("searchName").value.trim();
+
+            list.forEach((s, i) => {
+                table.innerHTML += `
+          <tr>
+            <td><input type="checkbox" class="supplier-checkbox" value="${s.id}"></td>
+            <td>${startIndex + i + 1}</td>
+            <td>${highlightMatch(s.name, searchTerm)}</td>
+            <td>${s.contact ? `<a href="javascript:void(0)" onclick="openWhatsApp('${escapeHtml(s.contact)}')" style="color:#27ae60; text-decoration:none; font-weight:bold;" title="Message on WhatsApp"><i class="fab fa-whatsapp"></i> ${highlightMatch(s.contact, searchTerm)}</a>` : '-'}</td>
+            <td>${s.email ? `<a href="javascript:void(0)" onclick="openWindow('email_sender.html?to=${encodeURIComponent(s.email)}', 1000, 800)" style="color:#0d6efd; text-decoration:none;" title="Send Email in App"><i class="fas fa-envelope"></i> ${highlightMatch(s.email, searchTerm)}</a>` : '-'}</td>
+            <td>${highlightMatch(s.gstin, searchTerm)}</td>
+            <td>${highlightMatch(s.address, searchTerm)}</td>
+            <td>${highlightMatch(s.pin, searchTerm)}</td>
+            <td>${highlightMatch(s.district, searchTerm)}</td>
+            <td>${highlightMatch(s.state, searchTerm)}</td>
+            <td>${highlightMatch(s.supplierType, searchTerm)}</td>
+            <td>${highlightMatch(s.description, searchTerm)}</td>
+            <td style="font-weight:bold; color:${(s.totalDue || 0) > 0 ? '#dc3545' : '#28a745'}">₹${(s.totalDue || 0).toFixed(2)}</td>
+            <td>
+                <div class="action-dropdown" id="actionDropdown-${s.id}">
+                    <button class="action-btn-main" onclick="toggleActionMenu(this)">Actions ▼</button>
+                    <div class="action-dropdown-content">
+                        <button class="btn-action-view" onclick="viewSupplier('${s.id}')">👁️ View</button>
+                        <button class="btn-action-edit" id="editBtn-${s.id}" onclick="editSupplier('${s.id}')" data-permission-id="perm_supplier_manager">✏️ Edit</button>
+                        <button class="btn-action-ledger" onclick="openLedger('${escapeHtml(s.name)}')">📒 Ledger</button>
+                        <button class="btn-action-attach" onclick="openManageAttachments('${s.id}')">📎 Attach</button>
+                        <button class="btn-action-delete" onclick="deleteSupplier('${s.id}')" data-permission-id="perm_delete_action" style="color: #dc3545 !important;">🗑️ Delete</button>
+                    </div>
+                </div>
+            </td>
+          </tr>
+        `;
+            });
+            const selectAll = document.getElementById("selectAll");
+            if (selectAll) selectAll.checked = false;
+            applyUIPermissions();
+        }
+
+        function openLedger(name) {
+            const win = window.open(`ledger.html?supplier=${encodeURIComponent(name)}`, 'ledger', 'width=1000,height=800,resizable=yes,scrollbars=yes');
+            if (win) win.focus();
+        }
+
+        function openWhatsApp(number) {
+            if (!number) return;
+            const cleanNo = number.replace(/\D/g, '');
+            if (!cleanNo) return showToast("Invalid contact number");
+            const url = `https://wa.me/91${cleanNo}`;
+            window.open(url, '_blank');
+        }
+
+        // 🔹 Save Supplier (Add or Update)
+        function saveSupplier() {
+            const id = document.getElementById("supplierId").value;
+            const name = document.getElementById("newSupplierName").value.trim();
+            const contact = document.getElementById("newContact").value.trim();
+            const email = document.getElementById("newEmail").value.trim();
+            const gstin = document.getElementById("newGSTIN").value.trim();
+            const address = document.getElementById("newAddress").value.trim();
+            const pin = document.getElementById("newPin").value.trim();
+            const district = document.getElementById("newDistrict").value.trim();
+            const state = document.getElementById("newState").value.trim();
+            const stateCode = document.getElementById("newStateCode").value.trim();
+            const supplierType = document.getElementById("newSupplierType").value;
+            const description = document.getElementById("newDescription").value.trim();
+
+            if (!name) return openWarningModal("Supplier name cannot be empty");
+            if (contact && !/^\d{10}$/.test(contact)) {
+                return openWarningModal("Contact Number must be exactly 10 digits.");
+            }
+            if (pin && !/^\d{6}$/.test(pin)) {
+                return openWarningModal("PIN Code must be exactly 6 digits.");
+            }
+            if (gstin && gstin.length !== 15) {
+                return openWarningModal("GSTIN must be exactly 15 characters long.");
+            }
+
+            // Check for duplicates (Name & Contact)
+            const isDuplicate = suppliers.some(s =>
+                s.name.toLowerCase() === name.toLowerCase() &&
+                (s.contact || "") === contact &&
+                s.id !== id
+            );
+            if (isDuplicate) return openWarningModal("Supplier with the same Name and Contact No. already exists!");
+
+            if (id) {
+                // Update
+                askConfirm("Confirm Update", "Update this supplier?", async () => {
+                    const idx = suppliers.findIndex(s => s.id === id);
+                    if (idx > -1) {
+                        suppliers[idx] = { ...suppliers[idx], name, contact, email, gstin, address, pin, district, state, stateCode, supplierType, description, attachments: currentSupplierAttachments };
+                        localStorage.setItem("suppliers", JSON.stringify(suppliers));
+
+                        if (db) {
+                            try { await db.collection('suppliers').doc(id).update(suppliers[idx]); } catch (e) { console.error("Firestore update error", e); }
+                        }
+                        apiClient.saveSupplier(suppliers[idx]).catch(e => console.warn("API sync failed", e));
+                        applyFilters();
+                        clearForm();
+                        openSuccessModal("Supplier updated successfully.");
+                    }
+                });
+            } else {
+                // Add
+                askConfirm("Confirm Addition", "Add this new supplier?", async () => {
+                    const newId = Date.now().toString();
+                    const newSupplier = { id: newId, name, contact, email, gstin, address, pin, district, state, stateCode, supplierType, description, attachments: currentSupplierAttachments, createdAt: new Date().toISOString() };
+
+                    suppliers.push(newSupplier);
+                    localStorage.setItem("suppliers", JSON.stringify(suppliers));
+
+                    if (db) {
+                        try { await db.collection('suppliers').doc(newId).set(newSupplier); } catch (e) { console.error("Firestore save error", e); }
+                    }
+                    apiClient.saveSupplier(newSupplier).catch(e => console.warn("API sync failed", e));
+                    applyFilters();
+                    clearForm();
+                    openSuccessModal("Supplier added successfully.");
+                });
+            }
+        }
+
+        function editSupplier(id) {
+            askConfirm("Confirm Edit", "Load this supplier for editing? Unsaved changes in the form will be lost.", () => {
+                performEdit(id);
+            });
+        }
+
+        function performEdit(id) {
+            const s = suppliers.find(x => x.id === id);
+            if (!s) return;
+            document.getElementById("supplierId").value = s.id;
+            document.getElementById("newSupplierName").value = s.name;
+            document.getElementById("newContact").value = s.contact || "";
+            document.getElementById("newEmail").value = s.email || "";
+            document.getElementById("newGSTIN").value = s.gstin || "";
+            document.getElementById("newAddress").value = s.address || "";
+            document.getElementById("newPin").value = s.pin || "";
+            document.getElementById("newState").value = s.state || "West Bengal";
+            document.getElementById("newSupplierType").value = s.supplierType || "";
+            document.getElementById("newDescription").value = s.description || "";
+            currentSupplierAttachments = s.attachments || [];
+            renderSupplierAttachments();
+
+            const stateObj = STATE_MASTER_LIST.find(st => st.name === s.state);
+            document.getElementById("newStateCode").value = s.stateCode || (stateObj ? stateObj.code : "");
+
+            populateDistrictDropdown(s.state, s.district);
+
+            const saveBtn = document.getElementById("saveBtn");
+            saveBtn.textContent = "Update";
+            saveBtn.classList.replace("btn-success", "btn-warning");
+            document.getElementById("clearBtn").style.display = "block";
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function clearForm() {
+            document.getElementById("supplierId").value = "";
+            document.getElementById("newSupplierName").value = "";
+            document.getElementById("newContact").value = "";
+            document.getElementById("newEmail").value = "";
+            document.getElementById("newGSTIN").value = "";
+            document.getElementById("newAddress").value = "";
+            document.getElementById("newPin").value = "";
+            document.getElementById("newDistrict").value = "";
+            document.getElementById("newState").value = "West Bengal";
+            document.getElementById("newSupplierType").value = "";
+            document.getElementById("newDescription").value = "";
+            document.getElementById("newState").dispatchEvent(new Event('change'));
+            currentSupplierAttachments = [];
+            renderSupplierAttachments();
+
+            const saveBtn = document.getElementById("saveBtn");
+            saveBtn.textContent = "Save";
+            saveBtn.style.background = "#0d6efd"; // Primary color
+        }
+
+        // 🔹 View Supplier
+        function viewSupplier(id) {
+            const s = suppliers.find(item => item.id === id);
+            if (!s) return openWarningModal("Supplier not found");
+
+            // Check for unsaved data in "Add Supplier" form
+            const isDirty = document.getElementById("newSupplierName").value ||
+                document.getElementById("newContact").value ||
+                document.getElementById("newEmail").value ||
+                document.getElementById("newGSTIN").value ||
+                document.getElementById("newAddress").value ||
+                document.getElementById("newPin").value ||
+                document.getElementById("newDistrict").value ||
+                document.getElementById("newSupplierType").value ||
+                document.getElementById("newDescription").value;
+
+            if (isDirty) {
+                askConfirm("Confirm View", "You have unsaved data in the 'Add Supplier' form. View details?", () => {
+                    renderViewModal(s);
+                });
+            } else {
+                renderViewModal(s);
+            }
+        }
+
+        function renderViewModal(s) {
+            const content = document.getElementById("viewContent");
+            currentViewAttachments = s.attachments || [];
+
+            let attachmentsHtml = '';
+            if (currentViewAttachments.length > 0) {
+                attachmentsHtml = '<h4 style="margin-top: 15px; margin-bottom: 5px;">Attachments:</h4><div style="display:flex; gap:10px; flex-wrap:wrap;">';
+                currentViewAttachments.forEach((att, index) => {
+                    if (att.type.startsWith('image/')) {
+                        attachmentsHtml += `<img src="${att.data}" style="width:60px; height:60px; object-fit:cover; cursor:pointer; border:1px solid #ccc; border-radius:4px;" onclick="previewAttachment(${index}, 'view')" title="${att.name}">`;
+                    } else if (att.type === 'application/pdf') {
+                        attachmentsHtml += `<div style="width:60px; height:60px; display:flex; align-items:center; justify-content:center; background:#eee; cursor:pointer; border:1px solid #ccc; border-radius:4px; font-weight:bold; color:#dc3545;" onclick="previewAttachment(${index}, 'view')" title="${att.name}">PDF</div>`;
+                    } else {
+                        attachmentsHtml += `<div style="width:60px; height:60px; display:flex; align-items:center; justify-content:center; background:#eee; cursor:pointer; border:1px solid #ccc; border-radius:4px; font-size:10px; overflow:hidden;" onclick="previewAttachment(${index}, 'view')" title="${att.name}">FILE</div>`;
+                    }
+                });
+                attachmentsHtml += '</div>';
+            }
+
+            content.innerHTML = `
+                <p><strong>Name:</strong> ${s.name}</p>
+                <p><strong>Contact:</strong> ${s.contact || '-'}</p>
+                <p><strong>Email:</strong> ${s.email || '-'}</p>
+                <p><strong>GSTIN:</strong> ${s.gstin || '-'}</p>
+                <p><strong>Address:</strong> ${s.address || '-'}</p>
+                <p><strong>PIN:</strong> ${s.pin || '-'}</p>
+                <p><strong>District:</strong> ${s.district || '-'}</p>
+                <p><strong>State:</strong> ${s.state || '-'}</p>
+                <p><strong>Type:</strong> ${s.supplierType || '-'}</p>
+                <p><strong>Description:</strong> ${s.description || '-'}</p>
+                <p><strong>ID:</strong> ${s.id}</p>
+                ${attachmentsHtml}
+            `;
+            document.getElementById("viewModal").style.display = "flex";
+        }
+
+        function closeViewModal() {
+            document.getElementById("viewModal").style.display = "none";
+        }
+
+        // 🔹 Delete supplier
+        function deleteSupplier(id) {
+            idsToDelete = [id];
+            document.getElementById("modalMessage").innerText = "Are you sure you want to delete this supplier?";
+            document.getElementById("confirmationModal").style.display = "flex";
+        }
+
+        // 🔹 Toggle Select All
+        function toggleSelectAll() {
+            const selectAll = document.getElementById("selectAll");
+            const checkboxes = document.querySelectorAll(".supplier-checkbox");
+            checkboxes.forEach(cb => cb.checked = selectAll.checked);
+        }
+
+        // 🔹 Delete Selected Suppliers
+        function deleteSelectedSuppliers() {
+            const checkboxes = document.querySelectorAll(".supplier-checkbox:checked");
+            if (checkboxes.length === 0) return openWarningModal("Please select suppliers to delete.");
+
+            idsToDelete = Array.from(checkboxes).map(cb => cb.value);
+            document.getElementById("modalMessage").innerText = `Are you sure you want to delete ${idsToDelete.length} selected suppliers?`;
+            document.getElementById("confirmationModal").style.display = "flex";
+        }
+
+        async function confirmDelete() {
+            if (idsToDelete.length === 0) return;
+
+            for (let id of idsToDelete) {
+                await apiClient.deleteSupplier(id);
+            }
+            await fetchSuppliersData();
+
+            if (db) {
+                idsToDelete.forEach(id => db.collection('suppliers').doc(id).delete().catch(e => console.error("Firestore delete error", e)));
+            }
+            closeModal();
+            openSuccessModal("Supplier deleted successfully.");
+        }
+
+        function closeModal() { document.getElementById("confirmationModal").style.display = "none"; idToDelete = null; idsToDelete = []; }
+        function openSuccessModal(msg) {
+            if (msg) document.getElementById("successMsg").innerText = msg;
+            document.getElementById("successModal").style.display = "flex";
+        }
+        function closeSuccessModal() { document.getElementById("successModal").style.display = "none"; }
+
+        function openWarningModal(msg) {
+            if (msg) document.getElementById("warningMsg").innerText = msg;
+            document.getElementById("warningModal").style.display = "flex";
+        }
+        function closeWarningModal() { document.getElementById("warningModal").style.display = "none"; }
+
+        // Clear Confirmation
+        function confirmClearForm() {
+            document.getElementById("clearConfirmModal").style.display = "flex";
+        }
+        function closeClearModal() {
+            document.getElementById("clearConfirmModal").style.display = "none";
+        }
+        function performClear() {
+            closeClearModal();
+            clearForm();
+        }
+
+        // 🔹 Generic Confirmation
+        function verifySupplierGST() {
+            const gst = document.getElementById('newGSTIN').value.trim();
+            if (gst) {
+                navigator.clipboard.writeText(gst).then(() => {
+                    showToast("GSTIN copied to clipboard! Opening portal...", "#17a2b8");
+                    window.open('https://services.gst.gov.in/services/searchtp', '_blank');
+                }).catch(() => {
+                    window.open('https://services.gst.gov.in/services/searchtp', '_blank');
+                });
+            } else {
+                window.open('https://services.gst.gov.in/services/searchtp', '_blank');
+            }
+        }
+
+        function askConfirm(title, msg, callback) {
+            const modal = document.getElementById('actionConfirmModal');
+            const titleEl = document.getElementById('actionConfirmTitle');
+            const msgEl = document.getElementById('actionConfirmMsg');
+            const yesBtn = document.getElementById('actionConfirmBtnYes');
+
+            titleEl.textContent = title;
+            msgEl.textContent = msg;
+
+            // Clone to remove old listeners
+            const newYesBtn = yesBtn.cloneNode(true);
+            yesBtn.parentNode.replaceChild(newYesBtn, yesBtn);
+
+            newYesBtn.onclick = () => {
+                closeActionConfirmModal();
+                if (callback) callback();
+            };
+
+            modal.style.display = "flex";
+        }
+
+        function closeActionConfirmModal() {
+            document.getElementById('actionConfirmModal').style.display = "none";
+        }
+
+        // 🔹 Search + Sort
+        function applyFilters() {
+            const search = document.getElementById("searchName").value.toLowerCase();
+            const stateFilter = document.getElementById("filterState").value;
+            const distFilter = document.getElementById("filterDistrict").value;
+            const sortSelect = document.getElementById("sortOption").value;
+
+            // Calculate Total Due for all suppliers
+            const purchases = JSON.parse(localStorage.getItem("purchases")) || [];
+            const supplierDues = {};
+            purchases.forEach(p => {
+                const name = (p.supplierName || "").trim().toLowerCase();
+                if (name) {
+                    const qty = parseFloat(p.qty) || 0;
+                    const price = parseFloat(p.price) || 0;
+                    const gst = parseFloat(p.gst) || 0;
+                    const total = (qty * price) * (1 + gst / 100);
+                    const paid = parseFloat(p.paid) || 0;
+                    supplierDues[name] = (supplierDues[name] || 0) + (total - paid);
+                }
+            });
+            suppliers.forEach(s => {
+                s.totalDue = supplierDues[(s.name || "").trim().toLowerCase()] || 0;
+            });
+
+            // Sync dropdown to globals if selected
+            if (sortSelect === "nameAsc") { currentSortColumn = 'name'; currentSortDirection = 'asc'; }
+            if (sortSelect === "nameDesc") { currentSortColumn = 'name'; currentSortDirection = 'desc'; }
+
+            let filtered = suppliers.filter(s =>
+                (search ? (
+                    s.name.toLowerCase().includes(search) ||
+                    (s.email && s.email.toLowerCase().includes(search)) ||
+                    (s.gstin && s.gstin.toLowerCase().includes(search)) ||
+                    (s.contact && s.contact.toLowerCase().includes(search)) ||
+                    (s.address && s.address.toLowerCase().includes(search)) ||
+                    (s.pin && s.pin.toLowerCase().includes(search)) ||
+                    (s.district && s.district.toLowerCase().includes(search)) ||
+                    (s.state && s.state.toLowerCase().includes(search)) ||
+                    (s.supplierType && s.supplierType.toLowerCase().includes(search)) ||
+                    (s.description && s.description.toLowerCase().includes(search))
+                ) : true) &&
+                (stateFilter ? s.state === stateFilter : true) &&
+                (distFilter ? s.district === distFilter : true)
+            );
+
+            // Sort based on globals
+            if (currentSortColumn === 'name') {
+                filtered.sort((a, b) => {
+                    const valA = (a.name || "").toLowerCase();
+                    const valB = (b.name || "").toLowerCase();
+                    return currentSortDirection === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
+                });
+            } else if (currentSortColumn === 'totalDue') {
+                filtered.sort((a, b) => {
+                    return currentSortDirection === 'asc' ? (a.totalDue - b.totalDue) : (b.totalDue - a.totalDue);
+                });
+            } else if (currentSortColumn) {
+                // Generic sort for other columns
+                filtered.sort((a, b) => {
+                    const valA = (a[currentSortColumn] || "").toString().toLowerCase();
+                    const valB = (b[currentSortColumn] || "").toString().toLowerCase();
+                    if (valA < valB) return currentSortDirection === 'asc' ? -1 : 1;
+                    if (valA > valB) return currentSortDirection === 'asc' ? 1 : -1;
+                    return 0;
+                });
+            }
+
+            // Pagination Logic
+            const totalItems = filtered.length;
+            const totalPages = Math.ceil(totalItems / rowsPerPage);
+
+            if (currentPage > totalPages) currentPage = totalPages || 1;
+            if (currentPage < 1) currentPage = 1;
+
+            const startIndex = (currentPage - 1) * rowsPerPage;
+            const endIndex = startIndex + rowsPerPage;
+            const paginatedItems = filtered.slice(startIndex, endIndex);
+
+            renderSuppliers(paginatedItems, startIndex);
+            renderPagination(totalItems, startIndex + 1, Math.min(endIndex, totalItems), totalPages);
+            updateHeaderIcons();
+        }
+
+        function handleHeaderClick(column) {
+            if (currentSortColumn === column) {
+                currentSortDirection = currentSortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSortColumn = column;
+                currentSortDirection = 'asc';
+            }
+            document.getElementById("sortOption").value = ""; // Clear dropdown to avoid conflict
+            applyFilters();
+        }
+
+        function updateHeaderIcons() {
+            const cols = ['name', 'contact', 'email', 'gstin', 'address', 'pin', 'district', 'state', 'supplierType', 'description', 'totalDue'];
+            cols.forEach(col => {
+                const icon = document.getElementById(`sort-icon-${col}`);
+                if (icon) {
+                    icon.textContent = (currentSortColumn === col) ? (currentSortDirection === 'asc' ? ' ▲' : ' ▼') : '';
+                }
+            });
+        }
+
+        function renderPagination(totalItems, start, end, totalPages) {
+            const info = document.getElementById("paginationInfo");
+            const controls = document.getElementById("paginationControls");
+
+            const totalDisplay = document.getElementById("totalSuppliersDisplay");
+            if (totalDisplay) totalDisplay.innerText = `Total Suppliers: ${totalItems}`;
+
+            const topTotalDisplay = document.getElementById("topTotalSuppliers");
+            if (topTotalDisplay) topTotalDisplay.innerText = `Total Suppliers: ${totalItems}`;
+
+            if (totalItems === 0) {
+                info.innerText = "No suppliers found";
+                controls.innerHTML = "";
+                return;
+            }
+
+            info.innerText = `Showing ${start} to ${end} of ${totalItems} entries`;
+
+            let html = "";
+            // Previous
+            html += `<button onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>Previous</button>`;
+
+            // Page Numbers
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
+                    html += `<button onclick="changePage(${i})" class="${i === currentPage ? 'active' : ''}">${i}</button>`;
+                } else if (i === currentPage - 3 || i === currentPage + 3) {
+                    html += `<span style="padding: 6px 12px;">...</span>`;
+                }
+            }
+
+            // Next
+            html += `<button onclick="changePage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>Next</button>`;
+
+            controls.innerHTML = html;
+        }
+
+        function changePage(page) {
+            currentPage = page;
+            applyFilters();
+        }
+
+        function changeRowsPerPage() {
+            rowsPerPage = parseInt(document.getElementById("rowsPerPageSelect").value);
+            currentPage = 1;
+            applyFilters();
+        }
+
+        function goToPage() {
+            const pageInput = document.getElementById("goToPageInput");
+            const page = parseInt(pageInput.value);
+            if (page >= 1) {
+                currentPage = page;
+                applyFilters();
+            }
+            pageInput.value = "";
+        }
+
+        // Export CSV
+        function exportSuppliersCSV() {
+            if (!suppliers || suppliers.length === 0) return openWarningModal("No suppliers to export");
+
+            const purchases = JSON.parse(localStorage.getItem("purchases")) || [];
+            const supplierDues = {};
+            purchases.forEach(p => {
+                const name = (p.supplierName || "").trim().toLowerCase();
+                if (name) {
+                    const qty = parseFloat(p.qty) || 0;
+                    const price = parseFloat(p.price) || 0;
+                    const gst = parseFloat(p.gst) || 0;
+                    const total = (qty * price) * (1 + gst / 100);
+                    const paid = parseFloat(p.paid) || 0;
+                    supplierDues[name] = (supplierDues[name] || 0) + (total - paid);
+                }
+            });
+
+            const headers = ["Name", "Contact", "Email", "GSTIN", "Address", "PIN", "District", "State", "Type", "Description", "Total Due", "State Code"];
+            const rows = suppliers.map(s => {
+                const due = supplierDues[(s.name || "").trim().toLowerCase()] || 0;
+                const escape = (t) => `"${String(t || "").replace(/"/g, '""')}"`;
+                return [
+                    escape(s.name),
+                    escape(s.contact),
+                    escape(s.email),
+                    escape(s.gstin),
+                    escape(s.address),
+                    escape(s.pin),
+                    escape(s.district),
+                    escape(s.state),
+                    escape(s.supplierType),
+                    escape(s.description),
+                    escape(due.toFixed(2)),
+                    escape(s.stateCode)
+                ].join(",");
+            });
+
+            const csvContent = [headers.join(",")].concat(rows).join("\n");
+            const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "suppliers_export.csv";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            openSuccessModal("Suppliers exported to CSV successfully!");
+        }
+
+        // Import CSV
+        function importSuppliersCSV(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                try {
+                    const text = e.target.result;
+                    const rows = parseCSV(text);
+                    if (rows.length < 2) throw new Error("Invalid CSV format (no data)");
+
+                    // Normalize headers
+                    const headers = rows[0].map(h => h.trim().toLowerCase());
+
+                    // Map columns
+                    const nameIdx = headers.indexOf('name');
+                    if (nameIdx === -1) throw new Error("CSV must have a 'Name' column");
+
+                    let added = 0;
+                    let updated = 0;
+
+                    for (let i = 1; i < rows.length; i++) {
+                        const row = rows[i];
+                        if (row.length < 1) continue;
+
+                        const name = row[nameIdx] ? row[nameIdx].trim() : "";
+                        if (!name) continue;
+
+                        const getVal = (colName) => {
+                            const idx = headers.indexOf(colName.toLowerCase());
+                            return (idx > -1 && row[idx]) ? row[idx].trim() : "";
+                        };
+
+                        const supplierData = {
+                            name: name,
+                            contact: getVal('contact'),
+                            email: getVal('email'),
+                            gstin: getVal('gstin'),
+                            address: getVal('address'),
+                            pin: getVal('pin'),
+                            district: getVal('district'),
+                            state: getVal('state'),
+                            supplierType: getVal('type'),
+                            description: getVal('description'),
+                            stateCode: getVal('state code'),
+                            createdAt: new Date().toISOString()
+                        };
+
+                        let idx = suppliers.findIndex(s => s.name.trim().toLowerCase() === name.toLowerCase());
+
+                        if (idx > -1) {
+                            suppliers[idx] = { ...suppliers[idx], ...supplierData };
+                            if (db) db.collection('suppliers').doc(suppliers[idx].id).set(suppliers[idx]).catch(console.error);
+                            updated++;
+                        } else {
+                            const newId = Date.now().toString() + Math.random().toString(36).substr(2, 5);
+                            const newSupplier = { ...supplierData, id: newId };
+                            suppliers.push(newSupplier);
+                            if (db) db.collection('suppliers').doc(newId).set(newSupplier).catch(console.error);
+                            added++;
+                        }
+                    }
+
+                    localStorage.setItem("suppliers", JSON.stringify(suppliers));
+                    applyFilters();
+                    openSuccessModal(`Imported: ${added} added, ${updated} updated.`);
+                } catch (err) {
+                    console.error("Import error", err);
+                    openWarningModal("Error importing CSV: " + err.message);
+                }
+                input.value = "";
+            };
+            reader.readAsText(file);
+        }
+
+        function parseCSV(text) {
+            const rows = [];
+            let row = [];
+            let cur = '';
+            let inQuote = false;
+            for (let i = 0; i < text.length; i++) {
+                const c = text[i];
+                if (inQuote) {
+                    if (c === '"') {
+                        if (i + 1 < text.length && text[i + 1] === '"') { cur += '"'; i++; }
+                        else inQuote = false;
+                    } else cur += c;
+                } else {
+                    if (c === '"') inQuote = true;
+                    else if (c === ',') { row.push(cur); cur = ''; }
+                    else if (c === '\n' || c === '\r') {
+                        if (cur || row.length > 0) row.push(cur);
+                        if (row.length > 0) rows.push(row);
+                        row = []; cur = '';
+                        if (c === '\r' && i + 1 < text.length && text[i + 1] === '\n') i++;
+                    } else cur += c;
+                }
+            }
+            if (cur || row.length > 0) { row.push(cur); rows.push(row); }
+            return rows;
+        }
+
+        async function refreshData() {
+            const currentState = document.getElementById("filterState").value;
+            const currentDist = document.getElementById("filterDistrict").value;
+
+            await fetchSuppliersData();
+            if (currentState) document.getElementById("filterState").value = currentState;
+            if (currentDist) document.getElementById("filterDistrict").value = currentDist;
+
+            openSuccessModal("Data refreshed successfully.");
+        }
+
+        // --- Supplier Type Logic ---
+        function loadSupplierTypes() {
+            let types = JSON.parse(localStorage.getItem("supplier_types")) || ["Manufacturer", "Distributor", "Wholesaler", "Retailer"];
+            if (types.length === 0) types = ["Manufacturer", "Distributor", "Wholesaler", "Retailer"];
+
+            const sel = document.getElementById("newSupplierType");
+            const currentVal = sel.value;
+            sel.innerHTML = '<option value="">Supplier Type</option>';
+            types.forEach(t => {
+                const opt = document.createElement("option");
+                opt.value = t;
+                opt.textContent = t;
+                sel.appendChild(opt);
+            });
+            if (currentVal && types.includes(currentVal)) sel.value = currentVal;
+        }
+
+        function openSupplierTypeManager() {
+            renderSupplierTypes();
+            document.getElementById('supplierTypeModal').style.display = 'flex';
+        }
+
+        function renderSupplierTypes() {
+            const list = document.getElementById('supplierTypeList');
+            list.innerHTML = '';
+            let types = JSON.parse(localStorage.getItem("supplier_types")) || ["Manufacturer", "Distributor", "Wholesaler", "Retailer"];
+
+            types.forEach((t, index) => {
+                const div = document.createElement('div');
+                div.style.cssText = "display:flex; justify-content:space-between; padding:8px; border-bottom:1px solid #eee; align-items:center;";
+                div.innerHTML = `
+                    <span>${t}</span>
+                    <div>
+                        <button onclick="editSupplierType(${index})" style="padding:2px 6px; font-size:12px; background:#ffc107; color:black; border:none; border-radius:3px; cursor:pointer; margin-right:5px;">✎</button>
+                        <button onclick="deleteSupplierType(${index})" style="padding:2px 6px; font-size:12px; background:#dc3545; color:white; border:none; border-radius:3px; cursor:pointer;">🗑️</button>
+                    </div>
+                `;
+                list.appendChild(div);
+            });
+        }
+
+        function addSupplierType() {
+            const val = document.getElementById('newTypeInput').value.trim();
+            if (!val) return;
+            let types = JSON.parse(localStorage.getItem("supplier_types")) || ["Manufacturer", "Distributor", "Wholesaler", "Retailer"];
+            if (types.includes(val)) return alert("Type already exists");
+            types.push(val);
+            localStorage.setItem("supplier_types", JSON.stringify(types));
+            document.getElementById('newTypeInput').value = '';
+            renderSupplierTypes();
+            loadSupplierTypes();
+        }
+
+        function deleteSupplierType(index) {
+            if (!confirm("Delete this type?")) return;
+            let types = JSON.parse(localStorage.getItem("supplier_types")) || ["Manufacturer", "Distributor", "Wholesaler", "Retailer"];
+            types.splice(index, 1);
+            localStorage.setItem("supplier_types", JSON.stringify(types));
+            renderSupplierTypes();
+            loadSupplierTypes();
+        }
+
+        function editSupplierType(index) {
+            let types = JSON.parse(localStorage.getItem("supplier_types")) || ["Manufacturer", "Distributor", "Wholesaler", "Retailer"];
+            const newVal = prompt("Edit Supplier Type:", types[index]);
+            if (newVal && newVal.trim() !== "") {
+                types[index] = newVal.trim();
+                localStorage.setItem("supplier_types", JSON.stringify(types));
+                renderSupplierTypes();
+                loadSupplierTypes();
+            }
+        }
+
+        // Dark Mode Logic
+        let currentTheme = localStorage.getItem("appThemeMode") || "system";
+
+        function changeTheme() {
+            currentTheme = document.getElementById("themeSelect").value;
+            localStorage.setItem("appThemeMode", currentTheme);
+            applyTheme();
+        }
+
+        function applyTheme() {
+            // Migrate old key
+            if (!localStorage.getItem("appThemeMode") && localStorage.getItem("supplierDarkMode")) {
+                currentTheme = localStorage.getItem("supplierDarkMode") === "true" ? "dark" : "light";
+                localStorage.setItem("appThemeMode", currentTheme);
+            }
+
+            const isDark = currentTheme === "dark" || (currentTheme === "system" && window.matchMedia('(prefers-color-scheme: dark)').matches);
+            if (isDark) document.body.classList.add("dark-mode");
+            else document.body.classList.remove("dark-mode");
+
+            const sel = document.getElementById("themeSelect");
+            if (sel) sel.value = currentTheme;
+        }
+
+        // Compact View Logic
+        let isCompactView = localStorage.getItem("supplierCompactView") === "true";
+
+        function toggleCompactView() {
+            isCompactView = document.getElementById("compactViewToggle").checked;
+            localStorage.setItem("supplierCompactView", isCompactView);
+            applyCompactView();
+        }
+
+        function applyCompactView() {
+            const table = document.querySelector("table");
+            if (isCompactView) table.classList.add("compact-table");
+            else table.classList.remove("compact-table");
+
+            const toggle = document.getElementById("compactViewToggle");
+            if (toggle) toggle.checked = isCompactView;
+        }
+
+        // Load Brand Name
+
+        // Initial load
+        fetchSuppliersData();
+        initFirebase();
+        applyTheme();
+        applyGreyButtons();
+        loadSupplierTypes();
+        populateStateDropdown();
+        populateFilters();
+        applyCompactView();
+        updateColumnStyles();
+        applyButtonVisibility();
+        updateActionButtonsVisibility();
+
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+            if (currentTheme === "system") {
+                applyTheme();
+            }
+        });
+
+        // Add Enter key listener for saving supplier
+        const formContainer = document.querySelectorAll('.controls')[0];
+        if (formContainer) {
+            formContainer.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter' && (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT')) {
+                    e.preventDefault();
+                    saveSupplier();
+                }
+            });
+        }
+
+        // --- Action Dropdown Logic ---
+        function toggleActionMenu(btn) {
+            document.querySelectorAll('.action-dropdown.active').forEach(d => {
+                if (d !== btn.parentElement) d.classList.remove('active');
+            });
+
+            const dropdown = btn.parentElement;
+            dropdown.classList.toggle('active');
+
+            if (dropdown.classList.contains('active')) {
+                const content = dropdown.querySelector('.action-dropdown-content');
+                content.style.display = 'block';
+                const rect = btn.getBoundingClientRect();
+                let top = rect.bottom;
+                let left = rect.right - content.offsetWidth;
+                if (top + content.offsetHeight > window.innerHeight) { top = rect.top - content.offsetHeight; }
+                content.style.top = top + 'px';
+                content.style.left = left + 'px';
+                content.style.display = '';
+            }
+        }
+
+        document.addEventListener('click', function (e) { if (!e.target.matches('.action-btn-main')) { document.querySelectorAll('.action-dropdown.active').forEach(d => d.classList.remove('active')); } });
+        window.addEventListener('scroll', function () { document.querySelectorAll('.action-dropdown.active').forEach(d => d.classList.remove('active')); }, true);
+
+    </script>
+</body>
+
+</html>

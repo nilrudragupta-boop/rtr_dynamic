@@ -1,0 +1,1856 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Invoice Analytics Dashboard</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        :root {
+            --bg: #0d0f14;
+            --bg2: #13161e;
+            --bg3: #1a1e2a;
+            --bg4: #222636;
+            --border: rgba(255, 255, 255, 0.08);
+            --border2: rgba(255, 255, 255, 0.14);
+            --text: #e8eaf0;
+            --text2: #9098b0;
+            --text3: #5a6282;
+            --accent: #4f8ef7;
+            --accent2: #7c5ff7;
+            --green: #2dd4a0;
+            --amber: #f7a84f;
+            --red: #f76f6f;
+            --pink: #f76fa8;
+            --teal: #4fdef7;
+            --purple: #b97cf7;
+            --radius: 12px;
+            --radius-sm: 8px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            font-size: 14px;
+            min-height: 100vh
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg2)
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--bg4);
+            border-radius: 3px
+        }
+
+        /* HEADER */
+        .header {
+            background: var(--bg2);
+            border-bottom: 1px solid var(--border);
+            padding: 16px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100
+        }
+
+        .header-title {
+            display: flex;
+            align-items: center;
+            gap: 12px
+        }
+
+        .header-title .logo {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            font-weight: 700;
+            color: #fff
+        }
+
+        .header-title h1 {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text)
+        }
+
+        .header-title span {
+            font-size: 12px;
+            color: var(--text3);
+            margin-left: 4px
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 12px
+        }
+
+        .data-status {
+            font-size: 12px;
+            color: var(--text3);
+            background: var(--bg3);
+            padding: 6px 12px;
+            border-radius: 20px;
+            border: 1px solid var(--border)
+        }
+
+        .data-status.loaded {
+            color: var(--green);
+            border-color: rgba(45, 212, 160, 0.3)
+        }
+
+        /* UPLOAD ZONE */
+        #uploadSection {
+            padding: 40px 24px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: calc(100vh - 65px)
+        }
+
+        .upload-card {
+            background: var(--bg2);
+            border: 2px dashed var(--border2);
+            border-radius: 20px;
+            padding: 60px 80px;
+            text-align: center;
+            max-width: 560px;
+            width: 100%;
+            cursor: pointer;
+            transition: all .3s
+        }
+
+        .upload-card:hover,
+        .upload-card.drag-over {
+            border-color: var(--accent);
+            background: rgba(79, 142, 247, 0.05)
+        }
+
+        .upload-icon {
+            width: 64px;
+            height: 64px;
+            background: linear-gradient(135deg, rgba(79, 142, 247, .15), rgba(124, 95, 247, .15));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            font-size: 28px
+        }
+
+        .upload-card h2 {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 8px
+        }
+
+        .upload-card p {
+            color: var(--text2);
+            margin-bottom: 24px;
+            font-size: 14px;
+            line-height: 1.6
+        }
+
+        .upload-btn {
+            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            color: #fff;
+            border: none;
+            padding: 12px 32px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity .2s
+        }
+
+        .upload-btn:hover {
+            opacity: .85
+        }
+
+        .file-formats {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            margin-top: 20px
+        }
+
+        .fmt-badge {
+            background: var(--bg3);
+            border: 1px solid var(--border);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            color: var(--text2)
+        }
+
+        .fmt-badge.xlsx {
+            color: var(--green);
+            border-color: rgba(45, 212, 160, 0.3)
+        }
+
+        .fmt-badge.csv {
+            color: var(--amber);
+            border-color: rgba(247, 168, 79, 0.3)
+        }
+
+        #fileInput {
+            display: none
+        }
+
+        .sample-hint {
+            margin-top: 16px;
+            font-size: 12px;
+            color: var(--text3)
+        }
+
+        .sample-hint a {
+            color: var(--accent);
+            cursor: pointer;
+            text-decoration: underline
+        }
+
+        /* DASHBOARD */
+        #dashSection {
+            display: none;
+            padding: 20px 24px
+        }
+
+        /* SLICERS */
+        .slicers-bar {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 16px 20px;
+            margin-bottom: 20px
+        }
+
+        .slicers-bar h3 {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text3);
+            text-transform: uppercase;
+            letter-spacing: .08em;
+            margin-bottom: 12px
+        }
+
+        .slicers-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: flex-end
+        }
+
+        .slicer-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            min-width: 140px
+        }
+
+        .slicer-group label {
+            font-size: 11px;
+            color: var(--text3);
+            font-weight: 500
+        }
+
+        .slicer-group select,
+        .slicer-group input {
+            background: var(--bg3);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 7px 10px;
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            outline: none;
+            transition: border-color .2s
+        }
+
+        .slicer-group select:focus,
+        .slicer-group input:focus {
+            border-color: var(--accent)
+        }
+
+        .slicer-group select option {
+            background: var(--bg3)
+        }
+
+        .timeline-group {
+            display: flex;
+            gap: 8px;
+            align-items: flex-end
+        }
+
+        .btn-reset {
+            background: rgba(247, 111, 111, 0.12);
+            color: var(--red);
+            border: 1px solid rgba(247, 111, 111, 0.3);
+            padding: 7px 16px;
+            border-radius: var(--radius-sm);
+            font-size: 12px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all .2s;
+            margin-left: auto;
+            align-self: flex-end
+        }
+
+        .btn-reset:hover {
+            background: rgba(247, 111, 111, 0.2)
+        }
+
+        .btn-apply {
+            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            color: #fff;
+            border: none;
+            padding: 7px 16px;
+            border-radius: var(--radius-sm);
+            font-size: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: opacity .2s;
+            align-self: flex-end
+        }
+
+        .btn-apply:hover {
+            opacity: .85
+        }
+
+        /* KPI CARDS */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 14px;
+            margin-bottom: 20px
+        }
+
+        .kpi-card {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 16px 18px;
+            position: relative;
+            overflow: hidden;
+            transition: border-color .2s
+        }
+
+        .kpi-card:hover {
+            border-color: var(--border2)
+        }
+
+        .kpi-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px
+        }
+
+        .kpi-card.c1::before {
+            background: linear-gradient(90deg, var(--accent), var(--teal))
+        }
+
+        .kpi-card.c2::before {
+            background: linear-gradient(90deg, var(--green), var(--teal))
+        }
+
+        .kpi-card.c3::before {
+            background: linear-gradient(90deg, var(--amber), var(--red))
+        }
+
+        .kpi-card.c4::before {
+            background: linear-gradient(90deg, var(--accent2), var(--pink))
+        }
+
+        .kpi-card.c5::before {
+            background: linear-gradient(90deg, var(--purple), var(--accent2))
+        }
+
+        .kpi-card.c6::before {
+            background: linear-gradient(90deg, var(--pink), var(--red))
+        }
+
+        .kpi-card.c7::before {
+            background: linear-gradient(90deg, var(--teal), var(--green))
+        }
+
+        .kpi-card.c8::before {
+            background: linear-gradient(90deg, var(--amber), var(--purple))
+        }
+
+        .kpi-label {
+            font-size: 11px;
+            color: var(--text3);
+            text-transform: uppercase;
+            letter-spacing: .07em;
+            font-weight: 500;
+            margin-bottom: 8px
+        }
+
+        .kpi-value {
+            font-size: 24px;
+            font-weight: 700;
+            letter-spacing: -.02em;
+            margin-bottom: 4px
+        }
+
+        .kpi-sub {
+            font-size: 12px;
+            color: var(--text2)
+        }
+
+        .kpi-change {
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-top: 4px
+        }
+
+        .kpi-change.up {
+            background: rgba(45, 212, 160, .12);
+            color: var(--green)
+        }
+
+        .kpi-change.down {
+            background: rgba(247, 111, 111, .12);
+            color: var(--red)
+        }
+
+        /* CHARTS GRID */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 16px;
+            margin-bottom: 20px
+        }
+
+        .chart-card {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 18px 20px
+        }
+
+        .span-8 {
+            grid-column: span 8
+        }
+
+        .span-6 {
+            grid-column: span 6
+        }
+
+        .span-4 {
+            grid-column: span 4
+        }
+
+        .span-12 {
+            grid-column: span 12
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 16px
+        }
+
+        .chart-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text)
+        }
+
+        .chart-sub {
+            font-size: 11px;
+            color: var(--text3);
+            margin-top: 2px
+        }
+
+        .chart-badge {
+            font-size: 11px;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-weight: 500
+        }
+
+        .chart-canvas-wrap {
+            position: relative;
+            width: 100%
+        }
+
+        .h240 {
+            height: 240px
+        }
+
+        .h280 {
+            height: 280px
+        }
+
+        .h320 {
+            height: 320px
+        }
+
+        .h200 {
+            height: 200px
+        }
+
+        /* DEEP ANALYSIS */
+        .analysis-section {
+            margin-bottom: 20px
+        }
+
+        .analysis-section h2 {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 14px;
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            gap: 8px
+        }
+
+        .analysis-section h2::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border)
+        }
+
+        /* TABLE */
+        .table-wrap {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            overflow: hidden;
+            margin-bottom: 20px
+        }
+
+        .table-header {
+            padding: 14px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border)
+        }
+
+        .table-header h3 {
+            font-size: 14px;
+            font-weight: 600
+        }
+
+        .search-box {
+            background: var(--bg3);
+            border: 1px solid var(--border);
+            padding: 7px 12px;
+            border-radius: var(--radius-sm);
+            color: var(--text);
+            font-size: 13px;
+            outline: none;
+            width: 220px
+        }
+
+        .table-scroll {
+            overflow-x: auto
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse
+        }
+
+        th {
+            background: var(--bg3);
+            padding: 10px 14px;
+            text-align: left;
+            font-size: 11px;
+            color: var(--text3);
+            text-transform: uppercase;
+            letter-spacing: .07em;
+            font-weight: 600;
+            white-space: nowrap
+        }
+
+        td {
+            padding: 10px 14px;
+            border-top: 1px solid var(--border);
+            font-size: 13px;
+            white-space: nowrap
+        }
+
+        tr:hover td {
+            background: rgba(255, 255, 255, .02)
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 500
+        }
+
+        .badge-green {
+            background: rgba(45, 212, 160, .12);
+            color: var(--green)
+        }
+
+        .badge-amber {
+            background: rgba(247, 168, 79, .12);
+            color: var(--amber)
+        }
+
+        .badge-red {
+            background: rgba(247, 111, 111, .12);
+            color: var(--red)
+        }
+
+        .badge-blue {
+            background: rgba(79, 142, 247, .12);
+            color: var(--accent)
+        }
+
+        /* INSIGHTS PANEL */
+        .insights-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 14px;
+            margin-bottom: 20px
+        }
+
+        .insight-card {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 16px 18px
+        }
+
+        .insight-card h4 {
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: var(--text2)
+        }
+
+        .insight-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 0;
+            border-bottom: 1px solid var(--border)
+        }
+
+        .insight-item:last-child {
+            border-bottom: none
+        }
+
+        .insight-item .name {
+            font-size: 13px;
+            color: var(--text);
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            margin-right: 8px
+        }
+
+        .insight-item .val {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--accent);
+            white-space: nowrap
+        }
+
+        .progress-bar {
+            height: 4px;
+            background: var(--bg3);
+            border-radius: 2px;
+            margin-top: 4px;
+            overflow: hidden
+        }
+
+        .progress-fill {
+            height: 100%;
+            border-radius: 2px;
+            background: linear-gradient(90deg, var(--accent), var(--teal))
+        }
+
+        /* HEATMAP */
+        .heatmap-grid {
+            display: grid;
+            gap: 3px
+        }
+
+        .heatmap-cell {
+            border-radius: 3px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity .2s
+        }
+
+        .heatmap-cell:hover {
+            opacity: .8
+        }
+
+        .heatmap-labels {
+            display: flex;
+            gap: 3px;
+            margin-bottom: 3px
+        }
+
+        .heatmap-label {
+            font-size: 10px;
+            color: var(--text3);
+            text-align: center
+        }
+
+        /* FOOTER */
+        .footer {
+            background: var(--bg2);
+            border-top: 1px solid var(--border);
+            padding: 12px 24px;
+            text-align: center;
+            color: var(--text3);
+            font-size: 12px
+        }
+
+        @media(max-width:900px) {
+
+            .span-8,
+            .span-6,
+            .span-4 {
+                grid-column: span 12
+            }
+
+            .upload-card {
+                padding: 40px 24px
+            }
+
+            .slicers-grid {
+                gap: 8px
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="header">
+        <div class="header-title">
+            <div class="logo">📊</div>
+            <div>
+                <h1>Invoice Analytics</h1>
+            </div>
+        </div>
+        <div class="header-right">
+            <span class="data-status" id="dataStatus">No data loaded</span>
+            <button class="upload-btn" style="padding:8px 16px;font-size:13px"
+                onclick="document.getElementById('fileInput').click()">Upload File</button>
+            <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" />
+        </div>
+    </div>
+
+    <!-- UPLOAD SECTION -->
+    <div id="uploadSection">
+        <div class="upload-card" id="dropZone">
+            <div class="upload-icon">📂</div>
+            <h2>Upload Your Invoice Data</h2>
+            <p>Drag & drop your file here, or click to browse.<br>Supports Excel (.xlsx, .xls) and CSV (.csv) formats.
+            </p>
+            <button class="upload-btn" onclick="document.getElementById('fileInput').click()">Choose File</button>
+            <div class="file-formats">
+                <span class="fmt-badge xlsx">✓ XLSX</span>
+                <span class="fmt-badge xlsx">✓ XLS</span>
+                <span class="fmt-badge csv">✓ CSV</span>
+            </div>
+            <p class="sample-hint">No file? <a onclick="loadSampleData()">Load sample data</a> or <a
+                    onclick="loadFromLocalStorage()">Load from App Data</a> to explore the dashboard.</p>
+        </div>
+    </div>
+
+    <!-- DASHBOARD -->
+    <div id="dashSection">
+        <!-- SLICERS -->
+        <div class="slicers-bar">
+            <h3>Filters & Timeline</h3>
+            <div class="slicers-grid">
+                <div class="slicer-group timeline-group">
+                    <div class="slicer-group">
+                        <label>Date From</label>
+                        <input type="date" id="dateFrom" />
+                    </div>
+                    <div class="slicer-group">
+                        <label>Date To</label>
+                        <input type="date" id="dateTo" />
+                    </div>
+                </div>
+                <div class="slicer-group"
+                    style="flex-direction: row; align-items: center; gap: 6px; padding-bottom: 8px;">
+                    <input type="checkbox" id="compareToggle" onchange="toggleCompare()"
+                        style="margin: 0; width: auto;">
+                    <label for="compareToggle" style="margin: 0; cursor: pointer;">Compare</label>
+                </div>
+                <div class="slicer-group timeline-group" id="compareGroup" style="display: none;">
+                    <div class="slicer-group">
+                        <label>Compare From</label>
+                        <input type="date" id="compareFrom" />
+                    </div>
+                    <div class="slicer-group">
+                        <label>Compare To</label>
+                        <input type="date" id="compareTo" />
+                    </div>
+                </div>
+                <div class="slicer-group">
+                    <label>State</label>
+                    <select id="filterState">
+                        <option value="">All States</option>
+                    </select>
+                </div>
+                <div class="slicer-group">
+                    <label>District</label>
+                    <select id="filterDistrict">
+                        <option value="">All Districts</option>
+                    </select>
+                </div>
+                <div class="slicer-group">
+                    <label>Invoice Type</label>
+                    <select id="filterType">
+                        <option value="">All Types</option>
+                    </select>
+                </div>
+                <div class="slicer-group">
+                    <label>Customer</label>
+                    <select id="filterCustomer">
+                        <option value="">All Customers</option>
+                    </select>
+                </div>
+                <div class="slicer-group">
+                    <label>Payment Mode</label>
+                    <select id="filterPayment">
+                        <option value="">All Modes</option>
+                        <option>Cash</option>
+                        <option>Bank</option>
+                        <option>Mixed</option>
+                    </select>
+                </div>
+                <div class="slicer-group">
+                    <label>Item</label>
+                    <select id="filterItem">
+                        <option value="">All Items</option>
+                    </select>
+                </div>
+                <button class="btn-apply" onclick="applyFilters()">Apply Filters</button>
+                <button class="btn-reset" onclick="resetFilters()">Reset</button>
+            </div>
+        </div>
+
+        <!-- KPIs -->
+        <div class="kpi-grid" id="kpiGrid">
+            <div class="kpi-card c1">
+                <div class="kpi-label">Total Revenue</div>
+                <div class="kpi-value" id="kpi1">—</div>
+                <div class="kpi-sub">Total invoiced amount</div>
+            </div>
+            <div class="kpi-card c2">
+                <div class="kpi-label">Total Paid</div>
+                <div class="kpi-value" id="kpi2">—</div>
+                <div class="kpi-sub">Collected payments</div>
+            </div>
+            <div class="kpi-card c3">
+                <div class="kpi-label">Outstanding</div>
+                <div class="kpi-value" id="kpi3">—</div>
+                <div class="kpi-sub">Pending collection</div>
+            </div>
+            <div class="kpi-card c4">
+                <div class="kpi-label">Total Invoices</div>
+                <div class="kpi-value" id="kpi4">—</div>
+                <div class="kpi-sub">Unique invoice count</div>
+            </div>
+            <div class="kpi-card c5">
+                <div class="kpi-label">Unique Customers</div>
+                <div class="kpi-value" id="kpi5">—</div>
+                <div class="kpi-sub">Active customer base</div>
+            </div>
+            <div class="kpi-card c6">
+                <div class="kpi-label">Avg Invoice Value</div>
+                <div class="kpi-value" id="kpi6">—</div>
+                <div class="kpi-sub">Per invoice average</div>
+            </div>
+            <div class="kpi-card c7">
+                <div class="kpi-label">Cash Collections</div>
+                <div class="kpi-value" id="kpi7">—</div>
+                <div class="kpi-sub">Cash payment total</div>
+            </div>
+            <div class="kpi-card c8">
+                <div class="kpi-label">Bank Collections</div>
+                <div class="kpi-value" id="kpi8">—</div>
+                <div class="kpi-sub">Bank payment total</div>
+            </div>
+        </div>
+
+        <!-- CHARTS ROW 1 -->
+        <div class="charts-grid">
+            <div class="chart-card span-8">
+                <div class="chart-header">
+                    <div>
+                        <div class="chart-title">Revenue Trend Over Time</div>
+                        <div class="chart-sub">Monthly revenue & paid amount</div>
+                    </div>
+                </div>
+                <div class="chart-canvas-wrap h280"><canvas id="chartRevenueTrend" role="img"
+                        aria-label="Monthly revenue trend line chart">Revenue over time</canvas></div>
+            </div>
+            <div class="chart-card span-4">
+                <div class="chart-header">
+                    <div>
+                        <div class="chart-title">Payment Mode Split</div>
+                        <div class="chart-sub">Cash vs Bank distribution</div>
+                    </div>
+                </div>
+                <div class="chart-canvas-wrap h280"><canvas id="chartPayMode" role="img"
+                        aria-label="Donut chart of payment mode split">Payment modes</canvas></div>
+            </div>
+        </div>
+
+        <!-- CHARTS ROW 2 -->
+        <div class="charts-grid">
+            <div class="chart-card span-6">
+                <div class="chart-header">
+                    <div>
+                        <div class="chart-title">Top 10 Customers by Revenue</div>
+                        <div class="chart-sub">Ranked by total invoice value</div>
+                    </div>
+                </div>
+                <div class="chart-canvas-wrap" style="height:340px"><canvas id="chartTopCustomers" role="img"
+                        aria-label="Horizontal bar chart of top customers">Top customers</canvas></div>
+            </div>
+            <div class="chart-card span-6">
+                <div class="chart-header">
+                    <div>
+                        <div class="chart-title">Top 10 Items by Sales</div>
+                        <div class="chart-sub">Revenue contribution per item</div>
+                    </div>
+                </div>
+                <div class="chart-canvas-wrap" style="height:340px"><canvas id="chartTopItems" role="img"
+                        aria-label="Horizontal bar chart of top items">Top items</canvas></div>
+            </div>
+        </div>
+
+        <!-- CHARTS ROW 3 -->
+        <div class="charts-grid">
+            <div class="chart-card span-4">
+                <div class="chart-header">
+                    <div>
+                        <div class="chart-title">Revenue by State</div>
+                        <div class="chart-sub">Geographic distribution</div>
+                    </div>
+                </div>
+                <div class="chart-canvas-wrap h240"><canvas id="chartByState" role="img"
+                        aria-label="Bar chart revenue by state">State revenue</canvas></div>
+            </div>
+            <div class="chart-card span-4">
+                <div class="chart-header">
+                    <div>
+                        <div class="chart-title">Invoice Type Distribution</div>
+                        <div class="chart-sub">Types of invoices issued</div>
+                    </div>
+                </div>
+                <div class="chart-canvas-wrap h240"><canvas id="chartInvoiceType" role="img"
+                        aria-label="Pie chart of invoice types">Invoice types</canvas></div>
+            </div>
+            <div class="chart-card span-4">
+                <div class="chart-header">
+                    <div>
+                        <div class="chart-title">GST Collection</div>
+                        <div class="chart-sub">GST slab distribution</div>
+                    </div>
+                </div>
+                <div class="chart-canvas-wrap h240"><canvas id="chartGST" role="img"
+                        aria-label="Doughnut chart of GST slabs">GST distribution</canvas></div>
+            </div>
+        </div>
+
+        <!-- CHARTS ROW 4 -->
+        <div class="charts-grid">
+            <div class="chart-card span-6">
+                <div class="chart-header">
+                    <div>
+                        <div class="chart-title">Qty Sold vs Revenue by Item</div>
+                        <div class="chart-sub">Bubble chart — size = revenue</div>
+                    </div>
+                </div>
+                <div class="chart-canvas-wrap h280"><canvas id="chartBubble" role="img"
+                        aria-label="Bubble chart of quantity vs revenue per item">Qty vs Revenue</canvas></div>
+            </div>
+            <div class="chart-card span-6">
+                <div class="chart-header">
+                    <div>
+                        <div class="chart-title">Day-of-Week Sales Pattern</div>
+                        <div class="chart-sub">Avg revenue per weekday</div>
+                    </div>
+                </div>
+                <div class="chart-canvas-wrap h280"><canvas id="chartWeekday" role="img"
+                        aria-label="Radar chart of weekday sales pattern">Weekday pattern</canvas></div>
+            </div>
+        </div>
+
+        <!-- CHARTS ROW 5 -->
+        <div class="charts-grid">
+            <div class="chart-card span-12">
+                <div class="chart-header">
+                    <div>
+                        <div class="chart-title">Monthly Revenue Heatmap</div>
+                        <div class="chart-sub">Revenue intensity by month and year</div>
+                    </div>
+                </div>
+                <div id="heatmapContainer" style="overflow-x:auto;padding:4px 0"></div>
+            </div>
+        </div>
+
+        <!-- DEEP ANALYSIS -->
+        <div class="analysis-section">
+            <h2>Deep Analysis</h2>
+            <div class="insights-grid">
+                <div class="insight-card">
+                    <h4>Top Revenue States</h4>
+                    <div id="insightStates"></div>
+                </div>
+                <div class="insight-card">
+                    <h4>Top Revenue Districts</h4>
+                    <div id="insightDistricts"></div>
+                </div>
+                <div class="insight-card">
+                    <h4>Best Selling Items</h4>
+                    <div id="insightItems"></div>
+                </div>
+                <div class="insight-card">
+                    <h4>Customer Concentration</h4>
+                    <div id="insightCustomers"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TRANSACTION TABLE -->
+        <div class="table-wrap">
+            <div class="table-header">
+                <h3>Invoice Records</h3>
+                <input type="text" class="search-box" id="tableSearch" placeholder="Search invoices..."
+                    oninput="filterTable()" />
+            </div>
+            <div class="table-scroll">
+                <table id="invoiceTable">
+                    <thead>
+                        <tr>
+                            <th onclick="sortTable(0)">Invoice No ↕</th>
+                            <th onclick="sortTable(1)">Date ↕</th>
+                            <th onclick="sortTable(2)">Type</th>
+                            <th onclick="sortTable(3)">Customer ↕</th>
+                            <th onclick="sortTable(4)">State</th>
+                            <th onclick="sortTable(5)">Item</th>
+                            <th onclick="sortTable(6)">Qty ↕</th>
+                            <th onclick="sortTable(7)">Price ↕</th>
+                            <th onclick="sortTable(8)">Total Paid ↕</th>
+                            <th onclick="sortTable(9)">GST%</th>
+                            <th>Pay Mode</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody"></tbody>
+                </table>
+            </div>
+            <div style="padding:10px 20px;font-size:12px;color:var(--text3);border-top:1px solid var(--border)"
+                id="tableInfo">Showing 0 records</div>
+        </div>
+
+        <!-- Pagination Controls -->
+        <div class="slicers-bar" style="margin-top: 20px; margin-bottom: 0;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span id="paginationInfo" style="font-size: 13px; color: var(--text2);"></span>
+                    <select id="rowsPerPageSelect" onchange="changeRowsPerPage()"
+                        style="padding: 6px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg3); color: var(--text);">
+                        <option value="10">10 records</option>
+                        <option value="20" selected>20 records</option>
+                        <option value="50">50 records</option>
+                        <option value="100">100 records</option>
+                    </select>
+                    <input type="number" id="goToPageInput" placeholder="Go to page" min="1"
+                        onchange="goToPage()" style="padding: 6px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg3); color: var(--text); width: 100px;">
+                </div>
+                <div class="pagination-controls" id="paginationControls"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">Invoice Analytics Dashboard &nbsp;|&nbsp; Upload your data to get started</div>
+
+    <script>
+        let rawData = [], filteredData = [], charts = {};
+
+        let currentPage = 1;
+        let rowsPerPage = 20;
+
+        // ── FILE UPLOAD ──────────────────────────────────────────
+        document.getElementById('fileInput').addEventListener('change', e => {
+            const file = e.target.files[0];
+            if (file) processFile(file);
+        });
+        const dropZone = document.getElementById('dropZone');
+        dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+        dropZone.addEventListener('drop', e => {
+            e.preventDefault(); dropZone.classList.remove('drag-over');
+            const file = e.dataTransfer.files[0];
+            if (file) processFile(file);
+        });
+
+        function processFile(file) {
+            const reader = new FileReader();
+            const ext = file.name.split('.').pop().toLowerCase();
+            reader.onload = e => {
+                try {
+                    let data;
+                    if (ext === 'csv') {
+                        data = parseCSV(e.target.result);
+                    } else {
+                        const wb = XLSX.read(e.target.result, { type: 'array', cellDates: true });
+                        const ws = wb.Sheets[wb.SheetNames[0]];
+                        data = XLSX.utils.sheet_to_json(ws, { defval: '' });
+                    }
+                    rawData = normalizeData(data);
+                    filteredData = [...rawData];
+                    document.getElementById('dataStatus').textContent = rawData.length + ' records loaded';
+                    document.getElementById('dataStatus').classList.add('loaded');
+                    initDashboard();
+                } catch (err) {
+                    alert('Error reading file: ' + err.message);
+                }
+            };
+            if (ext === 'csv') reader.readAsText(file);
+            else reader.readAsArrayBuffer(file);
+        }
+
+        function parseCSV(text) {
+            const lines = text.split('\n').filter(l => l.trim());
+            if (!lines.length) return [];
+            const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
+            return lines.slice(1).map(line => {
+                const vals = line.match(/(".*?"|[^,]+|(?<=,)(?=,)|(?<=,)$|^(?=,))/g) || [];
+                const obj = {};
+                headers.forEach((h, i) => { obj[h] = (vals[i] || '').trim().replace(/^"|"$/g, ''); });
+                return obj;
+            });
+        }
+
+        function normalizeData(rows) {
+            return rows.map(r => {
+                const findKey = (keys) => {
+                    for (const k of Object.keys(r)) {
+                        if (keys.some(kk => k.trim().toLowerCase() === kk.toLowerCase())) return r[k];
+                    }
+                    for (const k of Object.keys(r)) {
+                        if (keys.some(kk => k.toLowerCase().includes(kk.toLowerCase()))) return r[k];
+                    }
+                    return '';
+                };
+                const toNum = v => { const n = parseFloat(String(v).replace(/[₹,\s]/g, '')); return isNaN(n) ? 0 : n; };
+                const toDate = v => {
+                    if (!v) return null;
+                    if (v instanceof Date) return v;
+                    const d = new Date(v);
+                    return isNaN(d) ? null : d;
+                };
+                return {
+                    invoiceNo: findKey(['invoice no', 'invoice_no', 'invno', 'inv no']),
+                    date: toDate(findKey(['date', 'invoice date', 'inv date'])),
+                    type: findKey(['type', 'invoice type']),
+                    customer: findKey(['customer', 'customer name', 'cust name', 'party']),
+                    address: findKey(['address']),
+                    contact: findKey(['contact']),
+                    pin: findKey(['pin']),
+                    district: findKey(['district']),
+                    state: findKey(['state']),
+                    stateCode: findKey(['state code']),
+                    gstNo: findKey(['gst no', 'gstin']),
+                    paymentDate: toDate(findKey(['payment date', 'pay date'])),
+                    remarks: findKey(['remarks']),
+                    createdBy: findKey(['created by']),
+                    cash: toNum(findKey(['cash'])),
+                    bank: toNum(findKey(['bank'])),
+                    totalPaid: toNum(findKey(['total paid', 'total', 'paid'])),
+                    itemName: findKey(['item name', 'item', 'product']),
+                    subDetails: findKey(['sub details', 'sub detail', 'details']),
+                    qty: toNum(findKey(['qty', 'quantity'])),
+                    uom: findKey(['uom', 'unit']),
+                    price: toNum(findKey(['price', 'rate', 'unit price'])),
+                    disc: toNum(findKey(['disc', 'discount'])),
+                    discType: findKey(['disc type', 'discount type']),
+                    itemGST: toNum(findKey(['item gst', 'gst %', 'gst%', 'gst rate', 'tax', 'gst'])),
+                    raw: r
+                };
+            }).filter(r => r.invoiceNo || r.customer || r.totalPaid);
+        }
+
+        // ── SAMPLE DATA ───────────────────────────────────────────
+        function loadSampleData() {
+            const states = ['Maharashtra', 'Tamil Nadu', 'Karnataka', 'Delhi', 'Gujarat', 'West Bengal', 'Rajasthan', 'Uttar Pradesh'];
+            const districts = ['Mumbai', 'Chennai', 'Bangalore', 'New Delhi', 'Ahmedabad', 'Kolkata', 'Jaipur', 'Lucknow', 'Pune', 'Surat'];
+            const customers = ['Raj Enterprises', 'Priya Traders', 'Sunita & Co', 'Mohan Industries', 'Lakshmi Supplies', 'Arjun Pvt Ltd', 'Devi Goods', 'Krishna Corp', 'Ram Associates', 'Shyam Bros', 'Gita Holdings', 'Anand Ltd'];
+            const items = ['Steel Rods', 'Cement Bags', 'PVC Pipes', 'Electrical Wires', 'Tiles (Box)', 'Paint (20L)', 'Screws (Pack)', 'Iron Sheets', 'Glass Panels', 'Plywood (Sheet)'];
+            const types = ['Sale', 'Purchase Return', 'Credit Note', 'Debit Note'];
+            const data = [];
+            for (let i = 1; i <= 320; i++) {
+                const d = new Date(2023, Math.floor(Math.random() * 24) % 12, Math.floor(Math.random() * 28) + 1);
+                const s = states[Math.floor(Math.random() * states.length)];
+                const c = customers[Math.floor(Math.random() * customers.length)];
+                const item = items[Math.floor(Math.random() * items.length)];
+                const qty = Math.floor(Math.random() * 50) + 1;
+                const price = Math.floor(Math.random() * 5000) + 200;
+                const cash = Math.random() > .5 ? Math.floor(Math.random() * price * qty * .5) : 0;
+                const bank = Math.floor(price * qty * .9) - cash;
+                data.push({
+                    'Invoice No': 'INV-' + String(1000 + i),
+                    'Date': d.toISOString().split('T')[0],
+                    'Type': types[Math.floor(Math.random() * types.length)],
+                    'Customer Name': c,
+                    'Address': districts[Math.floor(Math.random() * districts.length)],
+                    'Contact': '9' + Math.floor(Math.random() * 900000000 + 100000000),
+                    'PIN': Math.floor(Math.random() * 900000 + 100000),
+                    'District': districts[Math.floor(Math.random() * districts.length)],
+                    'State': s,
+                    'State Code': String(Math.floor(Math.random() * 30 + 1)),
+                    'GST No': '27AABCD1234E1ZK',
+                    'Payment Date': d.toISOString().split('T')[0],
+                    'Remarks': '',
+                    'Created By': 'Admin',
+                    'Edited By': '',
+                    'Cash': cash,
+                    'Bank': bank,
+                    'Total Paid': cash + bank,
+                    'Item Name': item,
+                    'Sub Details': '',
+                    'Qty': qty,
+                    'UOM': 'Nos',
+                    'Price': price,
+                    'Disc': Math.random() > .7 ? Math.floor(Math.random() * 10) : 0,
+                    'Disc Type': '%',
+                    'Item GST': [5, 12, 18, 28][Math.floor(Math.random() * 4)]
+                });
+            }
+            rawData = normalizeData(data);
+            filteredData = [...rawData];
+            document.getElementById('dataStatus').textContent = rawData.length + ' records loaded (sample)';
+            document.getElementById('dataStatus').classList.add('loaded');
+            initDashboard();
+        }
+
+        function loadFromLocalStorage() {
+            const invoices = JSON.parse(localStorage.getItem('invoices')) || [];
+            if (invoices.length === 0) {
+                alert('No local invoice data found in the application. Please upload a file or generate some invoices first.');
+                return;
+            }
+
+            const rows = [];
+            invoices.forEach(inv => {
+                const invItems = inv.items && Array.isArray(inv.items) && inv.items.length > 0 ? inv.items : [{}]; // Ensure at least one row per invoice
+                invItems.forEach(item => {
+                    rows.push({
+                        'Invoice No': inv.invoice_no || inv.invoiceNo,
+                        'Date': inv.invoice_date || inv.date,
+                        'Type': inv.invoiceType,
+                        'Customer Name': inv.customer_name || (inv.customer && inv.customer.name),
+                        'Address': inv.address,
+                        'Contact': inv.contact,
+                        'PIN': inv.pin,
+                        'District': inv.district,
+                        'State': inv.state,
+                        'State Code': inv.stateCode,
+                        'GST No': inv.gst_no || inv.gst,
+                        'Payment Date': inv.payment_date,
+                        'Remarks': inv.remarks,
+                        'Created By': inv.createdBy,
+                        'Cash': inv.paid_cash || 0,
+                        'Bank': inv.paid_bank || 0,
+                        'Total Paid': inv.total_paid || inv.paid_amount || inv.paid || 0,
+                        'Item Name': item.item || 'N/A',
+                        'Sub Details': item.subDetails,
+                        'Qty': item.qty || 0,
+                        'UOM': item.uom,
+                        'Price': item.price || (inv.items ? 0 : (inv.invoice_total || inv.total || 0)),
+                        'Disc': item.disc,
+                        'Disc Type': item.discType,
+                        'Item GST': item.gst
+                    });
+                });
+            });
+
+            rawData = normalizeData(rows);
+            filteredData = [...rawData];
+            document.getElementById('dataStatus').textContent = rawData.length + ' records loaded (local)';
+            document.getElementById('dataStatus').classList.add('loaded');
+            initDashboard();
+        }
+        // ── INIT DASHBOARD ────────────────────────────────────────
+        function initDashboard() {
+            document.getElementById('uploadSection').style.display = 'none';
+            document.getElementById('dashSection').style.display = 'block';
+            resetPagination();
+            populateFilters();
+            renderAll();
+        }
+
+        function populateFilters() {
+            const states = [...new Set(rawData.map(r => r.state).filter(Boolean))].sort();
+            const districts = [...new Set(rawData.map(r => r.district).filter(Boolean))].sort();
+            const types = [...new Set(rawData.map(r => r.type).filter(Boolean))].sort();
+            const customers = [...new Set(rawData.map(r => r.customer).filter(Boolean))].sort();
+            const items = [...new Set(rawData.map(r => r.itemName).filter(Boolean))].sort();
+            fillSelect('filterState', states);
+            fillSelect('filterDistrict', districts);
+            fillSelect('filterType', types);
+            fillSelect('filterCustomer', customers);
+            fillSelect('filterItem', items);
+            const dates = rawData.map(r => r.date).filter(Boolean).sort((a, b) => a - b);
+            if (dates.length) {
+                document.getElementById('dateFrom').value = dates[0].toISOString().split('T')[0];
+                document.getElementById('dateTo').value = dates[dates.length - 1].toISOString().split('T')[0];
+            }
+        }
+
+        function fillSelect(id, opts) {
+            const sel = document.getElementById(id);
+            sel.innerHTML = sel.options[0].outerHTML;
+            opts.forEach(o => { const el = document.createElement('option'); el.value = o; el.textContent = o; sel.appendChild(el); });
+        }
+
+        let compareData = [];
+        let isCompare = false;
+
+        function toggleCompare() {
+            isCompare = document.getElementById('compareToggle').checked;
+            document.getElementById('compareGroup').style.display = isCompare ? 'flex' : 'none';
+            applyFilters();
+        }
+
+        function getFilteredData(dateFrom, dateTo) {
+            const state = document.getElementById('filterState').value;
+            const district = document.getElementById('filterDistrict').value;
+            const type = document.getElementById('filterType').value;
+            const customer = document.getElementById('filterCustomer').value;
+            const item = document.getElementById('filterItem').value;
+            const payMode = document.getElementById('filterPayment').value;
+            return rawData.filter(r => {
+                if (state && r.state !== state) return false;
+                if (district && r.district !== district) return false;
+                if (type && r.type !== type) return false;
+                if (customer && r.customer !== customer) return false;
+                if (item && r.itemName !== item) return false;
+                if (dateFrom && r.date && r.date < dateFrom) return false;
+                if (dateTo && r.date && r.date > dateTo) return false;
+                if (payMode === 'Cash' && r.cash <= 0) return false;
+                if (payMode === 'Bank' && r.bank <= 0) return false;
+                if (payMode === 'Mixed' && !(r.cash > 0 && r.bank > 0)) return false;
+                return true;
+            });
+        }
+
+        function applyFilters() {
+            const dateFrom = document.getElementById('dateFrom').value ? new Date(document.getElementById('dateFrom').value) : null;
+            const dateTo = document.getElementById('dateTo').value ? new Date(document.getElementById('dateTo').value) : null;
+            filteredData = getFilteredData(dateFrom, dateTo);
+
+            if (isCompare) {
+                const compFrom = document.getElementById('compareFrom').value ? new Date(document.getElementById('compareFrom').value) : null;
+                const compTo = document.getElementById('compareTo').value ? new Date(document.getElementById('compareTo').value) : null;
+                compareData = getFilteredData(compFrom, compTo);
+            } else {
+                compareData = [];
+                compareData = [];
+            }
+
+            renderAll();
+        }
+
+        function resetFilters() {
+            ['filterState', 'filterDistrict', 'filterType', 'filterCustomer', 'filterItem', 'filterPayment'].forEach(id => document.getElementById(id).value = '');
+            populateFilters();
+            filteredData = [...rawData];
+            renderAll();
+        }
+
+        // ── RENDER ALL ────────────────────────────────────────────
+        function renderAll() {
+            renderKPIs();
+            renderRevenueTrend();
+            renderPaymentMode();
+            renderTopCustomers();
+            renderTopItems();
+            renderByState();
+            renderInvoiceType();
+            renderGST();
+            renderBubble();
+            renderWeekday();
+            renderHeatmap();
+            renderInsights();
+            renderTable();
+        }
+
+        const fmt = n => '₹' + Math.abs(n).toLocaleString('en-IN', { maximumFractionDigits: 0 });
+
+        const fmtK = n => n >= 1e7 ? '₹' + (n / 1e7).toFixed(1) + 'Cr' : n >= 1e5 ? '₹' + (n / 1e5).toFixed(1) + 'L' : fmt(n);
+
+        function renderKPIs() {
+            const calc = (data) => {
+                const rev = data.reduce((s, r) => s + r.price * r.qty, 0);
+                const paid = data.reduce((s, r) => s + r.totalPaid, 0);
+                const cash = data.reduce((s, r) => s + r.cash, 0);
+                const bank = data.reduce((s, r) => s + r.bank, 0);
+                const inv = new Set(data.map(r => r.invoiceNo)).size;
+                const cust = new Set(data.map(r => r.customer)).size;
+                return { rev, paid, out: Math.max(0, rev - paid), inv, cust, avg: inv ? rev / inv : 0, cash, bank };
+            };
+
+            const cur = calc(filteredData);
+            const cmp = isCompare ? calc(compareData) : null;
+
+            const updateKPI = (id, val, compVal, isCurrency, inverse = false) => {
+                document.getElementById(id).textContent = isCurrency ? fmtK(val) : val.toLocaleString();
+                const sub = document.getElementById(id).nextElementSibling;
+                const ex = sub.querySelector('.kpi-change');
+                if (ex) ex.remove();
+
+                if (isCompare && compVal !== null) {
+                    const diff = val - compVal;
+                    const pct = compVal ? ((diff / compVal) * 100).toFixed(1) : (val ? 100 : 0);
+                    const isUp = diff >= 0;
+                    const isGood = inverse ? !isUp : isUp;
+                    const sign = isUp ? '▲' : '▼';
+                    sub.insertAdjacentHTML('beforeend', `<span class="kpi-change ${isGood ? 'up' : 'down'}">${sign} ${Math.abs(pct)}%</span>`);
+                }
+            };
+
+            updateKPI('kpi1', cur.rev, cmp?.rev, true);
+            updateKPI('kpi2', cur.paid, cmp?.paid, true);
+            updateKPI('kpi3', cur.out, cmp?.out, true, true);
+            updateKPI('kpi4', cur.inv, cmp?.inv, false);
+            updateKPI('kpi5', cur.cust, cmp?.cust, false);
+            updateKPI('kpi6', cur.avg, cmp?.avg, true);
+            updateKPI('kpi7', cur.cash, cmp?.cash, true);
+            updateKPI('kpi8', cur.bank, cmp?.bank, true);
+        }
+
+        function groupBy(data, keyFn, valFn) {
+            const m = {};
+            data.forEach(r => { const k = keyFn(r); m[k] = (m[k] || 0) + valFn(r); });
+            return m;
+        }
+
+        function monthKey(d) { return d ? d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') : null; }
+
+        function destroyChart(id) { if (charts[id]) { charts[id].destroy(); delete charts[id]; } }
+
+        const COLORS = ['#4f8ef7', '#2dd4a0', '#f7a84f', '#7c5ff7', '#f76fa8', '#4fdef7', '#f76f6f', '#b97cf7', '#f7e04f', '#5ff7c0'];
+
+        function renderRevenueTrend() {
+            destroyChart('trend');
+            const byMonth = {};
+            const byMonthPaid = {};
+            filteredData.forEach(r => {
+                const k = monthKey(r.date);
+                if (!k) return;
+                byMonth[k] = (byMonth[k] || 0) + r.price * r.qty;
+                byMonthPaid[k] = (byMonthPaid[k] || 0) + r.totalPaid;
+            });
+            let labels = Object.keys(byMonth);
+
+            const datasets = [
+                { label: 'Revenue', data: [], borderColor: '#4f8ef7', backgroundColor: 'rgba(79,142,247,0.12)', fill: true, tension: 0.4, pointRadius: 3 },
+                { label: 'Collected', data: [], borderColor: '#2dd4a0', backgroundColor: 'rgba(45,212,160,0.08)', fill: true, tension: 0.4, borderDash: [4, 3], pointRadius: 3 }
+            ];
+
+            if (isCompare) {
+                const byMonthComp = {};
+                compareData.forEach(r => {
+                    const k = monthKey(r.date);
+                    if (!k) return;
+                    byMonthComp[k] = (byMonthComp[k] || 0) + r.price * r.qty;
+                });
+                labels = [...new Set([...labels, ...Object.keys(byMonthComp)])].sort();
+
+                datasets.push({
+                    label: 'Compare Revenue',
+                    data: labels.map(k => Math.round(byMonthComp[k] || 0)),
+                    borderColor: '#f7a84f',
+                    backgroundColor: 'rgba(247,168,79,0.12)',
+                    fill: true, tension: 0.4, pointRadius: 3
+                });
+            } else {
+                labels.sort();
+            }
+
+            datasets[0].data = labels.map(k => Math.round(byMonth[k] || 0));
+            datasets[1].data = labels.map(k => Math.round(byMonthPaid[k] || 0));
+
+            charts['trend'] = new Chart(document.getElementById('chartRevenueTrend'), {
+                type: 'line',
+                data: {
+                    labels,
+                    datasets
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#9098b0', font: { size: 12 } } } }, scales: { x: { ticks: { color: '#9098b0', maxRotation: 45, autoSkip: false }, grid: { color: 'rgba(255,255,255,0.04)' } }, y: { ticks: { color: '#9098b0', callback: v => fmtK(v) }, grid: { color: 'rgba(255,255,255,0.06)' } } } }
+            });
+        }
+
+        function renderPaymentMode() {
+            destroyChart('paymode');
+            const cash = filteredData.reduce((s, r) => s + r.cash, 0);
+            const bank = filteredData.reduce((s, r) => s + r.bank, 0);
+            charts['paymode'] = new Chart(document.getElementById('chartPayMode'), {
+                type: 'doughnut',
+                data: { labels: ['Cash', 'Bank'], datasets: [{ data: [Math.round(cash), Math.round(bank)], backgroundColor: ['#2dd4a0', '#4f8ef7'], borderWidth: 2, borderColor: '#13161e' }] },
+                options: { responsive: true, maintainAspectRatio: false, cutout: '68%', plugins: { legend: { position: 'bottom', labels: { color: '#9098b0', padding: 16, font: { size: 12 } } } } }
+            });
+        }
+
+        function renderTopCustomers() {
+            destroyChart('topcust');
+            const m = groupBy(filteredData, r => r.customer || 'Unknown', r => r.totalPaid);
+            const sorted = Object.entries(m).sort((a, b) => b[1] - a[1]).slice(0, 10);
+            const h = Math.max(340, sorted.length * 40 + 80);
+            document.getElementById('chartTopCustomers').parentElement.style.height = h + 'px';
+            charts['topcust'] = new Chart(document.getElementById('chartTopCustomers'), {
+                type: 'bar',
+                data: { labels: sorted.map(x => x[0]), datasets: [{ label: 'Revenue', data: sorted.map(x => Math.round(x[1])), backgroundColor: COLORS.slice(0, sorted.length), borderRadius: 4 }] },
+                options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { color: '#9098b0', callback: v => fmtK(v) }, grid: { color: 'rgba(255,255,255,0.04)' } }, y: { ticks: { color: '#e8eaf0', font: { size: 11 } }, grid: { display: false } } } }
+            });
+        }
+
+        function renderTopItems() {
+            destroyChart('topitems');
+            const m = groupBy(filteredData, r => r.itemName || 'Unknown', r => r.price * r.qty);
+            const sorted = Object.entries(m).sort((a, b) => b[1] - a[1]).slice(0, 10);
+            const h = Math.max(340, sorted.length * 40 + 80);
+            document.getElementById('chartTopItems').parentElement.style.height = h + 'px';
+            charts['topitems'] = new Chart(document.getElementById('chartTopItems'), {
+                type: 'bar',
+                data: { labels: sorted.map(x => x[0]), datasets: [{ label: 'Revenue', data: sorted.map(x => Math.round(x[1])), backgroundColor: COLORS.map(c => c + 'cc'), borderRadius: 4 }] },
+                options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { color: '#9098b0', callback: v => fmtK(v) }, grid: { color: 'rgba(255,255,255,0.04)' } }, y: { ticks: { color: '#e8eaf0', font: { size: 11 } }, grid: { display: false } } } }
+            });
+        }
+
+        function renderByState() {
+            destroyChart('bystate');
+            const m = groupBy(filteredData, r => r.state || 'Unknown', r => r.totalPaid);
+            const sorted = Object.entries(m).sort((a, b) => b[1] - a[1]).slice(0, 8);
+            charts['bystate'] = new Chart(document.getElementById('chartByState'), {
+                type: 'bar',
+                data: { labels: sorted.map(x => x[0]), datasets: [{ data: sorted.map(x => Math.round(x[1])), backgroundColor: '#4f8ef7', borderRadius: 4, hoverBackgroundColor: '#7cb4fb' }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { color: '#9098b0', maxRotation: 30, font: { size: 10 }, autoSkip: false }, grid: { display: false } }, y: { ticks: { color: '#9098b0', callback: v => fmtK(v) }, grid: { color: 'rgba(255,255,255,0.04)' } } } }
+            });
+        }
+
+        function renderInvoiceType() {
+            destroyChart('invtype');
+            const m = groupBy(filteredData, r => r.type || 'Unknown', r => 1);
+            const entries = Object.entries(m);
+            charts['invtype'] = new Chart(document.getElementById('chartInvoiceType'), {
+                type: 'pie',
+                data: { labels: entries.map(x => x[0]), datasets: [{ data: entries.map(x => x[1]), backgroundColor: COLORS, borderWidth: 2, borderColor: '#13161e' }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: '#9098b0', padding: 10, font: { size: 11 } } } } }
+            });
+        }
+
+        function renderGST() {
+            destroyChart('gst');
+            const m = groupBy(filteredData, r => r.itemGST ? r.itemGST + '%' : 'N/A', r => r.price * r.qty);
+            const entries = Object.entries(m).sort((a, b) => a[0].localeCompare(b[0]));
+            charts['gst'] = new Chart(document.getElementById('chartGST'), {
+                type: 'doughnut',
+                data: { labels: entries.map(x => x[0]), datasets: [{ data: entries.map(x => Math.round(x[1])), backgroundColor: ['#4f8ef7', '#2dd4a0', '#f7a84f', '#f76f6f', '#b97cf7'], borderWidth: 2, borderColor: '#13161e' }] },
+                options: { responsive: true, maintainAspectRatio: false, cutout: '60%', plugins: { legend: { position: 'bottom', labels: { color: '#9098b0', padding: 10, font: { size: 11 } } } } }
+            });
+        }
+
+        function renderBubble() {
+            destroyChart('bubble');
+            const m = {};
+            filteredData.forEach(r => {
+                const k = r.itemName || 'Unknown';
+                if (!m[k]) m[k] = { qty: 0, rev: 0, count: 0 };
+                m[k].qty += r.qty;
+                m[k].rev += r.price * r.qty;
+                m[k].count++;
+            });
+            const items = Object.entries(m).sort((a, b) => b[1].rev - a[1].rev).slice(0, 12);
+            const maxRev = Math.max(...items.map(x => x[1].rev));
+            charts['bubble'] = new Chart(document.getElementById('chartBubble'), {
+                type: 'bubble',
+                data: {
+                    datasets: items.map((x, i) => ({
+                        label: x[0],
+                        data: [{ x: Math.round(x[1].qty), y: Math.round(x[1].rev / Math.max(x[1].count, 1)), r: Math.max(5, Math.round((x[1].rev / maxRev) * 30)) }],
+                        backgroundColor: COLORS[i % COLORS.length] + '99'
+                    }))
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ctx.dataset.label + ': Qty=' + ctx.parsed.x + ', Avg Price=' + fmtK(ctx.parsed.y) } } }, scales: { x: { title: { display: true, text: 'Total Qty', color: '#9098b0' }, ticks: { color: '#9098b0' }, grid: { color: 'rgba(255,255,255,0.04)' } }, y: { title: { display: true, text: 'Avg Unit Revenue', color: '#9098b0' }, ticks: { color: '#9098b0', callback: v => fmtK(v) }, grid: { color: 'rgba(255,255,255,0.06)' } } } }
+            });
+        }
+
+        function renderWeekday() {
+            destroyChart('weekday');
+            const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            const totals = Array(7).fill(0), counts = Array(7).fill(0);
+            filteredData.forEach(r => {
+                if (r.date) { const d = r.date.getDay(); totals[d] += r.totalPaid; counts[d]++; }
+            });
+            const avgs = totals.map((t, i) => counts[i] ? Math.round(t / counts[i]) : 0);
+            charts['weekday'] = new Chart(document.getElementById('chartWeekday'), {
+                type: 'radar',
+                data: { labels: days, datasets: [{ label: 'Avg Revenue', data: avgs, backgroundColor: 'rgba(79,142,247,0.2)', borderColor: '#4f8ef7', pointBackgroundColor: '#4f8ef7', pointRadius: 4 }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { r: { ticks: { color: '#9098b0', callback: v => fmtK(v), backdropColor: 'transparent', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.08)' }, pointLabels: { color: '#e8eaf0', font: { size: 12 } }, angleLines: { color: 'rgba(255,255,255,0.06)' } } } }
+            });
+        }
+
+        function renderHeatmap() {
+            const container = document.getElementById('heatmapContainer');
+            const byYearMonth = {};
+            filteredData.forEach(r => {
+                if (!r.date) return;
+                const y = r.date.getFullYear(), m = r.date.getMonth();
+                if (!byYearMonth[y]) byYearMonth[y] = Array(12).fill(0);
+                byYearMonth[y][m] += r.totalPaid;
+            });
+            const years = Object.keys(byYearMonth).sort();
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            if (!years.length) { container.innerHTML = '<p style="color:var(--text3);padding:20px;text-align:center">No date data available</p>'; return; }
+            const allVals = years.flatMap(y => byYearMonth[y]);
+            const maxVal = Math.max(...allVals, 1);
+            const getColor = v => {
+                const ratio = v / maxVal;
+                if (ratio === 0) return '#1a1e2a';
+                if (ratio < 0.2) return '#0c2a4a';
+                if (ratio < 0.4) return '#1a4a8a';
+                if (ratio < 0.6) return '#2d6ebf';
+                if (ratio < 0.8) return '#4f8ef7';
+                return '#7cb4fb';
+            };
+            let html = '<div style="display:inline-block;min-width:600px">';
+            html += '<div style="display:grid;grid-template-columns:60px repeat(12,1fr);gap:3px;margin-bottom:3px">';
+            html += '<div></div>';
+            months.forEach(m => { html += `<div style="font-size:10px;color:var(--text3);text-align:center;padding:2px 0">${m}</div>`; });
+            html += '</div>';
+            years.forEach(y => {
+                html += '<div style="display:grid;grid-template-columns:60px repeat(12,1fr);gap:3px;margin-bottom:3px">';
+                html += `<div style="font-size:11px;color:var(--text2);display:flex;align-items:center;padding-right:8px">${y}</div>`;
+                byYearMonth[y].forEach((v, mi) => {
+                    const color = getColor(v);
+                    html += `<div title="${months[mi]} ${y}: ${fmtK(v)}" style="background:${color};height:28px;border-radius:3px;cursor:pointer" onclick="drillMonth(${y},${mi})"></div>`;
+                });
+                html += '</div>';
+            });
+            html += '<div style="display:flex;align-items:center;gap:6px;margin-top:10px;font-size:11px;color:var(--text3)">';
+            html += '<span>Less</span>';
+            ['#1a1e2a', '#0c2a4a', '#1a4a8a', '#2d6ebf', '#4f8ef7', '#7cb4fb'].forEach(c => {
+                html += `<div style="width:18px;height:18px;border-radius:3px;background:${c}"></div>`;
+            });
+            html += '<span>More</span></div></div>';
+            container.innerHTML = html;
+        }
+
+        function drillMonth(year, month) {
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            document.getElementById('dateFrom').value = `${year}-${String(month + 1).padStart(2, '0')}-01`;
+            const lastDay = new Date(year, month + 1, 0).getDate();
+            document.getElementById('dateTo').value = `${year}-${String(month + 1).padStart(2, '0')}-${lastDay}`;
+            applyFilters();
+        }
+
+        function renderInsights() {
+            const stateMap = groupBy(filteredData, r => r.state || 'N/A', r => r.totalPaid);
+            const distMap = groupBy(filteredData, r => r.district || 'N/A', r => r.totalPaid);
+            const itemMap = groupBy(filteredData, r => r.itemName || 'N/A', r => r.price * r.qty);
+            const custMap = groupBy(filteredData, r => r.customer || 'N/A', r => r.totalPaid);
+            const total = filteredData.reduce((s, r) => s + r.totalPaid, 0);
+
+            const renderList = (containerId, map, maxItems) => {
+                const sorted = Object.entries(map).sort((a, b) => b[1] - a[1]).slice(0, maxItems);
+                const max = sorted[0]?.[1] || 1;
+                document.getElementById(containerId).innerHTML = sorted.map(([name, val]) =>
+                    `<div class="insight-item"><span class="name" title="${name}">${name}</span><span class="val">${fmtK(val)}</span></div>
+       <div class="progress-bar"><div class="progress-fill" style="width:${Math.round(val / max * 100)}%"></div></div>`
+                ).join('');
+            };
+
+            renderList('insightStates', stateMap, 6);
+            renderList('insightDistricts', distMap, 6);
+            renderList('insightItems', itemMap, 6);
+            renderList('insightCustomers', custMap, 6);
+        }
+
+        let tableData = [], sortCol = -1, sortAsc = true;
+        let currentSortColumn = null;
+
+        function renderTable() {
+            tableData = filteredData.slice();
+            sortCol = -1;
+            renderTableBody(tableData);
+        }
+
+        function resetPagination() {
+            currentPage = 1;
+            rowsPerPage = 20; // Default
+            document.getElementById('rowsPerPageSelect').value = '20';
+        }
+
+        function changeRowsPerPage() {
+            rowsPerPage = parseInt(document.getElementById('rowsPerPageSelect').value);
+            currentPage = 1;
+            renderTableBody(tableData);
+        }
+
+        function goToPage() {
+            const pageInput = document.getElementById('goToPageInput');
+            const page = parseInt(pageInput.value);
+            if (page >= 1) {
+                currentPage = page;
+                renderTableBody(tableData);
+            }
+            pageInput.value = '';
+        }
+
+        function changePage(page) {
+            currentPage = page;
+            renderTableBody(tableData);
+        }
+
+        function renderTableBody(data) {
+            // Pagination Logic
+            const totalItems = data.length;
+            const totalPages = Math.ceil(totalItems / rowsPerPage) || 1;
+
+            if (currentPage > totalPages) currentPage = totalPages;
+            if (currentPage < 1) currentPage = 1;
+
+            const startIndex = (currentPage - 1) * rowsPerPage;
+            const endIndex = Math.min(startIndex + rowsPerPage, totalItems);
+            const paginatedData = data.slice(startIndex, endIndex);
+
+            // Render Pagination Controls
+            renderPaginationControls(totalItems, startIndex + 1, endIndex, totalPages);
+
+            // Render Table Body
+            const tbody = document.getElementById('tableBody');
+            const show = data.slice(0, 200);
+            tbody.innerHTML = show.map(r => {
+                const mode = r.cash > 0 && r.bank > 0 ? '<span class="badge badge-amber">Mixed</span>' :
+                    r.cash > 0 ? '<span class="badge badge-green">Cash</span>' :
+                        r.bank > 0 ? '<span class="badge badge-blue">Bank</span>' : '—';
+                return `<tr>
+      <td>${r.invoiceNo || '—'}</td>
+      <td>${r.date ? r.date.toLocaleDateString('en-IN') : '—'}</td>
+      <td>${r.type || '—'}</td>
+      <td>${r.customer || '—'}</td>
+      <td>${r.state || '—'}</td>
+      <td>${r.itemName || '—'}</td>
+      <td style="text-align:right">${r.qty.toLocaleString()}</td>
+      <td style="text-align:right">${fmt(r.price)}</td>
+      <td style="text-align:right;font-weight:600;color:var(--green)">${fmt(r.totalPaid)}</td>
+      <td><span class="badge badge-blue">${r.itemGST || 0}%</span></td>
+      <td>${mode}</td>
+    </tr>`;
+            }).join('');
+            document.getElementById('tableInfo').textContent = `Showing ${Math.min(paginatedData.length, 200)} of ${data.length} records`;
+            document.getElementById('tableInfo').textContent = `Showing ${Math.min(show.length, 200)} of ${data.length} records`;
+        }
+
+        function renderPaginationControls(totalItems, start, end, totalPages) {
+            const info = document.getElementById('paginationInfo');
+            const controls = document.getElementById('paginationControls');
+
+            if (totalItems === 0) {
+                if (info) info.innerText = 'No records found';
+                if (controls) controls.innerHTML = '';
+                return;
+            }
+
+            if (info) info.innerText = `Showing ${start} to ${end} of ${totalItems} entries`;
+
+            let html = '';
+            html += `<button class="btn-reset" onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''} style="padding: 6px 12px; font-size: 12px; margin-right: 5px;">Prev</button>`;
+
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
+                    const activeClass = i === currentPage ? 'btn-apply' : 'btn-reset';
+                    html += `<button class="${activeClass}" onclick="changePage(${i})" style="padding: 6px 12px; font-size: 12px; margin-right: 5px;">${i}</button>`;
+                } else if (i === currentPage - 3 || i === currentPage + 3) {
+                    html += `<span style="font-size: 12px; color: var(--text3); margin-right: 5px;">...</span>`;
+                }
+            }
+
+            html += `<button class="btn-reset" onclick="changePage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''} style="padding: 6px 12px; font-size: 12px; margin-left: 5px;">Next</button>`;
+
+            if (controls) controls.innerHTML = html;
+        }
+
+        function filterTable() {
+            const q = document.getElementById('tableSearch').value.toLowerCase();
+            const filtered = tableData.filter(r =>
+                (r.invoiceNo || '').toLowerCase().includes(q) ||
+                (r.customer || '').toLowerCase().includes(q) ||
+                (r.itemName || '').toLowerCase().includes(q) ||
+                (r.state || '').toLowerCase().includes(q) ||
+                (r.type || '').toLowerCase().includes(q)
+            );
+            renderTableBody(filtered);
+        }
+
+        let currentSortColumnTable = 'invoiceNo';
+        function sortTable(col) {
+            const keys = ['invoiceNo', 'date', 'type', 'customer', 'state', 'itemName', 'qty', 'price', 'totalPaid', 'itemGST'];
+            if (sortCol === col) sortAsc = !sortAsc; else { sortCol = col; sortAsc = true; }
+            tableData.sort((a, b) => {
+                let va = a[keys[col]], vb = b[keys[col]];
+                if (va instanceof Date && vb instanceof Date) return sortAsc ? va - vb : vb - va;
+                va = String(va || ''); vb = String(vb || '');
+                const n = parseFloat(va) - parseFloat(vb);
+                if (!isNaN(n)) return sortAsc ? n : -n;
+                return sortAsc ? va.localeCompare(vb) : vb.localeCompare(va);
+            });
+            renderTableBody(tableData);
+        }
+    </script>
+</body>
+
+</html>

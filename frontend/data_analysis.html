@@ -1,0 +1,1144 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Data Analysis (BI) - RISE Tech Revolution</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="settings.js"></script>
+    <script src="brand.service.js"></script>
+    <script src="brandLoader.js"></script>
+    <style>
+        :root {
+            --primary-color: #4e73df;
+            --secondary-color: #858796;
+            --success-color: #1cc88a;
+            --info-color: #36b9cc;
+            --warning-color: #f6c23e;
+            --danger-color: #e74a3b;
+            --light-color: #f8f9fc;
+            --dark-color: #5a5c69;
+            --bg-color: #f3f4f6;
+            --card-bg: #ffffff;
+            --text-color: #333333;
+            --border-color: #e3e6f0;
+        }
+
+        body.dark-mode {
+            --bg-color: #121212;
+            --card-bg: #1e1e1e;
+            --text-color: #e0e0e0;
+            --border-color: #444444;
+            --light-color: #2c2c2c;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .header h2 {
+            margin: 0;
+            color: var(--primary-color);
+        }
+
+        .analysis-container {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            gap: 20px;
+            height: calc(100vh - 100px);
+        }
+
+        .sidebar-controls {
+            background-color: var(--card-bg);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 .15rem 1.75rem 0 rgba(58, 59, 69, .15);
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            overflow-y: auto;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .control-group label {
+            font-weight: 600;
+            font-size: 13px;
+            color: var(--secondary-color);
+        }
+
+        .control-group select,
+        .control-group input {
+            padding: 8px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-size: 14px;
+        }
+
+        .filter-box {
+            max-height: 150px;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 5px 10px;
+            background-color: var(--bg-color);
+        }
+        .filter-box label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: normal;
+            cursor: pointer;
+            padding: 4px 0;
+            font-size: 13px;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+        }
+        .filter-box label:last-child {
+            border-bottom: none;
+        }
+        body.dark-mode .filter-box label {
+            border-bottom-color: rgba(255,255,255,0.05);
+        }
+
+        .main-analysis {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .kpi-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .kpi-card {
+            background-color: var(--card-bg);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 .15rem 1.75rem 0 rgba(58, 59, 69, .15);
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .kpi-card.success { border-left-color: var(--success-color); }
+        .kpi-card.warning { border-left-color: var(--warning-color); }
+        .kpi-card.info { border-left-color: var(--info-color); }
+
+        .kpi-card h4 {
+            margin: 0 0 10px 0;
+            color: var(--secondary-color);
+            font-size: 12px;
+            text-transform: uppercase;
+        }
+
+        .kpi-card .value {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--text-color);
+        }
+
+        .chart-container {
+            background-color: var(--card-bg);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 .15rem 1.75rem 0 rgba(58, 59, 69, .15);
+            flex: 1;
+            min-height: 350px;
+            position: relative;
+        }
+
+        .data-table-container {
+            background-color: var(--card-bg);
+            padding: 0;
+            border-radius: 8px;
+            box-shadow: 0 .15rem 1.75rem 0 rgba(58, 59, 69, .15);
+            max-height: 250px;
+            overflow-y: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 10px 15px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 14px;
+        }
+
+        th {
+            background-color: rgba(0, 0, 0, 0.03);
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+        }
+
+        .btn {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            color: white;
+            transition: 0.2s;
+        }
+
+        .btn-primary { background-color: var(--primary-color); }
+        .btn-success { background-color: var(--success-color); }
+        .btn-info { background-color: var(--info-color); color: #fff; }
+        .btn-danger { background-color: var(--danger-color); }
+        .btn:hover { opacity: 0.9; }
+
+        /* Loading Spinner */
+        #loadingOverlay {
+            display: none;
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(255, 255, 255, 0.8);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            border-radius: 8px;
+        }
+        body.dark-mode #loadingOverlay { background: rgba(30, 30, 30, 0.8); }
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1); border-left-color: var(--primary-color);
+            border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        @media(max-width: 900px) {
+            .analysis-container {
+                grid-template-columns: 1fr;
+                height: auto;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="header">
+        <h2><i class="fas fa-chart-pie"></i> Data Analysis (BI) - <span data-brand="name"></span></h2>
+        <div>
+            <button class="btn btn-primary" onclick="generateAnalysis()"><i class="fas fa-sync-alt"></i> Refresh Data</button>
+            <button class="btn btn-success" onclick="exportDataToCSV()"><i class="fas fa-file-csv"></i> Export CSV</button>
+            <button class="btn btn-info" onclick="exportChartToPNG()"><i class="fas fa-image"></i> Export Chart</button>
+            <button class="btn btn-danger" onclick="window.close()"><i class="fas fa-times"></i> Close</button>
+        </div>
+    </div>
+
+    <div class="analysis-container">
+        <!-- Sidebar Controls -->
+        <div class="sidebar-controls">
+            <h3 style="margin-top: 0; font-size: 16px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">Configure Visual</h3>
+            
+            <div class="control-group">
+                <label>Quick Preset</label>
+                <button class="btn btn-success" style="padding: 6px; font-size: 12px; margin-bottom: 5px;" onclick="applyPreset('top10customers')"><i class="fas fa-bolt"></i> Sales by Top 10 Customers</button>
+                <button class="btn btn-info" style="padding: 6px; font-size: 12px; margin-bottom: 5px;" onclick="applyPreset('top10itemsQty')"><i class="fas fa-bolt"></i> Top 10 Selling Items (Qty)</button>
+                <select id="datePresetDropdown" onchange="if(this.value) applyPreset(this.value)" style="margin-bottom: 5px;">
+                    <option value="">-- Date Preset --</option>
+                    <option value="thisYear">This FY</option>
+                    <option value="lastYear">Last FY</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label>Data Source</label>
+                <select id="dataSource" onchange="updateOptions()">
+                    <option value="sales">Sales (Invoices)</option>
+                    <option value="purchases">Purchases</option>
+                    <option value="expenses">Expenses</option>
+                    <option value="production">Production</option>
+                    <option value="item_sale_purchase">Individual Itemwise (Sale vs Purchase)</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label>Group By (X-Axis)</label>
+                <select id="dimension"></select>
+            </div>
+
+            <div class="control-group">
+                <label>Measure (Y-Axis)</label>
+                <select id="metric"></select>
+            </div>
+
+            <div class="control-group">
+                <label>Chart Type</label>
+                <select id="chartType" onchange="generateAnalysis()">
+                    <option value="bar">Bar Chart</option>
+                    <option value="line">Line Chart</option>
+                    <option value="doughnut">Doughnut Chart</option>
+                    <option value="pie">Pie Chart</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label>Limit Results (Top N)</label>
+                <select id="limitResults" onchange="generateAnalysis()">
+                    <option value="all">Show All</option>
+                    <option value="5">Top 5</option>
+                    <option value="10">Top 10</option>
+                    <option value="20">Top 20</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label>Date Range (From)</label>
+                <input type="date" id="fromDate" onchange="document.getElementById('datePresetDropdown').value='';">
+            </div>
+
+            <div class="control-group">
+                <label>Date Range (To)</label>
+                <input type="date" id="toDate" onchange="document.getElementById('datePresetDropdown').value='';">
+            </div>
+
+            <div class="control-group" style="flex-direction: row; align-items: center; gap: 8px; margin-top: 5px;">
+                <input type="checkbox" id="compareToggle" onchange="toggleCompare()" style="width: auto; margin: 0;">
+                <label for="compareToggle" style="margin: 0; cursor: pointer;">Compare Period</label>
+            </div>
+
+            <div class="control-group" style="flex-direction: row; align-items: center; gap: 8px; margin-top: 5px;">
+                <input type="checkbox" id="showDataBars" onchange="generateAnalysis()" checked style="width: auto; margin: 0;">
+                <label for="showDataBars" style="margin: 0; cursor: pointer;">Show Data Bars in Table</label>
+            </div>
+
+            <div id="compareDates" style="display: none; flex-direction: column; gap: 15px;">
+                <div class="control-group">
+                    <label>Compare From</label>
+                    <input type="date" id="compareFromDate">
+                </div>
+                <div class="control-group">
+                    <label>Compare To</label>
+                    <input type="date" id="compareToDate">
+                </div>
+            </div>
+
+            <div id="dynamicFiltersContainer" style="display: flex; flex-direction: column; gap: 15px;"></div>
+
+            <button class="btn btn-primary" style="margin-top: 10px;" onclick="generateAnalysis()">Generate Analysis</button>
+        </div>
+
+        <!-- Main Analytics Area -->
+        <div class="main-analysis">
+            <div id="loadingOverlay">
+                <div class="spinner"></div>
+                <div style="margin-top: 10px; font-weight: bold; color: var(--primary-color);">Analyzing Data...</div>
+            </div>
+
+            <!-- KPIs -->
+            <div class="kpi-row">
+                <div class="kpi-card">
+                    <h4 id="kpiLabelTotal">Total Value</h4>
+                    <div class="value" id="kpiTotal">0</div>
+                </div>
+                <div class="kpi-card success">
+                    <h4 id="kpiLabelMax">Highest Value</h4>
+                    <div class="value" id="kpiMax">0</div>
+                </div>
+                <div class="kpi-card info">
+                    <h4 id="kpiLabelAvg">Average Value</h4>
+                    <div class="value" id="kpiAvg">0</div>
+                </div>
+                <div class="kpi-card warning">
+                    <h4 id="kpiLabelCount">Total Records</h4>
+                    <div class="value" id="kpiCount">0</div>
+                </div>
+            </div>
+
+            <!-- Chart -->
+            <div class="chart-container">
+                <canvas id="analysisChart"></canvas>
+            </div>
+
+            <!-- Data Table -->
+            <div class="data-table-container">
+                <table>
+                    <thead>
+                        <tr id="tableHeaderRow">
+                            <th id="thDimension">Dimension</th>
+                            <th id="thMetric" style="text-align: right;">Metric Value</th>
+                        </tr>
+                    </thead>
+                    <tbody id="dataTableBody">
+                        <tr><td colspan="2" style="text-align: center;">Generate analysis to view data</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration Mapping
+        const configOptions = {
+            sales: {
+                dimensions: [
+                    { id: 'month', label: 'Date (Month)' },
+                    { id: 'date', label: 'Date (Day)' },
+                    { id: 'customer', label: 'Customer' },
+                    { id: 'item', label: 'Item Name' },
+                    { id: 'state', label: 'State' }
+                ],
+                metrics: [
+                    { id: 'total', label: 'Total Amount (₹)' },
+                    { id: 'taxable', label: 'Taxable Amount (₹)' },
+                    { id: 'gst', label: 'GST Amount (₹)' },
+                    { id: 'qty', label: 'Quantity Sold' }
+                ]
+            },
+            purchases: {
+                dimensions: [
+                    { id: 'month', label: 'Date (Month)' },
+                    { id: 'date', label: 'Date (Day)' },
+                    { id: 'supplier', label: 'Supplier' },
+                    { id: 'item', label: 'Item Name' }
+                ],
+                metrics: [
+                    { id: 'total', label: 'Total Amount (₹)' },
+                    { id: 'qty', label: 'Quantity Purchased' }
+                ]
+            },
+            expenses: {
+                dimensions: [
+                    { id: 'month', label: 'Date (Month)' },
+                    { id: 'date', label: 'Date (Day)' },
+                    { id: 'category', label: 'Category' },
+                    { id: 'vendor', label: 'Vendor' }
+                ],
+                metrics: [
+                    { id: 'amount', label: 'Total Amount (₹)' }
+                ]
+            },
+            production: {
+                dimensions: [
+                    { id: 'month', label: 'Date (Month)' },
+                    { id: 'date', label: 'Date (Day)' },
+                    { id: 'item', label: 'Finished Good' },
+                    { id: 'stage', label: 'Stage' }
+                ],
+                metrics: [
+                    { id: 'cost', label: 'Total Cost (₹)' },
+                    { id: 'qty', label: 'Quantity Produced' }
+                ]
+            },
+            item_sale_purchase: {
+                dimensions: [
+                    { id: 'month', label: 'Date (Month)' },
+                    { id: 'date', label: 'Date (Day)' },
+                    { id: 'item', label: 'Item Name' }
+                ],
+                metrics: [
+                    { id: 'qty', label: 'Quantity' },
+                    { id: 'total', label: 'Total Amount (₹)' }
+                ]
+            }
+        };
+
+        let currentChart = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            if (localStorage.getItem('appThemeMode') === 'dark') document.body.classList.add('dark-mode');
+            
+            // Default date to this year
+            const today = new Date();
+            document.getElementById('fromDate').valueAsDate = new Date(today.getFullYear(), 0, 1);
+            document.getElementById('toDate').valueAsDate = today;
+
+            updateOptions();
+            generateAnalysis();
+        });
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str).replace(/[&<>"']/g, function(m) {
+                return {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[m];
+            });
+        }
+
+        function filterCheckboxes(input, id) {
+            const filter = input.value.toLowerCase();
+            const box = document.getElementById(`filter_${id}`);
+            if (!box) return;
+            const labels = box.querySelectorAll('label');
+            labels.forEach(label => {
+                if (label.innerText.toLowerCase().includes(filter)) {
+                    label.style.display = 'flex';
+                } else {
+                    label.style.display = 'none';
+                }
+            });
+        }
+
+        function buildFilters(source) {
+            const container = document.getElementById('dynamicFiltersContainer');
+            container.innerHTML = '';
+            
+            let data = [];
+            let filtersToBuild = [];
+
+            if (source === 'sales') {
+                data = JSON.parse(localStorage.getItem('invoices')) || [];
+                filtersToBuild = [
+                    { id: 'customer', label: 'Filter by Customer', extract: row => row.customer_name || (row.customer && row.customer.name) || 'Unknown' },
+                    { id: 'item', label: 'Filter by Item', extract: row => {
+                        let items = [];
+                        if(row.items) row.items.forEach(it => items.push((it.item || 'Unknown') + (it.itemCode ? ` (${it.itemCode})` : '')));
+                        return items;
+                    }, isArray: true }
+                ];
+            } else if (source === 'purchases') {
+                data = JSON.parse(localStorage.getItem('purchases')) || [];
+                filtersToBuild = [
+                    { id: 'supplier', label: 'Filter by Supplier', extract: row => row.supplierName || 'Unknown' },
+                    { id: 'item', label: 'Filter by Item', extract: row => (row.itemName || 'Unknown') + (row.itemCode ? ` (${row.itemCode})` : '') }
+                ];
+            } else if (source === 'expenses') {
+                data = JSON.parse(localStorage.getItem('expenses')) || [];
+                filtersToBuild = [
+                    { id: 'category', label: 'Filter by Category', extract: row => row.expense_category || 'Unknown' },
+                    { id: 'vendor', label: 'Filter by Vendor', extract: row => row.vendor_name || 'Unknown' }
+                ];
+            } else if (source === 'production') {
+                data = JSON.parse(localStorage.getItem('production')) || [];
+                filtersToBuild = [
+                    { id: 'item', label: 'Filter by Finished Good', extract: row => row.finishedGood || 'Unknown' },
+                    { id: 'stage', label: 'Filter by Stage', extract: row => row.stage || 'Unknown' }
+                ];
+            } else if (source === 'item_sale_purchase') {
+                const invoices = JSON.parse(localStorage.getItem('invoices')) || [];
+                const purchases = JSON.parse(localStorage.getItem('purchases')) || [];
+                
+                const uniqueVals = new Set();
+                purchases.forEach(p => { if (p.itemName) uniqueVals.add((p.itemName || 'Unknown') + (p.itemCode ? ` (${p.itemCode})` : '')); });
+                invoices.forEach(inv => {
+                    if (inv.items) inv.items.forEach(it => { if (it.item) uniqueVals.add((it.item || 'Unknown') + (it.itemCode ? ` (${it.itemCode})` : '')); });
+                });
+                
+                const sortedVals = Array.from(uniqueVals).sort();
+                if (sortedVals.length > 0) {
+                    let html = `<div class="control-group">
+                        <label>Filter by Item <small style="color: var(--secondary-color); font-weight: normal;">(Leave unchecked for all)</small></label>
+                        <input type="text" placeholder="Search item..." oninput="filterCheckboxes(this, 'item')" style="margin-bottom: 5px; padding: 4px 8px; font-size: 12px; width: 100%; box-sizing: border-box;">
+                        <div class="filter-box" id="filter_item">`;
+                    sortedVals.forEach(v => {
+                        html += `<label><input type="checkbox" value="${escapeHtml(v)}" class="filter-cb-item"> ${escapeHtml(v)}</label>`;
+                    });
+                    html += `</div></div>`;
+                    container.innerHTML = html;
+                }
+                return;
+            }
+
+            filtersToBuild.forEach(f => {
+                const uniqueVals = new Set();
+                data.forEach(row => {
+                    const val = f.extract(row);
+                    if (f.isArray && Array.isArray(val)) {
+                        val.forEach(v => uniqueVals.add(v));
+                    } else if (!f.isArray && val) {
+                        uniqueVals.add(val);
+                    }
+                });
+
+                const sortedVals = Array.from(uniqueVals).sort();
+                if (sortedVals.length > 0) {
+                    let html = `<div class="control-group">
+                        <label>${f.label} <small style="color: var(--secondary-color); font-weight: normal;">(Leave unchecked for all)</small></label>
+                        <input type="text" placeholder="Search ${f.label.replace('Filter by ', '').toLowerCase()}..." oninput="filterCheckboxes(this, '${f.id}')" style="margin-bottom: 5px; padding: 4px 8px; font-size: 12px; width: 100%; box-sizing: border-box;">
+                        <div class="filter-box" id="filter_${f.id}">`;
+                    sortedVals.forEach(v => {
+                        html += `<label><input type="checkbox" value="${escapeHtml(v)}" class="filter-cb-${f.id}"> ${escapeHtml(v)}</label>`;
+                    });
+                    html += `</div></div>`;
+                    container.innerHTML += html;
+                }
+            });
+        }
+
+        function getActiveFilters(id) {
+            const cbs = document.querySelectorAll(`.filter-cb-${id}:checked`);
+            if (cbs.length === 0) return null; 
+            return Array.from(cbs).map(cb => cb.value);
+        }
+
+        function updateOptions() {
+            const source = document.getElementById('dataSource').value;
+            const dimSelect = document.getElementById('dimension');
+            const metSelect = document.getElementById('metric');
+
+            dimSelect.innerHTML = configOptions[source].dimensions.map(d => `<option value="${d.id}">${d.label}</option>`).join('');
+            metSelect.innerHTML = configOptions[source].metrics.map(m => `<option value="${m.id}">${m.label}</option>`).join('');
+            
+            const compareContainer = document.getElementById('compareToggle').parentElement;
+            if (source === 'item_sale_purchase') {
+                compareContainer.style.display = 'none';
+                document.getElementById('compareDates').style.display = 'none';
+            } else {
+                compareContainer.style.display = 'flex';
+                toggleCompare();
+            }
+
+            buildFilters(source);
+        }
+
+        function applyPreset(preset) {
+            if (preset === 'top10customers') {
+                document.getElementById('dataSource').value = 'sales';
+                updateOptions();
+                document.getElementById('dimension').value = 'customer';
+                document.getElementById('metric').value = 'total';
+                document.getElementById('chartType').value = 'bar';
+                document.getElementById('limitResults').value = '10';
+                
+                document.getElementById('fromDate').value = '';
+                document.getElementById('toDate').value = '';
+                document.getElementById('compareToggle').checked = false;
+                toggleCompare();
+            }
+            else if (preset === 'top10itemsQty') {
+                document.getElementById('dataSource').value = 'sales';
+                updateOptions();
+                document.getElementById('dimension').value = 'item';
+                document.getElementById('metric').value = 'qty';
+                document.getElementById('chartType').value = 'bar';
+                document.getElementById('limitResults').value = '10';
+                
+                document.getElementById('fromDate').value = '';
+                document.getElementById('toDate').value = '';
+                document.getElementById('compareToggle').checked = false;
+                toggleCompare();
+            }
+            else if (preset === 'thisYear') {
+                const today = new Date();
+                const year = today.getMonth() >= 3 ? today.getFullYear() : today.getFullYear() - 1;
+                const firstDay = new Date(year, 3, 1);
+                const fmt = (d) => {
+                    const m = String(d.getMonth() + 1).padStart(2, '0');
+                    const day = String(d.getDate()).padStart(2, '0');
+                    return `${d.getFullYear()}-${m}-${day}`;
+                };
+                document.getElementById('fromDate').value = fmt(firstDay);
+                document.getElementById('toDate').value = fmt(today);
+                document.getElementById('datePresetDropdown').value = 'thisYear';
+                generateAnalysis();
+            }
+            else if (preset === 'lastYear') {
+                const today = new Date();
+                const year = (today.getMonth() >= 3 ? today.getFullYear() : today.getFullYear() - 1) - 1;
+                const firstDay = new Date(year, 3, 1);
+                const lastDay = new Date(year + 1, 2, 31);
+                const fmt = (d) => {
+                    const m = String(d.getMonth() + 1).padStart(2, '0');
+                    const day = String(d.getDate()).padStart(2, '0');
+                    return `${d.getFullYear()}-${m}-${day}`;
+                };
+                document.getElementById('fromDate').value = fmt(firstDay);
+                document.getElementById('toDate').value = fmt(lastDay);
+                document.getElementById('datePresetDropdown').value = 'lastYear';
+                generateAnalysis();
+            }
+        }
+
+        function toggleCompare() {
+            const compareDates = document.getElementById('compareDates');
+            const source = document.getElementById('dataSource').value;
+            if (document.getElementById('compareToggle').checked && source !== 'item_sale_purchase') {
+                compareDates.style.display = 'flex';
+                // Auto-set to previous year based on current primary range
+                const fromD = document.getElementById('fromDate').valueAsDate;
+                const toD = document.getElementById('toDate').valueAsDate;
+                if (fromD) {
+                    document.getElementById('compareFromDate').valueAsDate = new Date(fromD.getFullYear() - 1, fromD.getMonth(), fromD.getDate());
+                }
+                if (toD) {
+                    document.getElementById('compareToDate').valueAsDate = new Date(toD.getFullYear() - 1, toD.getMonth(), toD.getDate());
+                }
+            } else {
+                compareDates.style.display = 'none';
+            }
+            generateAnalysis();
+        }
+
+        function generateAnalysis() {
+            document.getElementById('loadingOverlay').style.display = 'flex';
+            
+            setTimeout(() => {
+            const source = document.getElementById('dataSource').value;
+            const dim = document.getElementById('dimension').value;
+            const met = document.getElementById('metric').value;
+            const chartType = document.getElementById('chartType').value;
+            const fromDate = document.getElementById('fromDate').value;
+            const toDate = document.getElementById('toDate').value;
+            const isItemSalePurchase = source === 'item_sale_purchase';
+            const isCompare = document.getElementById('compareToggle').checked || isItemSalePurchase;
+            const compareFromDate = document.getElementById('compareFromDate').value;
+            const compareToDate = document.getElementById('compareToDate').value;
+
+            let rawDataPrimary = [];
+            let rawDataCompare = [];
+            let activeFilters = {};
+            
+            if (source === 'sales') {
+                activeFilters.customer = getActiveFilters('customer');
+                activeFilters.item = getActiveFilters('item');
+            } else if (source === 'purchases') {
+                activeFilters.supplier = getActiveFilters('supplier');
+                activeFilters.item = getActiveFilters('item');
+            } else if (source === 'expenses') {
+                activeFilters.category = getActiveFilters('category');
+                activeFilters.vendor = getActiveFilters('vendor');
+            } else if (source === 'production') {
+                activeFilters.item = getActiveFilters('item');
+                activeFilters.stage = getActiveFilters('stage');
+            } else if (isItemSalePurchase) {
+                activeFilters.item = getActiveFilters('item');
+            }
+            
+            // Load and Normalize Data
+            if (source === 'sales') {
+                const invoices = JSON.parse(localStorage.getItem('invoices')) || [];
+                invoices.forEach(inv => {
+                    const d = inv.invoice_date || inv.date;
+                    const isPrimary = (!fromDate || d >= fromDate) && (!toDate || d <= toDate);
+                    const isComp = isCompare && (!compareFromDate || d >= compareFromDate) && (!compareToDate || d <= compareToDate);
+                    
+                    if (!isPrimary && !isComp) return;
+                    
+                    const customerName = inv.customer_name || (inv.customer && inv.customer.name) || 'Unknown';
+                    if (activeFilters.customer && !activeFilters.customer.includes(customerName)) return;
+
+                    if (inv.items) {
+                        inv.items.forEach(it => {
+                            const itemName = (it.item || 'Unknown') + (it.itemCode ? ` (${it.itemCode})` : '');
+                            if (activeFilters.item && !activeFilters.item.includes(itemName)) return;
+                            
+                            const qty = parseFloat(it.qty) || 0;
+                            const price = parseFloat(it.price) || 0;
+                            const gst = parseFloat(it.gst) || 0;
+                            const taxable = qty * price;
+                            const gstAmt = taxable * (gst / 100);
+                            
+                            const rowData = {
+                                date: d,
+                                month: d.substring(0, 7), // YYYY-MM
+                                customer: customerName,
+                                state: inv.state || 'Unknown',
+                                item: itemName,
+                                total: taxable + gstAmt,
+                                taxable: taxable,
+                                gst: gstAmt,
+                                qty: qty
+                            };
+                            if (isPrimary) rawDataPrimary.push(rowData);
+                            if (isComp) rawDataCompare.push(rowData);
+                        });
+                    }
+                });
+            } else if (source === 'purchases') {
+                const purchases = JSON.parse(localStorage.getItem('purchases')) || [];
+                purchases.forEach(p => {
+                    const d = p.date || '';
+                    const isPrimary = (!fromDate || d >= fromDate) && (!toDate || d <= toDate);
+                    const isComp = isCompare && (!compareFromDate || d >= compareFromDate) && (!compareToDate || d <= compareToDate);
+                    
+                    if (!isPrimary && !isComp) return;
+                    
+                    const supplierName = p.supplierName || 'Unknown';
+                    const itemName = (p.itemName || 'Unknown') + (p.itemCode ? ` (${p.itemCode})` : '');
+                    
+                    if (activeFilters.supplier && !activeFilters.supplier.includes(supplierName)) return;
+                    if (activeFilters.item && !activeFilters.item.includes(itemName)) return;
+                    
+                    const qty = parseFloat(p.qty) || 0;
+                    const price = parseFloat(p.price) || 0;
+                    const gst = parseFloat(p.gst) || 0;
+                    const taxable = qty * price;
+                    
+                    const rowData = {
+                        date: d,
+                        month: d.substring(0, 7),
+                        supplier: supplierName,
+                        item: itemName,
+                        total: taxable + (taxable * gst / 100),
+                        qty: qty
+                    };
+                    if (isPrimary) rawDataPrimary.push(rowData);
+                    if (isComp) rawDataCompare.push(rowData);
+                });
+            } else if (source === 'expenses') {
+                const expenses = JSON.parse(localStorage.getItem('expenses')) || [];
+                expenses.forEach(e => {
+                    const d = e.expense_date || e.date || '';
+                    const isPrimary = (!fromDate || d >= fromDate) && (!toDate || d <= toDate);
+                    const isComp = isCompare && (!compareFromDate || d >= compareFromDate) && (!compareToDate || d <= compareToDate);
+                    
+                    if (!isPrimary && !isComp) return;
+                    
+                    const categoryName = e.expense_category || 'Unknown';
+                    const vendorName = e.vendor_name || 'Unknown';
+                    
+                    if (activeFilters.category && !activeFilters.category.includes(categoryName)) return;
+                    if (activeFilters.vendor && !activeFilters.vendor.includes(vendorName)) return;
+                    
+                    const rowData = {
+                        date: d,
+                        month: d.substring(0, 7),
+                        category: categoryName,
+                        vendor: vendorName,
+                        amount: parseFloat(e.debit_amount || e.amount || 0)
+                    };
+                    if (isPrimary) rawDataPrimary.push(rowData);
+                    if (isComp) rawDataCompare.push(rowData);
+                });
+            } else if (source === 'production') {
+                const production = JSON.parse(localStorage.getItem('production')) || [];
+                production.forEach(prod => {
+                    const d = prod.date || '';
+                    const isPrimary = (!fromDate || d >= fromDate) && (!toDate || d <= toDate);
+                    const isComp = isCompare && (!compareFromDate || d >= compareFromDate) && (!compareToDate || d <= compareToDate);
+                    
+                    if (!isPrimary && !isComp) return;
+                    
+                    const itemName = prod.finishedGood || 'Unknown';
+                    const stage = prod.stage || 'Unknown';
+                    
+                    if (activeFilters.item && !activeFilters.item.includes(itemName)) return;
+                    if (activeFilters.stage && !activeFilters.stage.includes(stage)) return;
+                    
+                    const rowData = {
+                        date: d,
+                        month: d.substring(0, 7),
+                        item: itemName,
+                        stage: stage,
+                        cost: parseFloat(prod.totalCost) || 0,
+                        qty: parseFloat(prod.fgQtyProduced) || 0
+                    };
+                    if (isPrimary) rawDataPrimary.push(rowData);
+                    if (isComp) rawDataCompare.push(rowData);
+                });
+            } else if (isItemSalePurchase) {
+                const invoices = JSON.parse(localStorage.getItem('invoices')) || [];
+                const purchases = JSON.parse(localStorage.getItem('purchases')) || [];
+                
+                invoices.forEach(inv => {
+                    const d = inv.invoice_date || inv.date;
+                    const inRange = (!fromDate || d >= fromDate) && (!toDate || d <= toDate);
+                    if (!inRange) return;
+
+                    if (inv.items) {
+                        inv.items.forEach(it => {
+                            const itemName = (it.item || 'Unknown') + (it.itemCode ? ` (${it.itemCode})` : '');
+                            if (activeFilters.item && !activeFilters.item.includes(itemName)) return;
+                            
+                            const qty = parseFloat(it.qty) || 0;
+                            const price = parseFloat(it.price) || 0;
+                            const gst = parseFloat(it.gst) || 0;
+                            const taxable = qty * price;
+                            const gstAmt = taxable * (gst / 100);
+                            
+                            rawDataPrimary.push({ date: d, month: d.substring(0, 7), item: itemName, total: taxable + gstAmt, qty: qty });
+                        });
+                    }
+                });
+
+                purchases.forEach(p => {
+                    const d = p.date || '';
+                    const inRange = (!fromDate || d >= fromDate) && (!toDate || d <= toDate);
+                    if (!inRange) return;
+                    
+                    const itemName = (p.itemName || 'Unknown') + (p.itemCode ? ` (${p.itemCode})` : '');
+                    if (activeFilters.item && !activeFilters.item.includes(itemName)) return;
+                    
+                    const qty = parseFloat(p.qty) || 0;
+                    const price = parseFloat(p.price) || 0;
+                    const gst = parseFloat(p.gst) || 0;
+                    const taxable = qty * price;
+                    
+                    rawDataCompare.push({ date: d, month: d.substring(0, 7), item: itemName, total: taxable + (taxable * gst / 100), qty: qty });
+                });
+            }
+
+            // Aggregation
+            const aggregatedPrimary = {};
+            const aggregatedCompare = {};
+            const allKeys = new Set();
+            
+            rawDataPrimary.forEach(row => {
+                const key = row[dim] || 'Uncategorized';
+                const val = parseFloat(row[met]) || 0;
+                aggregatedPrimary[key] = (aggregatedPrimary[key] || 0) + val;
+                allKeys.add(key);
+            });
+            
+            rawDataCompare.forEach(row => {
+                const key = row[dim] || 'Uncategorized';
+                const val = parseFloat(row[met]) || 0;
+                aggregatedCompare[key] = (aggregatedCompare[key] || 0) + val;
+                allKeys.add(key);
+            });
+
+            // Format Output
+            let labels = Array.from(allKeys);
+            
+            // Sort labels (Date logic vs Value desc logic)
+            if (dim === 'date' || dim === 'month') {
+                labels.sort(); // Chronological
+            } else {
+                labels.sort((a, b) => (aggregatedPrimary[b] || 0) - (aggregatedPrimary[a] || 0)); // Descending values
+            }
+
+            const allDataValuesPrimary = labels.map(l => aggregatedPrimary[l] || 0);
+            const allDataValuesCompare = labels.map(l => aggregatedCompare[l] || 0);
+
+            // KPI Calculations (Total for all data before limit is applied)
+            const totalValP = allDataValuesPrimary.reduce((a, b) => a + b, 0);
+            const totalValC = allDataValuesCompare.reduce((a, b) => a + b, 0);
+            
+            const maxValP = allDataValuesPrimary.length ? Math.max(...allDataValuesPrimary) : 0;
+            const avgValP = allDataValuesPrimary.length ? totalValP / allDataValuesPrimary.filter(v=>v>0).length || 1 : 0;
+            const totalCountP = rawDataPrimary.length;
+
+            const limit = document.getElementById('limitResults') ? document.getElementById('limitResults').value : 'all';
+            if (limit !== 'all') {
+                const limitNum = parseInt(limit, 10);
+                if (!isNaN(limitNum) && labels.length > limitNum) {
+                    labels = labels.slice(0, limitNum);
+                }
+            }
+
+            const dataValuesPrimary = labels.map(l => aggregatedPrimary[l] || 0);
+            const dataValuesCompare = labels.map(l => aggregatedCompare[l] || 0);
+            
+            const isCurrency = met !== 'qty';
+            const fmt = (v) => isCurrency ? '₹ ' + v.toLocaleString('en-IN', { maximumFractionDigits: 2 }) : v.toLocaleString('en-IN', { maximumFractionDigits: 2 });
+
+            const metricLabel = document.getElementById('metric').options[document.getElementById('metric').selectedIndex].text;
+            const dimensionLabel = document.getElementById('dimension').options[document.getElementById('dimension').selectedIndex].text;
+
+            document.getElementById('kpiLabelTotal').innerText = isItemSalePurchase ? `Total ${metricLabel} (Sales)` : (isCompare ? `Total ${metricLabel} (Primary)` : `Total ${metricLabel}`);
+            document.getElementById('kpiLabelMax').innerText = `Highest ${metricLabel}`;
+            document.getElementById('kpiLabelAvg').innerText = `Average ${metricLabel}`;
+            document.getElementById('kpiLabelCount').innerText = `Total Records`;
+            
+            let totalHtml = fmt(totalValP);
+            const kpiCardTotal = document.getElementById('kpiTotal').closest('.kpi-card');
+            
+            if (isCompare) {
+                const variance = totalValP - totalValC;
+                const varPercent = totalValC ? ((variance / totalValC) * 100).toFixed(1) + '%' : (totalValP ? '100%' : '0%');
+                const color = variance > 0 ? 'var(--success-color)' : (variance < 0 ? 'var(--danger-color)' : 'inherit');
+                const compareLabel = isItemSalePurchase ? 'Purchases' : 'Compare';
+                totalHtml += `<div style="font-size:13px; color:var(--secondary-color); font-weight:normal; margin-top:5px;">${compareLabel}: ${fmt(totalValC)} <span style="color:${color}; font-weight:bold; margin-left:5px;">${variance > 0 ? '+' : ''}${varPercent}</span></div>`;
+                
+                if (variance < 0) {
+                    kpiCardTotal.classList.add('negative-variance');
+                    kpiCardTotal.classList.remove('positive-variance');
+                } else if (variance > 0) {
+                    kpiCardTotal.classList.add('positive-variance');
+                    kpiCardTotal.classList.remove('negative-variance');
+                } else {
+                    kpiCardTotal.classList.remove('negative-variance', 'positive-variance');
+                }
+            } else {
+                kpiCardTotal.classList.remove('negative-variance', 'positive-variance');
+            }
+            document.getElementById('kpiTotal').innerHTML = totalHtml;
+            
+            document.getElementById('kpiMax').innerText = fmt(maxValP);
+            document.getElementById('kpiAvg').innerText = fmt(avgValP);
+            document.getElementById('kpiCount').innerText = totalCountP + (isCompare ? ` (vs ${rawDataCompare.length})` : '');
+
+            // Render Chart
+            const ctx = document.getElementById('analysisChart').getContext('2d');
+            if (currentChart) currentChart.destroy();
+
+            // Generate dynamic colors
+            const colors = labels.map((_, i) => `hsl(${(i * 360) / labels.length}, 70%, 50%)`);
+
+            const datasets = [];
+            
+            if (isCompare && ['bar', 'line'].includes(chartType)) {
+                datasets.push({
+                    label: isItemSalePurchase ? metricLabel + ' (Sales)' : metricLabel + ' (Primary)',
+                    data: dataValuesPrimary,
+                    backgroundColor: chartType === 'line' ? 'rgba(78, 115, 223, 0.1)' : 'rgba(78, 115, 223, 0.8)',
+                    borderColor: '#4e73df',
+                    borderWidth: 1,
+                    fill: chartType === 'line',
+                    tension: 0.3
+                });
+                datasets.push({
+                    label: isItemSalePurchase ? metricLabel + ' (Purchases)' : metricLabel + ' (Compare)',
+                    data: dataValuesCompare,
+                    backgroundColor: chartType === 'line' ? 'rgba(28, 200, 138, 0.1)' : 'rgba(28, 200, 138, 0.8)',
+                    borderColor: '#1cc88a',
+                    borderWidth: 1,
+                    fill: chartType === 'line',
+                    tension: 0.3
+                });
+            } else {
+                datasets.push({
+                    label: isItemSalePurchase ? metricLabel + ' (Sales)' : metricLabel,
+                    data: dataValuesPrimary,
+                    backgroundColor: chartType === 'line' ? 'rgba(78, 115, 223, 0.1)' : colors,
+                    borderColor: chartType === 'line' ? '#4e73df' : (chartType === 'bar' ? colors : '#fff'),
+                    borderWidth: 1,
+                    fill: chartType === 'line',
+                    tension: 0.3
+                });
+                if (isCompare) {
+                    datasets.push({
+                        label: isItemSalePurchase ? metricLabel + ' (Purchases)' : metricLabel + ' (Compare)',
+                        data: dataValuesCompare,
+                        backgroundColor: chartType === 'line' ? 'rgba(28, 200, 138, 0.1)' : colors.map(c => c.replace('50%)', '30%)')), // faded
+                        borderColor: '#fff',
+                        borderWidth: 1
+                    });
+                }
+            }
+
+            currentChart = new Chart(ctx, {
+                type: chartType,
+                data: {
+                    labels: labels,
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: isCompare || ['pie', 'doughnut'].includes(chartType),
+                            position: 'right'
+                        }
+                    },
+                    scales: ['pie', 'doughnut'].includes(chartType) ? {} : {
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+
+            // Render Table
+            const theadTr = document.getElementById('tableHeaderRow');
+            if (theadTr) {
+                const col2Title = isItemSalePurchase ? (metricLabel + ' (Sales)') : (isCompare ? 'Primary Period' : metricLabel);
+                theadTr.innerHTML = `<th id="thDimension">${document.getElementById('dimension').options[document.getElementById('dimension').selectedIndex].text}</th>
+                                     <th id="thMetric" style="text-align: right;">${col2Title}</th>`;
+                if (isCompare) {
+                    const col3Title = isItemSalePurchase ? (metricLabel + ' (Purchases)') : 'Compare Period';
+                    theadTr.innerHTML += `<th style="text-align: right;">${col3Title}</th>
+                                          <th style="text-align: right;">Variance</th>`;
+                }
+            }
+            
+            const tbody = document.getElementById('dataTableBody');
+            tbody.innerHTML = '';
+            if (labels.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="${isCompare ? 4 : 2}" style="text-align: center;">No data found for selected criteria</td></tr>`;
+            } else {
+                labels.forEach((label, i) => {
+                    const pVal = dataValuesPrimary[i];
+                    const cVal = isCompare ? dataValuesCompare[i] : 0;
+                    
+                    const pct = maxValP > 0 ? Math.max(1, (pVal / maxValP) * 100) : 0;
+                    const showBars = document.getElementById('showDataBars') ? document.getElementById('showDataBars').checked : true;
+                    
+                    let dataBarHtml = '';
+                    if (showBars && pct > 0) {
+                        const hue = (pct / 100) * 120; // Maps 0% to Red, 100% to Green
+                        dataBarHtml = `<div style="position:absolute; top:15%; right:0; bottom:15%; width:${pct}%; background: linear-gradient(90deg, hsla(${hue}, 80%, 50%, 0.15), hsla(${hue}, 80%, 50%, 0.35)); z-index:0; border-radius: 4px; pointer-events:none;"></div>`;
+                    }
+
+                    let varHtml = '';
+                    if (isCompare) {
+                        const variance = pVal - cVal;
+                        const varPercent = cVal ? ((variance / cVal) * 100).toFixed(1) + '%' : (pVal ? '100%' : '0%');
+                        const color = variance > 0 ? 'var(--success-color)' : (variance < 0 ? 'var(--danger-color)' : 'inherit');
+                        const indicator = variance > 0 ? '▲' : (variance < 0 ? '▼' : '▬');
+                        varHtml = `<td style="text-align: right;">${fmt(cVal)}</td>
+                                   <td style="text-align: right; color: ${color}; font-weight: bold;">${indicator} ${variance > 0 ? '+' : ''}${varPercent}</td>`;
+                    }
+
+                    tbody.innerHTML += `
+                        <tr>
+                            <td>${escapeHtml(label)}</td>
+                            <td style="text-align: right; font-weight: bold; position: relative;">${dataBarHtml}<span style="position:relative; z-index:1;">${fmt(pVal)}</span></td>
+                            ${varHtml}
+                        </tr>
+                    `;
+                });
+            }
+            
+                document.getElementById('loadingOverlay').style.display = 'none';
+            }, 50); /* 50ms delay gives the browser time to paint the spinner */
+        }
+
+        function exportDataToCSV() {
+            const table = document.querySelector('.data-table-container table');
+            if (!table) return;
+            
+            const tbody = document.getElementById('dataTableBody');
+            if (!tbody || tbody.innerText.includes('No data found') || tbody.innerText.includes('Generate analysis to view data')) {
+                alert("No data available to export.");
+                return;
+            }
+
+            let csvContent = "";
+            const rows = table.querySelectorAll('tr');
+            
+            rows.forEach(row => {
+                const cols = row.querySelectorAll('th, td');
+                const rowData = Array.from(cols).map(col => `"${col.innerText.replace(/"/g, '""')}"`);
+                csvContent += rowData.join(",") + "\r\n";
+            });
+
+            const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "data_analysis_export.csv";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+        function exportChartToPNG() {
+            if (!currentChart) {
+                alert("No chart available to export.");
+                return;
+            }
+            const a = document.createElement("a");
+            a.href = currentChart.toBase64Image();
+            a.download = "data_analysis_chart.png";
+            a.click();
+        }
+    </script>
+</body>
+</html>

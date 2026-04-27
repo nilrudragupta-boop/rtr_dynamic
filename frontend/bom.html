@@ -1,0 +1,1372 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Bill of Materials (BOM)</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="apiClient.js"></script>
+    <script src="settings.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            padding: 20px;
+            background: #f4f6f8;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h2,
+        h3 {
+            color: #2c3e50;
+        }
+
+        .card {
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #eee;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            align-items: end;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        label {
+            font-weight: 600;
+            font-size: 13px;
+            margin-bottom: 5px;
+        }
+
+        input,
+        select {
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            color: white;
+        }
+
+        .btn-primary {
+            background: #3498db;
+        }
+
+        .btn-success {
+            background: #27ae60;
+        }
+
+        .btn-danger {
+            background: #e74c3c;
+        }
+
+        .btn-warning {
+            background: #f39c12;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background: #f2f2f2;
+        }
+
+        .action-col {
+            width: 80px;
+            text-align: center;
+        }
+
+        /* Pagination Styles */
+        .pagination button {
+            padding: 4px 10px;
+            border: 1px solid #ccc;
+            background: #fff;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        .pagination button.active {
+            background: #3498db;
+            color: #fff;
+            border-color: #3498db;
+        }
+
+        .pagination button:disabled {
+            background: #eee;
+            cursor: not-allowed;
+        }
+
+        /* Scrollable DataList for cross-browser support */
+        datalist {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        /* Scrollable Table Container */
+        .table-container-scroll {
+            max-height: 350px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+
+        .table-container-scroll table {
+            margin-top: 0;
+            border-style: hidden;
+        }
+
+        .table-container-scroll thead th {
+            position: sticky;
+            top: 0;
+            z-index: 2;
+            box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Action Dropdown Menu */
+        .action-dropdown {
+            position: relative;
+            display: inline-block;
+        }
+        .action-btn-main {
+            background-color: #607d8b;
+            color: white;
+            padding: 5px 10px;
+            font-size: 13px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .action-dropdown-content {
+            display: none;
+            position: fixed;
+            background-color: #fff;
+            min-width: 130px;
+            box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
+            z-index: 9999;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 4px 0;
+            text-align: left;
+        }
+        .action-dropdown-content button {
+            color: #333 !important;
+            background: none !important;
+            padding: 8px 16px !important;
+            text-decoration: none !important;
+            display: block !important;
+            width: 100% !important;
+            text-align: left !important;
+            border: none !important;
+            border-radius: 0 !important;
+            margin: 0 !important;
+            box-shadow: none !important;
+            font-weight: normal !important;
+            font-size: 13px !important;
+        }
+        .action-dropdown-content button:hover {
+            background-color: #f1f1f1 !important;
+            color: #000 !important;
+        }
+        .action-dropdown.active .action-dropdown-content {
+            display: block;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h2 style="margin: 0;"><i class="fas fa-cogs"></i> Bill of Materials (BOM)</h2>
+            <div>
+                <button class="btn-warning"
+                    onclick="window.open('production.html', 'ProductionEntry', 'width=1100,height=750')"
+                    data-permission-id="perm_production_entry" style="margin-right: 5px;"><i
+                        class="fas fa-industry"></i> Production Entry</button>
+                <button class="btn-primary" onclick="location.reload()"><i class="fas fa-sync-alt"></i> Refresh</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; cursor: pointer; margin-bottom: 15px;"
+                onclick="toggleBomForm()">
+                <h3 style="margin: 0;">Create New BOM</h3>
+                <button id="toggleFormBtn" type="button"
+                    style="background:none; border:none; font-size:1.2em; padding:0; margin:0; cursor:pointer; color:#2c3e50; box-shadow:none;">&#9650;</button>
+            </div>
+            <div id="bomFormContainer">
+                <input type="hidden" id="editingBomId">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="bomCode">BOM Code (Auto/Edit)</label>
+                        <input type="text" id="bomCode" placeholder="e.g. BOM-0001">
+                    </div>
+                    <div class="form-group">
+                        <label for="finishedGood">Finished Good</label>
+                        <select id="finishedGood" onchange="updateOutputUOM()"></select>
+                    </div>
+                    <div class="form-group">
+                        <label for="bomName">BOM Version / Recipe Name</label>
+                        <div style="display: flex; gap: 5px;">
+                            <select id="bomName" style="flex: 1;">
+                                <option value="Standard">Standard</option>
+                            </select>
+                            <button type="button" class="btn-primary" onclick="openBomNameManager()" title="Manage Recipe Names"
+                                style="padding: 0 10px; font-size: 16px; flex: 0;">⚙️</button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="outputQty">Output Quantity</label>
+                        <div style="display: flex; gap: 5px;">
+                            <input type="number" id="outputQty" value="1" min="1" style="flex: 2;">
+                            <select id="outputUom" style="flex: 1;">
+                                <option value="">UOM</option>
+                            </select>
+                            <button type="button" class="btn-primary" onclick="addCustomUOM()" title="Add Custom UOM"
+                                style="padding: 0 10px; font-size: 16px; flex: 0;">+</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- NEW: Labour and Overhead Costs -->
+                <div class="form-grid" style="grid-template-columns: 1fr 1fr; margin-top: 15px;">
+                    <div class="form-group">
+                        <label for="labourCost">Labour Cost (per batch)</label>
+                        <input type="number" id="labourCost" value="0" min="0" step="any" oninput="calculateBOMCost()">
+                    </div>
+                    <div class="form-group">
+                        <label for="overheadCost">Overhead Cost (per batch)</label>
+                        <input type="number" id="overheadCost" value="0" min="0" step="any"
+                            oninput="calculateBOMCost()">
+                    </div>
+                </div>
+
+
+                <h4>Raw Materials Required</h4>
+                <div class="table-container-scroll">
+                    <table id="rawMaterialsTable">
+                        <thead>
+                            <tr>
+                                <th style="width: 50px;">Sl No</th>
+                                <th>Item Name (Raw Material)</th>
+                                <th style="width: 100px;">Quantity</th>
+                                <th style="width: 80px;">UOM</th>
+                                <th style="width: 100px;">Avg Rate</th>
+                                <th style="width: 100px;">Amount</th>
+                                <th class="action-col">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- JS will add rows here -->
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <td colspan="5" style="text-align: right; font-weight: bold;">Total Material Cost:</td>
+                                <td id="totalMaterialCost" style="font-weight: bold;">0.00</td>
+                                <td></td>
+                            </tr>
+                            <tr style="font-size: 1.1em; font-weight: bold; background: #f2f2f2;">
+                                <td colspan="5" style="text-align: right;">Grand Total Cost (Material + Labour +
+                                    Overhead):
+                                </td>
+                                <td id="grandTotalBOMCost" style="color: #27ae60;">0.00</td>
+                                <td></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+
+                <div style="margin-top: 30px;">
+                    <h4>Additional Outputs (By-Products / Co-Products) - <small style="color: #888;">Optional</small>
+                    </h4>
+                    <p style="font-size: 12px; color: #666; margin-top: -10px; margin-bottom: 10px;">Note: Production costs (Materials, Labour, Overhead) are allocated entirely to the main Finished Good. By-products are tracked purely for inventory quantity.</p>
+                    <div class="table-container-scroll" style="max-height: 200px;">
+                        <table id="additionalOutputsTable">
+                            <thead>
+                                <tr>
+                                    <th style="width: 50px;">Sl No</th>
+                                    <th>Item Name (Finished Good)</th>
+                                    <th style="width: 100px;">Quantity</th>
+                                    <th style="width: 80px;">UOM</th>
+                                    <th class="action-col">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                    <div style="margin-top: 10px;">
+                        <button type="button" class="btn-primary" onclick="addAdditionalOutputRow()">+ Add Additional
+                            Output</button>
+                    </div>
+                </div>
+                <datalist id="rawMaterialList"></datalist>
+
+                <div style="margin-top: 15px;">
+                    <button class="btn-primary" onclick="addRawMaterialRow()">+ Add Raw Material</button>
+                    <button id="btnSaveBOM" class="btn-success" onclick="saveBOM()" style="float: right;">Save
+                        BOM</button>
+                    <button class="btn-danger" onclick="clearForm()"
+                        style="float: right; margin-right: 10px; background: #95a5a6;">Clear</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="card" style="margin-top: 30px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h3 style="margin: 0;">Existing BOMs</h3>
+                <input type="text" id="bomSearch" placeholder="Search BOM Code, Item, or Recipe..."
+                    style="width: 250px; padding: 6px;" oninput="currentPage=1; loadExistingBOMs()">
+            </div>
+            <!-- Pagination Controls -->
+            <div class="pagination-container"
+                style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding: 10px; background: #fff; border-radius: 8px; border: 1px solid #eee;">
+                <div style="display: flex; align-items: center; gap: 5px;">
+                    <span id="totalBomsDisplay" style="font-weight: bold; color: #2c3e50; margin-right: 8px;"></span>
+                    <select id="rowsPerPageSelect" onchange="changeRowsPerPage()"
+                        style="width: auto; padding: 4px; border: 1px solid #ccc; border-radius: 4px; margin: 0;">
+                        <option value="5">5 rows</option>
+                        <option value="10" selected>10 rows</option>
+                        <option value="20">20 rows</option>
+                        <option value="50">50 rows</option>
+                    </select>
+                </div>
+                <div id="paginationInfo" style="color: #666; font-size: 14px;"></div>
+                <div class="pagination" id="paginationControls" style="display: flex; gap: 5px;"></div>
+            </div>
+            <div id="bomList" style="max-height: 400px; overflow-y: auto;"></div>
+        </div>
+
+        <!-- BOM Name Manager Modal -->
+        <div id="bomNameManagerModal" class="modal">
+            <div class="modal-content" style="width: 400px; text-align: center;">
+                <h3 style="color: #2c3e50; margin-top:0;">Manage Recipe Names</h3>
+                <div style="display:flex; gap:5px; margin-bottom:15px;">
+                    <input type="text" id="newBomNameInput" placeholder="Enter new recipe name" style="flex:1;">
+                    <button class="btn-success" onclick="addManagedBomName()">Add</button>
+                </div>
+                <div id="managedBomNameList" style="text-align:left; max-height:250px; overflow-y:auto; border:1px solid #eee; padding:5px; border-radius:4px; margin-bottom:15px; background: #fff;">
+                    <!-- Items -->
+                </div>
+                <div style="display: flex; justify-content: flex-end;">
+                    <button class="btn-danger" onclick="closeBomNameManager()">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentPage = 1;
+        let rowsPerPage = 10;
+        let isBomFormVisible = localStorage.getItem("bomFormVisible") !== "false";
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadFinishedGoods();
+            loadRawMaterialsDatalist();
+            loadExistingBOMs();
+            loadUOMList();
+            loadBOMNames();
+            document.getElementById('bomCode').value = generateBomCode();
+            addRawMaterialRow(); // Start with one empty row
+            applyBomFormVisibility();
+        });
+
+        function toggleBomForm() {
+            isBomFormVisible = !isBomFormVisible;
+            localStorage.setItem("bomFormVisible", isBomFormVisible);
+            applyBomFormVisibility();
+        }
+
+        function applyBomFormVisibility() {
+            const container = document.getElementById('bomFormContainer');
+            const btn = document.getElementById('toggleFormBtn');
+            if (container && btn) {
+                container.style.display = isBomFormVisible ? 'block' : 'none';
+                btn.innerHTML = isBomFormVisible ? '&#9650;' : '&#9660;';
+            }
+        }
+
+        function generateBomCode() {
+            const boms = JSON.parse(localStorage.getItem("boms")) || [];
+            let max = 0;
+            boms.forEach(b => {
+                if (b.bomCode) {
+                    const num = parseInt(b.bomCode.replace(/\D/g, ''));
+                    if (!isNaN(num) && num > max) max = num;
+                }
+            });
+            return `BOM-${String(max + 1).padStart(4, '0')}`;
+        }
+
+        function refreshData() {
+            const fgSelect = document.getElementById('finishedGood');
+            const currentFg = fgSelect.value;
+            loadFinishedGoods();
+            if (currentFg) fgSelect.value = currentFg;
+            loadRawMaterialsDatalist();
+            loadExistingBOMs();
+            loadBOMNames();
+            calculateBOMCost();
+            if (!document.getElementById('editingBomId').value) {
+                document.getElementById('bomCode').value = generateBomCode();
+            }
+        }
+
+        window.uomOptionsHtml = '';
+        function loadUOMList() {
+            const defaultUOMs = typeof UNIT_MASTER_LIST !== 'undefined' ? UNIT_MASTER_LIST : [];
+            const customUOMs = JSON.parse(localStorage.getItem('custom_uoms')) || [];
+            const allUOMs = [...new Set([...defaultUOMs, ...customUOMs])].sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
+            let optsHtml = '';
+            allUOMs.forEach(uom => {
+                optsHtml += `<option value="${escapeHtml(uom)}">${escapeHtml(uom)}</option>`;
+            });
+            window.uomOptionsHtml = optsHtml;
+
+            const outputUomSelect = document.getElementById('outputUom');
+            if (outputUomSelect) {
+                const currentOutputVal = outputUomSelect.value;
+                outputUomSelect.innerHTML = '<option value="">UOM</option>' + optsHtml;
+                if (currentOutputVal) outputUomSelect.value = currentOutputVal;
+            }
+
+            document.querySelectorAll('.raw-material-uom').forEach(select => {
+                const currentVal = select.value;
+                select.innerHTML = '<option value="">UOM</option>' + optsHtml;
+                if (currentVal) select.value = currentVal;
+            });
+
+            document.querySelectorAll('.out-item-uom').forEach(select => {
+                const currentVal = select.value;
+                select.innerHTML = '<option value="">UOM</option>' + optsHtml;
+                if (currentVal) select.value = currentVal;
+            });
+        }
+
+        function addCustomUOM() {
+            const newUom = prompt("Enter new Unit of Measurement (e.g., Ltr, Pcs, Box):");
+            if (newUom && newUom.trim() !== "") {
+                const uomName = newUom.trim();
+                const lowerName = uomName.toLowerCase();
+                const customUOMs = JSON.parse(localStorage.getItem('custom_uoms')) || [];
+                const defaultUOMs = typeof UNIT_MASTER_LIST !== 'undefined' ? UNIT_MASTER_LIST : [];
+                const exists = customUOMs.some(u => u.toLowerCase() === lowerName) || defaultUOMs.some(u => u.toLowerCase() === lowerName);
+                if (!exists) {
+                    customUOMs.push(uomName);
+                    localStorage.setItem('custom_uoms', JSON.stringify(customUOMs));
+                    loadUOMList();
+                    const out = document.getElementById('outputUom');
+                    if (out) out.value = uomName;
+                    alert("UOM added successfully!");
+                } else {
+                    alert("UOM already exists!");
+                }
+            }
+        }
+
+        function getAllBomNames() {
+            const boms = JSON.parse(localStorage.getItem("boms")) || [];
+            const customNames = JSON.parse(localStorage.getItem('custom_bom_names')) || [];
+            const nameSet = new Set(['Standard']);
+            boms.forEach(b => {
+                if (b.bomName) nameSet.add(b.bomName.trim());
+            });
+            customNames.forEach(n => nameSet.add(n.trim()));
+            return Array.from(nameSet).sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
+        }
+
+        function loadBOMNames() {
+            const allNames = getAllBomNames();
+            let optsHtml = '';
+            allNames.forEach(name => {
+                optsHtml += `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`;
+            });
+
+            const bomNameSelect = document.getElementById('bomName');
+            if (bomNameSelect) {
+                const currentVal = bomNameSelect.value || 'Standard';
+                bomNameSelect.innerHTML = optsHtml;
+                if (allNames.includes(currentVal)) {
+                    bomNameSelect.value = currentVal;
+                } else {
+                    bomNameSelect.value = 'Standard';
+                }
+            }
+        }
+
+        function openBomNameManager() {
+            renderManagedBomNames();
+            document.getElementById('bomNameManagerModal').style.display = 'flex';
+        }
+
+        function closeBomNameManager() {
+            document.getElementById('bomNameManagerModal').style.display = 'none';
+            loadBOMNames();
+        }
+
+        function renderManagedBomNames() {
+            const list = document.getElementById('managedBomNameList');
+            list.innerHTML = '';
+            const names = getAllBomNames();
+
+            names.forEach((name) => {
+                const div = document.createElement('div');
+                div.style.cssText = "display:flex; justify-content:space-between; padding:8px; border-bottom:1px solid #eee; align-items:center;";
+                
+                let buttonsHtml = '';
+                if (name.toLowerCase() !== 'standard') {
+                    buttonsHtml = `
+                        <button onclick="editManagedBomName('${escapeHtml(name)}')" style="padding:2px 6px; font-size:12px; background:#f39c12; color:white; border:none; border-radius:3px; cursor:pointer; margin-right:5px;">✎</button>
+                        <button onclick="deleteManagedBomName('${escapeHtml(name)}')" style="padding:2px 6px; font-size:12px; background:#e74c3c; color:white; border:none; border-radius:3px; cursor:pointer;">🗑️</button>
+                    `;
+                } else {
+                    buttonsHtml = `<span style="font-size: 12px; color: #888; font-style: italic;">Default</span>`;
+                }
+
+                div.innerHTML = `<span>${escapeHtml(name)}</span><div>${buttonsHtml}</div>`;
+                list.appendChild(div);
+            });
+        }
+
+        function addManagedBomName() {
+            const input = document.getElementById('newBomNameInput');
+            const val = input.value.trim();
+            if (!val) return;
+
+            const lowerName = val.toLowerCase();
+            const allNames = getAllBomNames();
+            
+            if (allNames.some(n => n.toLowerCase() === lowerName)) {
+                alert("Recipe name already exists!");
+                return;
+            }
+
+            const customNames = JSON.parse(localStorage.getItem('custom_bom_names')) || [];
+            customNames.push(val);
+            localStorage.setItem('custom_bom_names', JSON.stringify(customNames));
+            
+            input.value = '';
+            renderManagedBomNames();
+            loadBOMNames();
+            const select = document.getElementById('bomName');
+            if (select) select.value = val;
+        }
+
+        function editManagedBomName(oldName) {
+            if (oldName.toLowerCase() === 'standard') return;
+            
+            const newName = prompt("Rename Recipe:", oldName);
+            if (newName && newName.trim() !== "" && newName.trim() !== oldName) {
+                const trimmedName = newName.trim();
+                const allNames = getAllBomNames();
+                if (allNames.some(n => n.toLowerCase() === trimmedName.toLowerCase())) {
+                    alert("Recipe name already exists!");
+                    return;
+                }
+
+                let customNames = JSON.parse(localStorage.getItem('custom_bom_names')) || [];
+                const idx = customNames.indexOf(oldName);
+                if (idx > -1) {
+                    customNames[idx] = trimmedName;
+                } else {
+                    customNames.push(trimmedName);
+                }
+                localStorage.setItem('custom_bom_names', JSON.stringify(customNames));
+
+                let boms = JSON.parse(localStorage.getItem("boms")) || [];
+                let updatedCount = 0;
+                boms.forEach(b => {
+                    if (b.bomName === oldName) {
+                        b.bomName = trimmedName;
+                        updatedCount++;
+                    }
+                });
+                if (updatedCount > 0) {
+                    localStorage.setItem("boms", JSON.stringify(boms));
+                    loadExistingBOMs();
+                }
+
+                renderManagedBomNames();
+                loadBOMNames();
+                
+                const select = document.getElementById('bomName');
+                if (select && select.value === oldName) {
+                    select.value = trimmedName;
+                }
+            }
+        }
+
+        function deleteManagedBomName(name) {
+            if (name.toLowerCase() === 'standard') return;
+            
+            let boms = JSON.parse(localStorage.getItem("boms")) || [];
+            const isUsed = boms.some(b => b.bomName === name);
+            
+            if (isUsed) {
+                alert('Cannot delete "' + name + '" because it is used in existing BOMs. Rename it instead or change the BOMs first.');
+                return;
+            }
+
+            if (confirm('Are you sure you want to delete the recipe name "' + name + '"?')) {
+                let customNames = JSON.parse(localStorage.getItem('custom_bom_names')) || [];
+                customNames = customNames.filter(n => n !== name);
+                localStorage.setItem('custom_bom_names', JSON.stringify(customNames));
+                
+                renderManagedBomNames();
+                loadBOMNames();
+            }
+        }
+
+        function loadFinishedGoods() {
+            const items = JSON.parse(localStorage.getItem("items")) || [];
+            const select = document.getElementById('finishedGood');
+            select.innerHTML = '<option value="">-- Select a Finished Good --</option>';
+            items.filter(i => i.itemType === 'Finished Good').forEach(item => {
+                const opt = document.createElement('option');
+                opt.value = item.name;
+                opt.dataset.itemCode = item.itemCode || '';
+                opt.dataset.uom = item.uom || '';
+                opt.textContent = `${item.name} ${item.itemCode ? '[' + item.itemCode + ']' : ''}`;
+                select.appendChild(opt);
+            });
+        }
+
+        function updateOutputUOM() {
+            const select = document.getElementById('finishedGood');
+            const uomInput = document.getElementById('outputUom');
+            if (select.selectedIndex > 0) {
+                let uom = select.options[select.selectedIndex].dataset.uom || '';
+                if (!uom) {
+                    const fgName = select.value;
+                    const prods = JSON.parse(localStorage.getItem("production")) || [];
+                    const prod = prods.find(p => p.finishedGood === fgName);
+                    if (prod) {
+                        uom = prod.fgUom || '';
+                    } else {
+                        const purchases = JSON.parse(localStorage.getItem("purchases")) || [];
+                        const purch = purchases.find(p => (p.itemName || "").trim().toLowerCase() === fgName.trim().toLowerCase());
+                        if (purch) uom = purch.uom || '';
+                    }
+                }
+                uomInput.value = uom;
+            } else {
+                uomInput.value = '';
+            }
+        }
+
+        function loadRawMaterialsDatalist() {
+            const items = JSON.parse(localStorage.getItem("items")) || [];
+            const datalist = document.getElementById('rawMaterialList');
+            datalist.innerHTML = '';
+            // Allow Raw Materials, Consumables, and Finished Goods (as sub-assemblies)
+            items.filter(i => i.itemType !== 'Service').forEach(item => {
+                const opt = document.createElement('option');
+                opt.value = item.name;
+                let details = [];
+                if (item.itemCode) details.push(`Code: ${item.itemCode}`);
+                if (item.category) details.push(`Cat: ${item.category}`);
+                if (item.itemType) details.push(`Type: ${item.itemType}`);
+                opt.textContent = details.length > 0 ? `${item.name} [${details.join(' | ')}]` : item.name;
+                datalist.appendChild(opt);
+            });
+        }
+
+        function addRawMaterialRow() {
+            const tbody = document.querySelector('#rawMaterialsTable tbody');
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td class="sl-no" style="text-align: center;"></td>
+                <td><input type="text" class="raw-material-name" list="rawMaterialList" placeholder="Type to search..." onchange="autofillUOM(this)"></td>
+                <td><input type="number" class="raw-material-qty" value="1" min="0.01" step="any" oninput="calculateBOMCost()"></td>
+                <td><select class="raw-material-uom"><option value="">UOM</option>${window.uomOptionsHtml || ''}</select></td>
+                <td><input type="number" class="raw-material-rate" readonly style="background:#eee;"></td>
+                <td><input type="text" class="raw-material-amount" readonly style="background:#eee;"></td>
+                <td class="action-col"><button class="btn-danger" style="padding: 4px 8px;" onclick="this.closest('tr').remove(); calculateBOMCost();">Remove</button></td>
+            `;
+            tbody.appendChild(tr);
+            calculateBOMCost();
+        }
+
+        function addAdditionalOutputRow() {
+            const tbody = document.querySelector('#additionalOutputsTable tbody');
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td class="sl-no-out" style="text-align: center;"></td>
+                <td><input type="text" class="out-item-name" list="rawMaterialList" placeholder="Type to search..." onchange="autofillUOMOut(this)"></td>
+                <td><input type="number" class="out-item-qty" value="1" min="0.01" step="any"></td>
+                <td><select class="out-item-uom"><option value="">UOM</option>${window.uomOptionsHtml || ''}</select></td>
+                <td class="action-col"><button type="button" class="btn-danger" style="padding: 4px 8px;" onclick="this.closest('tr').remove(); reindexAdditionalOutputs();">Remove</button></td>
+            `;
+            tbody.appendChild(tr);
+            reindexAdditionalOutputs();
+        }
+
+        function reindexAdditionalOutputs() {
+            document.querySelectorAll('#additionalOutputsTable tbody tr').forEach((row, index) => {
+                const slCell = row.querySelector('.sl-no-out');
+                if (slCell) slCell.innerText = index + 1;
+            });
+        }
+
+        function autofillUOMOut(input) {
+            const name = input.value;
+            const row = input.closest('tr');
+            const uomInput = row.querySelector('.out-item-uom');
+            if (!name) { uomInput.value = ''; return; }
+            const items = JSON.parse(localStorage.getItem("items")) || [];
+            const item = items.find(i => i.name === name);
+            if (item && item.uom) uomInput.value = item.uom;
+        }
+
+        function getAverageCost(itemName) {
+            const purchases = JSON.parse(localStorage.getItem("purchases")) || [];
+            let totalQty = 0;
+            let totalCost = 0;
+            purchases.forEach(p => {
+                if ((p.itemName || "").trim().toLowerCase() === (itemName || "").trim().toLowerCase()) {
+                    const q = parseFloat(p.qty) || 0;
+                    const price = parseFloat(p.price) || 0;
+                    totalQty += q;
+                    totalCost += (q * price);
+                }
+            });
+            return totalQty > 0 ? (totalCost / totalQty) : 0;
+        }
+
+        function calculateBOMCost() {
+            const rows = document.querySelectorAll('#rawMaterialsTable tbody tr');
+            let materialCost = 0;
+
+            rows.forEach((row, index) => {
+                const slCell = row.querySelector('.sl-no');
+                if (slCell) slCell.innerText = index + 1;
+
+                const qty = parseFloat(row.querySelector('.raw-material-qty').value) || 0;
+                const rate = parseFloat(row.querySelector('.raw-material-rate').value) || 0;
+                const amount = qty * rate;
+
+                row.querySelector('.raw-material-amount').value = amount.toFixed(2);
+                materialCost += amount;
+            });
+
+            const labourCost = parseFloat(document.getElementById('labourCost').value) || 0;
+            const overheadCost = parseFloat(document.getElementById('overheadCost').value) || 0;
+
+            document.getElementById('totalMaterialCost').innerText = materialCost.toFixed(2);
+            document.getElementById('grandTotalBOMCost').innerText = (materialCost + labourCost + overheadCost).toFixed(2);
+        }
+
+        function autofillUOM(input) {
+            const name = input.value;
+            const row = input.closest('tr');
+            const uomInput = row.querySelector('.raw-material-uom');
+            const rateInput = row.querySelector('.raw-material-rate');
+
+            if (!name) {
+                uomInput.value = '';
+                rateInput.value = '0.00';
+                calculateBOMCost();
+                return;
+            }
+
+            const purchases = JSON.parse(localStorage.getItem("purchases")) || [];
+            const itemPurchases = purchases.filter(p => (p.itemName || "").trim().toLowerCase() === name.trim().toLowerCase());
+
+            if (itemPurchases.length > 0) {
+                uomInput.value = itemPurchases[itemPurchases.length - 1].uom || '';
+            } else {
+                const items = JSON.parse(localStorage.getItem("items")) || [];
+                const item = items.find(i => i.name === name);
+                uomInput.value = item ? (item.uom || '') : '';
+            }
+
+            rateInput.value = getAverageCost(name).toFixed(2);
+            calculateBOMCost();
+        }
+
+        function saveBOM() {
+            const fgSelect = document.getElementById('finishedGood');
+            const finishedGoodName = fgSelect.value;
+            if (!finishedGoodName) {
+                alert("Please select a Finished Good.");
+                return;
+            }
+            const finishedGoodCode = fgSelect.options[fgSelect.selectedIndex].dataset.itemCode;
+            const bomCode = document.getElementById('bomCode').value.trim() || generateBomCode();
+            const bomName = document.getElementById('bomName').value.trim() || 'Standard';
+            const outputQty = parseFloat(document.getElementById('outputQty').value) || 1;
+            const outputUom = document.getElementById('outputUom').value;
+
+            const editingId = document.getElementById('editingBomId').value;
+            const boms = JSON.parse(localStorage.getItem("boms")) || [];
+
+            if (bomCode) {
+                const isDuplicate = boms.some(b => b.bomCode === bomCode && b.id !== editingId);
+                if (isDuplicate) {
+                    alert(`BOM Code "${bomCode}" is already in use. Please enter a unique code.`);
+                    return;
+                }
+            }
+
+            const items = JSON.parse(localStorage.getItem("items")) || [];
+            const rawMaterials = [];
+            const rows = document.querySelectorAll('#rawMaterialsTable tbody tr');
+            let hasInvalidRow = false;
+
+            rows.forEach(row => {
+                const nameInput = row.querySelector('.raw-material-name');
+                const qtyInput = row.querySelector('.raw-material-qty');
+                const uomInput = row.querySelector('.raw-material-uom');
+
+                const name = nameInput.value.trim();
+                const qty = parseFloat(qtyInput.value);
+
+                if (name && qty > 0) {
+                    const foundItem = items.find(i => i.name === name);
+                    const itemCode = foundItem ? (foundItem.itemCode || '') : '';
+
+                    rawMaterials.push({
+                        itemName: name,
+                        itemCode: itemCode,
+                        qty: qty,
+                        uom: uomInput.value.trim(),
+                        rate: parseFloat(row.querySelector('.raw-material-rate').value) || 0,
+                        amount: parseFloat(row.querySelector('.raw-material-amount').value) || 0
+                    });
+                } else if (name || qty) {
+                    hasInvalidRow = true;
+                }
+            });
+
+            if (hasInvalidRow) {
+                alert("Please fill out all fields for each raw material row, or remove incomplete rows.");
+                return;
+            }
+
+            if (rawMaterials.length === 0) {
+                alert("Please add at least one raw material.");
+                return;
+            }
+
+            const additionalOutputs = [];
+            document.querySelectorAll('#additionalOutputsTable tbody tr').forEach(row => {
+                const name = row.querySelector('.out-item-name').value.trim();
+                const qty = parseFloat(row.querySelector('.out-item-qty').value) || 0;
+                const uom = row.querySelector('.out-item-uom').value.trim();
+                if (name && qty > 0) {
+                    const foundItem = items.find(i => i.name === name);
+                    const itemCode = foundItem ? (foundItem.itemCode || '') : '';
+                    additionalOutputs.push({
+                        itemName: name, itemCode: itemCode, qty: qty, uom: uom
+                    });
+                }
+            });
+
+            const totalCostEl = document.getElementById('totalBOMCost');
+            const materialCost = parseFloat(document.getElementById('totalMaterialCost').innerText) || 0;
+            const labourCost = parseFloat(document.getElementById('labourCost').value) || 0;
+            const overheadCost = parseFloat(document.getElementById('overheadCost').value) || 0;
+            const grandTotalCost = parseFloat(document.getElementById('grandTotalBOMCost').innerText) || 0;
+
+
+            const bom = {
+                id: editingId || 'BOM-' + Date.now(),
+                bomCode: bomCode,
+                finishedGoodName: finishedGoodName,
+                finishedGoodCode: finishedGoodCode,
+                bomName: bomName,
+                outputQty: outputQty,
+                outputUom: outputUom,
+                materialCost: materialCost,
+                labourCost: labourCost,
+                overheadCost: overheadCost,
+                totalEstimatedCost: grandTotalCost, // Keep this for backward compatibility with production cost calc
+                rawMaterials: rawMaterials,
+                additionalOutputs: additionalOutputs
+            };
+
+            if (editingId) {
+                const idx = boms.findIndex(b => b.id === editingId);
+                if (idx > -1) boms[idx] = bom;
+                else boms.push(bom);
+            } else {
+                boms.push(bom);
+            }
+            localStorage.setItem("boms", JSON.stringify(boms));
+        if (typeof apiClient !== 'undefined' && apiClient.saveBom) apiClient.saveBom(bom).catch(console.warn);
+
+            // Sync calculated unit cost to Finished Good's item master as salePrice
+            let itemUpdated = false;
+            const unitCost = outputQty > 0 ? (grandTotalCost / outputQty) : grandTotalCost;
+            for (let i = 0; i < items.length; i++) {
+                if (items[i].name === finishedGoodName && (!finishedGoodCode || items[i].itemCode === finishedGoodCode)) {
+                    items[i].salePrice = parseFloat(unitCost.toFixed(2));
+                    itemUpdated = true;
+                    break;
+                }
+            }
+            if (itemUpdated) {
+                localStorage.setItem("items", JSON.stringify(items));
+            for (let i = 0; i < items.length; i++) {
+                if (items[i].name === finishedGoodName && (!finishedGoodCode || items[i].itemCode === finishedGoodCode)) {
+                    if (typeof apiClient !== 'undefined' && apiClient.saveItem) apiClient.saveItem(items[i]).catch(console.warn);
+                }
+            }
+            }
+
+            alert(editingId ? "BOM updated successfully!" : "BOM saved successfully!");
+            clearForm();
+            loadExistingBOMs();
+        }
+
+        function clearForm() {
+            document.getElementById('editingBomId').value = '';
+            const saveBtn = document.getElementById('btnSaveBOM');
+            if (saveBtn) {
+                saveBtn.innerText = "Save BOM";
+                saveBtn.className = "btn-success";
+            }
+
+            document.getElementById('bomCode').value = generateBomCode();
+            document.getElementById('finishedGood').value = '';
+            document.getElementById('bomName').value = 'Standard';
+            document.getElementById('outputQty').value = '1';
+            document.getElementById('outputUom').value = '';
+            document.getElementById('labourCost').value = '0';
+            document.getElementById('overheadCost').value = '0';
+            const tbody = document.querySelector('#rawMaterialsTable tbody');
+            tbody.innerHTML = '';
+            addRawMaterialRow();
+            const tbodyOut = document.querySelector('#additionalOutputsTable tbody');
+            tbodyOut.innerHTML = '';
+        }
+        
+        function getStockMap() {
+            const purchases = JSON.parse(localStorage.getItem("purchases")) || [];
+            const invoices = JSON.parse(localStorage.getItem("invoices")) || [];
+            const returns = JSON.parse(localStorage.getItem("returns")) || [];
+            const scraps = JSON.parse(localStorage.getItem("scraps")) || [];
+            const productions = JSON.parse(localStorage.getItem("production")) || [];
+            const stockMap = {};
+
+            purchases.forEach(p => {
+                const name = (p.itemName || "").trim().toLowerCase();
+                stockMap[name] = (stockMap[name] || 0) + (parseFloat(p.qty) || 0);
+            });
+            invoices.forEach(inv => {
+                if (inv.items) inv.items.forEach(it => {
+                    const name = (it.item || "").trim().toLowerCase();
+                    stockMap[name] = (stockMap[name] || 0) - (parseFloat(it.qty) || 0);
+                });
+            });
+            returns.forEach(ret => {
+                if (ret.items) ret.items.forEach(item => {
+                    const name = (item.item_name || "").trim().toLowerCase();
+                    const qty = parseFloat(item.qty) || 0;
+                    if (ret.return_type === 'Sales Return') stockMap[name] = (stockMap[name] || 0) + qty;
+                    else if (ret.return_type === 'Damage' || ret.return_type === 'Purchase Return') stockMap[name] = (stockMap[name] || 0) - qty;
+                });
+            });
+            scraps.forEach(s => {
+                const name = (s.itemName || "").trim().toLowerCase();
+                stockMap[name] = (stockMap[name] || 0) - (parseFloat(s.qty) || 0);
+            });
+            productions.forEach(prod => {
+                const stage = prod.stage || 'Completed';
+                if (stage === 'Completed') {
+                    const fgName = (prod.finishedGoodName || prod.finishedGood || "").trim().toLowerCase();
+                    stockMap[fgName] = (stockMap[fgName] || 0) + (parseFloat(prod.fgQtyProduced || prod.outputQty) || 0);
+                }
+                if (stage === 'WIP' || stage === 'Completed') {
+                    if (prod.materialsConsumed) {
+                        prod.materialsConsumed.forEach(rm => {
+                            const rmName = (rm.item || rm.itemName || "").trim().toLowerCase();
+                            stockMap[rmName] = (stockMap[rmName] || 0) - (parseFloat(rm.qty) || 0);
+                        });
+                    }
+                }
+            });
+            return stockMap;
+        }
+
+        function calculateMaxPossible(bom, stockMap) {
+            let maxBatches = Infinity;
+            if (!bom.rawMaterials || bom.rawMaterials.length === 0) return 0;
+            
+            for (const rm of bom.rawMaterials) {
+                const rmName = (rm.itemName || "").trim().toLowerCase();
+                const requiredQty = parseFloat(rm.qty) || 0;
+                if (requiredQty <= 0) continue;
+                
+                const availableStock = stockMap[rmName] || 0;
+                const possibleBatches = availableStock / requiredQty;
+                
+                if (possibleBatches < maxBatches) {
+                    maxBatches = possibleBatches;
+                }
+            }
+            
+            if (maxBatches === Infinity || maxBatches < 0) return 0;
+            return maxBatches * (parseFloat(bom.outputQty) || 1);
+        }
+
+        function loadExistingBOMs() {
+            let boms = JSON.parse(localStorage.getItem("boms")) || [];
+            const container = document.getElementById('bomList');
+            const searchTerm = document.getElementById('bomSearch') ? document.getElementById('bomSearch').value.toLowerCase() : '';
+            container.innerHTML = '';
+
+            if (searchTerm) {
+                boms = boms.filter(b => (b.finishedGoodName || '').toLowerCase().includes(searchTerm) || (b.finishedGoodCode || '').toLowerCase().includes(searchTerm) || (b.bomCode || '').toLowerCase().includes(searchTerm) || (b.bomName || '').toLowerCase().includes(searchTerm));
+            }
+
+            const totalItems = boms.length;
+            const totalPages = Math.ceil(totalItems / rowsPerPage) || 1;
+
+            if (currentPage > totalPages) currentPage = totalPages;
+            if (currentPage < 1) currentPage = 1;
+
+            const startIndex = (currentPage - 1) * rowsPerPage;
+            const endIndex = Math.min(startIndex + rowsPerPage, totalItems);
+            const paginatedBoms = boms.slice(startIndex, endIndex);
+
+            if (totalItems === 0) {
+                container.innerHTML = '<p style="text-align:center; color:#888;">No BOMs created yet.</p>';
+                renderPagination(0, 0, 0, 1);
+                return;
+            }
+
+            // Pre-calculate current average costs for efficiency
+            const purchases = JSON.parse(localStorage.getItem("purchases")) || [];
+            const costMap = {};
+            purchases.forEach(p => {
+                const name = (p.itemName || "").trim().toLowerCase();
+                if (name) {
+                    if (!costMap[name]) costMap[name] = { qty: 0, total: 0 };
+                    costMap[name].qty += (parseFloat(p.qty) || 0);
+                    costMap[name].total += (parseFloat(p.qty) || 0) * (parseFloat(p.price) || 0);
+                }
+            });
+            const getCurrentAvgCost = (itemName) => {
+                const name = (itemName || "").trim().toLowerCase();
+                const data = costMap[name];
+                return (data && data.qty > 0) ? (data.total / data.qty) : null;
+            };
+
+            const stockMap = getStockMap();
+            const table = document.createElement('table');
+            table.innerHTML = `
+                <thead>
+                    <tr>
+                        <th style="width: 50px;">Sl No</th>
+                        <th>BOM Code</th>
+                        <th>Finished Good</th>
+                        <th>Recipe / Version</th>
+                        <th>Output Qty</th>
+                        <th>Max Possible</th>
+                        <th>Raw Materials</th>
+                        <th>Est. Cost (₹)</th>
+                        <th class="action-col">Actions</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            `;
+            const tbody = table.querySelector('tbody');
+
+            let sl = startIndex + 1;
+            paginatedBoms.forEach(bom => {
+                const materialsList = bom.rawMaterials.map(m => {
+                    const savedRate = m.rate || 0;
+                    const currentRate = getCurrentAvgCost(m.itemName);
+                    let color = 'inherit';
+                    let icon = '';
+
+                    if (currentRate !== null && Math.abs(currentRate - savedRate) > 0.01) {
+                        if (currentRate > savedRate) {
+                            color = '#e74c3c'; // Red (High)
+                            icon = ` <i class="fas fa-arrow-up" title="Current Avg: ₹${currentRate.toFixed(2)}"></i>`;
+                        } else {
+                            color = '#27ae60'; // Green (Low)
+                            icon = ` <i class="fas fa-arrow-down" title="Current Avg: ₹${currentRate.toFixed(2)}"></i>`;
+                        }
+                    } else if (currentRate !== null) {
+                        color = '#555'; // Equal
+                        icon = ` <i class="fas fa-equals" style="color: #aaa;" title="Current Avg: ₹${currentRate.toFixed(2)} (Unchanged)"></i>`;
+                    }
+
+                    return `<span style="color: ${color};">${escapeHtml(m.itemName)} (${m.qty} ${escapeHtml(m.uom || '')}) @ ₹${savedRate.toFixed(2)}${icon} = <strong>₹${(m.amount || ((m.qty || 0) * savedRate)).toFixed(2)}</strong></span>`;
+                }).join('<br>');
+                const costBreakdown = `
+                    Mat: ₹${(bom.materialCost || 0).toFixed(2)}<br>
+                    Labour: ₹${(bom.labourCost || 0).toFixed(2)}<br>
+                    Overhead: ₹${(bom.overheadCost || 0).toFixed(2)}
+                `;
+                const totalCostDisplay = bom.totalEstimatedCost ? `<strong>₹${parseFloat(bom.totalEstimatedCost).toFixed(2)}</strong>` : '-';
+                const outputDisplay = `${bom.outputQty} ${bom.outputUom || ''}`;
+                
+                const maxPossible = calculateMaxPossible(bom, stockMap);
+                const maxPossibleDisplay = `<span style="font-weight: bold; color: #27ae60;">${maxPossible.toFixed(2)} ${bom.outputUom || ''}</span>`;
+                
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td style="text-align: center;">${sl++}</td>
+                    <td style="font-weight: bold; color: #2980b9;">${escapeHtml(bom.bomCode || '-')}</td>
+                    <td>${bom.finishedGoodName}</td>
+                    <td><span style="background:#e9ecef; padding:2px 6px; border-radius:4px; font-size:12px; font-weight:bold;">${escapeHtml(bom.bomName || 'Standard')}</span></td>
+                    <td>${outputDisplay}</td>
+                    <td>${maxPossibleDisplay}</td>
+                    <td style="font-size:12px;">${materialsList}</td>
+                    <td style="font-size:12px; line-height:1.4;">${costBreakdown}<hr style="margin:2px 0; border-top:1px solid #ccc;">${totalCostDisplay}</td>
+                    <td class="action-col">
+                        <div class="action-dropdown" id="actionDropdown-${bom.id}">
+                            <button class="action-btn-main" onclick="toggleActionMenu(this)">Actions ▼</button>
+                            <div class="action-dropdown-content">
+                                <button onclick="editBOM('${bom.id}')">✏️ Edit</button>
+                                <button onclick="autoUpdateBOMRates('${bom.id}')" title="Auto-update raw material rates to match the latest average costs">🔄 Update Rates</button>
+                                <button onclick="deleteBOM('${bom.id}')" style="color: #dc3545 !important;">🗑️ Delete</button>
+                            </div>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+            container.appendChild(table);
+            renderPagination(totalItems, startIndex + 1, endIndex, totalPages);
+        }
+
+        function changeRowsPerPage() {
+            rowsPerPage = parseInt(document.getElementById('rowsPerPageSelect').value);
+            currentPage = 1;
+            loadExistingBOMs();
+        }
+
+        function changePage(page) {
+            currentPage = page;
+            loadExistingBOMs();
+        }
+
+        function renderPagination(totalItems, start, end, totalPages) {
+            const info = document.getElementById("paginationInfo");
+            const controls = document.getElementById("paginationControls");
+            const totalDisplay = document.getElementById("totalBomsDisplay");
+            if (totalDisplay) totalDisplay.innerText = `Total BOMs: ${totalItems}`;
+            if (totalItems === 0) {
+                if (info) info.innerText = "No records found";
+                if (controls) controls.innerHTML = "";
+                return;
+            }
+            if (info) info.innerText = `Showing ${start} to ${end} of ${totalItems} entries`;
+            let html = `<button onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>Prev</button>`;
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
+                    const activeStyle = i === currentPage ? 'class="active"' : '';
+                    html += `<button ${activeStyle} onclick="changePage(${i})">${i}</button>`;
+                } else if (i === currentPage - 3 || i === currentPage + 3) {
+                    html += `<span style="padding: 0 5px;">...</span>`;
+                }
+            }
+            html += `<button onclick="changePage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>Next</button>`;
+            if (controls) controls.innerHTML = html;
+        }
+
+        function autoUpdateBOMRates(bomId) {
+            if (!confirm("Are you sure you want to update this recipe's raw material rates to match the current average market costs?")) return;
+
+            const boms = JSON.parse(localStorage.getItem("boms")) || [];
+            const bomIdx = boms.findIndex(b => b.id === bomId);
+            if (bomIdx === -1) return;
+
+            const bom = boms[bomIdx];
+            let materialCost = 0;
+
+            bom.rawMaterials.forEach(rm => {
+                const currentRate = getAverageCost(rm.itemName);
+                rm.rate = currentRate;
+                rm.amount = rm.qty * currentRate;
+                materialCost += rm.amount;
+            });
+
+            bom.materialCost = materialCost;
+            const labourCost = parseFloat(bom.labourCost) || 0;
+            const overheadCost = parseFloat(bom.overheadCost) || 0;
+            bom.totalEstimatedCost = materialCost + labourCost + overheadCost;
+
+            boms[bomIdx] = bom;
+            localStorage.setItem("boms", JSON.stringify(boms));
+        if (typeof apiClient !== 'undefined' && apiClient.saveBom) apiClient.saveBom(bom).catch(console.warn);
+
+            const items = JSON.parse(localStorage.getItem("items")) || [];
+            let itemUpdated = false;
+            const outputQty = parseFloat(bom.outputQty) || 1;
+            const unitCost = outputQty > 0 ? (bom.totalEstimatedCost / outputQty) : bom.totalEstimatedCost;
+
+            for (let i = 0; i < items.length; i++) {
+                if (items[i].name === bom.finishedGoodName && (!bom.finishedGoodCode || items[i].itemCode === bom.finishedGoodCode)) {
+                    items[i].salePrice = parseFloat(unitCost.toFixed(2));
+                    itemUpdated = true;
+                    break;
+                }
+            }
+            if (itemUpdated) localStorage.setItem("items", JSON.stringify(items));
+        if (itemUpdated && typeof apiClient !== 'undefined' && apiClient.saveItem) items.forEach(i => { if (i.name === bom.finishedGoodName && (!bom.finishedGoodCode || i.itemCode === bom.finishedGoodCode)) apiClient.saveItem(i).catch(console.warn); });
+
+            alert("BOM rates updated successfully!");
+            loadExistingBOMs();
+        }
+
+        function deleteBOM(bomId) {
+            if (!confirm("Are you sure you want to delete this BOM?")) return;
+
+            let boms = JSON.parse(localStorage.getItem("boms")) || [];
+            boms = boms.filter(b => b.id !== bomId);
+            localStorage.setItem("boms", JSON.stringify(boms));
+        if (typeof apiClient !== 'undefined' && apiClient.deleteBom) apiClient.deleteBom(bomId).catch(console.warn);
+            loadExistingBOMs();
+        }
+
+        function editBOM(bomId) {
+            const boms = JSON.parse(localStorage.getItem("boms")) || [];
+            const bom = boms.find(b => b.id === bomId);
+            if (!bom) return;
+
+            document.getElementById('editingBomId').value = bom.id;
+            document.getElementById('bomCode').value = bom.bomCode || '';
+            document.getElementById('finishedGood').value = bom.finishedGoodName;
+            document.getElementById('bomName').value = bom.bomName || 'Standard';
+            updateOutputUOM(); // Set the basic UOM
+            document.getElementById('outputUom').value = bom.outputUom || document.getElementById('outputUom').value;
+            document.getElementById('outputQty').value = bom.outputQty || 1;
+            document.getElementById('labourCost').value = bom.labourCost || 0;
+            document.getElementById('overheadCost').value = bom.overheadCost || 0;
+
+            const tbody = document.querySelector('#rawMaterialsTable tbody');
+            tbody.innerHTML = '';
+            bom.rawMaterials.forEach(rm => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="sl-no" style="text-align: center;"></td>
+                    <td><input type="text" class="raw-material-name" list="rawMaterialList" placeholder="Type to search..." onchange="autofillUOM(this)" value="${escapeHtml(rm.itemName)}"></td>
+                    <td><input type="number" class="raw-material-qty" value="${rm.qty}" min="0.01" step="any" oninput="calculateBOMCost()"></td>
+                    <td><select class="raw-material-uom"><option value="">UOM</option>${window.uomOptionsHtml || ''}</select></td>
+                    <td><input type="number" class="raw-material-rate" readonly style="background:#eee;" value="${rm.rate || 0}"></td>
+                    <td><input type="text" class="raw-material-amount" readonly style="background:#eee;" value="${rm.amount || 0}"></td>
+                    <td class="action-col"><button class="btn-danger" style="padding: 4px 8px;" onclick="this.closest('tr').remove(); calculateBOMCost();">Remove</button></td>
+                `;
+                tr.querySelector('.raw-material-uom').value = rm.uom || '';
+                tbody.appendChild(tr);
+            });
+
+            const tbodyOut = document.querySelector('#additionalOutputsTable tbody');
+            tbodyOut.innerHTML = '';
+            if (bom.additionalOutputs) {
+                bom.additionalOutputs.forEach(out => {
+                    addAdditionalOutputRow();
+                    const rows = tbodyOut.querySelectorAll('tr');
+                    const lastRow = rows[rows.length - 1];
+                    lastRow.querySelector('.out-item-name').value = out.itemName || '';
+                    lastRow.querySelector('.out-item-qty').value = out.qty || 1;
+                    lastRow.querySelector('.out-item-uom').value = out.uom || '';
+                });
+            }
+
+            calculateBOMCost();
+
+            const saveBtn = document.getElementById('btnSaveBOM');
+            if (saveBtn) {
+                saveBtn.innerText = "Update BOM";
+                saveBtn.className = "btn-warning";
+            }
+
+            if (!isBomFormVisible) {
+                toggleBomForm();
+            }
+
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function escapeHtml(text) {
+            if (text == null) return "";
+            return String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+
+        // --- Action Dropdown Logic ---
+        function toggleActionMenu(btn) {
+            document.querySelectorAll('.action-dropdown.active').forEach(d => {
+                if (d !== btn.parentElement) d.classList.remove('active');
+            });
+
+            const dropdown = btn.parentElement;
+            dropdown.classList.toggle('active');
+
+            if (dropdown.classList.contains('active')) {
+                const content = dropdown.querySelector('.action-dropdown-content');
+                content.style.display = 'block';
+                const rect = btn.getBoundingClientRect();
+                let top = rect.bottom;
+                let left = rect.right - content.offsetWidth;
+                if (top + content.offsetHeight > window.innerHeight) { top = rect.top - content.offsetHeight; }
+                content.style.top = top + 'px';
+                content.style.left = left + 'px';
+                content.style.display = '';
+            }
+        }
+        document.addEventListener('click', function (e) { if (!e.target.matches('.action-btn-main')) { document.querySelectorAll('.action-dropdown.active').forEach(d => d.classList.remove('active')); } });
+        window.addEventListener('scroll', function () { document.querySelectorAll('.action-dropdown.active').forEach(d => d.classList.remove('active')); }, true);
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,1410 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Quotation</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+    <script src="apiClient.js"></script>
+    <script src="settings.js"></script>
+    <script src="brand.service.js"></script>
+    <script src="brandLoader.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            padding: 20px;
+            background: #f4f6f8;
+            color: #333;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 40px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            min-height: 100vh;
+            box-sizing: border-box;
+            position: relative;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 20px;
+        }
+
+        .brand-name {
+            font-size: 28px;
+            font-weight: bold;
+            color: #2c3e50;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+
+        .brand-address {
+            font-size: 14px;
+            color: #555;
+            line-height: 1.5;
+        }
+
+        .doc-title {
+            text-align: center;
+            font-size: 20px;
+            font-weight: bold;
+            text-decoration: underline;
+            margin: 20px 0;
+            color: #000;
+        }
+
+        /* Meta Row (Ref & Date) */
+        .meta-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 25px;
+        }
+
+        .meta-group {
+            display: flex;
+            flex-direction: column;
+            width: 200px;
+        }
+
+        label {
+            font-weight: bold;
+            font-size: 13px;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        input,
+        textarea,
+        select {
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-family: inherit;
+            font-size: 14px;
+        }
+
+        /* Customer Section */
+        .customer-section {
+            margin-bottom: 25px;
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid #eee;
+        }
+
+        .customer-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        /* Table */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        th {
+            background: #2c3e50;
+            color: white;
+            font-weight: 600;
+        }
+
+        td input {
+            width: 100%;
+            box-sizing: border-box;
+            border: none;
+            text-align: center;
+            background: transparent;
+            font-size: 14px;
+        }
+
+        td input:focus {
+            outline: 1px solid #0d6efd;
+            background: #fff;
+        }
+
+        .text-right {
+            text-align: right;
+        }
+
+        .font-bold {
+            font-weight: bold;
+        }
+
+        /* Footer & Signature */
+        .footer {
+            margin-top: 60px;
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .signature-box {
+            text-align: center;
+            width: 250px;
+        }
+
+        .signature-line {
+            border-top: 1px solid #333;
+            margin-top: 50px;
+            padding-top: 5px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        /* Controls */
+        .controls {
+            margin-top: 30px;
+            text-align: center;
+            padding: 20px;
+            background: #eee;
+            border-radius: 8px;
+        }
+
+        button {
+            padding: 10px 20px;
+            cursor: pointer;
+            background: #0d6efd;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-weight: bold;
+            margin: 0 5px;
+        }
+
+        button.danger {
+            background: #dc3545;
+        }
+
+        button.secondary {
+            background: #6c757d;
+        }
+
+        button.success {
+            background: #27ae60;
+        }
+
+        /* Pagination Styles */
+        .pagination button {
+            padding: 4px 10px;
+            border: 1px solid #ccc;
+            background: #fff;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        .pagination button:disabled {
+            background: #eee;
+            cursor: not-allowed;
+        }
+
+        /* Print Styles */
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+
+            .container {
+                box-shadow: none;
+                padding: 0;
+                margin: 0;
+                width: 100%;
+                max-width: 100%;
+            }
+
+            .controls,
+            .add-row-btn,
+            .remove-btn-col,
+            .remove-btn,
+            #editTermsBtn,
+            .load-section {
+                display: none !important;
+            }
+
+            input,
+            textarea {
+                border: none;
+                padding: 0;
+                background: transparent;
+                resize: none;
+            }
+
+            .customer-section {
+                background: transparent;
+                border: none;
+                padding: 0;
+            }
+
+            th {
+                background: #eee !important;
+                color: black !important;
+                border-color: #000;
+            }
+
+            td {
+                border-color: #000;
+            }
+
+            #termsConditions {
+                border: none !important;
+                resize: none;
+                padding: 0;
+                overflow: hidden;
+            }
+
+            #statusGroup {
+                display: none !important;
+            }
+
+            .status-stamp {
+                display: block !important;
+            }
+        }
+
+        .status-stamp {
+            display: none;
+            font-size: 40px;
+            font-weight: bold;
+            text-transform: uppercase;
+            border: 4px solid;
+            padding: 5px 15px;
+            transform: rotate(-10deg);
+            opacity: 0.6;
+            pointer-events: none;
+            width: fit-content;
+            margin: 10px 50px 20px auto;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            min-width: 300px;
+        }
+
+        .modal-buttons {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <!-- Load Section -->
+        <div class="load-section"
+            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <div>
+                <button class="secondary" onclick="toggleView()" id="viewToggleBtn"
+                    style="padding: 6px 12px; font-size: 13px; background-color: #6f42c1; border:none; color: white; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"><i
+                        class="fas fa-list"></i> View History</button>
+            </div>
+            <div>
+                <input type="text" id="searchRefNo" placeholder="Load by Ref No."
+                    style="width: 150px; padding: 6px; border: 1px solid #ccc; border-radius: 4px;">
+                <button class="secondary" onclick="confirmLoad()" style="padding: 6px 12px; font-size: 13px;">📂
+                    Load</button>
+            </div>
+        </div>
+
+        <div id="formView">
+            <!-- Header -->
+            <div class="header">
+                <div class="brand-name" data-brand="name"></div>
+                <div class="brand-address" data-brand="address"></div>
+            </div>
+
+            <div class="doc-title">QUOTATION</div>
+
+            <!-- Meta Data -->
+            <div class="meta-row">
+                <div class="meta-group">
+                    <label>Ref. No.</label>
+                    <input type="text" id="refNo" placeholder="Enter Ref No.">
+                </div>
+                <div class="meta-group" id="statusGroup">
+                    <label>Status</label>
+                    <select id="quotationStatus" onchange="updateStatusStamp()">
+                        <option value="Draft">Draft</option>
+                        <option value="Sent">Sent</option>
+                        <option value="Accepted">Accepted</option>
+                        <option value="Rejected">Rejected</option>
+                    </select>
+                </div>
+                <div class="meta-group" style="text-align: right; align-items: flex-end;">
+                    <label>Date</label>
+                    <input type="date" id="quotationDate" style="text-align: right;">
+                </div>
+            </div>
+
+            <!-- Customer Details -->
+            <div class="customer-section">
+                <label style="display:block; margin-bottom:10px; text-decoration:underline;">Customer Details:</label>
+                <div class="customer-grid">
+                    <div>
+                        <input type="text" id="custName" list="customerList" placeholder="Customer Name"
+                            onchange="fillCustomerDetails()" style="width:100%; font-weight:bold; margin-bottom:5px;">
+                        <datalist id="customerList"></datalist>
+                        <datalist id="itemList"></datalist>
+                        <input type="text" id="custContact" placeholder="Contact No." style="width:100%;">
+                    </div>
+                    <div>
+                        <textarea id="custAddress" rows="3" placeholder="Address"
+                            style="width:100%; resize:vertical;"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Table -->
+            <table id="quotationTable">
+                <thead>
+                    <tr>
+                        <th style="width: 50px;">Sl No.</th>
+                        <th>Description</th>
+                        <th style="width: 80px;">UOM</th>
+                        <th style="width: 80px;">Qty</th>
+                        <th style="width: 100px;">Rate/UOM</th>
+                        <th style="width: 80px;">GST %</th>
+                        <th style="width: 120px;">Total Price</th>
+                        <th style="width: 40px;" class="remove-btn-col"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Rows injected by JS -->
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="6" class="text-right"><strong>Grand Total:</strong></td>
+                        <td class="text-right font-bold"><input type="text" id="grandTotal" readonly value="0.00"
+                                style="font-weight:bold; text-align:right;"></td>
+                        <td class="remove-btn-col"></td>
+                    </tr>
+                    <tr>
+                        <td colspan="8" style="text-align:left; font-weight:bold; background:#f9f9f9; padding:10px;">
+                            Amount in Words: <span id="amountInWords">Zero Rupees Only</span>
+                        </td>
+                    </tr>
+                </tfoot>
+            </table>
+
+            <button class="add-row-btn secondary" onclick="confirmAddRow()" style="font-size:12px;">+ Add Row</button>
+
+            <div id="statusStamp" class="status-stamp">DRAFT</div>
+
+            <!-- Terms and Conditions -->
+            <div class="terms-section" style="margin-top: 30px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 5px;">
+                    <label style="text-decoration: underline; margin:0;">Terms & Conditions:</label>
+                    <button id="editTermsBtn" class="secondary" style="padding: 2px 8px; font-size: 12px;"
+                        onclick="toggleTermsEdit()">✏️ Edit</button>
+                </div>
+                <textarea id="termsConditions" rows="4" readonly
+                    style="width: 100%; font-family: inherit; border: 1px solid #ccc; padding: 8px; border-radius: 4px; background-color: #f9f9f9;"
+                    placeholder="Enter terms here..." oninput="saveTerms(this)"></textarea>
+            </div>
+
+            <!-- Signature -->
+            <div class="footer">
+                <div class="signature-box">
+                    <div style="height: 60px;"></div>
+                    <div class="signature-line">For <span id="signBrandName">Brand Name</span></div>
+                    <p></p>
+                    <p></p>
+                    <div style="font-size:12px; margin-top:2px;">Authorized Signatory</div>
+                </div>
+            </div>
+
+            <!-- Controls -->
+            <div class="controls">
+                <label
+                    style="cursor:pointer; display:inline-flex; align-items:center; gap:5px; font-weight:bold; margin-right:15px; font-size:13px; color:#555;">
+                    <input type="checkbox" id="showBankDetailsToggle" checked
+                        onchange="localStorage.setItem('quoteShowBankDetails', this.checked)"> Show Bank Details & QR
+                </label>
+                <button class="success" onclick="confirmSave()" style="background:#27ae60;">💾 Save</button>
+                <button class="success" onclick="generateQuotationPDF()">🖨️ Download PDF</button>
+            </div>
+        </div>
+
+        <!-- List View -->
+        <div id="listView"
+            style="display:none; padding: 20px; background: #fff; border-radius: 8px; border: 1px solid #eee;">
+            <div
+                style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 15px; margin-bottom: 15px;">
+                <h3 style="margin: 0; color: #2c3e50;">Saved Quotations</h3>
+                <div style="display: flex; gap: 10px;">
+                    <input type="date" id="quoteFilterDate" onchange="currentPage=1; renderQuotationList()"
+                        style="padding: 6px; border: 1px solid #ccc; border-radius: 4px;">
+                    <input type="text" id="quoteSearchInput" placeholder="Search Ref No or Customer..."
+                        oninput="currentPage=1; renderQuotationList()"
+                        style="width: 250px; padding: 6px; border: 1px solid #ccc; border-radius: 4px;">
+                </div>
+            </div>
+            <table id="savedQuotationsTable">
+                <thead>
+                    <tr>
+                        <th>Ref No</th>
+                        <th>Date</th>
+                        <th>Customer Name</th>
+                        <th style="text-align:center;">Status</th>
+                        <th style="text-align:right;">Grand Total (₹)</th>
+                        <th style="text-align:center;" class="no-print">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="savedQuotationsBody"></tbody>
+            </table>
+
+            <!-- Pagination -->
+            <div class="pagination-container"
+                style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px;">
+                <div style="display: flex; align-items: center; gap: 5px;">
+                    <span id="totalQuotesDisplay" style="font-weight: bold; color: #3498db; margin-right: 8px;"></span>
+                    <select id="rowsPerPageSelect" onchange="changeRowsPerPage()"
+                        style="width: auto; padding: 4px; border: 1px solid #ccc; border-radius: 4px; margin: 0;">
+                        <option value="10">10 rows</option>
+                        <option value="20" selected>20 rows</option>
+                        <option value="50">50 rows</option>
+                    </select>
+                </div>
+                <div id="paginationInfo" style="color: #666; font-size:13px;"></div>
+                <div class="pagination" id="paginationControls" style="display: flex; gap: 5px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Action Confirmation Modal -->
+    <div id="actionConfirmModal" class="modal">
+        <div class="modal-content">
+            <h3 id="actionConfirmTitle" style="color: #d35400;">⚠️ Confirmation</h3>
+            <p id="actionConfirmMsg"></p>
+            <div class="modal-buttons">
+                <button id="actionConfirmBtnYes" class="success">Yes</button>
+                <button class="secondary" onclick="closeActionConfirmModal()">No</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Info Modal -->
+    <div id="infoModal" class="modal">
+        <div class="modal-content">
+            <h3 id="infoModalTitle" style="color: #27ae60;">✅ Success</h3>
+            <p id="infoModalMsg"></p>
+            <div class="modal-buttons">
+                <button class="secondary" onclick="closeInfoModal()">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function updateBrandInfo(settings) {
+            const nameEls = document.querySelectorAll('[data-brand="name"]');
+            const addressEl = document.querySelector('[data-brand="address"]');
+            const signEl = document.getElementById('signBrandName');
+
+            if (settings.companyName) {
+                nameEls.forEach(el => el.innerText = settings.companyName);
+                if (signEl) signEl.innerText = settings.companyName;
+                document.title = "Quotation - " + settings.companyName;
+            }
+
+            if (addressEl) {
+                let lines = [];
+                if (settings.addressLine1) lines.push(settings.addressLine1);
+                if (settings.addressLine2) lines.push(settings.addressLine2);
+
+                let contactParts = [];
+                if (settings.contactNumber) contactParts.push(`Ph: ${settings.contactNumber}`);
+                if (settings.companyEmail) contactParts.push(`Email: ${settings.companyEmail}`);
+                if (contactParts.length > 0) lines.push(contactParts.join(' | '));
+
+                if (settings.companyWebsite) lines.push(settings.companyWebsite);
+                if (settings.companyGstin) lines.push(`GSTIN: ${settings.companyGstin}`);
+
+                addressEl.innerHTML = lines.join('<br>');
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            const savedBankToggle = localStorage.getItem('quoteShowBankDetails');
+            if (savedBankToggle !== null && document.getElementById('showBankDetailsToggle')) {
+                document.getElementById('showBankDetailsToggle').checked = savedBankToggle === 'true';
+            }
+
+            // Apply brand details on initial load for browser context
+            if (window.BrandService && !window.electronAPI) {
+                const settings = { companyName: localStorage.getItem('companyName'), addressLine1: localStorage.getItem('addressLine1'), addressLine2: localStorage.getItem('addressLine2'), contactNumber: localStorage.getItem('contactNumber'), companyEmail: localStorage.getItem('companyEmail'), companyWebsite: localStorage.getItem('companyWebsite'), companyGstin: localStorage.getItem('companyGstin') };
+                updateBrandInfo(settings);
+            }
+
+            if (window.electronAPI && window.electronAPI.getAppSettings) {
+                window.electronAPI.getAppSettings().then(res => {
+                    if (res.success) {
+                        updateBrandInfo(res);
+                    }
+                });
+                // Real-time update listener
+                window.electronAPI.onAppSettingsChanged((newSettings) => {
+                    updateBrandInfo(newSettings);
+                });
+            } else if (typeof APP_SETTINGS !== 'undefined') {
+                updateBrandInfo({
+                    companyName: APP_SETTINGS.COMPANY_NAME,
+                    addressLine1: APP_SETTINGS.ADDRESS_LINE_1,
+                    addressLine2: APP_SETTINGS.ADDRESS_LINE_2,
+                    contactNumber: APP_SETTINGS.CONTACT_NUMBER,
+                    companyEmail: APP_SETTINGS.COMPANY_EMAIL,
+                    companyWebsite: APP_SETTINGS.COMPANY_WEBSITE,
+                    companyGstin: APP_SETTINGS.COMPANY_GSTIN
+                });
+            }
+            loadItems();
+        });
+
+        // 2. Load Customers
+        const customers = JSON.parse(localStorage.getItem("customers")) || [];
+        const custList = document.getElementById("customerList");
+        customers.sort((a, b) => a.name.localeCompare(b.name)).forEach(c => {
+            const opt = document.createElement("option");
+            opt.value = c.name;
+            custList.appendChild(opt);
+        });
+
+        function fillCustomerDetails() {
+            const name = document.getElementById("custName").value;
+            const cust = customers.find(c => c.name === name);
+            if (cust) {
+                document.getElementById("custContact").value = cust.contact || "";
+                document.getElementById("custAddress").value = cust.address || "";
+            }
+        }
+
+        function loadItems() {
+            const items = JSON.parse(localStorage.getItem("items")) || [];
+            const list = document.getElementById("itemList");
+            if (list) {
+                list.innerHTML = "";
+                items.forEach(i => {
+                    const opt = document.createElement("option");
+                    opt.value = i.name;
+                    list.appendChild(opt);
+                });
+            }
+        }
+
+        function escapeHtml(text) {
+            if (text == null) return "";
+            return String(text)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        // 3. Table Logic
+        function addRow() {
+            const tbody = document.querySelector("#quotationTable tbody");
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td class="sl-no"></td>
+                <td><input type="text" class="item-desc" list="itemList" onchange="autofillItem(this)" placeholder="Description" style="text-align:left;"></td>
+                <td><input type="text" class="item-uom" placeholder="UOM"></td>
+                <td><input type="number" class="qty" oninput="calcRow(this)" placeholder="0" min="0"></td>
+                <td><input type="number" class="rate" oninput="calcRow(this)" placeholder="0.00" style="text-align:right;" min="0"></td>
+                <td><input type="number" class="gst" oninput="calcRow(this)" placeholder="0" style="text-align:center;" min="0"></td>
+                <td><input type="text" class="total" readonly placeholder="0.00" style="text-align:right; font-weight:bold;" min="0"></td>
+                <td class="remove-btn-col"><button class="danger" style="padding: 2px 6px; font-size:12px;" onclick="confirmRemoveRow(this)">X</button></td>
+            `;
+            tbody.appendChild(tr);
+            updateSlNo();
+        }
+
+        function autofillItem(input) {
+            const name = input.value.trim().toLowerCase();
+            if (!name) return;
+
+            const items = JSON.parse(localStorage.getItem("items")) || [];
+            const itemObj = items.find(i => (i.name || "").toLowerCase() === name || (i.itemCode || "").toLowerCase() === name);
+
+            if (itemObj) {
+                const tr = input.closest("tr");
+                input.value = itemObj.name;
+
+                const uomInput = tr.querySelector(".item-uom");
+                const rateInput = tr.querySelector(".rate");
+                const gstInput = tr.querySelector(".gst");
+
+                if (uomInput && itemObj.uom) uomInput.value = itemObj.uom;
+                if (rateInput && itemObj.salePrice && parseFloat(itemObj.salePrice) > 0) rateInput.value = parseFloat(itemObj.salePrice).toFixed(2);
+                if (gstInput && itemObj.gst !== undefined) gstInput.value = itemObj.gst;
+
+                calcRow(input);
+            }
+        }
+
+        function removeRow(btn) {
+            btn.closest("tr").remove();
+            updateSlNo();
+            calcGrandTotal();
+        }
+
+        function updateSlNo() {
+            document.querySelectorAll(".sl-no").forEach((td, i) => td.innerText = i + 1);
+        }
+
+        function calcRow(input) {
+            const tr = input.closest("tr");
+            const qty = parseFloat(tr.querySelector(".qty").value) || 0;
+            const rate = parseFloat(tr.querySelector(".rate").value) || 0;
+            const gst = parseFloat(tr.querySelector(".gst").value) || 0;
+            const base = qty * rate;
+            const totalAmount = base + (base * (gst / 100));
+            tr.querySelector(".total").value = totalAmount.toFixed(2);
+            calcGrandTotal();
+        }
+
+        function calcGrandTotal() {
+            let sum = 0;
+            document.querySelectorAll(".total").forEach(inp => sum += parseFloat(inp.value) || 0);
+            document.getElementById("grandTotal").value = sum.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            document.getElementById("amountInWords").innerText = convertNumberToWords(sum);
+        }
+
+        function convertNumberToWords(amount) {
+            var a = ['', 'One ', 'Two ', 'Three ', 'Four ', 'Five ', 'Six ', 'Seven ', 'Eight ', 'Nine ', 'Ten ', 'Eleven ', 'Twelve ', 'Thirteen ', 'Fourteen ', 'Fifteen ', 'Sixteen ', 'Seventeen ', 'Eighteen ', 'Nineteen '];
+            var b = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+
+            function numToWords(n) {
+                if ((n = n.toString()).length > 9) return 'overflow';
+                var n_array = ('000000000' + n).substr(-9).match(/^(\d{2})(\d{2})(\d{2})(\d{1})(\d{2})$/);
+                if (!n_array) return;
+                var str = '';
+                str += (n_array[1] != 0) ? (a[Number(n_array[1])] || b[n_array[1][0]] + ' ' + a[n_array[1][1]]) + 'Crore ' : '';
+                str += (n_array[2] != 0) ? (a[Number(n_array[2])] || b[n_array[2][0]] + ' ' + a[n_array[2][1]]) + 'Lakh ' : '';
+                str += (n_array[3] != 0) ? (a[Number(n_array[3])] || b[n_array[3][0]] + ' ' + a[n_array[3][1]]) + 'Thousand ' : '';
+                str += (n_array[4] != 0) ? (a[Number(n_array[4])] || b[n_array[4][0]] + ' ' + a[n_array[4][1]]) + 'Hundred ' : '';
+                str += (n_array[5] != 0) ? ((str != '') ? 'and ' : '') + (a[Number(n_array[5])] || b[n_array[5][0]] + ' ' + a[n_array[5][1]]) : '';
+                return str;
+            }
+            const [intPart, decPart] = parseFloat(amount).toFixed(2).split('.');
+            let words = numToWords(parseInt(intPart));
+            if (!words || words.trim() === '') words = "Zero ";
+            words += "Rupees";
+            if (parseInt(decPart) > 0) words += " and " + numToWords(parseInt(decPart)) + "Paise";
+            return words + " Only";
+        }
+
+        // 4. Terms Logic
+        const savedTerms = localStorage.getItem("quotationTerms");
+        const termsEl = document.getElementById("termsConditions");
+        if (savedTerms) {
+            termsEl.value = savedTerms;
+            setTimeout(() => { termsEl.style.height = 'auto'; termsEl.style.height = termsEl.scrollHeight + 'px'; }, 100);
+        }
+        function saveTerms(el) {
+            localStorage.setItem("quotationTerms", el.value);
+            el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px';
+        }
+
+        function toggleTermsEdit() {
+            const el = document.getElementById("termsConditions");
+            const btn = document.getElementById("editTermsBtn");
+            if (el.hasAttribute("readonly")) {
+                el.removeAttribute("readonly");
+                el.style.backgroundColor = "#fff";
+                el.focus();
+                btn.innerText = "🔒 Lock";
+                btn.classList.remove("secondary");
+                btn.classList.add("success");
+            } else {
+                el.setAttribute("readonly", true);
+                el.style.backgroundColor = "#f9f9f9";
+                btn.innerText = "✏️ Edit";
+                btn.classList.remove("success");
+                btn.classList.add("secondary");
+            }
+        }
+
+        // 5. Save Logic
+        function saveQuotation() {
+            const refNo = document.getElementById("refNo").value.trim();
+            const date = document.getElementById("quotationDate").value;
+            const custName = document.getElementById("custName").value.trim();
+
+            if (!refNo) { showInfo("Warning", "Please enter a Reference Number.", true); return; }
+            if (!custName) { showInfo("Warning", "Please enter a Customer Name.", true); return; }
+
+            const items = [];
+            document.querySelectorAll("#quotationTable tbody tr").forEach(tr => {
+                const inputs = tr.querySelectorAll("input");
+                const desc = inputs[0].value.trim();
+                if (desc) {
+                    items.push({
+                        description: desc,
+                        uom: inputs[1].value,
+                        qty: inputs[2].value,
+                        rate: inputs[3].value,
+                        gst: inputs[4].value,
+                        total: inputs[5].value
+                    });
+                }
+            });
+
+            const quotationData = {
+                refNo, date, custName,
+                status: document.getElementById("quotationStatus").value,
+                custContact: document.getElementById("custContact").value,
+                custAddress: document.getElementById("custAddress").value,
+                items,
+                grandTotal: document.getElementById("grandTotal").value,
+                terms: document.getElementById("termsConditions").value
+            };
+
+            let quotations = JSON.parse(localStorage.getItem("quotations")) || [];
+            const existingIndex = quotations.findIndex(q => q.refNo === refNo);
+
+            if (existingIndex >= 0) {
+                askConfirm("Overwrite?", "Quotation with this Ref No already exists. Overwrite?", () => {
+                    quotations[existingIndex] = quotationData;
+                    localStorage.setItem("quotations", JSON.stringify(quotations));
+                    showInfo("Success", "Quotation saved successfully!");
+                });
+            } else {
+                quotations.push(quotationData);
+                localStorage.setItem("quotations", JSON.stringify(quotations));
+                showInfo("Success", "Quotation saved successfully!");
+            }
+        }
+
+        // 6. Load Logic
+        function loadQuotation() {
+            const searchRef = document.getElementById("searchRefNo").value.trim();
+            if (!searchRef) { showInfo("Warning", "Please enter a Ref No to load.", true); return; }
+
+            const quotations = JSON.parse(localStorage.getItem("quotations")) || [];
+            const quotation = quotations.find(q => q.refNo === searchRef);
+
+            if (quotation) {
+                document.getElementById("refNo").value = quotation.refNo;
+                document.getElementById("quotationStatus").value = quotation.status || "Draft";
+                document.getElementById("quotationDate").value = quotation.date;
+                document.getElementById("custName").value = quotation.custName;
+                document.getElementById("custContact").value = quotation.custContact || "";
+                document.getElementById("custAddress").value = quotation.custAddress || "";
+                document.getElementById("termsConditions").value = quotation.terms || "";
+
+                const tbody = document.querySelector("#quotationTable tbody");
+                tbody.innerHTML = "";
+
+                if (quotation.items && quotation.items.length > 0) {
+                    quotation.items.forEach(item => {
+                        const tr = document.createElement("tr");
+                        tr.innerHTML = `
+                            <td class="sl-no"></td>
+                            <td><input type="text" class="item-desc" list="itemList" onchange="autofillItem(this)" value="${escapeHtml(item.description)}" style="text-align:left;"></td>
+                            <td><input type="text" class="item-uom" value="${escapeHtml(item.uom || '')}"></td>
+                            <td><input type="number" class="qty" oninput="calcRow(this)" value="${item.qty}" min="0"></td>
+                            <td><input type="number" class="rate" oninput="calcRow(this)" value="${item.rate}" style="text-align:right;" min="0"></td>
+                            <td><input type="number" class="gst" oninput="calcRow(this)" value="${item.gst || 0}" style="text-align:center;" min="0"></td>
+                            <td><input type="text" class="total" readonly value="${item.total}" style="text-align:right; font-weight:bold;" min="0"></td>
+                            <td class="remove-btn-col"><button class="danger" style="padding: 2px 6px; font-size:12px;" onclick="confirmRemoveRow(this)">X</button></td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                } else { addRow(); }
+                updateSlNo();
+                calcGrandTotal();
+                saveTerms(document.getElementById("termsConditions")); // Resize textarea
+                updateStatusStamp();
+                showInfo("Success", "Quotation loaded successfully!");
+            } else { showInfo("Error", "Quotation not found!", true); }
+        }
+
+        function updateStatusStamp() {
+            const status = document.getElementById("quotationStatus").value;
+            const stamp = document.getElementById("statusStamp");
+            stamp.innerText = status;
+
+            let color = "#6c757d"; // Draft (Gray)
+            if (status === "Sent") color = "#0d6efd"; // Blue
+            if (status === "Accepted") color = "#27ae60"; // Green
+            if (status === "Rejected") color = "#dc3545"; // Red
+
+            stamp.style.color = color;
+            stamp.style.borderColor = color;
+        }
+
+        // Modal Helpers
+        function askConfirm(title, msg, callback) {
+            document.getElementById('actionConfirmTitle').innerText = title;
+            document.getElementById('actionConfirmMsg').innerText = msg;
+            const yesBtn = document.getElementById('actionConfirmBtnYes');
+            const newYesBtn = yesBtn.cloneNode(true);
+            yesBtn.parentNode.replaceChild(newYesBtn, yesBtn);
+            newYesBtn.onclick = () => {
+                closeActionConfirmModal();
+                callback();
+            };
+            document.getElementById('actionConfirmModal').style.display = 'flex';
+        }
+
+        function closeActionConfirmModal() {
+            document.getElementById('actionConfirmModal').style.display = 'none';
+        }
+
+        function showInfo(title, msg, isError = false) {
+            const titleEl = document.getElementById('infoModalTitle');
+            titleEl.innerText = title;
+            titleEl.style.color = isError ? '#dc3545' : '#27ae60';
+            document.getElementById('infoModalMsg').innerText = msg;
+            document.getElementById('infoModal').style.display = 'flex';
+        }
+
+        function closeInfoModal() {
+            document.getElementById('infoModal').style.display = 'none';
+        }
+
+        let currentMode = 'form';
+        let currentPage = 1;
+        let rowsPerPage = 20;
+
+        function toggleView() {
+            const formView = document.getElementById('formView');
+            const listView = document.getElementById('listView');
+            const toggleBtn = document.getElementById('viewToggleBtn');
+
+            if (currentMode === 'form') {
+                formView.style.display = 'none';
+                listView.style.display = 'block';
+                toggleBtn.innerHTML = '<i class="fas fa-plus"></i> New Quotation';
+                currentMode = 'list';
+                renderQuotationList();
+            } else {
+                formView.style.display = 'block';
+                listView.style.display = 'none';
+                toggleBtn.innerHTML = '<i class="fas fa-list"></i> View History';
+                currentMode = 'form';
+            }
+        }
+
+        function renderQuotationList() {
+            const quotations = JSON.parse(localStorage.getItem("quotations")) || [];
+            const tbody = document.getElementById("savedQuotationsBody");
+            const searchInput = document.getElementById("quoteSearchInput");
+            const searchTerm = searchInput ? searchInput.value.toLowerCase() : "";
+            const filterDate = document.getElementById("quoteFilterDate") ? document.getElementById("quoteFilterDate").value : "";
+
+            tbody.innerHTML = '';
+
+            let filtered = quotations;
+            if (filterDate) {
+                filtered = filtered.filter(q => q.date === filterDate);
+            }
+            if (searchTerm) {
+                filtered = filtered.filter(q =>
+                    (q.refNo && q.refNo.toLowerCase().includes(searchTerm)) ||
+                    (q.custName && q.custName.toLowerCase().includes(searchTerm))
+                );
+            }
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px; color:#666;">No saved quotations found.</td></tr>';
+                return;
+            }
+
+            const sorted = [...filtered].reverse();
+            const totalItems = sorted.length;
+            const totalPages = Math.ceil(totalItems / rowsPerPage) || 1;
+
+            if (currentPage > totalPages) currentPage = totalPages;
+            if (currentPage < 1) currentPage = 1;
+
+            const startIndex = (currentPage - 1) * rowsPerPage;
+            const endIndex = Math.min(startIndex + rowsPerPage, totalItems);
+            const paginated = sorted.slice(startIndex, endIndex);
+
+            paginated.forEach(q => {
+                let statusColor = '#6c757d';
+                if (q.status === 'Accepted') statusColor = '#27ae60';
+                else if (q.status === 'Sent') statusColor = '#0d6efd';
+                else if (q.status === 'Rejected') statusColor = '#dc3545';
+
+                const tr = document.createElement("tr");
+                tr.innerHTML = `
+                <td><strong>${escapeHtml(q.refNo || '-')}</strong></td>
+                <td>${q.date ? new Date(q.date).toLocaleDateString('en-GB') : '-'}</td>
+                <td style="text-align:left;">${escapeHtml(q.custName || '-')}</td>
+                <td style="text-align:center;">
+                    <select onchange="updateQuoteStatus('${escapeHtml(q.refNo)}', this.value, this)" style="padding:4px; border-radius:4px; font-weight:bold; color:${statusColor}; border: 1px solid ${statusColor}; outline: none; background: transparent; cursor: pointer;">
+                        <option value="Draft" ${q.status === 'Draft' || !q.status ? 'selected' : ''}>Draft</option>
+                        <option value="Sent" ${q.status === 'Sent' ? 'selected' : ''}>Sent</option>
+                        <option value="Accepted" ${q.status === 'Accepted' ? 'selected' : ''}>Accepted</option>
+                        <option value="Rejected" ${q.status === 'Rejected' ? 'selected' : ''}>Rejected</option>
+                    </select>
+                </td>
+                <td style="text-align:right; font-weight:bold;">${q.grandTotal || '0.00'}</td>
+                <td style="text-align:center;" class="no-print">
+                    <button class="secondary" style="padding:4px 8px; font-size:12px; background:#607d8b;" onclick="printQuoteFromList('${escapeHtml(q.refNo)}')"><i class="fas fa-print"></i> Print</button>
+                    <button class="primary" style="padding:4px 8px; font-size:12px;" onclick="editQuote('${escapeHtml(q.refNo)}')"><i class="fas fa-edit"></i> Edit</button>
+                    <button class="danger" style="padding:4px 8px; font-size:12px;" onclick="deleteQuote('${escapeHtml(q.refNo)}')"><i class="fas fa-trash"></i> Delete</button>
+                </td>
+            `;
+                tbody.appendChild(tr);
+            });
+
+            renderPagination(totalItems, startIndex + 1, endIndex, totalPages);
+        }
+
+        function updateQuoteStatus(refNo, newStatus, selectElement) {
+            let quotations = JSON.parse(localStorage.getItem("quotations")) || [];
+            const quote = quotations.find(q => q.refNo === refNo);
+            if (quote) {
+                const oldStatus = quote.status || 'Draft';
+
+                const yesBtn = document.getElementById('actionConfirmBtnYes');
+                const noBtn = yesBtn.nextElementSibling;
+                const newNoBtn = noBtn.cloneNode(true);
+                noBtn.parentNode.replaceChild(newNoBtn, noBtn);
+
+                newNoBtn.onclick = () => {
+                    closeActionConfirmModal();
+                    selectElement.value = oldStatus;
+                };
+
+                askConfirm("Change Status", `Are you sure you want to change the status of ${refNo} from ${oldStatus} to ${newStatus}?`, () => {
+                    quote.status = newStatus;
+                    localStorage.setItem("quotations", JSON.stringify(quotations));
+
+                    let statusColor = '#6c757d';
+                    if (newStatus === 'Accepted') statusColor = '#27ae60';
+                    else if (newStatus === 'Sent') statusColor = '#0d6efd';
+                    else if (newStatus === 'Rejected') statusColor = '#dc3545';
+
+                    selectElement.style.color = statusColor;
+                    selectElement.style.borderColor = statusColor;
+
+                    if (document.getElementById('refNo').value === refNo) {
+                        document.getElementById('quotationStatus').value = newStatus;
+                        updateStatusStamp();
+                    }
+
+                    showInfo("Success", "Status updated successfully.");
+                });
+            }
+        }
+
+        function changeRowsPerPage() {
+            rowsPerPage = parseInt(document.getElementById('rowsPerPageSelect').value);
+            currentPage = 1;
+            renderQuotationList();
+        }
+
+        function changePage(page) {
+            currentPage = page;
+            renderQuotationList();
+        }
+
+        function renderPagination(totalItems, start, end, totalPages) {
+            const info = document.getElementById("paginationInfo");
+            const controls = document.getElementById("paginationControls");
+            const totalDisplay = document.getElementById("totalQuotesDisplay");
+
+            if (totalDisplay) totalDisplay.innerText = `Total Quotations: ${totalItems}`;
+
+            if (totalItems === 0) {
+                if (info) info.innerText = "No quotations found";
+                if (controls) controls.innerHTML = "";
+                return;
+            }
+
+            if (info) info.innerText = `Showing ${start} to ${end} of ${totalItems} entries`;
+
+            let html = "";
+            html += `<button onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''} style="padding:4px 10px; background:#fff; border:1px solid #ccc; cursor:pointer; border-radius:4px;">Prev</button>`;
+
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
+                    const activeStyle = i === currentPage ? 'background:#3498db; color:#fff; border-color:#3498db;' : 'background:#fff;';
+                    html += `<button onclick="changePage(${i})" style="padding:4px 10px; ${activeStyle} border:1px solid #ccc; cursor:pointer; border-radius:4px;">${i}</button>`;
+                } else if (i === currentPage - 3 || i === currentPage + 3) {
+                    html += `<span style="padding:0 5px;">...</span>`;
+                }
+            }
+
+            html += `<button onclick="changePage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''} style="padding:4px 10px; background:#fff; border:1px solid #ccc; cursor:pointer; border-radius:4px;">Next</button>`;
+            if (controls) controls.innerHTML = html;
+        }
+
+        function editQuote(refNo) {
+            document.getElementById("searchRefNo").value = refNo;
+            loadQuotation();
+            toggleView();
+        }
+
+        function deleteQuote(refNo) {
+            askConfirm("Delete Quotation", `Are you sure you want to delete quotation ${refNo}?`, () => {
+                let quotations = JSON.parse(localStorage.getItem("quotations")) || [];
+                quotations = quotations.filter(q => q.refNo !== refNo);
+                localStorage.setItem("quotations", JSON.stringify(quotations));
+                renderQuotationList();
+                showInfo("Success", `Quotation ${refNo} deleted.`);
+            });
+        }
+
+        function printQuoteFromList(refNo) {
+            document.getElementById("searchRefNo").value = refNo;
+            loadQuotation();
+            setTimeout(() => {
+                generateQuotationPDF();
+            }, 300);
+        }
+
+        // Button Wrappers
+        function confirmSave() { saveQuotation(); } // saveQuotation handles its own logic/confirm for overwrite
+
+        // Helper to generate dynamic UPI QR with amount
+        function generateDynamicQr(amount, refNo, companyNameOverride) {
+            const bankText = localStorage.getItem("invoiceBankDetails") || "";
+            const upiMatch = bankText.match(/(?:UPI ID|VPA|UPI)\s*[:\-]\s*([a-zA-Z0-9.\-_]+@[a-zA-Z0-9]+)/i);
+            if (!upiMatch) return null;
+
+            const parsedAmount = parseFloat(String(amount).replace(/,/g, '')) || 0;
+            const upiId = upiMatch[1];
+            const companyName = companyNameOverride || "Company Name";
+            const note = `Quote:${refNo}`;
+            const upiData = `upi://pay?pa=${upiId}&pn=${encodeURIComponent(companyName)}&am=${parsedAmount.toFixed(2)}&tn=${encodeURIComponent(note)}&cu=INR`;
+
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.crossOrigin = "Anonymous";
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0);
+                    resolve(canvas.toDataURL('image/png'));
+                };
+                img.onerror = () => resolve(null); // Fallback on error
+                img.src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(upiData)}`;
+            });
+        }
+
+        async function generateQuotationPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            // 1. Brand Details
+            let companyName = "Company Name";
+            let addressLine1 = "";
+            let addressLine2 = "";
+            let contactNumber = "";
+            let companyEmail = "";
+            let companyGstin = "";
+            let companyWebsite = "";
+            let sellerDistrict = localStorage.getItem('district') || "";
+            let sellerState = localStorage.getItem('sellerState') || "";
+
+            if (window.electronAPI && window.electronAPI.getAppSettings) {
+                const res = await window.electronAPI.getAppSettings();
+                if (res.success) {
+                    companyName = res.companyName || companyName;
+                    addressLine1 = res.addressLine1 || addressLine1;
+                    addressLine2 = res.addressLine2 || addressLine2;
+                    contactNumber = res.contactNumber ? `Mo: ${res.contactNumber}` : contactNumber;
+                    companyEmail = res.companyEmail || companyEmail;
+                    companyGstin = res.companyGstin || companyGstin;
+                    companyWebsite = res.companyWebsite || companyWebsite;
+                    sellerDistrict = res.district || sellerDistrict;
+                    sellerState = res.sellerState || sellerState;
+                }
+            } else if (window.getBrandSettings) {
+                const brand = window.getBrandSettings();
+                companyName = brand.companyName || companyName;
+                addressLine1 = brand.addressLine1 || addressLine1;
+                addressLine2 = brand.addressLine2 || addressLine2;
+                contactNumber = brand.contactNumber ? `Mo: ${brand.contactNumber}` : contactNumber;
+                companyEmail = brand.companyEmail || companyEmail;
+                companyGstin = brand.companyGstin || companyGstin;
+                companyWebsite = brand.companyWebsite || companyWebsite;
+                sellerDistrict = brand.district || sellerDistrict;
+                sellerState = brand.sellerState || sellerState;
+            }
+
+            // Header
+            doc.setFontSize(20);
+            doc.setTextColor(44, 62, 80);
+            doc.text(companyName, 105, 15, { align: "center" });
+
+            doc.setFontSize(10);
+            doc.setTextColor(100);
+
+            let nextY = 22;
+            if (addressLine1) {
+                doc.text(addressLine1, 105, nextY, { align: "center" });
+                nextY += 5;
+            }
+            if (addressLine2) {
+                doc.text(addressLine2, 105, nextY, { align: "center" });
+                nextY += 5;
+            }
+
+            let distStateParts = [];
+            if (sellerDistrict) distStateParts.push(`Dist: ${sellerDistrict}`);
+            if (sellerState) distStateParts.push(`State: ${sellerState}`);
+            let distState = distStateParts.join(", ");
+            if (distState) {
+                doc.text(distState, 105, nextY, { align: "center" });
+                nextY += 5;
+            }
+
+            let contactParts = [];
+            if (contactNumber) contactParts.push(contactNumber);
+            if (companyEmail) contactParts.push(`Email: ${companyEmail}`);
+            if (companyWebsite) contactParts.push(`Web: ${companyWebsite}`);
+
+            if (contactParts.length > 0) {
+                doc.text(contactParts.join(" | "), 105, nextY, { align: "center" });
+                nextY += 5;
+            }
+            if (companyGstin) {
+                doc.text(`GSTIN: ${companyGstin}`, 105, nextY, { align: "center" });
+                nextY += 4;
+            } else {
+                nextY += 4;
+            }
+
+            doc.setDrawColor(200);
+            doc.line(10, nextY, 200, nextY);
+
+            // Title
+            doc.setFontSize(16);
+            doc.setTextColor(0);
+            doc.text("QUOTATION", 105, nextY + 9, { align: "center" });
+
+            // Meta Data
+            doc.setFontSize(10);
+            const refNo = document.getElementById('refNo').value || '-';
+            const date = document.getElementById('quotationDate').value;
+            const formattedDate = date ? new Date(date).toLocaleDateString('en-GB') : '-';
+
+            doc.text(`Ref. No: ${refNo}`, 14, nextY + 19);
+            doc.text(`Date: ${formattedDate}`, 160, nextY + 19);
+
+            // Customer Details
+            const custName = document.getElementById('custName').value || '-';
+            let custContact = document.getElementById('custContact').value || '';
+            let custAddress = document.getElementById('custAddress').value || '';
+
+            // Fetch comprehensive details from DB
+            const allCustomers = JSON.parse(localStorage.getItem('customers')) || [];
+            const fullCust = allCustomers.find(c => c.name === custName) || {};
+
+            const dist = fullCust.district || "";
+            const state = fullCust.state || "";
+            const pin = fullCust.pin || "";
+            const email = fullCust.email || "";
+            const gst = fullCust.gst || fullCust.gstin || "";
+
+            if (!custContact && fullCust.contact) custContact = fullCust.contact;
+            if (!custAddress && fullCust.address) custAddress = fullCust.address;
+
+            const loc = [dist, state, pin ? "PIN: " + pin : ""].filter(Boolean);
+            if (loc.length > 0) custAddress += "\n" + loc.join(", ");
+
+            let extraInfo = [];
+            if (custContact) extraInfo.push("Ph: " + custContact);
+            if (email) extraInfo.push("Email: " + email);
+            if (extraInfo.length > 0) custAddress += "\n" + extraInfo.join(" | ");
+            if (gst) custAddress += "\nGSTIN: " + gst;
+
+            doc.setFont(undefined, 'bold');
+            doc.text("To:", 14, nextY + 29);
+            doc.setFont(undefined, 'normal');
+            doc.text(custName, 14, nextY + 34);
+
+            const splitAddress = doc.splitTextToSize(custAddress, 80);
+            doc.text(splitAddress, 14, nextY + 39);
+
+            // Table
+            const rows = [];
+            document.querySelectorAll("#quotationTable tbody tr").forEach((tr, i) => {
+                const inputs = tr.querySelectorAll("input");
+                const desc = inputs[0].value;
+                if (desc) {
+                    rows.push([
+                        i + 1,
+                        desc,
+                        inputs[1].value, // UOM
+                        inputs[2].value, // Qty
+                        inputs[3].value, // Rate
+                        (inputs[4].value || 0) + '%', // GST %
+                        inputs[5].value  // Total
+                    ]);
+                }
+            });
+
+            doc.autoTable({
+                startY: Math.max(nextY + 59, nextY + 39 + (splitAddress.length * 5) + 5),
+                head: [['Sl', 'Description', 'UOM', 'Qty', 'Rate', 'GST', 'Total']],
+                body: rows,
+                theme: 'striped',
+                headStyles: { fillColor: [44, 62, 80] },
+                columnStyles: {
+                    3: { halign: 'center' },
+                    4: { halign: 'right' },
+                    5: { halign: 'center' },
+                    6: { halign: 'right' }
+                }
+            });
+
+            // Footer
+            const finalY = doc.lastAutoTable.finalY + 10;
+            const grandTotal = document.getElementById('grandTotal').value;
+            const amountWords = document.getElementById('amountInWords').innerText;
+
+            // Terms & Bank Details
+            const terms = document.getElementById('termsConditions').value;
+            const bankDetails = getFormattedBankDetails();
+            const showBankDetails = document.getElementById('showBankDetailsToggle') ? document.getElementById('showBankDetailsToggle').checked : true;
+
+            let splitTerms = [];
+            let splitBank = [];
+            let qrCodeBase64 = null;
+
+            if (showBankDetails) {
+                const parsedTotal = parseFloat(String(grandTotal).replace(/,/g, '')) || 0;
+                const dynamicQr = await generateDynamicQr(parsedTotal, refNo, companyName);
+                qrCodeBase64 = dynamicQr || localStorage.getItem("invoiceQrCode");
+            }
+
+            if (terms) splitTerms = doc.splitTextToSize(terms, 90);
+            if (showBankDetails && bankDetails) splitBank = doc.splitTextToSize(bankDetails, 55);
+
+            let bankBlockHeight = (showBankDetails && bankDetails) ? splitBank.length * 5 : 0;
+            let qrBlockHeight = (showBankDetails && qrCodeBase64) ? 35 : 0;
+            let maxOffset = Math.max(splitTerms.length * 5, Math.max(bankBlockHeight, qrBlockHeight));
+
+            if (finalY + 25 + maxOffset > 280) {
+                doc.addPage();
+                finalY = 20;
+            }
+
+            doc.setFont(undefined, 'bold');
+            doc.text(`Grand Total: ${grandTotal}`, 195, finalY, { align: "right" });
+
+            doc.setFontSize(9);
+            doc.setFont(undefined, 'normal');
+            doc.text(`Amount in Words: ${amountWords}`, 14, finalY + 10);
+
+            if (terms) {
+                doc.setFont(undefined, 'bold');
+                doc.text("Terms & Conditions:", 14, finalY + 20);
+                doc.setFont(undefined, 'normal');
+                doc.text(splitTerms, 14, finalY + 25);
+            }
+
+            if (showBankDetails && bankDetails) {
+                doc.setFont(undefined, 'bold');
+                doc.text("Bank Details:", 110, finalY + 20);
+                doc.setFont(undefined, 'normal');
+                doc.text(splitBank, 110, finalY + 25);
+
+                if (qrCodeBase64) {
+                    try {
+                        doc.setFont(undefined, 'bold');
+                        doc.text("Scan to Pay", 170, finalY + 20);
+                        doc.setFont(undefined, 'normal');
+                        doc.addImage(qrCodeBase64, 'PNG', 170, finalY + 22, 25, 25);
+                    } catch (e) { console.warn("Error adding QR to PDF:", e); }
+                }
+            }
+
+            // Signature
+            let sigY = finalY + 25 + maxOffset + 15;
+            if (sigY > 280) {
+                doc.addPage();
+                sigY = 30;
+            }
+            doc.text("Authorized Signatory", 195, sigY, { align: "right" });
+            doc.text(`For ${companyName}`, 195, sigY - 5, { align: "right" });
+
+            doc.save(`Quotation_${refNo}.pdf`);
+        }
+
+        function getFormattedBankDetails() {
+            const raw = localStorage.getItem("invoiceBankDetails");
+            if (!raw) return null;
+            try {
+                const data = JSON.parse(raw);
+                if (typeof data === 'object' && data !== null && (data.bankName || data.accountNumber)) {
+                    let lines = [];
+                    if (data.bankName) lines.push(`Bank: ${data.bankName}`);
+                    if (data.accountName) lines.push(`A/c Name: ${data.accountName}`);
+                    if (data.accountNumber) lines.push(`A/c No: ${data.accountNumber}`);
+                    if (data.ifscCode) lines.push(`IFSC: ${data.ifscCode}`);
+                    if (data.branchName) lines.push(`Branch: ${data.branchName}`);
+                    if (data.upiId) lines.push(`UPI ID: ${data.upiId}`);
+                    return lines.join("\n");
+                }
+                return raw;
+            } catch (e) {
+                return raw;
+            }
+        }
+
+        function confirmLoad() { askConfirm("Load", "Unsaved changes will be lost. Load?", () => loadQuotation()); }
+        function confirmAddRow() { addRow(); } // No confirm needed for adding
+        function confirmRemoveRow(btn) {
+            askConfirm("Remove Row", "Delete this item?", () => {
+                removeRow(btn);
+            });
+        }
+
+        // Init
+        document.getElementById("quotationDate").valueAsDate = new Date();
+        addRow(); // Add initial row
+        addRow();
+        addRow();
+        updateStatusStamp();
+    </script>
+
+</body>
+
+</html>

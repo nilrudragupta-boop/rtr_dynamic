@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Returns Management</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <script src="apiClient.js"></script>
+    <script src="settings.js"></script>
+    <script src="brand.service.js"></script>
+    <script src="brandLoader.js"></script>
+    <script src="creditDebitService.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            padding: 20px;
+            background: #f4f6f8;
+            color: #333;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        h2 {
+            color: #2c3e50;
+            margin: 0;
+        }
+
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+            margin-bottom: 20px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        label {
+            font-weight: 600;
+            font-size: 13px;
+            color: #555;
+        }
+
+        input,
+        select,
+        textarea {
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        input:focus,
+        select:focus {
+            border-color: #3498db;
+            outline: none;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        th,
+        td {
+            border: 1px solid #eee;
+            padding: 10px;
+            text-align: center;
+            font-size: 14px;
+        }
+
+        th {
+            background: #2c3e50;
+            color: white;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            color: white;
+            transition: opacity 0.2s;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+        }
+
+        .btn-primary {
+            background: #3498db;
+        }
+
+        .btn-success {
+            background: #27ae60;
+        }
+
+        .btn-danger {
+            background: #e74c3c;
+        }
+
+        .btn-secondary {
+            background: #7f8c8d;
+        }
+
+        .btn-warning {
+            background: #f39c12;
+        }
+
+        .btn-info {
+            background: #17a2b8;
+        }
+
+        .summary-box {
+            text-align: right;
+            font-size: 16px;
+            font-weight: bold;
+            margin-top: 15px;
+            color: #2c3e50;
+        }
+
+        /* Dark Mode Support */
+        body.dark-mode {
+            background: #121212;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .card {
+            background: #2c2c2c;
+            border: 1px solid #444;
+        }
+
+        body.dark-mode input,
+        body.dark-mode select,
+        body.dark-mode textarea {
+            background: #3a3a3a;
+            color: white;
+            border-color: #555;
+        }
+
+        body.dark-mode th {
+            background: #1f1f1f;
+        }
+
+        body.dark-mode td {
+            border-color: #444;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="header">
+        <h2>↩️ Returns Management - <span data-brand="name">RISE Tech Revolution</span></h2>
+        <div>
+            <button class="btn btn-secondary"
+                onclick="window.open('returns_report.html', 'returns_report', 'width=1000,height=700')">📊 View
+                Reports</button>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="form-grid">
+            <div class="form-group">
+                <label>Return Type</label>
+                <select id="returnType" onchange="handleReturnTypeChange()">
+                    <option value="Sales Return">Sales Return (Credit Note)</option>
+                    <option value="Purchase Return">Purchase Return (Debit Note)</option>
+                    <option value="Damage">Damage / Scrap (Internal Loss)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label id="refLabel">Invoice No</label>
+                <div style="display:flex; gap:5px;">
+                    <input type="text" id="refNo" placeholder="Enter Invoice No">
+                    <button class="btn btn-primary" onclick="fetchReferenceData()">Fetch</button>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Return Date</label>
+                <input type="date" id="returnDate">
+            </div>
+            <div class="form-group">
+                <label>Party Name</label>
+                <input type="text" id="partyName" readonly style="background:#eee;">
+            </div>
+        </div>
+
+        <div class="form-grid">
+            <div class="form-group">
+                <label>Reason</label>
+                <select id="returnReason">
+                    <option value="Damaged">Damaged</option>
+                    <option value="Broken">Broken</option>
+                    <option value="Wrong Supply">Wrong Supply</option>
+                    <option value="Excess Qty">Excess Qty</option>
+                    <option value="Quality Issue">Quality Issue</option>
+                    <option value="Expired">Expired</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+            <div class="form-group" style="grid-column: span 2;">
+                <label>Remarks</label>
+                <input type="text" id="remarks" placeholder="Optional remarks...">
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>Items to Return</h3>
+        <div class="pagination-container"
+            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding: 10px; background: #fff; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
+            <div style="display: flex; align-items: center; gap: 5px;">
+                <span id="totalItemsDisplay" style="font-weight: bold; color: #2c3e50; margin-right: 8px;"></span>
+                <select id="rowsPerPageSelect" onchange="changeRowsPerPage()"
+                    style="width: auto; padding: 4px; border: 1px solid #ccc; border-radius: 4px; margin: 0;">
+                    <option value="5">5 rows</option>
+                    <option value="10" selected>10 rows</option>
+                    <option value="20">20 rows</option>
+                </select>
+                <input type="number" id="goToPageInput"
+                    style="width: 60px; padding: 4px; border: 1px solid #ccc; border-radius: 4px;" placeholder="Go to"
+                    min="1" onchange="goToPage()">
+            </div>
+            <div id="paginationInfo" style="color: #666; font-size: 14px;"></div>
+            <div class="pagination" id="paginationControls" style="display: flex; gap: 5px;"></div>
+        </div>
+        <table id="itemsTable">
+            <thead>
+                <tr>
+                    <th>Select</th>
+                    <th>Item Name</th>
+                    <th>UOM</th>
+                    <th>Billed Qty</th>
+                    <th>Return Qty</th>
+                    <th>Rate</th>
+                    <th>GST %</th>
+                    <th>Total Refund</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td colspan="8">Please fetch an invoice first.</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="summary-box">
+            Total Refund Amount: ₹<span id="totalAmount">0.00</span>
+        </div>
+
+        <div style="margin-top: 20px; text-align: right;">
+            <button class="btn btn-success" onclick="saveReturn()">💾 Save & Process Return</button>
+        </div>
+    </div>
+
+    <script>
+        let currentInvoice = null;
+        let currentItems = [];
+        let currentPage = 1;
+        let rowsPerPage = 10;
+
+        function changeRowsPerPage() {
+            rowsPerPage = parseInt(document.getElementById('rowsPerPageSelect').value);
+            currentPage = 1;
+            renderItems(currentItems);
+        }
+
+        function goToPage() {
+            const pageInput = document.getElementById("goToPageInput");
+            const page = parseInt(pageInput.value);
+            if (page >= 1) {
+                currentPage = page;
+                renderItems(currentItems);
+            }
+            pageInput.value = "";
+        }
+
+        function changePage(page) {
+            currentPage = page;
+            renderItems(currentItems);
+        }
+
+        function renderPagination(totalItems, start, end, totalPages) {
+            const info = document.getElementById("paginationInfo");
+            const controls = document.getElementById("paginationControls");
+            const totalDisplay = document.getElementById("totalItemsDisplay");
+
+            if (totalDisplay) totalDisplay.innerText = `Total Items: ${totalItems}`;
+
+            if (totalItems === 0) {
+                if (info) info.innerText = "No items found";
+                if (controls) controls.innerHTML = "";
+                return;
+            }
+
+            if (info) info.innerText = `Showing ${start} to ${end} of ${totalItems} entries`;
+
+            let html = "";
+            html += `<button class="btn btn-secondary" onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''} style="padding: 4px 8px; margin: 0 2px;">Prev</button>`;
+
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
+                    const activeStyle = i === currentPage ? 'background: #3498db; color: #fff;' : 'background: #fff; color: #333;';
+                    html += `<button class="btn btn-secondary" onclick="changePage(${i})" style="padding: 4px 8px; margin: 0 2px; ${activeStyle}">${i}</button>`;
+                } else if (i === currentPage - 3 || i === currentPage + 3) {
+                    html += `<span style="padding: 4px 8px;">...</span>`;
+                }
+            }
+
+            html += `<button class="btn btn-secondary" onclick="changePage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''} style="padding: 4px 8px; margin: 0 2px;">Next</button>`;
+
+            if (controls) controls.innerHTML = html;
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('returnDate').valueAsDate = new Date();
+            if (localStorage.getItem('appThemeMode') === 'dark') document.body.classList.add('dark-mode');
+        });
+
+        function handleReturnTypeChange() {
+            const type = document.getElementById('returnType').value;
+            const refLabel = document.getElementById('refLabel');
+            const refInput = document.getElementById('refNo');
+
+            if (type === 'Sales Return') {
+                refLabel.innerText = "Invoice No";
+                refInput.placeholder = "Enter Sales Invoice No";
+            } else if (type === 'Purchase Return') {
+                refLabel.innerText = "Purchase Bill No";
+                refInput.placeholder = "Enter Supplier Bill No";
+            } else {
+                refLabel.innerText = "Reference (Optional)";
+                refInput.placeholder = "Manual Item Entry (Not linked)";
+            }
+
+            // Reset
+            document.getElementById('partyName').value = '';
+            document.querySelector('#itemsTable tbody').innerHTML = '<tr><td colspan="8">Please fetch data or enter manually.</td></tr>';
+            document.getElementById('totalAmount').innerText = '0.00';
+            currentInvoice = null;
+        }
+
+        function fetchReferenceData() {
+            const type = document.getElementById('returnType').value;
+            const refNo = document.getElementById('refNo').value.trim();
+
+            if (!refNo && type !== 'Damage') return alert("Please enter a reference number.");
+
+            if (type === 'Sales Return') {
+                const invoices = JSON.parse(localStorage.getItem('invoices')) || [];
+                const inv = invoices.find(i => (i.invoice_no || i.invoiceNo) === refNo);
+
+                if (!inv) return alert("Invoice not found!");
+
+                // Check date warning (30 days)
+                const invDate = new Date(inv.invoice_date || inv.date);
+                const diffTime = Math.abs(new Date() - invDate);
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                if (diffDays > 30) alert(`⚠️ Warning: This invoice is ${diffDays} days old.`);
+
+                currentInvoice = inv;
+                document.getElementById('partyName').value = inv.customer_name || inv.customerName;
+                renderItems(inv.items || []);
+            }
+            else if (type === 'Purchase Return') {
+                const purchases = JSON.parse(localStorage.getItem('purchases')) || [];
+                // Purchases are stored as individual items usually, need to filter by supplierInv
+                const items = purchases.filter(p => p.supplierInv === refNo);
+
+                if (items.length === 0) return alert("Purchase Bill not found!");
+
+                currentInvoice = {
+                    invoice_no: refNo,
+                    supplier_name: items[0].supplierName,
+                    items: items.map(p => ({
+                        item: p.itemName,
+                        qty: p.qty,
+                        price: p.price,
+                        gst: p.gst,
+                        uom: p.uom
+                    }))
+                };
+                document.getElementById('partyName').value = items[0].supplierName;
+                renderItems(currentInvoice.items);
+            }
+            else if (type === 'Damage') {
+                // For damage, we might want to load item list manually
+                // For now, simple alert
+                alert("For Damage entry, manual item selection is required. (Feature simplified for this demo: Please use Sales Return flow for now or implement manual picker)");
+            }
+        }
+
+        function updateItemState(index, field, value) {
+            if (!currentItems[index]) return;
+            if (field === 'checked') currentItems[index]._checked = value;
+            if (field === 'returnQty') {
+                const maxQty = parseFloat(currentItems[index].qty);
+                let qty = parseFloat(value) || 0;
+                if (qty > maxQty) {
+                    alert(`Cannot return more than billed quantity (${maxQty})`);
+                    qty = maxQty;
+                    // Force update DOM if input is visible
+                    const input = document.getElementById(`qty_${index}`);
+                    if (input) input.value = maxQty;
+                }
+                currentItems[index]._returnQty = qty;
+            }
+            calculateTotal();
+        }
+
+        function renderItems(items) {
+            const tbody = document.querySelector('#itemsTable tbody');
+            tbody.innerHTML = '';
+            currentItems = items;
+
+            // Initialize tracking fields if not present
+            currentItems.forEach(item => {
+                if (item._checked === undefined) item._checked = false;
+                if (item._returnQty === undefined) item._returnQty = 0;
+            });
+
+            const totalItems = currentItems.length;
+            const totalPages = Math.ceil(totalItems / rowsPerPage) || 1;
+
+            if (currentPage > totalPages) currentPage = totalPages;
+            if (currentPage < 1) currentPage = 1;
+
+            const startIndex = (currentPage - 1) * rowsPerPage;
+            const endIndex = Math.min(startIndex + rowsPerPage, totalItems);
+            const paginatedData = currentItems.slice(startIndex, endIndex);
+
+            paginatedData.forEach((item, pageIndex) => {
+                const globalIndex = startIndex + pageIndex;
+                const rate = parseFloat(item.price || item.rate);
+                const gst = parseFloat(item.gst || 0);
+                const taxable = rate * item._returnQty;
+                const taxAmt = taxable * (gst / 100);
+                const rowTotal = item._checked && item._returnQty > 0 ? (taxable + taxAmt) : 0;
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><input type="checkbox" class="return-check" id="chk_${globalIndex}" ${item._checked ? 'checked' : ''} onchange="updateItemState(${globalIndex}, 'checked', this.checked)"></td>
+                    <td>${item.item || item.itemName}</td>
+                    <td>${item.uom || ''}</td>
+                    <td>${item.qty}</td>
+                    <td><input type="number" class="return-qty" id="qty_${globalIndex}" max="${item.qty}" min="0" value="${item._returnQty}" style="width:80px;" oninput="updateItemState(${globalIndex}, 'returnQty', this.value)"></td>
+                    <td>${item.price || item.rate}</td>
+                    <td>${item.gst || 0}%</td>
+                    <td class="row-total" id="tot_${globalIndex}">${rowTotal.toFixed(2)}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            renderPagination(totalItems, startIndex + 1, endIndex, totalPages);
+            calculateTotal(); // Update global total
+        }
+
+        function calculateTotal() {
+            let total = 0;
+
+            currentItems.forEach((item, index) => {
+                const isChecked = item._checked;
+                const returnQty = parseFloat(item._returnQty) || 0;
+
+                if (isChecked && returnQty > 0) {
+                    const rate = parseFloat(item.price || item.rate);
+                    const gst = parseFloat(item.gst || 0);
+                    const taxable = rate * returnQty;
+                    const taxAmt = taxable * (gst / 100);
+                    const rowTotal = taxable + taxAmt;
+
+                    total += rowTotal;
+
+                    // Update DOM if visible
+                    const totEl = document.getElementById(`tot_${index}`);
+                    if (totEl) totEl.innerText = rowTotal.toFixed(2);
+                } else {
+                    const totEl = document.getElementById(`tot_${index}`);
+                    if (totEl) totEl.innerText = '0.00';
+                }
+            });
+            document.getElementById('totalAmount').innerText = total.toFixed(2);
+        }
+
+        function saveReturn() {
+            const type = document.getElementById('returnType').value;
+            const totalAmount = parseFloat(document.getElementById('totalAmount').innerText);
+
+            if (totalAmount <= 0) return alert("Please select items and enter valid return quantity.");
+            if (!currentInvoice && type !== 'Damage') return alert("No invoice loaded.");
+
+            const returnItems = [];
+
+            currentItems.forEach((item) => {
+                if (item._checked && item._returnQty > 0) {
+                    const rate = parseFloat(item.price || item.rate);
+                    const gst = parseFloat(item.gst || 0);
+                    const taxable = rate * item._returnQty;
+                    const taxAmt = taxable * (gst / 100);
+                    const rowTotal = taxable + taxAmt;
+
+                    returnItems.push({
+                        item_name: item.item || item.itemName,
+                        itemCode: item.itemCode || "",
+                        uom: item.uom || '',
+                        qty: item._returnQty,
+                        rate: item.price || item.rate,
+                        gst: item.gst || 0,
+                        amount: rowTotal
+                    });
+                }
+            });
+            const returnData = {
+                id: Date.now().toString(),
+                return_type: type,
+                invoice_no: document.getElementById('refNo').value,
+                party_name: document.getElementById('partyName').value,
+                return_date: document.getElementById('returnDate').value,
+                reason: document.getElementById('returnReason').value,
+                remarks: document.getElementById('remarks').value,
+                items: returnItems,
+                total_amount: totalAmount,
+                created_at: new Date().toISOString()
+            };
+
+            // 1. Save to Returns Collection
+            const returns = JSON.parse(localStorage.getItem('returns')) || [];
+            returns.push(returnData);
+            localStorage.setItem('returns', JSON.stringify(returns));
+            if (typeof apiClient !== 'undefined' && apiClient.saveReturn) apiClient.saveReturn(returnData).catch(console.warn);
+
+            // 2. Create Credit/Debit Note (Financial Impact)
+            if (type === 'Sales Return' || type === 'Purchase Return') {
+                const noteType = type === 'Sales Return' ? 'CREDIT' : 'DEBIT';
+                const notes = JSON.parse(localStorage.getItem('credit_debit_notes')) || [];
+
+                // Use service to generate ID and structure
+                if (window.creditDebitService) {
+                    const noteNo = window.creditDebitService.generateNoteNumber(noteType, notes);
+
+                    // Calculate tax breakup for note
+                    let totalTaxable = 0, totalCGST = 0, totalSGST = 0, totalIGST = 0;
+
+                    // Simple tax logic (assuming intra-state for demo, ideally check state)
+                    // For robust logic, check customer state vs seller state
+                    const isInterState = false; // Defaulting to Intra for simplicity in this block
+
+                    returnItems.forEach(it => {
+                        const taxable = it.qty * it.rate;
+                        const tax = taxable * (it.gst / 100);
+                        totalTaxable += taxable;
+                        if (isInterState) totalIGST += tax;
+                        else { totalCGST += tax / 2; totalSGST += tax / 2; }
+                    });
+
+                    const note = {
+                        id: Date.now().toString() + '_note',
+                        note_no: noteNo,
+                        type: noteType,
+                        invoice_no: returnData.invoice_no,
+                        invoice_date: currentInvoice.invoice_date || currentInvoice.date || new Date().toISOString(),
+                        customer_name: returnData.party_name,
+                        note_date: returnData.return_date,
+                        reason: returnData.reason,
+                        remarks: `Auto-generated from ${type}`,
+                        taxable_amount: totalTaxable,
+                        cgst: totalCGST,
+                        sgst: totalSGST,
+                        igst: totalIGST,
+                        total_amount: totalAmount,
+                        stock_effect: true, // Handled by stock report reading 'returns' collection
+                        status: 'ACTIVE',
+                        created_at: new Date().toISOString()
+                    };
+
+                    notes.push(note);
+                    localStorage.setItem('credit_debit_notes', JSON.stringify(notes));
+                    if (typeof apiClient !== 'undefined' && apiClient.saveCreditDebitNote) apiClient.saveCreditDebitNote(note).catch(console.warn);
+                }
+            }
+
+            // 3. Handle Damage (Expense Impact)
+            if (type === 'Damage') {
+                const expenses = JSON.parse(localStorage.getItem('expenses')) || [];
+                const expEntry = {
+                    expense_id: Date.now().toString(),
+                    expense_date: returnData.return_date,
+                    expense_category: "Damage / Loss",
+                    vendor_name: "Internal",
+                    invoice_number: "-",
+                    debit_amount: totalAmount,
+                    payment_mode: "Adjustment",
+                    remarks: `Damage Entry: ${returnData.reason}`,
+                    created_at: new Date().toISOString()
+                };
+                expenses.push(expEntry);
+                localStorage.setItem('expenses', JSON.stringify(expenses));
+                if (typeof apiClient !== 'undefined' && apiClient.saveExpense) apiClient.saveExpense(expEntry).catch(console.warn);
+            }
+
+            alert("Return processed successfully!");
+            window.location.reload();
+        }
+
+    </script>
+</body>
+
+</html>

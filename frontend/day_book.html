@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Day Book</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+    <script src="apiClient.js"></script>
+    <script src="settings.js"></script>
+    <script src="brand.service.js"></script>
+    <script src="brandLoader.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            padding: 20px;
+            background: #f8f9fa;
+            color: #333;
+        }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #2c3e50;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: center;
+            background: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+
+        label {
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        input,
+        select,
+        button {
+            padding: 8px 12px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            font-size: 14px;
+        }
+
+        button {
+            cursor: pointer;
+            color: #fff;
+            border: none;
+            font-weight: bold;
+            transition: opacity 0.2s;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        .btn-primary {
+            background: #0d6efd;
+        }
+
+        .btn-success {
+            background: #198754;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+        }
+
+        .table-container {
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+            overflow-x: auto;
+            overflow-y: auto;
+            max-height: 600px;
+            margin-bottom: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        th {
+            background: #343a40;
+            color: #fff;
+            position: sticky;
+            top: 0;
+            z-index: 5;
+        }
+
+        .sort-icon {
+            font-size: 12px;
+            margin-left: 5px;
+        }
+
+        tr:hover {
+            background-color: #f8f9fa;
+        }
+
+        .text-right {
+            text-align: right;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .font-bold {
+            font-weight: bold;
+        }
+
+        /* Dark Mode */
+        body.dark-mode {
+            background: #121212;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .controls,
+        body.dark-mode .table-container {
+            background: #2c2c2c;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode input {
+            background: #333;
+            color: #fff;
+            border-color: #555;
+        }
+
+        body.dark-mode th {
+            background: #1f1f1f;
+        }
+
+        body.dark-mode td {
+            border-bottom-color: #444;
+        }
+
+        body.dark-mode tr:hover {
+            background-color: #3a3a3a;
+        }
+
+        /* Grey Mode */
+        body.grey-mode button {
+            background-color: #6c757d !important;
+            color: #fff !important;
+        }
+
+        @media print {
+
+            .controls,
+            .pagination-container,
+            button {
+                display: none !important;
+            }
+
+            .table-container {
+                box-shadow: none;
+                overflow: visible !important;
+                max-height: none !important;
+            }
+
+            body {
+                background: #fff;
+                padding: 0;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <h2><span id="brandName" data-brand="name">Brand Name</span> - Day Book</h2>
+
+    <div class="controls">
+        <label>From:</label>
+        <input type="date" id="fromDate" onchange="renderReport()">
+        <label>To:</label>
+        <input type="date" id="toDate" onchange="renderReport()">
+        <label>Type:</label>
+        <select id="voucherTypeFilter" onchange="renderReport()">
+            <option value="">All Types</option>
+            <option value="Sales">Sales</option>
+            <option value="Purchase">Purchase</option>
+            <option value="Payment">Payment</option>
+            <option value="Journal">Journal</option>
+            <option value="Credit Note">Credit Note</option>
+            <option value="Debit Note">Debit Note</option>
+            <option value="Production">Production</option>
+        </select>
+        <input type="text" id="searchInput" placeholder="Search Particulars/Voucher..."
+            oninput="currentPage=1; renderReport()" style="width: 200px;">
+        <button class="btn-primary" onclick="location.reload()">🔄 Refresh</button>
+        <button class="btn-success" onclick="exportToExcel()">📊 Export Excel</button>
+        <button class="btn-secondary" onclick="window.print()">🖨️ Print</button>
+        <label
+            style="cursor:pointer; display:flex; align-items:center; gap:5px; font-size:14px; margin-left:10px; font-weight:bold;">
+            <input type="checkbox" id="greyButtonsToggle" onchange="toggleGreyButtons()"> Grey Buttons Mode
+        </label>
+    </div>
+
+    <div class="table-container">
+        <table id="reportTable">
+            <thead>
+                <tr>
+                    <th style="cursor:pointer;" onclick="handleSort('date')">Date <span id="sort-icon-date"
+                            class="sort-icon"></span></th>
+                    <th style="cursor:pointer;" onclick="handleSort('type')">Voucher Type <span id="sort-icon-type"
+                            class="sort-icon"></span></th>
+                    <th style="cursor:pointer;" onclick="handleSort('no')">Voucher No <span id="sort-icon-no"
+                            class="sort-icon"></span></th>
+                    <th style="cursor:pointer;" onclick="handleSort('particulars')">Particulars <span
+                            id="sort-icon-particulars" class="sort-icon"></span></th>
+                    <th style="cursor:pointer;" class="text-right" onclick="handleSort('debit')">Debit Amount <span
+                            id="sort-icon-debit" class="sort-icon"></span></th>
+                    <th style="cursor:pointer;" class="text-right" onclick="handleSort('credit')">Credit Amount <span
+                            id="sort-icon-credit" class="sort-icon"></span></th>
+                    <th style="cursor:pointer;" class="text-right" onclick="handleSort('cash')">Cash <span
+                            id="sort-icon-cash" class="sort-icon"></span></th>
+                    <th style="cursor:pointer;" class="text-right" onclick="handleSort('bank')">Bank <span
+                            id="sort-icon-bank" class="sort-icon"></span></th>
+                </tr>
+            </thead>
+            <tbody id="reportBody">
+                <!-- Rows injected by JS -->
+            </tbody>
+            <tfoot>
+                <tr style="font-weight:bold; background:#e9ecef;">
+                    <td colspan="4" class="text-right">Total</td>
+                    <td class="text-right" id="totalDebit">0.00</td>
+                    <td class="text-right" id="totalCredit">0.00</td>
+                    <td class="text-right" id="totalCash">0.00</td>
+                    <td class="text-right" id="totalBank">0.00</td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+
+    <div class="pagination-container"
+        style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; padding: 0 5px;">
+        <div style="display: flex; align-items: center; gap: 5px;">
+            <select id="rowsPerPageSelect" onchange="changeRowsPerPage()"
+                style="padding: 4px; border-radius: 4px; border: 1px solid #ccc;">
+                <option value="10">10 rows</option>
+                <option value="20" selected>20 rows</option>
+                <option value="50">50 rows</option>
+                <option value="100">100 rows</option>
+            </select>
+            <span id="paginationInfo" style="font-size: 14px; color: #666;"></span>
+        </div>
+        <div id="paginationControls" style="display: flex; gap: 5px;"></div>
+    </div>
+
+    <script>
+        let currentPage = 1;
+        let rowsPerPage = 20;
+        let currentSortColumn = 'date';
+        let currentSortDirection = 'asc';
+
+        document.addEventListener("DOMContentLoaded", () => {
+            document.getElementById('fromDate').valueAsDate = new Date();
+            document.getElementById('toDate').valueAsDate = new Date();
+
+            const theme = localStorage.getItem("appThemeMode");
+            if (theme === "dark") document.body.classList.add("dark-mode");
+
+            applyGreyButtons();
+            renderReport();
+        });
+
+        let isGreyButtons = localStorage.getItem("dayBookGreyButtons") === "true";
+
+        function toggleGreyButtons() {
+            isGreyButtons = document.getElementById("greyButtonsToggle").checked;
+            localStorage.setItem("dayBookGreyButtons", isGreyButtons);
+            applyGreyButtons();
+        }
+
+        function applyGreyButtons() {
+            if (isGreyButtons) document.body.classList.add("grey-mode");
+            else document.body.classList.remove("grey-mode");
+            const toggle = document.getElementById("greyButtonsToggle");
+            if (toggle) toggle.checked = isGreyButtons;
+        }
+
+        function formatCurrency(amount) {
+            return (amount || 0).toLocaleString('en-IN', { style: 'currency', currency: 'INR' });
+        }
+
+        function handleSort(column) {
+            if (currentSortColumn === column) {
+                currentSortDirection = currentSortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSortColumn = column;
+                currentSortDirection = 'asc';
+            }
+
+            document.querySelectorAll('.sort-icon').forEach(el => el.innerText = '');
+            const icon = document.getElementById(`sort-icon-${column}`);
+            if (icon) icon.innerText = currentSortDirection === 'asc' ? ' ▲' : ' ▼';
+
+            renderReport();
+        }
+
+        function getData() {
+            const fromDate = document.getElementById('fromDate').value;
+            const toDate = document.getElementById('toDate').value;
+            const typeFilter = document.getElementById('voucherTypeFilter').value;
+            const transactions = [];
+
+            // Load Bank Data for lookup
+            const bankAccounts = JSON.parse(localStorage.getItem('bank_accounts')) || [];
+            const bankTransactions = JSON.parse(localStorage.getItem('bank_transactions')) || [];
+
+            const isInRange = (d) => {
+                if (!d) return false;
+                if (fromDate && d < fromDate) return false;
+                if (toDate && d > toDate) return false;
+                return true;
+            };
+
+            const getBankInfo = (refNo) => {
+                if (!refNo || refNo === '-') return '';
+                const txs = bankTransactions.filter(t => t.ref === refNo);
+                const accIds = [...new Set(txs.map(t => t.accountId))];
+                const names = accIds.map(id => {
+                    const acc = bankAccounts.find(a => a.id === id);
+                    return acc ? `${acc.name} (${acc.number})` : '';
+                }).filter(n => n);
+                return names.join(', ');
+            };
+
+            const getBankInfoById = (accId) => {
+                const acc = bankAccounts.find(a => a.id === accId);
+                return acc ? `${acc.name} (${acc.number})` : '';
+            };
+
+            // 1. Sales (Invoices)
+            const invoices = JSON.parse(localStorage.getItem("invoices")) || [];
+            invoices.forEach(inv => {
+                const d = (inv.invoice_date || inv.date || "").split('T')[0];
+                let cash = parseFloat(inv.paid_cash || 0);
+                let bank = parseFloat(inv.paid_bank || 0);
+
+                // Legacy fallback
+                if (cash === 0 && bank === 0 && inv.total_paid) {
+                    const mode = inv.paymentMode || 'Cash';
+                    if (mode === 'Cash') cash = parseFloat(inv.total_paid);
+                    else bank = parseFloat(inv.total_paid);
+                }
+
+                const d_cash = (inv.payment_date_cash || inv.payment_date || d).split('T')[0];
+                const d_bank = (inv.payment_date_bank || inv.payment_date || d).split('T')[0];
+
+                let cashHandled = false;
+                let bankHandled = false;
+
+                // 1. Main Sales Entry (Invoice Date)
+                if (isInRange(d)) {
+                    // If payment dates match invoice date, merge them
+                    const showCash = (d_cash === d) ? cash : 0;
+                    const showBank = (d_bank === d) ? bank : 0;
+                    if (showCash > 0) cashHandled = true;
+                    if (showBank > 0) bankHandled = true;
+
+                    transactions.push({
+                        date: d,
+                        type: 'Sales',
+                        no: inv.invoice_no || inv.invoiceNo,
+                        particulars: inv.customer_name || (inv.customer && inv.customer.name) || 'Cash Sales',
+                        debit: 0,
+                        credit: parseFloat(inv.invoice_total || inv.total || 0),
+                        cash: showCash,
+                        bank: showBank,
+                        bankDetails: showBank > 0 ? getBankInfo(inv.invoice_no || inv.invoiceNo) : ''
+                    });
+                }
+
+                // 2. Separate Payment Entries (if dates differ)
+                if (cash > 0 && !cashHandled && isInRange(d_cash)) {
+                    transactions.push({ date: d_cash, type: 'Receipt', no: inv.invoice_no || inv.invoiceNo, particulars: `Payment (Cash) - ${inv.customer_name || 'Customer'}`, debit: 0, credit: 0, cash: cash, bank: 0, bankDetails: '' });
+                }
+                if (bank > 0 && !bankHandled && isInRange(d_bank)) {
+                    transactions.push({ date: d_bank, type: 'Receipt', no: inv.invoice_no || inv.invoiceNo, particulars: `Payment (Bank) - ${inv.customer_name || 'Customer'}`, debit: 0, credit: 0, cash: 0, bank: bank, bankDetails: getBankInfo(inv.invoice_no || inv.invoiceNo) });
+                }
+            });
+
+            // 2. Purchases
+            const purchases = JSON.parse(localStorage.getItem("purchases")) || [];
+            purchases.forEach(p => {
+                const d = (p.date || "").split('T')[0];
+                const amt = (parseFloat(p.qty) || 0) * (parseFloat(p.price) || 0);
+                const tax = amt * ((parseFloat(p.gst) || 0) / 100);
+
+                let cash = parseFloat(p.paid_cash || 0);
+                let bank = parseFloat(p.paid_bank || 0);
+
+                // Legacy fallback
+                if (cash === 0 && bank === 0 && p.paid) {
+                    cash = parseFloat(p.paid);
+                }
+
+                const d_cash = (p.paymentDateCash || p.paymentDate || d).split('T')[0];
+                const d_bank = (p.paymentDateBank || p.paymentDate || d).split('T')[0];
+
+                let cashHandled = false;
+                let bankHandled = false;
+
+                // 1. Main Purchase Entry
+                if (isInRange(d)) {
+                    const showCash = (d_cash === d) ? cash : 0;
+                    const showBank = (d_bank === d) ? bank : 0;
+                    if (showCash > 0) cashHandled = true;
+                    if (showBank > 0) bankHandled = true;
+
+                    transactions.push({
+                        date: d,
+                        type: 'Purchase',
+                        no: p.supplierInv || '-',
+                        particulars: p.supplierName || 'Cash Purchase',
+                        debit: amt + tax,
+                        credit: 0,
+                        cash: -showCash,
+                        bank: -showBank,
+                        bankDetails: showBank > 0 ? getBankInfo(p.supplierInv) : ''
+                    });
+                }
+
+                // 2. Separate Payment Entries
+                if (cash > 0 && !cashHandled && isInRange(d_cash)) {
+                    transactions.push({ date: d_cash, type: 'Payment', no: p.supplierInv || '-', particulars: `Payment (Cash) - ${p.supplierName}`, debit: 0, credit: 0, cash: -cash, bank: 0, bankDetails: '' });
+                }
+                if (bank > 0 && !bankHandled && isInRange(d_bank)) {
+                    transactions.push({ date: d_bank, type: 'Payment', no: p.supplierInv || '-', particulars: `Payment (Bank) - ${p.supplierName}`, debit: 0, credit: 0, cash: 0, bank: -bank, bankDetails: getBankInfo(p.supplierInv) });
+                }
+            });
+
+            // 3. Expenses
+            const expenses = JSON.parse(localStorage.getItem("expenses")) || [];
+            expenses.forEach(e => {
+                const d = (e.expense_date || e.date || "").split('T')[0];
+                if (isInRange(d)) {
+                    const amt = parseFloat(e.debit_amount || e.amount || 0);
+                    const mode = e.payment_mode || 'Cash';
+                    const isBank = mode === 'Bank Transfer' || mode === 'UPI' || mode === 'Card';
+
+                    transactions.push({
+                        date: d,
+                        type: 'Payment',
+                        no: e.expense_id || '-',
+                        particulars: e.expense_category + (e.vendor_name ? ` (${e.vendor_name})` : ''),
+                        debit: amt,
+                        credit: 0,
+                        cash: isBank ? 0 : -amt,
+                        bank: isBank ? -amt : 0,
+                        bankDetails: isBank ? getBankInfoById(e.accountId) : ''
+                    });
+                }
+            });
+
+            // 4. Journal Vouchers
+            const journals = JSON.parse(localStorage.getItem("journal_vouchers")) || [];
+            journals.forEach(jv => {
+                const d = (jv.date || "").split('T')[0];
+                if (isInRange(d)) {
+                    transactions.push({
+                        date: d,
+                        type: 'Journal',
+                        no: jv.voucher_no,
+                        particulars: jv.narration || 'Journal Entry',
+                        debit: parseFloat(jv.total_amount || 0),
+                        credit: parseFloat(jv.total_amount || 0),
+                        cash: 0,
+                        bank: 0,
+                        bankDetails: ''
+                    });
+                }
+            });
+
+            // 5. Credit/Debit Notes
+            const notes = JSON.parse(localStorage.getItem("credit_debit_notes")) || [];
+            notes.forEach(n => {
+                const d = (n.note_date || n.date || "").split('T')[0];
+                if (isInRange(d) && n.status !== 'CANCELLED') {
+                    const amt = parseFloat(n.total_amount || 0);
+                    if (n.type === 'CREDIT') { // Sales Return
+                        transactions.push({ date: d, type: 'Credit Note', no: n.note_no, particulars: n.customer_name, debit: amt, credit: 0, cash: 0, bank: 0, bankDetails: '' });
+                    } else { // Purchase Return / Debit Note
+                        transactions.push({ date: d, type: 'Debit Note', no: n.note_no, particulars: n.customer_name, debit: 0, credit: amt, cash: 0, bank: 0, bankDetails: '' });
+                    }
+                }
+            });
+
+            // 5. Journal Vouchers
+            journals.forEach(jv => {
+                const d = (jv.date || "").split('T')[0];
+                if (isInRange(d)) {
+                    transactions.push({
+                        date: d,
+                        type: jv.voucher_type || 'Journal',
+                        no: jv.voucher_no,
+                        particulars: jv.narration || 'Journal Entry',
+                        debit: parseFloat(jv.total_amount || 0),
+                        credit: parseFloat(jv.total_amount || 0),
+                        cash: 0,
+                        bank: 0,
+                        bankDetails: ''
+                    });
+                }
+            });
+
+            // Sort by date
+            transactions.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+            if (typeFilter) {
+                return transactions.filter(t => t.type === typeFilter);
+            }
+
+            return transactions;
+        }
+
+        function renderReport() {
+            let data = getData();
+            const tbody = document.getElementById('reportBody');
+            tbody.innerHTML = "";
+
+            // Search Filter
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            if (searchTerm) {
+                data = data.filter(item =>
+                    (item.no && item.no.toLowerCase().includes(searchTerm)) ||
+                    (item.particulars && item.particulars.toLowerCase().includes(searchTerm))
+                );
+            }
+
+            // Sorting
+            data.sort((a, b) => {
+                let valA = a[currentSortColumn];
+                let valB = b[currentSortColumn];
+
+                if (['debit', 'credit', 'cash', 'bank'].includes(currentSortColumn)) {
+                    valA = parseFloat(valA) || 0;
+                    valB = parseFloat(valB) || 0;
+                } else if (currentSortColumn === 'date') {
+                    valA = new Date(valA).getTime();
+                    valB = new Date(valB).getTime();
+                } else {
+                    valA = (valA || "").toString().toLowerCase();
+                    valB = (valB || "").toString().toLowerCase();
+                }
+
+                if (valA < valB) return currentSortDirection === 'asc' ? -1 : 1;
+                if (valA > valB) return currentSortDirection === 'asc' ? 1 : -1;
+                return 0;
+            });
+
+            let totalDebit = 0;
+            let totalCredit = 0;
+            let totalCash = 0;
+            let totalBank = 0;
+
+            // Calculate totals for all filtered data
+            data.forEach(row => {
+                totalDebit += row.debit;
+                totalCredit += row.credit;
+                totalCash += row.cash;
+                totalBank += row.bank;
+            });
+
+            // Pagination Logic
+            const totalItems = data.length;
+            const totalPages = Math.ceil(totalItems / rowsPerPage);
+
+            if (currentPage > totalPages) currentPage = totalPages || 1;
+            if (currentPage < 1) currentPage = 1;
+
+            const startIndex = (currentPage - 1) * rowsPerPage;
+            const endIndex = Math.min(startIndex + rowsPerPage, totalItems);
+            const paginatedData = data.slice(startIndex, endIndex);
+
+            if (paginatedData.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" class="text-center">No transactions found for this period.</td></tr>';
+            } else {
+                paginatedData.forEach(row => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${new Date(row.date).toLocaleDateString('en-GB')}</td>
+                        <td>${row.type}</td>
+                        <td>${row.no}</td>
+                        <td>${row.particulars}</td>
+                        <td class="text-right" style="color:#c0392b; font-weight:bold;">${row.debit > 0 ? formatCurrency(row.debit) : ''}</td>
+                        <td class="text-right" style="color:#27ae60; font-weight:bold;">${row.credit > 0 ? formatCurrency(row.credit) : ''}</td>
+                        <td class="text-right" style="color:${row.cash >= 0 ? '#27ae60' : '#c0392b'}">${row.cash !== 0 ? formatCurrency(Math.abs(row.cash)) : ''}</td>
+                        <td class="text-right" style="color:${row.bank >= 0 ? '#27ae60' : '#c0392b'}">
+                            ${row.bank !== 0 ? formatCurrency(Math.abs(row.bank)) : ''}
+                            ${row.bankDetails ? `<div style="font-size:11px; color:#666;">${row.bankDetails}</div>` : ''}
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+
+            renderPaginationControls(totalItems, startIndex + 1, endIndex, totalPages);
+
+            document.getElementById('totalDebit').innerText = formatCurrency(totalDebit);
+            document.getElementById('totalCredit').innerText = formatCurrency(totalCredit);
+            document.getElementById('totalDebit').style.color = '#c0392b';
+            document.getElementById('totalCredit').style.color = '#27ae60';
+            document.getElementById('totalCash').innerText = formatCurrency(Math.abs(totalCash));
+            document.getElementById('totalCash').style.color = totalCash >= 0 ? '#27ae60' : '#c0392b';
+            document.getElementById('totalBank').innerText = formatCurrency(Math.abs(totalBank));
+            document.getElementById('totalBank').style.color = totalBank >= 0 ? '#27ae60' : '#c0392b';
+
+            // Difference Logic
+            const diff = totalDebit - totalCredit;
+            let diffRow = document.getElementById('diffRow');
+            if (!diffRow) {
+                const tfoot = document.querySelector('#reportTable tfoot');
+                diffRow = document.createElement('tr');
+                diffRow.id = 'diffRow';
+                diffRow.style.fontWeight = 'bold';
+                diffRow.style.backgroundColor = '#f8f9fa';
+                tfoot.appendChild(diffRow);
+            }
+
+            let color = '#27ae60'; // Default Green (Balanced)
+            if (diff > 0.01) color = '#c0392b'; // Dr = Red
+            else if (diff < -0.01) color = '#27ae60'; // Cr = Green
+
+            const label = Math.abs(diff) < 0.01 ? 'Balanced' : 'Difference';
+
+            diffRow.innerHTML = `
+                <td colspan="4" class="text-right" style="color:${color}">${label}</td>
+                <td colspan="4" class="text-center" style="color:${color}">${formatCurrency(Math.abs(diff))} ${diff > 0.01 ? 'Dr' : (diff < -0.01 ? 'Cr' : '')}</td>
+            `;
+        }
+
+        function renderPaginationControls(totalItems, start, end, totalPages) {
+            const info = document.getElementById("paginationInfo");
+            const controls = document.getElementById("paginationControls");
+
+            if (totalItems === 0) {
+                info.innerText = "No records";
+                controls.innerHTML = "";
+                return;
+            }
+
+            info.innerText = `Showing ${start} to ${end} of ${totalItems} entries`;
+
+            let html = "";
+            html += `<button onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''} style="padding: 4px 8px; border: 1px solid #ccc; background: #fff; cursor: pointer; border-radius: 4px;">Prev</button>`;
+            html += `<span style="padding: 4px 8px;">Page ${currentPage} of ${totalPages}</span>`;
+            html += `<button onclick="changePage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''} style="padding: 4px 8px; border: 1px solid #ccc; background: #fff; cursor: pointer; border-radius: 4px;">Next</button>`;
+
+            controls.innerHTML = html;
+        }
+
+        function changeRowsPerPage() {
+            rowsPerPage = parseInt(document.getElementById('rowsPerPageSelect').value);
+            currentPage = 1;
+            renderReport();
+        }
+
+        function changePage(page) {
+            currentPage = page;
+            renderReport();
+        }
+
+        function exportToExcel() {
+            let data = getData();
+            if (data.length === 0) return alert("No data to export");
+
+            // Apply search filter if any
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            if (searchTerm) {
+                data = data.filter(item =>
+                    (item.no && item.no.toLowerCase().includes(searchTerm)) ||
+                    (item.particulars && item.particulars.toLowerCase().includes(searchTerm))
+                );
+            }
+
+            if (data.length === 0) return alert("No matching data to export");
+
+            const wb = XLSX.utils.book_new();
+            const wsData = [
+                ["Day Book", document.getElementById('brandName').innerText],
+                ["Period", `${document.getElementById('fromDate').value} to ${document.getElementById('toDate').value}`],
+                [],
+                ["Date", "Voucher Type", "Voucher No", "Particulars", "Debit Amount", "Credit Amount", "Cash", "Bank"]
+            ];
+
+            let totalDebit = 0;
+            let totalCredit = 0;
+            let totalCash = 0;
+            let totalBank = 0;
+
+            data.forEach(r => {
+                wsData.push([
+                    r.date,
+                    r.type,
+                    r.no,
+                    r.particulars,
+                    r.debit,
+                    r.credit,
+                    r.cash,
+                    r.bank
+                ]);
+                totalDebit += (parseFloat(r.debit) || 0);
+                totalCredit += (parseFloat(r.credit) || 0);
+                totalCash += (parseFloat(r.cash) || 0);
+                totalBank += (parseFloat(r.bank) || 0);
+            });
+
+            // Add Total Row to Excel
+            wsData.push(["", "", "", "Total", totalDebit, totalCredit, totalCash, totalBank]);
+
+            const ws = XLSX.utils.aoa_to_sheet(wsData);
+            XLSX.utils.book_append_sheet(wb, ws, "Day Book");
+            XLSX.writeFile(wb, "Day_Book.xlsx");
+        }
+    </script>
+</body>
+
+</html>

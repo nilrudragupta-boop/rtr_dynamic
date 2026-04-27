@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>What's New</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="config.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f6f9;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            background: white;
+            width: 100%;
+            max-width: 800px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 28px;
+        }
+
+        .header p {
+            margin: 10px 0 0;
+            opacity: 0.9;
+            font-size: 16px;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .section {
+            margin-bottom: 25px;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #eee;
+        }
+
+        .section-title i {
+            font-size: 20px;
+        }
+
+        .new-features .section-title {
+            color: #27ae60;
+            border-color: #27ae60;
+        }
+
+        .improvements .section-title {
+            color: #f39c12;
+            border-color: #f39c12;
+        }
+
+        .bugfixes .section-title {
+            color: #e74c3c;
+            border-color: #e74c3c;
+        }
+
+        ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        li {
+            padding: 8px 0;
+            padding-left: 25px;
+            position: relative;
+            line-height: 1.5;
+        }
+
+        li::before {
+            content: "•";
+            position: absolute;
+            left: 5px;
+            color: #bdc3c7;
+            font-weight: bold;
+        }
+
+        .new-features li::before {
+            color: #27ae60;
+        }
+
+        .improvements li::before {
+            color: #f39c12;
+        }
+
+        .bugfixes li::before {
+            color: #e74c3c;
+        }
+
+        .footer {
+            background: #f8f9fa;
+            padding: 15px;
+            text-align: center;
+            border-top: 1px solid #eee;
+        }
+
+        .btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 15px;
+            transition: background 0.2s;
+        }
+
+        .btn:hover {
+            background: #2980b9;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎉 What's New</h1>
+            <p>Version <span id="versionDisplay"></span> • Released on <span id="dateDisplay"></span></p>
+        </div>
+        <div class="content">
+            <div id="newFeaturesSection" class="section new-features" style="display: none;">
+                <div class="section-title"><i class="fas fa-star"></i> New Features</div>
+                <ul id="newFeaturesList"></ul>
+            </div>
+            <div id="improvementsSection" class="section improvements" style="display: none;">
+                <div class="section-title"><i class="fas fa-rocket"></i> Improvements</div>
+                <ul id="improvementsList"></ul>
+            </div>
+            <div id="bugfixesSection" class="section bugfixes" style="display: none;">
+                <div class="section-title"><i class="fas fa-bug"></i> Bug Fixes</div>
+                <ul id="bugfixesList"></ul>
+            </div>
+            <div id="noUpdatesMsg" style="display: none; text-align: center; padding: 20px; color: #7f8c8d;">
+                <p>Enjoying the latest version!</p>
+            </div>
+        </div>
+        <div class="footer">
+            <button class="btn" onclick="window.close()">Close</button>
+        </div>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            if (typeof RELEASE_DATA === 'undefined') {
+                document.querySelector('.content').innerHTML = '<p style="color:red; text-align:center;">Error: Release notes not found.</p>';
+                return;
+            }
+            document.getElementById('versionDisplay').textContent = typeof CURRENT_APP_VERSION !== 'undefined' ? CURRENT_APP_VERSION : 'Unknown';
+            document.getElementById('dateDisplay').textContent = typeof RELEASE_DATE !== 'undefined' ? RELEASE_DATE : 'Unknown';
+            const populateList = (listId, sectionId, items) => {
+                const list = document.getElementById(listId);
+                const section = document.getElementById(sectionId);
+                if (items && items.length > 0) {
+                    items.forEach(item => {
+                        const li = document.createElement('li');
+                        li.textContent = item;
+                        list.appendChild(li);
+                    });
+                    section.style.display = 'block';
+                    return true;
+                }
+                return false;
+            };
+            let hasContent = false;
+            if (populateList('newFeaturesList', 'newFeaturesSection', RELEASE_DATA.newFeatures)) hasContent = true;
+            if (populateList('improvementsList', 'improvementsSection', RELEASE_DATA.improvements)) hasContent = true;
+            if (populateList('bugfixesList', 'bugfixesSection', RELEASE_DATA.bugfixes)) hasContent = true;
+            if (!hasContent) {
+                document.getElementById('noUpdatesMsg').style.display = 'block';
+            }
+        });
+    </script>
+</body>
+
+</html>

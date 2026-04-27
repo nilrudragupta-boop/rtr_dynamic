@@ -1,0 +1,1477 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RTR - Finance & Tools</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text: #1e293b;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --input-bg: #f8fafc;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        [data-theme="dark"] {
+            --bg: #0f172a;
+            --card-bg: #1e293b;
+            --text: #f1f5f9;
+            --text-muted: #94a3b8;
+            --border: #334155;
+            --input-bg: #334155;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 40px 20px;
+            line-height: 1.5;
+        }
+
+        h2 {
+            text-align: center;
+            color: var(--text);
+            margin-bottom: 40px;
+            font-weight: 800;
+            font-size: 2rem;
+            letter-spacing: -0.025em;
+        }
+
+        .card {
+            background: var(--card-bg);
+            padding: 24px;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            transition: transform 0.2s, box-shadow 0.2s;
+            border: 1px solid var(--border);
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        h3 {
+            margin-top: 0;
+            color: var(--text);
+            font-size: 1.25rem;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border);
+            font-weight: 600;
+        }
+
+        label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+            text-align: left;
+        }
+
+        input,
+        select {
+            width: 100%;
+            padding: 10px 12px;
+            margin-bottom: 16px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 0.95rem;
+            box-sizing: border-box;
+            transition: all 0.2s;
+            background: var(--input-bg);
+            color: var(--text);
+        }
+
+        input:focus,
+        select:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: #fff;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            margin-top: 5px;
+        }
+
+        button:hover {
+            background: var(--primary-hover);
+        }
+
+        .result {
+            margin-top: 20px;
+            padding: 12px;
+            background: #eff6ff;
+            color: #1e40af;
+            border-radius: 8px;
+            font-weight: 600;
+            text-align: center;
+            font-size: 1rem;
+            border: 1px solid #dbeafe;
+        }
+
+        [data-theme="dark"] .result {
+            background: rgba(37, 99, 235, 0.2);
+            color: #bfdbfe;
+            border-color: #1e40af;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 250px;
+            margin-top: 20px;
+        }
+
+        .table-wrapper {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        #emiAmortizationTable {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.875rem;
+        }
+
+        #emiAmortizationTable th,
+        #emiAmortizationTable td {
+            padding: 8px 12px;
+            text-align: right;
+            border-bottom: 1px solid var(--border);
+            white-space: nowrap;
+        }
+
+        #emiAmortizationTable th {
+            background-color: var(--bg);
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+
+        #emiAmortizationTable tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        #emiAmortizationTable td:first-child,
+        #emiAmortizationTable th:first-child {
+            text-align: left;
+        }
+
+        .theme-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 1px solid var(--border);
+            background: var(--card-bg);
+            color: var(--text);
+            font-size: 1.2rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+        }
+
+        /* New Layout Styles */
+        .app-container {
+            display: flex;
+            max-width: 1200px;
+            margin: 0 auto;
+            gap: 24px;
+            min-height: 80vh;
+        }
+
+        .sidebar {
+            width: 260px;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .nav-btn {
+            padding: 16px;
+            text-align: left;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            color: var(--text);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 0;
+        }
+
+        .nav-btn:hover,
+        .nav-btn.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+            transform: translateX(4px);
+        }
+
+        .main-content {
+            flex: 1;
+            background: var(--card-bg);
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            padding: 30px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .calc-view {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .calc-view.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Scientific Calculator Styles */
+        .sci-display {
+            width: 100%;
+            height: 80px;
+            font-size: 2rem;
+            text-align: right;
+            background: var(--input-bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 10px 20px;
+            margin-bottom: 20px;
+            color: var(--text);
+            font-family: monospace;
+        }
+
+        .sci-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+        }
+
+        .sci-btn {
+            padding: 15px 0;
+            font-size: 1.1rem;
+            background: var(--bg);
+            color: var(--text);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            margin-top: 0;
+        }
+
+        .sci-btn:hover {
+            background: var(--border);
+        }
+
+        .sci-btn.operator {
+            color: var(--primary);
+            font-weight: bold;
+        }
+
+        .sci-btn.equal {
+            background: var(--primary);
+            color: white;
+            grid-column: span 2;
+        }
+
+        .history-panel {
+            margin-top: 20px;
+            max-height: 150px;
+            overflow-y: auto;
+            border-top: 1px solid var(--border);
+            padding-top: 10px;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        .history-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
+            cursor: pointer;
+        }
+
+        .history-item:hover {
+            color: var(--primary);
+        }
+
+        /* Days Counter Tabs */
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 10px;
+        }
+
+        .tab-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            padding: 8px 16px;
+            cursor: pointer;
+            width: auto;
+            margin-top: 0;
+        }
+
+        .tab-btn.active {
+            color: var(--primary);
+            border-bottom: 2px solid var(--primary);
+            font-weight: bold;
+        }
+
+        .radio-group {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+            align-items: center;
+        }
+
+        .radio-group input {
+            width: auto;
+            margin: 0;
+        }
+
+        .radio-group label {
+            margin: 0;
+            display: inline;
+        }
+
+        .currency-io {
+            display: flex;
+            align-items: flex-end;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .currency-group {
+            flex: 1;
+        }
+
+        .currency-group select {
+            margin-bottom: 0;
+        }
+
+        .swap-btn {
+            width: 44px;
+            height: 44px;
+            flex-shrink: 0;
+            padding: 0;
+            border-radius: 50%;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            color: var(--text);
+            margin: 0;
+        }
+
+        .swap-btn:hover {
+            background: var(--border);
+        }
+
+        @media (max-width: 768px) {
+            .app-container {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                width: 100%;
+                flex-direction: row;
+                overflow-x: auto;
+                padding-bottom: 8px;
+            }
+
+            .nav-btn {
+                white-space: nowrap;
+            }
+
+            .currency-io {
+                flex-direction: column;
+                align-items: center;
+                gap: 10px;
+            }
+
+            .currency-group {
+                width: 100%;
+            }
+
+            .swap-btn {
+                transform: rotate(90deg);
+            }
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background-color: var(--card-bg);
+            padding: 20px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            max-height: 80vh;
+            display: flex;
+            flex-direction: column;
+            color: var(--text);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 10px;
+        }
+
+        .modal-body {
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .currency-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px;
+            border-bottom: 1px solid var(--border);
+            cursor: pointer;
+            align-items: center;
+        }
+
+        .currency-item:hover {
+            background-color: var(--input-bg);
+        }
+
+        .currency-item input {
+            width: auto;
+            margin: 0;
+        }
+
+        .fav-btn {
+            background: none;
+            border: none;
+            color: var(--primary);
+            cursor: pointer;
+            font-size: 0.9rem;
+            text-decoration: underline;
+            padding: 0;
+            width: auto;
+            margin-left: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle Dark Mode">🌙</button>
+
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <div class="sidebar">
+            <h2>Indian Finance & Tools</h2>
+            <button class="nav-btn active" onclick="switchView('scientific')">Scientific Calculator</button>
+            <button class="nav-btn" onclick="switchView('days')">Days Counter</button>
+            <button class="nav-btn" onclick="switchView('emi')">EMI Calculator</button>
+            <button class="nav-btn" onclick="switchView('fd')">FD Calculator</button>
+            <button class="nav-btn" onclick="switchView('sip')">SIP Calculator</button>
+            <button class="nav-btn" onclick="switchView('currency')">Currency Converter</button>
+            <button class="nav-btn" onclick="switchView('unit')">Unit Converter</button>
+            <button class="nav-btn" style="background:#28aeec; color:white; border-color:#129ae9;"
+                onclick="window.open('Utilities.html', 'Utilities', 'width=400,height=350,resizable=yes,scrollbars=yes')">Utilities</button>
+        </div>
+
+        <!-- Main Content Area -->
+        <div class="main-content">
+
+            <!-- SCIENTIFIC CALCULATOR -->
+            <div id="scientific" class="calc-view active">
+                <h3>Scientific Calculator</h3>
+                <input type="text" id="sciDisplay" class="sci-display" readonly value="0">
+                <div class="sci-grid">
+                    <!-- Row 1 -->
+                    <button class="sci-btn" onclick="sciMemory('MC')">MC</button>
+                    <button class="sci-btn" onclick="sciMemory('MR')">MR</button>
+                    <button class="sci-btn" onclick="sciMemory('M+')">M+</button>
+                    <button class="sci-btn" onclick="sciMemory('M-')">M-</button>
+                    <button class="sci-btn operator" onclick="sciClear()">AC</button>
+                    <!-- Row 2 -->
+                    <button class="sci-btn" onclick="sciFunc('sin')">sin</button>
+                    <button class="sci-btn" onclick="sciFunc('cos')">cos</button>
+                    <button class="sci-btn" onclick="sciFunc('tan')">tan</button>
+                    <button class="sci-btn" onclick="sciFunc('log')">log</button>
+                    <button class="sci-btn" onclick="sciFunc('ln')">ln</button>
+                    <!-- Row 3 -->
+                    <button class="sci-btn" onclick="sciInput('(')">(</button>
+                    <button class="sci-btn" onclick="sciInput(')')">)</button>
+                    <button class="sci-btn" onclick="sciInput('^')">^</button>
+                    <button class="sci-btn" onclick="sciFunc('sqrt')">√</button>
+                    <button class="sci-btn operator" onclick="sciInput('/')">÷</button>
+                    <!-- Row 4 -->
+                    <button class="sci-btn" onclick="sciInput('7')">7</button>
+                    <button class="sci-btn" onclick="sciInput('8')">8</button>
+                    <button class="sci-btn" onclick="sciInput('9')">9</button>
+                    <button class="sci-btn" onclick="sciInput('%')">%</button>
+                    <button class="sci-btn operator" onclick="sciInput('*')">×</button>
+                    <!-- Row 5 -->
+                    <button class="sci-btn" onclick="sciInput('4')">4</button>
+                    <button class="sci-btn" onclick="sciInput('5')">5</button>
+                    <button class="sci-btn" onclick="sciInput('6')">6</button>
+                    <button class="sci-btn" onclick="sciInput('PI')">π</button>
+                    <button class="sci-btn operator" onclick="sciInput('-')">-</button>
+                    <!-- Row 6 -->
+                    <button class="sci-btn" onclick="sciInput('1')">1</button>
+                    <button class="sci-btn" onclick="sciInput('2')">2</button>
+                    <button class="sci-btn" onclick="sciInput('3')">3</button>
+                    <button class="sci-btn" onclick="sciInput('e')">e</button>
+                    <button class="sci-btn operator" onclick="sciInput('+')">+</button>
+                    <!-- Row 7 -->
+                    <button class="sci-btn" onclick="sciInput('0')">0</button>
+                    <button class="sci-btn" onclick="sciInput('.')">.</button>
+                    <button class="sci-btn" onclick="sciBackspace()">⌫</button>
+                    <button class="sci-btn equal" onclick="sciCalculate()">=</button>
+                </div>
+                <div class="history-panel">
+                    <strong>History</strong>
+                    <div id="sciHistory"></div>
+                </div>
+            </div>
+
+            <!-- DAYS COUNTING CALCULATOR -->
+            <div id="days" class="calc-view">
+                <h3>Days Counter</h3>
+                <div class="tabs">
+                    <button class="tab-btn active" onclick="switchDaysTab('diff')">Date Difference</button>
+                    <button class="tab-btn" onclick="switchDaysTab('add')">Add/Subtract Days</button>
+                </div>
+
+                <!-- Tab 1: Difference -->
+                <div id="days-diff-tab">
+                    <label>Start Date</label>
+                    <input type="date" id="startDate">
+                    <label>End Date</label>
+                    <input type="date" id="endDate">
+                    <div class="radio-group">
+                        <input type="checkbox" id="excludeWeekends">
+                        <label for="excludeWeekends">Exclude Weekends (Sat/Sun)</label>
+                    </div>
+                    <div class="radio-group">
+                        <input type="checkbox" id="includeEnd">
+                        <label for="includeEnd">Include End Date</label>
+                    </div>
+                    <button onclick="calculateDateDiff()">Calculate Difference</button>
+                </div>
+
+                <!-- Tab 2: Add/Subtract -->
+                <div id="days-add-tab" style="display:none;">
+                    <label>Start Date</label>
+                    <input type="date" id="addStartDate">
+                    <label>Days to Add/Subtract</label>
+                    <input type="number" id="daysToShift" placeholder="e.g. 45 or -10">
+                    <div class="radio-group">
+                        <input type="radio" name="shiftOp" value="add" checked id="opAdd"> <label
+                            for="opAdd">Add</label>
+                        <input type="radio" name="shiftOp" value="sub" id="opSub"> <label for="opSub">Subtract</label>
+                    </div>
+                    <button onclick="calculateDateShift()">Calculate New Date</button>
+                </div>
+
+                <div class="result" id="daysResult">Result will appear here</div>
+            </div>
+
+            <!-- EMI CALCULATOR -->
+            <div id="emi" class="calc-view">
+                <h3>EMI Calculator</h3>
+                <label>Loan Amount</label>
+                <input type="number" id="loanAmount" placeholder="e.g. 500000">
+                <label>Interest Rate (%)</label>
+                <input type="number" id="interestRate" placeholder="e.g. 8.5">
+                <label>Tenure (Months)</label>
+                <input type="number" id="loanMonths" placeholder="e.g. 24">
+                <button onclick="calculateEMI()">Calculate EMI</button>
+                <div class="result" id="emiResult" style="text-align: left; padding: 16px;">Result</div>
+                <div class="table-wrapper" id="emiAmortizationContainer" style="display: none;">
+                    <table id="emiAmortizationTable">
+                        <thead>
+                            <tr>
+                                <th>Month</th>
+                                <th>Principal</th>
+                                <th>Interest</th>
+                                <th>Balance</th>
+                            </tr>
+                        </thead>
+                        <tbody id="emiAmortizationTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- FD CALCULATOR -->
+            <div id="fd" class="calc-view">
+                <h3>FD Calculator</h3>
+                <label>Total Investment</label>
+                <input type="number" id="fdPrincipal" placeholder="e.g. 100000">
+
+                <label>Interest Rate (%)</label>
+                <input type="number" id="fdRate" placeholder="e.g. 6.5">
+
+                <label>Time Period</label>
+                <div style="display: flex; gap: 10px; margin-bottom: 16px;">
+                    <input type="number" id="fdTenure" placeholder="e.g. 5" style="margin-bottom: 0; flex: 2;">
+                    <select id="fdTenureType" style="margin-bottom: 0; flex: 1;">
+                        <option value="years">Years</option>
+                        <option value="months">Months</option>
+                        <option value="days">Days</option>
+                    </select>
+                </div>
+
+                <label>Compounding Frequency</label>
+                <select id="fdCompounding">
+                    <option value="4" selected>Quarterly</option>
+                    <option value="12">Monthly</option>
+                    <option value="2">Half-Yearly</option>
+                    <option value="1">Yearly</option>
+                </select>
+
+                <button onclick="calculateFD()">Calculate FD</button>
+                <div class="result" id="fdResult" style="text-align: left; padding: 16px;">Result</div>
+            </div>
+
+            <!-- SIP CALCULATOR -->
+            <div id="sip" class="calc-view">
+                <h3>SIP Calculator</h3>
+                <label>Monthly Investment</label>
+                <input type="number" id="sipMonthly" placeholder="e.g. 5000">
+                <label>Expected Return (%)</label>
+                <input type="number" id="sipRate" placeholder="e.g. 12">
+
+                <label>Time Period</label>
+                <div style="display: flex; gap: 10px; margin-bottom: 16px;">
+                    <input type="number" id="sipTenure" placeholder="e.g. 10" style="margin-bottom: 0; flex: 2;">
+                    <select id="sipTenureType" style="margin-bottom: 0; flex: 1;">
+                        <option value="years">Years</option>
+                        <option value="months">Months</option>
+                    </select>
+                </div>
+
+                <label>Annual Step-up (%) <small style="color:var(--text-muted)">(Optional)</small></label>
+                <input type="number" id="sipStepUp" placeholder="e.g. 10">
+
+                <button onclick="calculateSIP()">Calculate SIP</button>
+                <div class="result" id="sipResult" style="text-align: left; padding: 16px;">Result</div>
+                <div class="chart-container" id="sipChartContainer" style="display: none;">
+                    <canvas id="sipChart"></canvas>
+                </div>
+            </div>
+
+            <!-- CURRENCY CONVERTER -->
+            <div id="currency" class="calc-view">
+                <div
+                    style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom: 1px solid var(--border); padding-bottom: 12px;">
+                    <h3 style="margin:0; border:none; padding:0;">Currency Converter</h3>
+                    <button class="fav-btn" onclick="openFavoritesModal()">⚙️ Manage Favorites</button>
+                </div>
+                <label>Amount</label>
+                <input type="number" id="currAmount" placeholder="e.g. 100" oninput="calculateCurrency()">
+                <div class="currency-io">
+                    <div class="currency-group">
+                        <label>From</label>
+                        <select id="currFrom" onchange="calculateCurrency()">
+                        </select>
+                    </div>
+                    <button class="swap-btn" onclick="swapCurrencies()" title="Swap currencies">&#8644;</button>
+                    <div class="currency-group">
+                        <label>To</label>
+                        <select id="currTo" onchange="calculateCurrency()">
+                        </select>
+                    </div>
+                </div>
+
+                <button onclick="calculateCurrency()">Convert Currency</button>
+                <div class="result" id="currResult">Result</div>
+            </div>
+
+            <!-- UNIT CONVERTER -->
+            <div id="unit" class="calc-view">
+                <h3>Unit Converter</h3>
+                <label>Category</label>
+                <select id="unitCategory" onchange="updateUnitOptions()">
+                    <option value="length">Length</option>
+                    <option value="weight">Weight</option>
+                    <option value="temperature">Temperature</option>
+                    <option value="volume">Volume</option>
+                    <option value="area">Area</option>
+                </select>
+                <label>Value</label>
+                <input type="number" id="unitValue" placeholder="Enter value" oninput="calculateUnit()">
+                <div class="currency-io">
+                    <div class="currency-group">
+                        <label>From</label>
+                        <select id="unitFrom" onchange="calculateUnit()"></select>
+                    </div>
+                    <button class="swap-btn" onclick="swapUnits()" title="Swap units">&#8644;</button>
+                    <div class="currency-group">
+                        <label>To</label>
+                        <select id="unitTo" onchange="calculateUnit()"></select>
+                    </div>
+                </div>
+                <div class="result" id="unitResult">Result</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Favorites Modal -->
+    <div id="favoritesModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 style="margin:0; border:none; padding:0;">Select Favorites (Max 10)</h3>
+                <span style="cursor:pointer; font-size:1.5rem;" onclick="closeFavoritesModal()">&times;</span>
+            </div>
+            <div style="padding:10px 0;">
+                <input type="text" id="currencySearch" placeholder="Search currency..." oninput="renderCurrencyList()"
+                    style="width:100%;">
+            </div>
+            <div class="modal-body" id="currencyList">
+                <!-- Items injected here -->
+            </div>
+            <div style="text-align:right; margin-top:15px;">
+                <button onclick="saveFavorites()" style="width:auto; padding:8px 16px;">Save & Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let sipChartInstance;
+        const formatCurrency = (value) => {
+            return new Intl.NumberFormat('en-IN', {
+                style: 'currency',
+                currency: 'INR'
+            }).format(value);
+        };
+
+        function toggleTheme() {
+            const html = document.documentElement;
+            const current = html.getAttribute('data-theme');
+            const next = current === 'dark' ? 'light' : 'dark';
+            html.setAttribute('data-theme', next);
+            localStorage.setItem('theme', next);
+            document.querySelector('.theme-toggle').innerHTML = next === 'dark' ? '☀️' : '🌙';
+        }
+
+        // Initialize Theme
+        const savedTheme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        document.documentElement.setAttribute('data-theme', savedTheme);
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelector('.theme-toggle').innerHTML = savedTheme === 'dark' ? '☀️' : '🌙';
+            updateUnitOptions();
+            initCurrency();
+        });
+
+        // Keyboard support for Scientific Calculator
+        document.addEventListener('keydown', (event) => {
+            // Only handle keyboard input if the scientific calculator is active
+            if (!document.getElementById('scientific').classList.contains('active')) {
+                return;
+            }
+
+            const key = event.key;
+
+            // Prevent default browser actions for keys that might interfere.
+            if (['/', '+', '-', '*', '=', 'Enter', 'Escape', 'Backspace', '%', '^'].includes(key)) {
+                event.preventDefault();
+            }
+
+            if ((key >= '0' && key <= '9') || ['.', '(', ')', '^', '%', '+', '-', '*', '/'].includes(key)) {
+                sciInput(key);
+            } else if (key === 'Enter' || key === '=') {
+                sciCalculate();
+            } else if (key === 'Backspace') {
+                sciBackspace();
+            } else if (key === 'Escape') {
+                sciClear();
+            }
+        });
+
+        // Navigation Logic
+        function switchView(viewId) {
+            // Update Buttons
+            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+
+            // Update Views
+            document.querySelectorAll('.calc-view').forEach(view => view.classList.remove('active'));
+            document.getElementById(viewId).classList.add('active');
+        }
+
+        // --- SCIENTIFIC CALCULATOR LOGIC ---
+        let sciMemoryVal = 0;
+        let sciExpression = "";
+
+        function sciInput(val) {
+            const display = document.getElementById('sciDisplay');
+            if (display.value === "0" || display.value === "Error") {
+                sciExpression = val;
+            } else {
+                sciExpression += val;
+            }
+            display.value = sciExpression;
+        }
+
+        function sciClear() {
+            sciExpression = "";
+            document.getElementById('sciDisplay').value = "0";
+        }
+
+        function sciBackspace() {
+            sciExpression = sciExpression.slice(0, -1);
+            document.getElementById('sciDisplay').value = sciExpression || "0";
+        }
+
+        function sciFunc(func) {
+            if (func === 'sqrt') sciExpression += 'Math.sqrt(';
+            else if (func === 'sin') sciExpression += 'Math.sin(';
+            else if (func === 'cos') sciExpression += 'Math.cos(';
+            else if (func === 'tan') sciExpression += 'Math.tan(';
+            else if (func === 'log') sciExpression += 'Math.log10(';
+            else if (func === 'ln') sciExpression += 'Math.log(';
+            else sciExpression += func;
+
+            document.getElementById('sciDisplay').value = sciExpression;
+        }
+
+        function sciCalculate() {
+            const display = document.getElementById('sciDisplay');
+            const history = document.getElementById('sciHistory');
+            try {
+                // Replace symbols for JS evaluation
+                let evalStr = sciExpression
+                    .replace(/\^/g, '**')
+                    .replace(/PI/g, 'Math.PI')
+                    .replace(/e/g, 'Math.E');
+
+                const result = eval(evalStr);
+
+                // Add to history
+                const historyItem = document.createElement('div');
+                historyItem.className = 'history-item';
+                historyItem.innerHTML = `<span>${sciExpression}</span> <span>= ${result}</span>`;
+                historyItem.onclick = () => {
+                    sciExpression = result.toString();
+                    display.value = sciExpression;
+                };
+                history.prepend(historyItem);
+
+                sciExpression = result.toString();
+                display.value = sciExpression;
+            } catch (e) {
+                display.value = "Error";
+                sciExpression = "";
+            }
+        }
+
+        function sciMemory(op) {
+            const current = parseFloat(document.getElementById('sciDisplay').value) || 0;
+            if (op === 'MC') sciMemoryVal = 0;
+            if (op === 'MR') {
+                sciExpression += sciMemoryVal;
+                document.getElementById('sciDisplay').value = sciExpression;
+            }
+            if (op === 'M+') sciMemoryVal += current;
+            if (op === 'M-') sciMemoryVal -= current;
+        }
+
+        // --- DAYS COUNTER LOGIC ---
+        function switchDaysTab(tab) {
+            document.getElementById('days-diff-tab').style.display = tab === 'diff' ? 'block' : 'none';
+            document.getElementById('days-add-tab').style.display = tab === 'add' ? 'block' : 'none';
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById('daysResult').innerHTML = "Result will appear here";
+        }
+
+        function calculateDateDiff() {
+            const start = new Date(document.getElementById("startDate").value);
+            const end = new Date(document.getElementById("endDate").value);
+            const excludeWeekends = document.getElementById("excludeWeekends").checked;
+            const includeEnd = document.getElementById("includeEnd").checked;
+
+            if (isNaN(start) || isNaN(end)) {
+                document.getElementById("daysResult").innerHTML = "Please select valid dates.";
+                return;
+            }
+
+            if (end < start) {
+                document.getElementById("daysResult").innerHTML = "End date must be after start date.";
+                return;
+            }
+
+            let count = 0;
+            let current = new Date(start);
+            // Normalize time to avoid DST issues
+            current.setHours(0, 0, 0, 0);
+            const endTime = new Date(end).setHours(0, 0, 0, 0);
+
+            while (current.getTime() < endTime || (includeEnd && current.getTime() === endTime)) {
+                const day = current.getDay();
+                if (!excludeWeekends || (day !== 0 && day !== 6)) {
+                    count++;
+                }
+                current.setDate(current.getDate() + 1);
+            }
+
+            // Calculate Y/M/D breakdown roughly for display
+            const diffTime = Math.abs(end - start);
+            const totalDaysRaw = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+            document.getElementById("daysResult").innerHTML =
+                `<strong>${count} days</strong> calculated.<br>` +
+                `<small>(Calendar difference: ${totalDaysRaw} days)</small>`;
+        }
+
+        function calculateDateShift() {
+            const start = new Date(document.getElementById("addStartDate").value);
+            const days = parseInt(document.getElementById("daysToShift").value);
+            const op = document.querySelector('input[name="shiftOp"]:checked').value;
+
+            if (isNaN(start) || isNaN(days)) {
+                document.getElementById("daysResult").innerHTML = "Please enter valid date and days.";
+                return;
+            }
+
+            const resultDate = new Date(start);
+            if (op === 'add') resultDate.setDate(resultDate.getDate() + days);
+            else resultDate.setDate(resultDate.getDate() - days);
+
+            document.getElementById("daysResult").innerHTML =
+                `New Date: <strong>${resultDate.toDateString()}</strong>`;
+        }
+
+        function calculateEMI() {
+            const P = parseFloat(document.getElementById("loanAmount").value) || 0;
+            const r = parseFloat(document.getElementById("interestRate").value) / 1200;
+            const n = parseInt(document.getElementById("loanMonths").value) || 0;
+
+            const resultEl = document.getElementById("emiResult");
+            const amortizationContainer = document.getElementById("emiAmortizationContainer");
+            const tableBody = document.getElementById("emiAmortizationTableBody");
+
+            // Clear previous results
+            tableBody.innerHTML = "";
+            amortizationContainer.style.display = "none";
+
+            if (P > 0 && r > 0 && n > 0) {
+                const emi = P * r * Math.pow(1 + r, n) / (Math.pow(1 + r, n) - 1);
+
+                let balance = P;
+                let scheduleHtml = "";
+                let totalInterest = 0;
+
+                for (let i = 1; i <= n; i++) {
+                    const interestPayment = balance * r;
+                    const principalPayment = emi - interestPayment;
+                    balance -= principalPayment;
+                    totalInterest += interestPayment;
+
+                    // Ensure balance is exactly 0 on the last month to correct floating point errors
+                    const finalBalance = (i === n) ? 0 : balance;
+
+                    scheduleHtml += `
+                <tr>
+                    <td>${i}</td>
+                    <td>${formatCurrency(principalPayment)}</td>
+                    <td>${formatCurrency(interestPayment)}</td>
+                    <td>${formatCurrency(finalBalance < 0 ? 0 : finalBalance)}</td>
+                </tr>
+            `;
+                }
+
+                const totalPayment = P + totalInterest;
+                resultEl.innerHTML = `Monthly EMI: <strong>${formatCurrency(emi)}</strong><br>
+                              Total Interest: ${formatCurrency(totalInterest)}<br>
+                              Total Payment: ${formatCurrency(totalPayment)}`;
+
+                tableBody.innerHTML = scheduleHtml;
+                amortizationContainer.style.display = "block";
+            } else {
+                resultEl.innerHTML = "Please enter valid values";
+            }
+        }
+
+        function calculateFD() {
+            const P = parseFloat(document.getElementById("fdPrincipal").value) || 0;
+            const rateInput = parseFloat(document.getElementById("fdRate").value) || 0;
+            const tenure = parseFloat(document.getElementById("fdTenure").value) || 0;
+            const tenureType = document.getElementById("fdTenureType").value;
+            const frequency = parseInt(document.getElementById("fdCompounding").value);
+
+            if (P > 0 && rateInput > 0 && tenure > 0) {
+                let t = 0;
+                if (tenureType === 'years') t = tenure;
+                else if (tenureType === 'months') t = tenure / 12;
+                else if (tenureType === 'days') t = tenure / 365;
+
+                const r = rateInput / 100;
+                const n = frequency;
+
+                // Formula: A = P * (1 + r/n)^(n*t)
+                const A = P * Math.pow((1 + (r / n)), (n * t));
+                const interest = A - P;
+
+                document.getElementById("fdResult").innerHTML =
+                    `Maturity Amount: <strong>${formatCurrency(A)}</strong><br>` +
+                    `Total Investment: ${formatCurrency(P)}<br>` +
+                    `Interest Earned: ${formatCurrency(interest)}`;
+            } else {
+                document.getElementById("fdResult").innerHTML = "Please enter valid values";
+            }
+        }
+
+        function calculateSIP() {
+            let monthly = parseFloat(document.getElementById("sipMonthly").value) || 0;
+            const annualRate = parseFloat(document.getElementById("sipRate").value) || 0;
+            const tenure = parseFloat(document.getElementById("sipTenure").value) || 0;
+            const tenureType = document.getElementById("sipTenureType").value;
+            const stepUp = parseFloat(document.getElementById("sipStepUp").value) || 0;
+
+            const resultEl = document.getElementById("sipResult");
+            const chartContainer = document.getElementById("sipChartContainer");
+
+            if (sipChartInstance) {
+                sipChartInstance.destroy();
+            }
+
+            if (monthly > 0 && annualRate > 0 && tenure > 0) {
+                const monthlyRate = annualRate / 100 / 12;
+                let totalMonths = tenureType === 'years' ? Math.round(tenure * 12) : Math.round(tenure);
+
+                const labels = [];
+                const futureValueData = [];
+                const investedAmountData = [];
+
+                let currentFutureValue = 0;
+                let totalInvested = 0;
+                let currentMonthlyInvestment = monthly;
+
+                // Initial point
+                labels.push('Start');
+                futureValueData.push(0);
+                investedAmountData.push(0);
+
+                for (let m = 1; m <= totalMonths; m++) {
+                    // Calculate interest on previous balance + new investment
+                    currentFutureValue = (currentFutureValue + currentMonthlyInvestment) * (1 + monthlyRate);
+                    totalInvested += currentMonthlyInvestment;
+
+                    // Add data point every year
+                    if (m % 12 === 0) {
+                        labels.push(`Year ${m / 12}`);
+                        futureValueData.push(currentFutureValue);
+                        investedAmountData.push(totalInvested);
+
+                        // Apply Step-up manually
+                        if (stepUp > 0) {
+                            currentMonthlyInvestment = currentMonthlyInvestment * (1 + stepUp / 100);
+                        }
+                    }
+                }
+
+                // Add final month if not exactly on a year boundary
+                if (totalMonths % 12 !== 0) {
+                    labels.push(`Month ${totalMonths}`);
+                    futureValueData.push(currentFutureValue);
+                    investedAmountData.push(totalInvested);
+                }
+
+                const wealthGained = currentFutureValue - totalInvested;
+
+                resultEl.innerHTML = `Future Value: <strong>${formatCurrency(currentFutureValue)}</strong><br>
+                              Total Invested: ${formatCurrency(totalInvested)}<br>
+                              Wealth Gained: ${formatCurrency(wealthGained)}`;
+
+                chartContainer.style.display = 'block';
+                const ctx = document.getElementById('sipChart').getContext('2d');
+                sipChartInstance = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Investment Value',
+                            data: futureValueData,
+                            borderColor: 'var(--primary)',
+                            backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                            fill: true,
+                            tension: 0.4
+                        }, {
+                            label: 'Amount Invested',
+                            data: investedAmountData,
+                            borderColor: 'var(--text-muted)',
+                            borderDash: [5, 5],
+                            fill: false,
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            tooltip: {
+                                callbacks: {
+                                    label: (context) => `${context.dataset.label}: ${formatCurrency(context.parsed.y)}`
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                ticks: {
+                                    callback: function (value) {
+                                        return new Intl.NumberFormat('en-IN', {
+                                            notation: "compact",
+                                            compactDisplay: "short",
+                                            style: "currency",
+                                            currency: "INR"
+                                        }).format(value);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            } else {
+                resultEl.innerHTML = "Please enter valid values";
+                chartContainer.style.display = 'none';
+            }
+        }
+
+        function swapCurrencies() {
+            const fromSelect = document.getElementById('currFrom');
+            const toSelect = document.getElementById('currTo');
+            const temp = fromSelect.value;
+            fromSelect.value = toSelect.value;
+            toSelect.value = temp;
+            calculateCurrency();
+        }
+
+        function swapUnits() {
+            const fromSelect = document.getElementById('unitFrom');
+            const toSelect = document.getElementById('unitTo');
+            const temp = fromSelect.value;
+            fromSelect.value = toSelect.value;
+            toSelect.value = temp;
+            calculateUnit();
+        }
+
+        // --- CURRENCY DATA & LOGIC ---
+        const allCurrencies = [
+            { code: "AED", name: "UAE Dirham" }, { code: "AFN", name: "Afghan Afghani" }, { code: "ALL", name: "Albanian Lek" },
+            { code: "AMD", name: "Armenian Dram" }, { code: "ANG", name: "Neth. Antillean Guilder" }, { code: "AOA", name: "Angolan Kwanza" },
+            { code: "ARS", name: "Argentine Peso" }, { code: "AUD", name: "Australian Dollar" }, { code: "AWG", name: "Aruban Florin" },
+            { code: "AZN", name: "Azerbaijani Manat" }, { code: "BAM", name: "Bosnia-Herzegovina Mark" }, { code: "BBD", name: "Barbadian Dollar" },
+            { code: "BDT", name: "Bangladeshi Taka" }, { code: "BGN", name: "Bulgarian Lev" }, { code: "BHD", name: "Bahraini Dinar" },
+            { code: "BIF", name: "Burundian Franc" }, { code: "BMD", name: "Bermudan Dollar" }, { code: "BND", name: "Brunei Dollar" },
+            { code: "BOB", name: "Bolivian Boliviano" }, { code: "BRL", name: "Brazilian Real" }, { code: "BSD", name: "Bahamian Dollar" },
+            { code: "BTN", name: "Bhutanese Ngultrum" }, { code: "BWP", name: "Botswanan Pula" }, { code: "BYN", name: "Belarusian Ruble" },
+            { code: "BZD", name: "Belize Dollar" }, { code: "CAD", name: "Canadian Dollar" }, { code: "CDF", name: "Congolese Franc" },
+            { code: "CHF", name: "Swiss Franc" }, { code: "CLP", name: "Chilean Peso" }, { code: "CNY", name: "Chinese Yuan" },
+            { code: "COP", name: "Colombian Peso" }, { code: "CRC", name: "Costa Rican Colón" }, { code: "CUP", name: "Cuban Peso" },
+            { code: "CVE", name: "Cape Verdean Escudo" }, { code: "CZK", name: "Czech Koruna" }, { code: "DJF", name: "Djiboutian Franc" },
+            { code: "DKK", name: "Danish Krone" }, { code: "DOP", name: "Dominican Peso" }, { code: "DZD", name: "Algerian Dinar" },
+            { code: "EGP", name: "Egyptian Pound" }, { code: "ERN", name: "Eritrean Nakfa" }, { code: "ETB", name: "Ethiopian Birr" },
+            { code: "EUR", name: "Euro" }, { code: "FJD", name: "Fijian Dollar" }, { code: "FKP", name: "Falkland Islands Pound" },
+            { code: "GBP", name: "British Pound" }, { code: "GEL", name: "Georgian Lari" }, { code: "GGP", name: "Guernsey Pound" },
+            { code: "GHS", name: "Ghanaian Cedi" }, { code: "GIP", name: "Gibraltar Pound" }, { code: "GMD", name: "Gambian Dalasi" },
+            { code: "GNF", name: "Guinean Franc" }, { code: "GTQ", name: "Guatemalan Quetzal" }, { code: "GYD", name: "Guyanaese Dollar" },
+            { code: "HKD", name: "Hong Kong Dollar" }, { code: "HNL", name: "Honduran Lempira" }, { code: "HRK", name: "Croatian Kuna" },
+            { code: "HTG", name: "Haitian Gourde" }, { code: "HUF", name: "Hungarian Forint" }, { code: "IDR", name: "Indonesian Rupiah" },
+            { code: "ILS", name: "Israeli New Sheqel" }, { code: "IMP", name: "Manx Pound" }, { code: "INR", name: "Indian Rupee" },
+            { code: "IQD", name: "Iraqi Dinar" }, { code: "IRR", name: "Iranian Rial" }, { code: "ISK", name: "Icelandic Króna" },
+            { code: "JEP", name: "Jersey Pound" }, { code: "JMD", name: "Jamaican Dollar" }, { code: "JOD", name: "Jordanian Dinar" },
+            { code: "JPY", name: "Japanese Yen" }, { code: "KES", name: "Kenyan Shilling" }, { code: "KGS", name: "Kyrgystani Som" },
+            { code: "KHR", name: "Cambodian Riel" }, { code: "KMF", name: "Comorian Franc" }, { code: "KPW", name: "North Korean Won" },
+            { code: "KRW", name: "South Korean Won" }, { code: "KWD", name: "Kuwaiti Dinar" }, { code: "KYD", name: "Cayman Islands Dollar" },
+            { code: "KZT", name: "Kazakhstani Tenge" }, { code: "LAK", name: "Laotian Riel" }, { code: "LBP", name: "Lebanese Pound" },
+            { code: "LKR", name: "Sri Lankan Rupee" }, { code: "LRD", name: "Liberian Dollar" }, { code: "LSL", name: "Lesotho Dollar" },
+            { code: "LYD", name: "Libyan Dinar" }, { code: "MAD", name: "Moroccan Dirham" }, { code: "MDL", name: "Moldovan Leu" },
+            { code: "MGA", name: "Malagasy Ariary" }, { code: "MKD", name: "Macedonian Denar" }, { code: "MMK", name: "Myanma Kyat" },
+            { code: "MNT", name: "Mongolian Tugrik" }, { code: "MOP", name: "Macanese Pataca" }, { code: "MRU", name: "Mauritanian Ouguiya" },
+            { code: "MUR", name: "Mauritian Rupee" }, { code: "MVR", name: "Maldivian Rufiyaa" }, { code: "MWK", name: "Malawian Kwacha" },
+            { code: "MXN", name: "Mexican Peso" }, { code: "MYR", name: "Malaysian Ringgit" }, { code: "MZN", name: "Mozambican Metical" },
+            { code: "NAD", name: "Namibian Dollar" }, { code: "NGN", name: "Nigerian Naira" }, { code: "NIO", name: "Nicaraguan Córdoba" },
+            { code: "NOK", name: "Norwegian Krone" }, { code: "NPR", name: "Nepalese Rupee" }, { code: "NZD", name: "New Zealand Dollar" },
+            { code: "OMR", name: "Omani Rial" }, { code: "PAB", name: "Panamanian Balboa" }, { code: "PEN", name: "Peruvian Nuevo Sol" },
+            { code: "PGK", name: "Papua New Guinean Kina" }, { code: "PHP", name: "Philippine Peso" }, { code: "PKR", name: "Pakistani Rupee" },
+            { code: "PLN", name: "Polish Zloty" }, { code: "PYG", name: "Paraguayan Guarani" }, { code: "QAR", name: "Qatari Rial" },
+            { code: "RON", name: "Romanian Leu" }, { code: "RSD", name: "Serbian Dinar" }, { code: "RUB", name: "Russian Ruble" },
+            { code: "RWF", name: "Rwandan Franc" }, { code: "SAR", name: "Saudi Riyal" }, { code: "SBD", name: "Solomon Islands Dollar" },
+            { code: "SCR", name: "Seychellois Rupee" }, { code: "SDG", name: "Sudanese Pound" }, { code: "SEK", name: "Swedish Krona" },
+            { code: "SGD", name: "Singapore Dollar" }, { code: "SHP", name: "Saint Helena Pound" }, { code: "SLL", name: "Sierra Leonean Leone" },
+            { code: "SOS", name: "Somali Shilling" }, { code: "SRD", name: "Surinamese Dollar" }, { code: "SSP", name: "South Sudanese Pound" },
+            { code: "STN", name: "São Tomé & Príncipe Dobra" }, { code: "SYP", name: "Syrian Pound" }, { code: "SZL", name: "Eswatini Lilangeni" },
+            { code: "THB", name: "Thai Baht" }, { code: "TJS", name: "Tajikistani Somoni" }, { code: "TMT", name: "Turkmenistani Manat" },
+            { code: "TND", name: "Tunisian Dinar" }, { code: "TOP", name: "Tongan Paʻanga" }, { code: "TRY", name: "Turkish Lira" },
+            { code: "TTD", name: "Trinidad & Tobago Dollar" }, { code: "TWD", name: "New Taiwan Dollar" }, { code: "TZS", name: "Tanzanian Shilling" },
+            { code: "UAH", name: "Ukrainian Hryvnia" }, { code: "UGX", name: "Ugandan Shilling" }, { code: "USD", name: "US Dollar" },
+            { code: "UYU", name: "Uruguayan Peso" }, { code: "UZS", name: "Uzbekistani Som" }, { code: "VES", name: "Venezuelan Bolívar" },
+            { code: "VND", name: "Vietnamese Dong" }, { code: "VUV", name: "Vanuatu Vatu" }, { code: "WST", name: "Samoan Tala" },
+            { code: "XAF", name: "CFA Franc BEAC" }, { code: "XCD", name: "East Caribbean Dollar" }, { code: "XOF", name: "CFA Franc BCEAO" },
+            { code: "XPF", name: "CFP Franc" }, { code: "YER", name: "Yemeni Rial" }, { code: "ZAR", name: "South African Rand" },
+            { code: "ZMW", name: "Zambian Kwacha" }, { code: "ZWL", name: "Zimbabwean Dollar" }
+        ];
+
+        let currencyRatesCache = {};
+
+        let favoriteCurrencies = JSON.parse(localStorage.getItem('favCurrencies')) || ['USD', 'EUR', 'GBP', 'INR', 'JPY', 'AUD', 'CAD', 'SGD', 'AED', 'CNY'];
+
+        function initCurrency() {
+            updateCurrencyDropdowns();
+        }
+
+        function updateCurrencyDropdowns() {
+            const fromSelect = document.getElementById('currFrom');
+            const toSelect = document.getElementById('currTo');
+
+            const currentFrom = fromSelect.value;
+            const currentTo = toSelect.value;
+
+            fromSelect.innerHTML = '';
+            toSelect.innerHTML = '';
+
+            favoriteCurrencies.forEach(code => {
+                const curr = allCurrencies.find(c => c.code === code);
+                if (curr) {
+                    fromSelect.add(new Option(`${curr.code} - ${curr.name}`, curr.code));
+                    toSelect.add(new Option(`${curr.code} - ${curr.name}`, curr.code));
+                }
+            });
+
+            // Set defaults or restore selection
+            if (favoriteCurrencies.includes(currentFrom)) fromSelect.value = currentFrom;
+            else if (favoriteCurrencies.includes('USD')) fromSelect.value = 'USD';
+            else if (fromSelect.options.length > 0) fromSelect.selectedIndex = 0;
+
+            if (favoriteCurrencies.includes(currentTo)) toSelect.value = currentTo;
+            else if (favoriteCurrencies.includes('INR')) toSelect.value = 'INR';
+            else if (toSelect.options.length > 1) toSelect.selectedIndex = 1;
+
+            calculateCurrency();
+        }
+
+        async function calculateCurrency() {
+            const amountVal = document.getElementById('currAmount').value;
+            const amount = parseFloat(amountVal);
+            const from = document.getElementById('currFrom').value;
+            const to = document.getElementById('currTo').value;
+            const resultEl = document.getElementById('currResult');
+
+            if (!amountVal) {
+                resultEl.innerHTML = "Result";
+                return;
+            }
+
+            if (!currencyRatesCache[from]) {
+                resultEl.innerHTML = "Fetching rates...";
+
+                try {
+                    const response = await fetch(`https://api.exchangerate-api.com/v4/latest/${from}`);
+                    const data = await response.json();
+                    currencyRatesCache[from] = data;
+                } catch (error) {
+                    resultEl.innerHTML = "Error fetching exchange rates. Please check your connection.";
+                    return;
+                }
+            }
+
+            const data = currencyRatesCache[from];
+            const rate = data.rates[to];
+            const converted = (amount * rate).toFixed(2);
+
+            resultEl.innerHTML = `${amount} ${from} = <strong>${converted} ${to}</strong><br>` +
+                `<small>Rate: 1 ${from} = ${rate} ${to}</small><br>` +
+                `<small style="color: var(--text-muted); font-size: 0.75rem;">Market Date: ${data.date}</small>`;
+        }
+
+        function openFavoritesModal() {
+            document.getElementById('favoritesModal').style.display = 'flex';
+            renderCurrencyList();
+        }
+
+        function closeFavoritesModal() {
+            document.getElementById('favoritesModal').style.display = 'none';
+        }
+
+        function renderCurrencyList() {
+            const container = document.getElementById('currencyList');
+            const search = document.getElementById('currencySearch').value.toLowerCase();
+            container.innerHTML = '';
+
+            allCurrencies.forEach(c => {
+                if (c.code.toLowerCase().includes(search) || c.name.toLowerCase().includes(search)) {
+                    const div = document.createElement('div');
+                    div.className = 'currency-item';
+                    const isChecked = favoriteCurrencies.includes(c.code) ? 'checked' : '';
+                    div.innerHTML = `
+                <span>${c.code} - ${c.name}</span>
+                <input type="checkbox" value="${c.code}" ${isChecked}>
+            `;
+                    div.onclick = (e) => {
+                        if (e.target.tagName !== 'INPUT') {
+                            const cb = div.querySelector('input');
+                            cb.checked = !cb.checked;
+                        }
+                    };
+                    container.appendChild(div);
+                }
+            });
+        }
+
+        function saveFavorites() {
+            const checkboxes = document.querySelectorAll('#currencyList input:checked');
+            if (checkboxes.length > 20) {
+                alert("You can select up to 20 favorites.");
+                return;
+            }
+            if (checkboxes.length < 2) {
+                alert("Select at least 2 currencies.");
+                return;
+            }
+
+            favoriteCurrencies = Array.from(checkboxes).map(cb => cb.value);
+            localStorage.setItem('favCurrencies', JSON.stringify(favoriteCurrencies));
+            updateCurrencyDropdowns();
+            closeFavoritesModal();
+        }
+
+        // --- UNIT CONVERTER LOGIC ---
+        const unitData = {
+            length: {
+                units: { m: 1, km: 1000, cm: 0.01, mm: 0.001, in: 0.0254, ft: 0.3048, yd: 0.9144, mi: 1609.34 },
+                names: { m: 'Meters', km: 'Kilometers', cm: 'Centimeters', mm: 'Millimeters', in: 'Inches', ft: 'Feet', yd: 'Yards', mi: 'Miles' }
+            },
+            weight: {
+                units: { g: 1, kg: 1000, mg: 0.001, lb: 453.592, oz: 28.3495 },
+                names: { g: 'Grams', kg: 'Kilograms', mg: 'Milligrams', lb: 'Pounds', oz: 'Ounces' }
+            },
+            temperature: {
+                units: ['C', 'F', 'K'],
+                names: { C: 'Celsius', F: 'Fahrenheit', K: 'Kelvin' }
+            },
+            volume: {
+                units: { l: 1, ml: 0.001, m3: 1000, gal: 3.78541, oz: 0.0295735 },
+                names: { l: 'Liters', ml: 'Milliliters', m3: 'Cubic Meters', gal: 'Gallons (US)', oz: 'Fluid Ounces (US)' }
+            },
+            area: {
+                units: { m2: 1, sqft: 0.092903, sqkm: 1000000, acre: 4046.86, ha: 10000 },
+                names: { m2: 'Square Meters', sqft: 'Square Feet', sqkm: 'Square Kilometers', acre: 'Acres', ha: 'Hectares' }
+            }
+        };
+
+        function updateUnitOptions() {
+            const category = document.getElementById('unitCategory').value;
+            const fromSelect = document.getElementById('unitFrom');
+            const toSelect = document.getElementById('unitTo');
+
+            fromSelect.innerHTML = '';
+            toSelect.innerHTML = '';
+
+            const units = category === 'temperature' ? unitData.temperature.units : Object.keys(unitData[category].units);
+            const names = unitData[category].names;
+
+            units.forEach(u => {
+                fromSelect.add(new Option(names[u], u));
+                toSelect.add(new Option(names[u], u));
+            });
+
+            // Set default selection for better UX
+            if (units.length > 1) toSelect.selectedIndex = 1;
+
+            calculateUnit();
+        }
+
+        function calculateUnit() {
+            const category = document.getElementById('unitCategory').value;
+            const val = parseFloat(document.getElementById('unitValue').value);
+            const from = document.getElementById('unitFrom').value;
+            const to = document.getElementById('unitTo').value;
+            const resultEl = document.getElementById('unitResult');
+
+            if (isNaN(val)) {
+                resultEl.innerHTML = "Result";
+                return;
+            }
+
+            let result;
+
+            if (category === 'temperature') {
+                if (from === to) result = val;
+                else if (from === 'C' && to === 'F') result = (val * 9 / 5) + 32;
+                else if (from === 'C' && to === 'K') result = val + 273.15;
+                else if (from === 'F' && to === 'C') result = (val - 32) * 5 / 9;
+                else if (from === 'F' && to === 'K') result = (val - 32) * 5 / 9 + 273.15;
+                else if (from === 'K' && to === 'C') result = val - 273.15;
+                else if (from === 'K' && to === 'F') result = (val - 273.15) * 9 / 5 + 32;
+            } else {
+                const factors = unitData[category].units;
+                const baseVal = val * factors[from];
+                result = baseVal / factors[to];
+            }
+
+            // Format result to avoid long decimals
+            const formatted = parseFloat(result.toPrecision(6));
+            resultEl.innerHTML = `${val} ${from} = <strong>${formatted} ${to}</strong>`;
+        }
+    </script>
+</body>
+
+</html>

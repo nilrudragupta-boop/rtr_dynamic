@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Kitchen Display System (KDS)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #121212;
+            color: #e0e0e0;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .kds-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #333;
+        }
+
+        .kds-header h1 {
+            margin: 0;
+            color: #f39c12;
+            font-size: 28px;
+        }
+
+        .header-actions button {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        #kds-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .ticket {
+            background: #1e1e1e;
+            border-top: 6px solid #e74c3c;
+            /* Red = New */
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .ticket.overdue {
+            border-top-color: #c0392b;
+            background: #2a1111;
+            box-shadow: 0 0 15px rgba(231, 76, 60, 0.4);
+        }
+
+        .ticket.overdue .ticket-time {
+            color: #e74c3c;
+            font-weight: bold;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+
+            100% {
+                opacity: 1;
+            }
+        }
+
+        .ticket-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            border-bottom: 1px dashed #444;
+            padding-bottom: 10px;
+        }
+
+        .ticket-table {
+            font-size: 24px;
+            font-weight: bold;
+            color: #fff;
+            margin: 0;
+        }
+
+        .ticket-time {
+            font-size: 14px;
+            color: #aaa;
+        }
+
+        .ticket-items {
+            flex: 1;
+            margin-bottom: 20px;
+        }
+
+        .item-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 18px;
+            padding: 8px 0;
+            border-bottom: 1px solid #2a2a2a;
+        }
+
+        .item-qty {
+            font-weight: bold;
+            color: #3498db;
+            min-width: 40px;
+        }
+
+        .btn-done {
+            background: #27ae60;
+            color: white;
+            border: none;
+            padding: 15px;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            width: 100%;
+            transition: 0.2s;
+        }
+
+        .btn-done:active {
+            transform: scale(0.95);
+        }
+
+        .empty-state {
+            grid-column: 1 / -1;
+            text-align: center;
+            color: #666;
+            padding: 50px;
+            font-size: 24px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="kds-header">
+        <h1><i class="fas fa-fire-burner"></i> Kitchen Display System</h1>
+        <div class="header-actions">
+            <button onclick="clearAllOrders()"><i class="fas fa-trash"></i> Clear All Orders</button>
+        </div>
+    </div>
+
+    <div id="kds-grid">
+        <!-- Tickets will be injected here -->
+    </div>
+
+    <script>
+        let knownOrderIds = new Set();
+        let isInitialLoad = true;
+
+        // Synthesize an audible chime using Web Audio API
+        function playPingSound() {
+            try {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (!AudioContext) return;
+                const ctx = new AudioContext();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(880, ctx.currentTime); // High pitch (A5)
+                osc.frequency.exponentialRampToValueAtTime(440, ctx.currentTime + 0.5); // Drop (A4)
+
+                gain.gain.setValueAtTime(0.5, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 1);
+
+                osc.start();
+                osc.stop(ctx.currentTime + 1);
+            } catch (e) {
+                console.log("Audio play failed:", e);
+            }
+        }
+
+        // Initialize and load orders on screen
+        function loadKDS() {
+            const orders = JSON.parse(localStorage.getItem('kds_orders')) || [];
+            const grid = document.getElementById('kds-grid');
+
+            // Check for new orders to trigger the ping
+            let hasNewOrder = false;
+            const currentIds = new Set();
+
+            orders.forEach(o => {
+                currentIds.add(o.id);
+                if (!knownOrderIds.has(o.id)) {
+                    knownOrderIds.add(o.id);
+                    if (!isInitialLoad) hasNewOrder = true;
+                }
+            });
+
+            // Clean up deleted orders from tracker memory
+            knownOrderIds.forEach(id => {
+                if (!currentIds.has(id)) knownOrderIds.delete(id);
+            });
+
+            // Play sound if a fresh incoming order arrives
+            if (hasNewOrder) playPingSound();
+            isInitialLoad = false;
+
+            grid.innerHTML = '';
+
+            if (orders.length === 0) {
+                grid.innerHTML = '<div class="empty-state"><i class="fas fa-check-circle" style="font-size: 48px; margin-bottom: 15px; color:#27ae60;"></i><br>All caught up! No active orders.</div>';
+                return;
+            }
+
+            orders.forEach(order => {
+                const ticket = document.createElement('div');
+                ticket.className = 'ticket';
+                ticket.setAttribute('data-timestamp', order.timestamp);
+
+                const elapsedMins = Math.floor((Date.now() - new Date(order.timestamp).getTime()) / 60000);
+                if (elapsedMins >= 15) ticket.classList.add('overdue');
+
+                // Group items by category
+                const categorizedItems = {};
+                order.items.forEach(i => {
+                    const cat = i.category || 'Other';
+                    if (!categorizedItems[cat]) categorizedItems[cat] = [];
+                    categorizedItems[cat].push(i);
+                });
+
+                let itemsHtml = '';
+                for (const [cat, items] of Object.entries(categorizedItems)) {
+                    itemsHtml += `<div style="color: #f39c12; font-size: 14px; font-weight: bold; margin-top: 10px; border-bottom: 1px solid #333; padding-bottom: 4px; text-transform: uppercase;">${cat}</div>`;
+                    items.forEach(i => {
+                        itemsHtml += `
+                            <div class="item-row">
+                                <span class="item-qty">${i.qty}x</span>
+                                <span class="item-name">${i.name}</span>
+                            </div>
+                        `;
+                    });
+                }
+
+                ticket.innerHTML = `
+                    <div class="ticket-header">
+                        <h2 class="ticket-table">${order.table}</h2>
+                        <span class="ticket-time"><i class="far fa-clock"></i> ${elapsedMins} min ago</span>
+                    </div>
+                    <div class="ticket-items">
+                        ${itemsHtml}
+                    </div>
+                    <button class="btn-done" onclick="markOrderDone('${order.id}')"><i class="fas fa-check"></i> Mark Ready</button>
+                `;
+
+                grid.appendChild(ticket);
+            });
+        }
+
+        // Remove an order when it's prepared
+        function markOrderDone(orderId) {
+            let orders = JSON.parse(localStorage.getItem('kds_orders')) || [];
+            const doneOrder = orders.find(o => o.id === orderId);
+
+            orders = orders.filter(o => o.id !== orderId);
+            localStorage.setItem('kds_orders', JSON.stringify(orders));
+
+            if (doneOrder) {
+                // Notify the POS
+                let notifications = JSON.parse(localStorage.getItem('kds_ready_notifications')) || [];
+                notifications.push({ id: doneOrder.id, table: doneOrder.table, timestamp: new Date().toISOString() });
+                if (notifications.length > 20) notifications = notifications.slice(-20); // Keep log tidy
+                localStorage.setItem('kds_ready_notifications', JSON.stringify(notifications));
+            }
+
+            loadKDS(); // Refresh screen
+        }
+
+        // Clear entire KDS board
+        function clearAllOrders() {
+            if (confirm("Are you sure you want to clear all kitchen orders?")) {
+                localStorage.setItem('kds_orders', JSON.stringify([]));
+                loadKDS();
+            }
+        }
+
+        // Listen for new orders across tabs automatically
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'kds_orders') {
+                loadKDS();
+            }
+        });
+
+        // Initial render
+        loadKDS();
+
+        // Smoothly update timers counting up without wiping out the entire grid UI
+        function updateTimers() {
+            document.querySelectorAll('.ticket').forEach(ticket => {
+                const ts = ticket.getAttribute('data-timestamp');
+                if (!ts) return;
+
+                const elapsedMins = Math.floor((Date.now() - new Date(ts).getTime()) / 60000);
+                const timeSpan = ticket.querySelector('.ticket-time');
+                if (timeSpan) {
+                    timeSpan.innerHTML = `<i class="far fa-clock"></i> ${elapsedMins} min ago`;
+                }
+
+                if (elapsedMins >= 15 && !ticket.classList.contains('overdue')) {
+                    ticket.classList.add('overdue');
+                }
+            });
+        }
+
+        // Polling fallback just in case the storage event drops
+        setInterval(loadKDS, 30000); // Relaxed to 30s so it doesn't unexpectedly drop active button focus/clicks
+        setInterval(updateTimers, 10000); // Updates the time labels visually every 10s
+    </script>
+</body>
+
+</html>

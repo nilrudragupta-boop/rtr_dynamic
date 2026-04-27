@@ -1,0 +1,63 @@
+{
+    "name": "rise-tech-revolution",
+    "version": "2.3.8",
+    "description": "RISE Tech Revolution System",
+    "main": "main.js",
+    "author": "RISE Tech Revolution",
+    "scripts": {
+        "start": "electron .",
+        "dist": "electron-builder"
+    },
+    "dependencies": {
+        "imapflow": "^1.3.1",
+        "mailparser": "^3.9.8",
+        "nodemailer": "^8.0.5"
+    },
+    "devDependencies": {
+        "electron": "^41.0.3",
+        "electron-builder": "^26.8.1"
+    },
+    "build": {
+        "appId": "com.risetechrevolution.app",
+        "productName": "RISE Tech Revolution",
+        "asar": true,
+        "compression": "maximum",
+        "artifactName": "${productName}-Setup-${version}-${arch}.${ext}",
+        "copyright": "Copyright © 2022 Rise Tech Revolution. All rights reserved.",
+        "directories": {
+            "output": "dist"
+        },
+        "files": [
+            "**/*",
+            "!dist/*",
+            "!*.md",
+            "!*.txt"
+        ],
+        "win": {
+            "target": [
+                {
+                    "target": "nsis",
+                    "arch": [
+                        "x64"
+                    ]
+                }
+            ],
+            "requestedExecutionLevel": "asInvoker",
+            "icon": "logo.png"
+        },
+        "nsis": {
+            "oneClick": false,
+            "perMachine": true,
+            "allowToChangeInstallationDirectory": true,
+            "createDesktopShortcut": true,
+            "createStartMenuShortcut": true,
+            "shortcutName": "RISE Tech Revolution",
+            "runAfterFinish": true,
+            "deleteAppDataOnUninstall": true,
+            "license": "license.txt"
+        }
+    },
+    "keywords": [],
+    "license": "ISC",
+    "type": "commonjs"
+}

@@ -1,0 +1,2362 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Journal Voucher</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+    <script src="settings.js"></script>
+    <script src="brand.service.js"></script>
+    <script src="brandLoader.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            padding: 20px;
+            background: #f4f6f8;
+            color: #333;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        h2 {
+            color: #2c3e50;
+            margin: 0;
+        }
+
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+            margin-bottom: 20px;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+            align-items: flex-end;
+        }
+
+        .form-group {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        label {
+            font-weight: 600;
+            font-size: 13px;
+            color: #555;
+        }
+
+        input,
+        select,
+        textarea {
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 14px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        input:focus,
+        select:focus {
+            border-color: #3498db;
+            outline: none;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            color: white;
+            transition: opacity 0.2s;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+        }
+
+        .btn-primary {
+            background: #3498db;
+        }
+
+        .btn-success {
+            background: #27ae60;
+        }
+
+        .btn-danger {
+            background: #e74c3c;
+        }
+
+        .btn-secondary {
+            background: #7f8c8d;
+        }
+
+        .btn-warning {
+            background: #f39c12;
+        }
+
+        .btn-info {
+            background: #17a2b8;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            background: white;
+        }
+
+        th,
+        td {
+            border: 1px solid #eee;
+            padding: 10px;
+            text-align: left;
+            font-size: 14px;
+        }
+
+        th {
+            background: #2c3e50;
+            color: white;
+        }
+
+        .entry-table th,
+        .entry-table td {
+            padding: 8px;
+        }
+
+        .entry-table input,
+        .entry-table select {
+            margin: 0;
+        }
+
+        .dr-cr-select {
+            width: 70px;
+            font-weight: bold;
+        }
+
+        .amount-input {
+            text-align: right;
+        }
+
+        .total-row td {
+            font-weight: bold;
+            background: #f9f9f9;
+        }
+
+        .balanced {
+            color: #27ae60;
+        }
+
+        .unbalanced {
+            color: #e74c3c;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            width: 800px;
+            max-width: 95%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .close-modal {
+            float: right;
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        /* Custom Dropdown */
+        .autocomplete-wrapper {
+            position: relative;
+            width: 100%;
+        }
+        .autocomplete-list {
+            position: absolute;
+            border: 1px solid #ccc;
+            z-index: 1000;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: #fff;
+            max-height: 200px;
+            overflow-y: auto;
+            display: none;
+            text-align: left;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .autocomplete-item {
+            padding: 8px;
+            cursor: pointer;
+            border-bottom: 1px solid #eee;
+            font-size: 13px;
+        }
+        .autocomplete-item:hover, .autocomplete-item.active-item {
+            background-color: #f0f0f0;
+        }
+        body.dark-mode .autocomplete-list {
+            background: #333;
+            border-color: #555;
+        }
+        body.dark-mode .autocomplete-item {
+            border-bottom-color: #444;
+        }
+        body.dark-mode .autocomplete-item:hover, body.dark-mode .autocomplete-item.active-item {
+            background-color: #444;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="header">
+        <h2>📖 Journal Voucher (JV) - <span data-brand="name"></span></h2>
+        <div>
+            <button class="btn btn-primary" onclick="window.open('credit_debit_notes.html', 'credit_debit_notes', 'width=1000,height=700')">Credit/Debit Notes</button>
+            <button class="btn btn-success" onclick="window.open('ledger.html', 'ledger', 'width=1000,height=800')">Ledger</button>
+            <button class="btn btn-secondary" onclick="openAssetMasterModal()">Asset Master</button>
+            <button class="btn btn-info" onclick="openFixedAssetRegister()">Fixed Asset Register</button>
+            <button class="btn btn-primary" onclick="openCreateModal()">+ New Journal</button>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="form-row">
+            <div class="form-group" style="flex: 2;">
+                <input type="text" id="searchBox" placeholder="Search by Voucher No, Account, or Narration..."
+                    oninput="renderVoucherList()">
+            </div>
+            <div class="form-group">
+                <select id="filterCategory" onchange="renderVoucherList()">
+                    <option value="">All Categories</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <input type="date" id="filterDate" onchange="renderVoucherList()">
+            </div>
+            <div class="form-group" style="flex: 0;">
+                <button class="btn btn-secondary" onclick="resetFilters()">Reset</button>
+            </div>
+        </div>
+
+        <div style="overflow-x: auto;">
+            <table id="voucherListTable" style="min-width: 800px;">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Voucher No</th>
+                    <th>Narration</th>
+                    <th>Asset Value (₹)</th>
+                    <th>Rate (%)</th>
+                    <th>Depreciation (₹)</th>
+                    <th>Value After Dep. (₹)</th>
+                    <th style="text-align: right;">Total Amount</th>
+                    <th style="text-align: center;">Action</th>
+                </tr>
+            </thead>
+            <tbody id="voucherListBody"></tbody>
+        </table>
+        </div>
+    </div>
+
+    <!-- Create/Edit Modal -->
+    <div id="entryModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeModal()">&times;</span>
+            <h3 id="modalTitle">New Journal Voucher</h3>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Voucher Type</label>
+                    <select id="voucherType" onchange="handleVoucherTypeChange()">
+                        <option value="Journal">Journal Voucher</option>
+                        <option value="Contra">Contra Voucher</option>
+                        <option value="Payment">Payment Voucher</option>
+                        <option value="Receipt">Receipt Voucher</option>
+                        <option value="Sales">Sales Voucher</option>
+                        <option value="Purchase">Purchase Voucher</option>
+                        <option value="Stock Journal">Stock Journal</option>
+                        <option value="Delivery Note">Delivery Note</option>
+                        <option value="Receipt Note">Receipt Note</option>
+                        <option value="Memorandum">Memorandum Voucher</option>
+                        <option value="Purchase Order">Purchase Order</option>
+                        <option value="Sales Order">Sales Order</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Voucher No</label>
+                    <input type="text" id="voucherNo" readonly style="background: #eee;">
+                </div>
+                <div class="form-group">
+                    <label>Date</label>
+                    <input type="date" id="voucherDate">
+                </div>
+            </div>
+
+            <div style="overflow-x: auto; min-height: 250px;">
+                <table class="entry-table" style="min-width: 650px;">
+                <thead>
+                    <tr>
+                        <th style="width: 80px;">Dr/Cr</th>
+                        <th>Particulars (Account)</th>
+                        <th style="width: 150px; text-align: right;">Debit (₹)</th>
+                        <th style="width: 150px; text-align: right;">Credit (₹)</th>
+                        <th style="width: 50px;"></th>
+                    </tr>
+                </thead>
+                <tbody id="entriesBody">
+                    <!-- Rows injected via JS -->
+                </tbody>
+                <tfoot>
+                    <tr class="total-row">
+                        <td colspan="2" style="text-align: right;">Total:</td>
+                        <td style="text-align: right;" id="totalDebit">0.00</td>
+                        <td style="text-align: right;" id="totalCredit">0.00</td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td colspan="5" style="text-align: center; padding: 5px;">
+                            <span id="balanceStatus" class="balanced">Balanced</span>
+                        </td>
+                    </tr>
+                </tfoot>
+            </table>
+            </div>
+
+            <div style="margin-top: 10px;">
+                <button class="btn btn-secondary" onclick="addEntryRow()" style="font-size: 12px;">+ Add Row</button>
+                <button class="btn btn-warning" onclick="autoBalance()" style="font-size: 12px; margin-left:5px;">Auto
+                    Balance</button>
+                <button class="btn btn-info" onclick="openDepreciationModal()"
+                    style="font-size: 12px; background:#17a2b8; color:white; margin-left:5px;">Calculate
+                    Depreciation</button>
+            </div>
+
+            <div class="form-group" style="margin-top: 15px;">
+                <label>Narration</label>
+                <textarea id="narration" rows="2" placeholder="Enter details..."></textarea>
+            </div>
+
+            <div style="text-align: right; margin-top: 20px;">
+                <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                <button class="btn btn-info" onclick="printVoucher()" style="margin-left: 5px;">🖨️ Print</button>
+                <button class="btn btn-success" onclick="saveVoucher()">Save Voucher</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Asset Master Modal -->
+    <div id="assetMasterModal" class="modal">
+        <div class="modal-content" style="width: 500px;">
+            <span class="close-modal" onclick="closeAssetMasterModal()">&times;</span>
+            <h3>Asset Master (Depreciation Rates)</h3>
+
+            <div class="form-row" style="align-items: flex-end;">
+                <div class="form-group">
+                    <label>Category Name</label>
+                    <input type="text" id="assetCategoryName" placeholder="e.g. Computers">
+                </div>
+                <div class="form-group">
+                    <label>Rate (%)</label>
+                    <input type="number" id="assetDepRate" placeholder="e.g. 40">
+                </div>
+                <div class="form-group" style="flex: 0;">
+                    <button class="btn btn-success" onclick="addAssetCategory()">Add</button>
+                </div>
+            </div>
+
+            <table style="width:100%; margin-top:10px; border-collapse:collapse;">
+                <thead>
+                    <tr style="background:#f0f0f0;">
+                        <th style="padding:8px; border:1px solid #ddd;">Category</th>
+                        <th style="padding:8px; border:1px solid #ddd;">Rate (%)</th>
+                        <th style="padding:8px; border:1px solid #ddd; text-align:center;">Action</th>
+                    </tr>
+                </thead>
+                <tbody id="assetCategoryList"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Fixed Asset Register Modal -->
+    <div id="fixedAssetRegisterModal" class="modal">
+        <div class="modal-content" style="width: 950px;">
+            <span class="close-modal" onclick="closeFixedAssetRegisterModal()">&times;</span>
+            <h3>Fixed Asset Register</h3>
+            <div style="margin-bottom: 10px; display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                    <select id="filterAssetCategory" onchange="renderFixedAssetRegister()" style="padding:5px;">
+                        <option value="">All Categories</option>
+                    </select>
+                </div>
+                <div>
+                    <button class="btn btn-primary" onclick="openAddAssetModal()" style="margin-right: 5px;">+ Add Asset
+                        manually</button>
+                    <button class="btn btn-info" onclick="openDepreciationSchedule()"
+                        style="margin-right: 5px;">Depreciation Schedule</button>
+                    <button class="btn btn-success" onclick="exportFixedAssetsPDF()" style="margin-right: 5px;">Export PDF</button>
+                    <button class="btn btn-warning" onclick="exportFixedAssets()">Export JSON</button>
+                </div>
+            </div>
+            <table style="width:100%; border-collapse:collapse; font-size:13px;">
+                <thead>
+                    <tr style="background:#f0f0f0;">
+                        <th style="padding:8px; border:1px solid #ddd; cursor:pointer;"
+                            onclick="sortFixedAssets('asset_name')">Asset Name</th>
+                        <th style="padding:8px; border:1px solid #ddd; cursor:pointer;"
+                            onclick="sortFixedAssets('category')">Category</th>
+                        <th style="padding:8px; border:1px solid #ddd; cursor:pointer;"
+                            onclick="sortFixedAssets('purchase_date')">Purchase Date</th>
+                        <th style="padding:8px; border:1px solid #ddd; cursor:pointer;"
+                            onclick="sortFixedAssets('purchase_value')">Purchase Value</th>
+                        <th style="padding:8px; border:1px solid #ddd; cursor:pointer;"
+                            onclick="sortFixedAssets('depreciation_rate')">Rate (%)</th>
+                        <th style="padding:8px; border:1px solid #ddd; cursor:pointer;"
+                            onclick="sortFixedAssets('current_wdv')">Current WDV</th>
+                        <th style="padding:8px; border:1px solid #ddd; cursor:pointer;"
+                            onclick="sortFixedAssets('last_depreciation_date')">Last Dep. Date</th>
+                        <th style="padding:8px; border:1px solid #ddd; text-align:center;">Action</th>
+                    </tr>
+                </thead>
+                <tbody id="fixedAssetListBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Add Asset Modal -->
+    <div id="addAssetModal" class="modal" style="z-index: 1150;">
+        <div class="modal-content" style="width: 400px;">
+            <span class="close-modal" onclick="closeAddAssetModal()">&times;</span>
+            <h3>Add Fixed Asset</h3>
+            <div class="form-group">
+                <label>Asset Name</label>
+                <input type="text" id="manualAssetName" placeholder="e.g. Dell XPS 15">
+            </div>
+            <div class="form-group">
+                <label>Category</label>
+                <select id="manualAssetCategory"></select>
+            </div>
+            <div class="form-group">
+                <label>Purchase Date</label>
+                <input type="date" id="manualAssetDate">
+            </div>
+            <div class="form-group">
+                <label>Purchase Value (₹)</label>
+                <input type="number" id="manualAssetValue" placeholder="0.00">
+            </div>
+            <div style="text-align:right; margin-top:15px;">
+                <button class="btn btn-success" onclick="saveManualAsset()">Save Asset</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ledger Drill Down Modal -->
+    <div id="ledgerDrillDownModal" class="modal">
+        <div class="modal-content" style="width: 95%; max-width: 1200px;">
+            <span class="close-modal" onclick="closeLedgerDrillDownModal()">&times;</span>
+            <h3 id="ledgerDrillDownTitle">Ledger Vouchers</h3>
+            <div style="overflow-x:auto; max-height: 70vh;">
+                <table style="width:100%;">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Particulars</th>
+                            <th>Vch Type</th>
+                            <th>Vch No.</th>
+                            <th style="text-align:right;">Debit</th>
+                            <th style="text-align:right;">Credit</th>
+                            <th style="text-align:right;">Running Balance</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ledgerDrillDownBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Asset Disposal Modal -->
+    <div id="disposalModal" class="modal" style="z-index: 1150;">
+        <div class="modal-content" style="width: 450px;">
+            <span class="close-modal" onclick="closeDisposalModal()">&times;</span>
+            <h3>Asset Disposal (Sale/Scrap)</h3>
+            <input type="hidden" id="disposeAssetId">
+            <div class="form-group">
+                <label>Disposal Date</label>
+                <input type="date" id="disposeDate" onchange="calculateDisposalPreview()">
+            </div>
+            <div class="form-group">
+                <label>Sale Value (₹)</label>
+                <input type="number" id="disposeValue" placeholder="0.00" oninput="calculateDisposalPreview()">
+            </div>
+            <div class="form-group">
+                <label>Payment Account (Debit)</label>
+                <input list="accountList" id="disposeAccount" placeholder="e.g. Cash or Bank" value="Cash">
+            </div>
+            <div id="disposalPreview"
+                style="background:#f9f9f9; padding:10px; margin-top:10px; font-size:13px; border:1px solid #ddd; border-radius:4px;">
+                <!-- Preview P&L here -->
+                <p style="color:#666; text-align:center;">Enter details to see calculation...</p>
+            </div>
+            <div style="text-align:right; margin-top:15px;">
+                <button class="btn btn-danger" onclick="processDisposal()">Confirm Disposal</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Asset Revaluation Modal -->
+    <div id="revaluationModal" class="modal" style="z-index: 1150;">
+        <div class="modal-content" style="width: 400px;">
+            <span class="close-modal" onclick="closeRevaluationModal()">&times;</span>
+            <h3>Asset Revaluation</h3>
+            <input type="hidden" id="revalueAssetId">
+            <div class="form-group">
+                <label>Revaluation Date</label>
+                <input type="date" id="revalueDate" value="${new Date().toISOString().split('T')[0]}">
+            </div>
+            <div class="form-group">
+                <label>Current WDV (₹)</label>
+                <input type="number" id="revalueCurrentWDV" readonly style="background:#eee;">
+            </div>
+            <div class="form-group">
+                <label>New Revalued Amount (₹)</label>
+                <input type="number" id="revalueAmount" placeholder="0.00">
+            </div>
+            <div style="text-align:right; margin-top:15px;">
+                <button class="btn btn-primary" onclick="processRevaluation()">Post Revaluation</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Generic Action Confirmation Modal -->
+    <div id="actionConfirmModal" class="modal" style="z-index: 1200;">
+        <div class="modal-content" style="text-align: center; width: 350px;">
+            <h3 id="actionConfirmTitle" style="color: #d35400;">Confirmation</h3>
+            <p id="actionConfirmMsg"></p>
+            <div style="margin-top: 20px; display: flex; justify-content: center; gap: 10px;">
+                <button id="actionConfirmBtnYes" class="btn btn-danger">Yes</button>
+                <button class="btn btn-secondary" onclick="closeActionConfirmModal()">No</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success Modal -->
+    <div id="successModal" class="modal" style="z-index: 1200;">
+        <div class="modal-content" style="text-align: center; width: 350px;">
+            <h3 style="color: #27ae60;">Success</h3>
+            <p id="successMsg"></p>
+            <div style="margin-top: 20px; display: flex; justify-content: center;">
+                <button class="btn btn-success" onclick="closeSuccessModal()">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Warning Modal -->
+    <div id="warningModal" class="modal" style="z-index: 1200;">
+        <div class="modal-content" style="text-align: center; width: 350px;">
+            <h3 style="color: #f39c12;">Warning</h3>
+            <p id="warningMsg"></p>
+            <div style="margin-top: 20px; display: flex; justify-content: center;">
+                <button class="btn btn-warning" onclick="closeWarningModal()">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Depreciation Schedule Modal -->
+    <div id="depreciationScheduleModal" class="modal">
+        <div class="modal-content" style="width: 95%; max-width: 1200px;">
+            <span class="close-modal" onclick="closeDepreciationScheduleModal()">&times;</span>
+            <h3>Depreciation Schedule (Next 5 Years)</h3>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <input type="text" id="depreciationSearch" placeholder="Search Asset or Category..." oninput="renderDepreciationSchedule()" style="width: 250px;">
+                <div>
+                <button class="btn btn-success" onclick="exportDepreciationScheduleToExcel()">Export Excel</button>
+                <button class="btn btn-danger" onclick="exportDepreciationScheduleToPDF()">Export PDF</button>
+                </div>
+            </div>
+            <div style="overflow-x:auto;">
+                <table style="width:100%; border-collapse:collapse; font-size:13px;">
+                    <thead>
+                        <tr style="background:#f0f0f0;">
+                            <th style="padding:8px; border:1px solid #ddd;">Asset Name</th>
+                            <th style="padding:8px; border:1px solid #ddd;">Category</th>
+                            <th style="padding:8px; border:1px solid #ddd;">Rate</th>
+                            <th style="padding:8px; border:1px solid #ddd;">Current WDV</th>
+                            <th style="padding:8px; border:1px solid #ddd;">Year 1</th>
+                            <th style="padding:8px; border:1px solid #ddd;">Year 2</th>
+                            <th style="padding:8px; border:1px solid #ddd;">Year 3</th>
+                            <th style="padding:8px; border:1px solid #ddd;">Year 4</th>
+                            <th style="padding:8px; border:1px solid #ddd;">Year 5</th>
+                            <th style="padding:8px; border:1px solid #ddd;">Closing WDV</th>
+                        </tr>
+                    </thead>
+                    <tbody id="depreciationScheduleBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Depreciation Calculator Modal -->
+    <div id="depreciationModal" class="modal" style="z-index: 1100;">
+        <div class="modal-content" style="width: 400px;">
+            <span class="close-modal" onclick="closeDepreciationModal()">&times;</span>
+            <h3>Depreciation Calculator</h3>
+            <div class="form-group">
+                <label>Select Asset</label>
+                <select id="depAssetSelect" onchange="onDepAssetSelect()">
+                    <option value="">Select Asset from Register</option>
+                </select>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Purchase Date</label>
+                    <input type="date" id="depPurchaseDate" readonly style="background:#eee;"
+                        onchange="calculateDepreciation()">
+                </div>
+                <div class="form-group">
+                    <label>Current WDV (₹)</label>
+                    <input type="number" id="depCurrentWDV" readonly style="background:#eee;"
+                        oninput="calculateDepreciation()">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Rate (%)</label>
+                    <input type="number" id="depRate" readonly style="background:#eee;">
+                </div>
+                <div class="form-group">
+                    <label>Voucher Date</label>
+                    <input type="date" id="depVoucherDate" onchange="calculateDepreciation()">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Calculated Depreciation (₹)</label>
+                <input type="text" id="depAmount" readonly style="background:#eee; font-weight:bold;">
+                <small id="depRuleText"
+                    style="color: #2980b9; font-size: 11px; margin-top: 2px; display: block;"></small>
+            </div>
+            <div class="form-group">
+                <label>Value After Depreciation (₹)</label>
+                <input type="text" id="depNetValue" readonly style="background:#eee; font-weight:bold;">
+            </div>
+            <div style="text-align:right; margin-top:15px;">
+                <button class="btn btn-success" onclick="applyDepreciationToJournal()">Apply to Journal</button>
+            </div>
+        </div>
+    </div>
+
+    <datalist id="accountList"></datalist>
+
+    <script>
+        let vouchers = [];
+        let fixedAssets = JSON.parse(localStorage.getItem('fixed_assets')) || [];
+        let accounts = [];
+        let currentAssetSort = { column: 'asset_name', direction: 'asc' };
+        let editingId = null;
+        let currentDepreciationDetails = null;
+        
+        async function fetchVouchersData() {
+            vouchers = await apiClient.getJournalVouchers();
+            renderVoucherList();
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadAccounts();
+            loadAssetCategoriesForFilter();
+            fetchVouchersData();
+
+            const urlParams = new URLSearchParams(window.location.search);
+            const drilldownAccount = urlParams.get('drilldown');
+            const fromDate = urlParams.get('from');
+            const toDate = urlParams.get('to');
+            if (drilldownAccount) {
+                openLedgerDrillDown(drilldownAccount, fromDate, toDate);
+            }
+        });
+
+        // Close modal when clicking outside - Tally UX improvement
+        window.onclick = function (event) {
+            if (event.target.classList.contains('modal')) {
+                event.target.style.display = "none";
+            }
+        }
+
+        // --- Modal Helpers ---
+        function showConfirm(title, msg, callback) {
+            document.getElementById('actionConfirmTitle').innerText = title;
+            document.getElementById('actionConfirmMsg').innerText = msg;
+            const yesBtn = document.getElementById('actionConfirmBtnYes');
+            const newYesBtn = yesBtn.cloneNode(true);
+            yesBtn.parentNode.replaceChild(newYesBtn, yesBtn);
+            newYesBtn.onclick = () => {
+                closeActionConfirmModal();
+                callback();
+            };
+            document.getElementById('actionConfirmModal').style.display = 'flex';
+        }
+        function closeActionConfirmModal() {
+            document.getElementById('actionConfirmModal').style.display = 'none';
+        }
+        function showSuccess(msg) {
+            document.getElementById('successMsg').innerText = msg;
+            document.getElementById('successModal').style.display = 'flex';
+        }
+        function closeSuccessModal() {
+            document.getElementById('successModal').style.display = 'none';
+        }
+        function showWarning(msg) {
+            document.getElementById('warningMsg').innerText = msg;
+            document.getElementById('warningModal').style.display = 'flex';
+        }
+        function closeWarningModal() {
+            document.getElementById('warningModal').style.display = 'none';
+        }
+
+
+        function loadAccounts() {
+            accounts = [];
+
+            // 1. Customers
+            const customers = JSON.parse(localStorage.getItem('customers')) || [];
+            customers.forEach(c => accounts.push({ name: c.name, type: 'Customer' }));
+
+            // 2. Suppliers
+            const suppliers = JSON.parse(localStorage.getItem('suppliers')) || [];
+            suppliers.forEach(s => accounts.push({ name: s.name, type: 'Supplier' }));
+
+            // 3. Expenses
+            const expenses = JSON.parse(localStorage.getItem('expenses')) || [];
+            const expCats = new Set(expenses.map(e => e.expense_category));
+            expCats.forEach(c => { if (c) accounts.push({ name: c, type: 'Expense' }); });
+
+            // 4. Bank Accounts
+            const banks = JSON.parse(localStorage.getItem('bank_accounts')) || [];
+            banks.forEach(b => accounts.push({ name: b.name, type: 'Bank' }));
+
+            // 5. Default Ledgers
+            const defaults = ["Cash", "Sales Account", "Purchase Account", "General Reserve", "Capital Account", "Drawings", "Profit & Loss", "Opening Balance Equity", "Depreciation", "Revaluation Reserve", "Revaluation Loss", "Profit on Sale of Asset", "Loss on Sale of Asset",
+                "Finished Goods Inventory", "Raw Materials Inventory", "Work-in-Progress", "Manufacturing Wages", "Manufacturing Overheads", "Wages Payable"
+            ];
+            defaults.forEach(d => accounts.push({ name: d, type: 'General' }));
+
+            // 6. Asset Categories
+            const assetCats = JSON.parse(localStorage.getItem('asset_categories')) || [];
+            assetCats.forEach(c => accounts.push({ name: c.name, type: 'Fixed Asset Category' }));
+
+            // 7. Fixed Assets
+            const fAssets = JSON.parse(localStorage.getItem('fixed_assets')) || [];
+            fAssets.forEach(a => { if (a.status === 'Active') accounts.push({ name: a.asset_name, type: 'Fixed Asset' }); });
+
+            populateAccountDatalist('Journal');
+        }
+
+        function populateAccountDatalist(type) {
+            const dl = document.getElementById('accountList');
+            dl.innerHTML = '';
+
+            let filtered = accounts;
+            if (type === 'Contra') {
+                filtered = accounts.filter(a => a.type === 'Bank' || a.name === 'Cash');
+            }
+
+            filtered.sort((a, b) => a.name.localeCompare(b.name));
+            filtered.forEach(acc => {
+                const opt = document.createElement('option');
+                opt.value = acc.name;
+                opt.label = acc.type;
+                dl.appendChild(opt);
+            });
+        }
+
+        function loadAssetCategoriesForFilter() {
+            const cats = getAssetCategories();
+            const sel = document.getElementById('filterCategory');
+            sel.innerHTML = '<option value="">All Categories</option>';
+            cats.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c.name;
+                opt.textContent = c.name;
+                sel.appendChild(opt);
+            });
+        }
+
+        function handleVoucherTypeChange() {
+            const type = document.getElementById('voucherType').value;
+            populateAccountDatalist(type);
+        }
+
+        function renderVoucherList() {
+            const tbody = document.getElementById('voucherListBody');
+            tbody.innerHTML = '';
+
+            const search = document.getElementById('searchBox').value.toLowerCase();
+            const dateFilter = document.getElementById('filterDate').value;
+            const categoryFilter = document.getElementById('filterCategory').value;
+
+            const filtered = vouchers.filter(v => {
+                const vNo = (v.voucher_no || "").toLowerCase();
+                const narr = (v.narration || "").toLowerCase();
+                const entries = v.entries || [];
+
+                const matchSearch = vNo.includes(search) ||
+                    narr.includes(search) ||
+                    entries.some(e => (e.account || "").toLowerCase().includes(search));
+                const matchDate = dateFilter ? v.date === dateFilter : true;
+
+                let matchCategory = true;
+                if (categoryFilter) {
+                    matchCategory = false;
+                    if (v.depreciationDetails && v.depreciationDetails.assetId) {
+                        const assetId = v.depreciationDetails.assetId;
+                        let vCat = "";
+                        if (assetId.startsWith('CAT_')) {
+                            vCat = assetId.replace('CAT_', '');
+                        } else {
+                            const asset = fixedAssets.find(a => a.id === assetId);
+                            if (asset) vCat = asset.category;
+                        }
+                        if (vCat === categoryFilter) matchCategory = true;
+                    }
+                }
+
+                return matchSearch && matchDate && matchCategory;
+            });
+
+            // Sort desc by date
+            filtered.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:20px;">No vouchers found</td></tr>';
+                return;
+            }
+
+            filtered.forEach(v => {
+                const dep = v.depreciationDetails || {};
+                const vType = v.voucher_type === 'Contra' ? '<span style="background:#e67e22; color:white; padding:2px 6px; border-radius:4px; font-size:11px;">Contra</span>' : '';
+                
+                let typeBadge = '';
+                if (v.voucher_type === 'Contra') typeBadge = '<span style="background:#e67e22; color:white; padding:2px 6px; border-radius:4px; font-size:11px;">Contra</span>';
+                else if (v.voucher_type === 'Payment') typeBadge = '<span style="background:#e74c3c; color:white; padding:2px 6px; border-radius:4px; font-size:11px;">Payment</span>';
+                else if (v.voucher_type === 'Receipt') typeBadge = '<span style="background:#27ae60; color:white; padding:2px 6px; border-radius:4px; font-size:11px;">Receipt</span>';
+                else if (v.voucher_type === 'Sales') typeBadge = '<span style="background:#3498db; color:white; padding:2px 6px; border-radius:4px; font-size:11px;">Sales</span>';
+                else if (v.voucher_type === 'Purchase') typeBadge = '<span style="background:#9b59b6; color:white; padding:2px 6px; border-radius:4px; font-size:11px;">Purchase</span>';
+                else if (v.voucher_type === 'Stock Journal') typeBadge = '<span style="background:#1abc9c; color:white; padding:2px 6px; border-radius:4px; font-size:11px;">Stock Journal</span>';
+                else if (v.voucher_type === 'Delivery Note') typeBadge = '<span style="background:#d35400; color:white; padding:2px 6px; border-radius:4px; font-size:11px;">Delivery Note</span>';
+                else if (v.voucher_type === 'Receipt Note') typeBadge = '<span style="background:#16a085; color:white; padding:2px 6px; border-radius:4px; font-size:11px;">Receipt Note</span>';
+                else if (v.voucher_type === 'Memorandum') typeBadge = '<span style="background:#7f8c8d; color:white; padding:2px 6px; border-radius:4px; font-size:11px;">Memorandum</span>';
+                else if (v.voucher_type === 'Purchase Order') typeBadge = '<span style="background:#34495e; color:white; padding:2px 6px; border-radius:4px; font-size:11px;">Purc Order</span>';
+                else if (v.voucher_type === 'Sales Order') typeBadge = '<span style="background:#2c3e50; color:white; padding:2px 6px; border-radius:4px; font-size:11px;">Sales Order</span>';
+                else typeBadge = `<span style="background:#95a5a6; color:white; padding:2px 6px; border-radius:4px; font-size:11px;">${v.voucher_type || 'Journal'}</span>`;
+                
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${v.date ? new Date(v.date).toLocaleDateString('en-GB') : '-'}</td>
+                    <td style="font-weight:bold; color:#2980b9;">${v.voucher_no || '-'} <br>${typeBadge}</td>
+                    <td>${v.narration || '-'}</td>
+                    <td>${dep.assetValue ? '₹ ' + dep.assetValue : '-'}</td>
+                    <td>${dep.rate ? dep.rate + '%' : '-'}</td>
+                    <td>${dep.depAmount ? '₹ ' + dep.depAmount : '-'}</td>
+                    <td>${dep.netValue ? '₹ ' + dep.netValue : '-'}</td>
+                    <td style="text-align:right; font-weight:bold;">₹ ${parseFloat(v.total_amount || 0).toFixed(2)}</td>
+                    <td style="text-align:center;">
+                        <button class="btn btn-secondary" style="padding:4px 8px; font-size:12px;" onclick="editVoucher('${v.id}')"><i class="fas fa-edit"></i></button>
+                        <button class="btn btn-warning" style="padding:4px 8px; font-size:12px;" onclick="duplicateVoucher('${v.id}')" title="Duplicate"><i class="fas fa-copy"></i></button>
+                        <button class="btn btn-danger" style="padding:4px 8px; font-size:12px;" onclick="deleteVoucher('${v.id}')"><i class="fas fa-trash"></i></button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function openCreateModal() {
+            editingId = null;
+            currentDepreciationDetails = null;
+            document.getElementById('modalTitle').innerText = "New Journal Voucher";
+            document.getElementById('voucherType').value = "Journal";
+            populateAccountDatalist("Journal");
+            document.getElementById('voucherNo').value = generateVoucherNo();
+            document.getElementById('voucherDate').valueAsDate = new Date();
+            document.getElementById('narration').value = '';
+
+            const tbody = document.getElementById('entriesBody');
+            tbody.innerHTML = '';
+            // Add 2 default rows
+            addEntryRow('Dr');
+            addEntryRow('Cr');
+
+            calculateTotals();
+            document.getElementById('entryModal').style.display = 'flex';
+        }
+
+        function editVoucher(id) {
+            const v = vouchers.find(x => x.id === id);
+            if (!v) return;
+
+            editingId = id;
+            currentDepreciationDetails = v.depreciationDetails || null;
+            document.getElementById('modalTitle').innerText = "Edit Journal Voucher";
+            document.getElementById('voucherType').value = v.voucher_type || "Journal";
+            populateAccountDatalist(v.voucher_type || "Journal");
+            document.getElementById('voucherNo').value = v.voucher_no || generateVoucherNo();
+            document.getElementById('voucherDate').value = v.date;
+            document.getElementById('narration').value = v.narration;
+
+            const tbody = document.getElementById('entriesBody');
+            tbody.innerHTML = '';
+            v.entries.forEach(e => {
+                addEntryRow(e.type, e.account, e.debit || e.credit);
+            });
+            calculateTotals();
+            document.getElementById('entryModal').style.display = 'flex';
+        }
+
+        function duplicateVoucher(id) {
+            const v = vouchers.find(x => x.id === id);
+            if (!v) return;
+
+            showConfirm("Duplicate Voucher", "Are you sure you want to duplicate this voucher?", () => {
+
+                const newVoucher = JSON.parse(JSON.stringify(v));
+                newVoucher.id = 'jv_' + Date.now();
+                newVoucher.voucher_no = generateVoucherNo();
+                newVoucher.date = new Date().toISOString().split('T')[0];
+                newVoucher.narration = (newVoucher.narration || "") + " (Copy)";
+                newVoucher.created_at = new Date().toISOString();
+
+                apiClient.saveJournalVoucher(newVoucher).then(res => {
+                     if(res.success) {
+                         vouchers.push(newVoucher);
+                         renderVoucherList();
+                         showSuccess("Voucher duplicated successfully!");
+                     }
+                });
+            });
+        }
+
+
+        // --- Asset Master Logic ---
+        function openAssetMasterModal() {
+            renderAssetCategories();
+            document.getElementById('assetMasterModal').style.display = 'flex';
+        }
+
+        function closeAssetMasterModal() {
+            document.getElementById('assetMasterModal').style.display = 'none';
+        }
+
+        function getAssetCategories() {
+            return JSON.parse(localStorage.getItem('asset_categories')) || [];
+        }
+
+        function renderAssetCategories() {
+            const list = document.getElementById('assetCategoryList');
+            list.innerHTML = '';
+            const categories = getAssetCategories();
+
+            if (categories.length === 0) {
+                list.innerHTML = '<tr><td colspan="3" style="text-align:center; padding:10px; color:#666;">No categories defined.</td></tr>';
+                return;
+            }
+
+            categories.forEach((cat, index) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td style="padding:8px; border:1px solid #ddd;">${cat.name}</td>
+                    <td style="padding:8px; border:1px solid #ddd;">${cat.rate}%</td>
+                    <td style="padding:8px; border:1px solid #ddd; text-align:center;">
+                        <button class="btn btn-danger" style="padding:2px 6px; font-size:12px;" onclick="deleteAssetCategory(${index})">Del</button>
+                    </td>
+                `;
+                list.appendChild(tr);
+            });
+        }
+
+        function addAssetCategory() {
+            const name = document.getElementById('assetCategoryName').value.trim();
+            const rate = document.getElementById('assetDepRate').value;
+
+            if (!name || !rate) {
+                showWarning("Please enter Category Name and Rate.");
+                return;
+            }
+
+            const categories = getAssetCategories();
+            if (categories.some(c => c.name.toLowerCase() === name.toLowerCase())) {
+                showWarning("Category already exists!");
+                return;
+            }
+
+            categories.push({ name, rate });
+            localStorage.setItem('asset_categories', JSON.stringify(categories));
+
+            document.getElementById('assetCategoryName').value = '';
+            document.getElementById('assetDepRate').value = '';
+            renderAssetCategories();
+            loadAssetCategoriesForFilter();
+            loadAccounts();
+            showSuccess("Category added successfully!");
+        }
+
+        function deleteAssetCategory(index) {
+            showConfirm("Delete Category", "Are you sure you want to delete this category?", () => {
+                const categories = getAssetCategories();
+                categories.splice(index, 1);
+                localStorage.setItem('asset_categories', JSON.stringify(categories));
+                renderAssetCategories();
+                loadAssetCategoriesForFilter();
+                loadAccounts();
+                showSuccess("Category deleted successfully!");
+            });
+        }
+
+        // --- Fixed Asset Register Logic ---
+        function openFixedAssetRegister() {
+            fixedAssets = JSON.parse(localStorage.getItem('fixed_assets')) || [];
+            renderFixedAssetRegister();
+            document.getElementById('fixedAssetRegisterModal').style.display = 'flex';
+        }
+
+        function closeFixedAssetRegisterModal() {
+            document.getElementById('fixedAssetRegisterModal').style.display = 'none';
+        }
+
+        function sortFixedAssets(column) {
+            if (currentAssetSort.column === column) {
+                currentAssetSort.direction = currentAssetSort.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentAssetSort.column = column;
+                currentAssetSort.direction = 'asc';
+            }
+            renderFixedAssetRegister();
+        }
+
+        function renderFixedAssetRegister() {
+            const tbody = document.getElementById('fixedAssetListBody');
+            tbody.innerHTML = '';
+            const catFilter = document.getElementById('filterAssetCategory');
+
+            // Populate Filter
+            if (catFilter.options.length === 1) {
+                const cats = getAssetCategories();
+                cats.forEach(c => {
+                    const opt = document.createElement('option');
+                    opt.value = c.name;
+                    opt.textContent = c.name;
+                    catFilter.appendChild(opt);
+                });
+            }
+
+            const filterVal = catFilter.value;
+            let filtered = filterVal ? fixedAssets.filter(a => a.category === filterVal) : [...fixedAssets];
+
+            // Sorting
+            filtered.sort((a, b) => {
+                let valA = a[currentAssetSort.column];
+                let valB = b[currentAssetSort.column];
+
+                // Handle numbers
+                if (['purchase_value', 'depreciation_rate', 'current_wdv'].includes(currentAssetSort.column)) {
+                    valA = parseFloat(valA) || 0;
+                    valB = parseFloat(valB) || 0;
+                } else {
+                    valA = (valA || '').toString().toLowerCase();
+                    valB = (valB || '').toString().toLowerCase();
+                }
+
+                if (valA < valB) return currentAssetSort.direction === 'asc' ? -1 : 1;
+                if (valA > valB) return currentAssetSort.direction === 'asc' ? 1 : -1;
+                return 0;
+            });
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:15px; color:#777;">No assets found. Create a JV debiting an Asset Category to add one.</td></tr>';
+                return;
+            }
+
+            let totalPurchaseValue = 0;
+            let totalWDV = 0;
+
+            filtered.forEach(asset => {
+                totalPurchaseValue += parseFloat(asset.purchase_value) || 0;
+                totalWDV += parseFloat(asset.current_wdv) || 0;
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${asset.asset_name}</td>
+                    <td>${asset.category}</td>
+                    <td>${new Date(asset.purchase_date).toLocaleDateString('en-GB')}</td>
+                    <td>₹ ${parseFloat(asset.purchase_value).toFixed(2)}</td>
+                    <td>${asset.depreciation_rate}%</td>
+                    <td style="font-weight:bold;">₹ ${parseFloat(asset.current_wdv).toFixed(2)}</td>
+                    <td>${asset.last_depreciation_date ? new Date(asset.last_depreciation_date).toLocaleDateString('en-GB') : '-'}</td>
+                    <td style="text-align:center;">
+                        <button class="btn btn-info" style="padding:2px 6px; font-size:11px;" onclick="openDepreciationForAsset('${asset.id}')" title="Calculate Depreciation"><i class="fas fa-calculator"></i></button>
+                        <button class="btn btn-warning" style="padding:2px 6px; font-size:11px;" onclick="openRevaluationModal('${asset.id}')" title="Revalue Asset"><i class="fas fa-chart-line"></i></button>
+                        <button class="btn btn-danger" style="padding:2px 6px; font-size:11px;" onclick="openDisposalModal('${asset.id}')" title="Dispose/Sell"><i class="fas fa-trash-alt"></i></button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            // Add Footer Row
+            const trFoot = document.createElement('tr');
+            trFoot.style.fontWeight = 'bold';
+            trFoot.style.backgroundColor = '#e9ecef';
+            trFoot.innerHTML = `
+                <td colspan="3" style="text-align:right;">Total:</td>
+                <td>₹ ${totalPurchaseValue.toFixed(2)}</td>
+                <td></td>
+                <td>₹ ${totalWDV.toFixed(2)}</td>
+                <td colspan="2"></td>
+            `;
+            tbody.appendChild(trFoot);
+
+            // Update sort icons
+            const headers = document.querySelectorAll('#fixedAssetRegisterModal th[onclick]');
+            headers.forEach(th => {
+                const col = th.getAttribute('onclick').match(/'([^']+)'/)[1];
+                if (col === currentAssetSort.column) {
+                    let text = th.innerText.replace(/ [▲▼]/, '');
+                    th.innerText = text + (currentAssetSort.direction === 'asc' ? ' ▲' : ' ▼');
+                } else {
+                    th.innerText = th.innerText.replace(/ [▲▼]/, '');
+                }
+            });
+        }
+
+        function exportFixedAssets() {
+            if (fixedAssets.length === 0) return showWarning("No assets to export");
+            const dataStr = JSON.stringify(fixedAssets, null, 2);
+            const blob = new Blob([dataStr], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "fixed_assets_register.json";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            showSuccess("Fixed Assets exported successfully!");
+        }
+
+        function exportFixedAssetsPDF() {
+            if (!window.jspdf) {
+                return showWarning("jsPDF library not loaded!");
+            }
+            
+            if (fixedAssets.length === 0) return showWarning("No assets to export");
+            
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF("l", "mm", "a4");
+            
+            doc.setFontSize(16);
+            doc.text("Fixed Asset Register", 148.5, 15, { align: "center" });
+            
+            const headers = [["Asset Name", "Category", "Purchase Date", "Purchase Value", "Rate (%)", "Current WDV", "Last Dep. Date", "Status"]];
+            const data = fixedAssets.map(asset => [
+                asset.asset_name, asset.category, new Date(asset.purchase_date).toLocaleDateString('en-GB'), parseFloat(asset.purchase_value).toFixed(2), asset.depreciation_rate + "%", parseFloat(asset.current_wdv).toFixed(2), asset.last_depreciation_date ? new Date(asset.last_depreciation_date).toLocaleDateString('en-GB') : '-', asset.status
+            ]);
+            
+            doc.autoTable({
+                startY: 25,
+                head: headers,
+                body: data,
+                theme: 'striped',
+                headStyles: { fillColor: [44, 62, 80], textColor: 255 },
+                styles: { fontSize: 8, cellPadding: 2, valign: 'middle' },
+                columnStyles: { 3: { halign: 'right' }, 4: { halign: 'center' }, 5: { halign: 'right' }, 6: { halign: 'center' }, 7: { halign: 'center' } }
+            });
+            
+            doc.save("Fixed_Asset_Register.pdf");
+            showSuccess("Fixed Asset Register PDF generated successfully!");
+        }
+
+        function openDepreciationForAsset(assetId) {
+            closeFixedAssetRegisterModal();
+            openDepreciationModal(assetId);
+        }
+
+        // --- Manual Asset Addition ---
+        function openAddAssetModal() {
+            const catSelect = document.getElementById('manualAssetCategory');
+            catSelect.innerHTML = '<option value="">Select Category</option>';
+            const cats = getAssetCategories();
+            cats.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c.name;
+                opt.dataset.rate = c.rate;
+                opt.textContent = c.name;
+                catSelect.appendChild(opt);
+            });
+
+            document.getElementById('manualAssetName').value = '';
+            document.getElementById('manualAssetDate').valueAsDate = new Date();
+            document.getElementById('manualAssetValue').value = '';
+            document.getElementById('addAssetModal').style.display = 'flex';
+        }
+
+        function closeAddAssetModal() {
+            document.getElementById('addAssetModal').style.display = 'none';
+        }
+
+        function saveManualAsset() {
+            const name = document.getElementById('manualAssetName').value.trim();
+            const catSelect = document.getElementById('manualAssetCategory');
+            const category = catSelect.value;
+            const date = document.getElementById('manualAssetDate').value;
+            const value = parseFloat(document.getElementById('manualAssetValue').value) || 0;
+
+            if (!name || !category || !date || value <= 0) {
+                return showWarning("Please fill all fields with valid data.");
+            }
+
+            const rate = parseFloat(catSelect.options[catSelect.selectedIndex].dataset.rate);
+
+            const newAsset = {
+                id: 'fa_' + Date.now() + Math.floor(Math.random() * 1000),
+                asset_name: name,
+                category: category,
+                purchase_date: date,
+                purchase_value: value,
+                depreciation_rate: rate,
+                opening_wdv: value,
+                current_wdv: value,
+                last_depreciation_date: "",
+                status: "Active"
+            };
+
+            fixedAssets.push(newAsset);
+            localStorage.setItem('fixed_assets', JSON.stringify(fixedAssets));
+
+            closeAddAssetModal();
+            renderFixedAssetRegister();
+            loadAccounts();
+            showSuccess("Asset added successfully!");
+        }
+
+        // --- Depreciation Calculator Logic ---
+        function openDepreciationModal(preSelectId = null) {
+            const select = document.getElementById('depAssetSelect');
+            select.innerHTML = '<option value="">Select Asset from Register</option>';
+
+            fixedAssets.forEach(asset => {
+                if (asset.status !== 'Active' || parseFloat(asset.current_wdv) <= 0) return;
+                const opt = document.createElement('option');
+                opt.value = asset.id;
+                opt.textContent = asset.asset_name;
+                select.appendChild(opt);
+            });
+
+            // Load from Asset Master (Categories)
+            const categories = getAssetCategories();
+            if (categories.length > 0) {
+                categories.forEach(cat => {
+                    const opt = document.createElement('option');
+                    opt.value = "CAT_" + cat.name;
+                    opt.textContent = cat.name + " (Category)";
+                    opt.dataset.rate = cat.rate;
+                    select.appendChild(opt);
+                });
+            }
+
+            document.getElementById('depPurchaseDate').value = '';
+            document.getElementById('depCurrentWDV').value = '';
+            document.getElementById('depRate').value = '';
+            document.getElementById('depVoucherDate').valueAsDate = new Date(); // Default to today
+            document.getElementById('depAmount').value = '';
+            document.getElementById('depNetValue').value = '';
+            document.getElementById('depRuleText').innerText = '';
+
+            if (preSelectId) {
+                select.value = preSelectId;
+                onDepAssetSelect();
+            }
+
+            document.getElementById('depreciationModal').style.display = 'flex';
+        }
+
+        function closeDepreciationModal() {
+            document.getElementById('depreciationModal').style.display = 'none';
+        }
+
+        function onDepAssetSelect() {
+            const select = document.getElementById('depAssetSelect');
+            const id = select.value;
+            if (!id) return;
+
+            if (id.startsWith('CAT_')) {
+                // Manual Mode for Category
+                const rate = select.options[select.selectedIndex].dataset.rate;
+                document.getElementById('depRate').value = rate;
+
+                document.getElementById('depPurchaseDate').readOnly = false;
+                document.getElementById('depPurchaseDate').style.background = '#fff';
+                document.getElementById('depCurrentWDV').readOnly = false;
+                document.getElementById('depCurrentWDV').style.background = '#fff';
+
+                document.getElementById('depPurchaseDate').value = '';
+                document.getElementById('depCurrentWDV').value = '';
+            } else {
+                // Asset Mode
+                const asset = fixedAssets.find(a => a.id === id);
+                if (asset) {
+                    document.getElementById('depPurchaseDate').value = asset.purchase_date;
+                    document.getElementById('depCurrentWDV').value = asset.current_wdv;
+                    document.getElementById('depRate').value = asset.depreciation_rate;
+
+                    document.getElementById('depPurchaseDate').readOnly = true;
+                    document.getElementById('depPurchaseDate').style.background = '#eee';
+                    document.getElementById('depCurrentWDV').readOnly = true;
+                    document.getElementById('depCurrentWDV').style.background = '#eee';
+
+                    calculateDepreciation();
+                }
+            }
+        }
+
+        function getFinancialYearStart(date) {
+            // If Month is Jan(0), Feb(1), Mar(2) -> FY Start is Prev Year Apr 1
+            // If Month is Apr(3) ... Dec(11) -> FY Start is This Year Apr 1
+            const y = date.getFullYear();
+            const m = date.getMonth();
+            return (m < 3) ? new Date(y - 1, 3, 1) : new Date(y, 3, 1);
+        }
+
+        function getFinancialYearEnd(date) {
+            const y = date.getFullYear();
+            const m = date.getMonth();
+            return (m < 3) ? new Date(y, 2, 31) : new Date(y + 1, 2, 31);
+        }
+
+        function calculateDepreciation() {
+            const select = document.getElementById('depAssetSelect');
+            const id = select.value;
+            if (!id) return;
+
+            const wdv = parseFloat(document.getElementById('depCurrentWDV').value) || 0;
+            let rate = parseFloat(document.getElementById('depRate').value) || 0;
+            const voucherDateStr = document.getElementById('depVoucherDate').value;
+            const purchaseDateStr = document.getElementById('depPurchaseDate').value;
+
+            if (!voucherDateStr || !purchaseDateStr) return;
+
+            // Parse dates as local midnight to avoid timezone issues
+            const vParts = voucherDateStr.split('-');
+            const voucherDate = new Date(vParts[0], vParts[1] - 1, vParts[2]);
+
+            const pParts = purchaseDateStr.split('-');
+            const purchaseDate = new Date(pParts[0], pParts[1] - 1, pParts[2]);
+
+            // Check if already depreciated in this FY
+            if (!id.startsWith('CAT_')) {
+                const asset = fixedAssets.find(a => a.id === id);
+                if (asset && asset.last_depreciation_date) {
+                    const lParts = asset.last_depreciation_date.split('-');
+                    const lastDepDate = new Date(lParts[0], lParts[1] - 1, lParts[2]);
+
+                    const fyStart = getFinancialYearStart(voucherDate);
+                    const fyEnd = getFinancialYearEnd(voucherDate);
+
+                    if (lastDepDate >= fyStart && lastDepDate <= fyEnd) {
+                        document.getElementById('depRuleText').innerText = "Warning: Asset already depreciated in this Financial Year.";
+                        document.getElementById('depRuleText').style.color = "red";
+                        document.getElementById('depAmount').value = "0.00";
+                        document.getElementById('depNetValue').value = wdv.toFixed(2);
+                        return;
+                    }
+                }
+            }
+
+            // 180 Day Rule Logic
+            // If Purchase Date is in the SAME Financial Year as Voucher Date
+            const vFyStart = getFinancialYearStart(voucherDate);
+            const vFyEnd = getFinancialYearEnd(voucherDate);
+
+            let ruleApplied = "Standard Depreciation";
+
+            if (purchaseDate >= vFyStart && purchaseDate <= vFyEnd) {
+                // Calculate days used in this FY
+                const oneDay = 24 * 60 * 60 * 1000;
+                const diffTime = vFyEnd - purchaseDate;
+                const diffDays = Math.floor(diffTime / oneDay) + 1; // Inclusive of purchase date
+
+                if (diffDays < 180) {
+                    rate = rate / 2;
+                    ruleApplied = `180-Day Rule Applied (Half Rate) - Used for ${diffDays} days`;
+                } else {
+                    ruleApplied = `Standard Depreciation (Full Rate) - Used for ${diffDays} days`;
+                }
+            }
+
+            document.getElementById('depRuleText').innerText = ruleApplied;
+            document.getElementById('depRuleText').style.color = "blue";
+
+            const amt = (wdv * rate) / 100;
+            document.getElementById('depAmount').value = amt.toFixed(2);
+            const netVal = wdv - amt;
+            document.getElementById('depNetValue').value = netVal.toFixed(2);
+        }
+
+        // --- Depreciation Schedule Logic ---
+        function openDepreciationSchedule() {
+            fixedAssets = JSON.parse(localStorage.getItem('fixed_assets')) || [];
+            renderDepreciationSchedule();
+            document.getElementById('depreciationScheduleModal').style.display = 'flex';
+        }
+
+        function closeDepreciationScheduleModal() {
+            document.getElementById('depreciationScheduleModal').style.display = 'none';
+        }
+
+        function renderDepreciationSchedule() {
+            const tbody = document.getElementById('depreciationScheduleBody');
+            tbody.innerHTML = '';
+
+            const searchInput = document.getElementById('depreciationSearch');
+            const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
+
+            const activeAssets = fixedAssets.filter(a => {
+                if (a.status !== 'Active' || parseFloat(a.current_wdv) <= 0) return false;
+                if (searchTerm && !(a.asset_name.toLowerCase().includes(searchTerm) || a.category.toLowerCase().includes(searchTerm))) return false;
+                return true;
+            });
+
+            let totalWDV = 0;
+            let totalYears = [{wdv: 0, dep: 0}, {wdv: 0, dep: 0}, {wdv: 0, dep: 0}, {wdv: 0, dep: 0}, {wdv: 0, dep: 0}];
+            let totalClosing = 0;
+
+            activeAssets.forEach(asset => {
+                let wdv = parseFloat(asset.current_wdv);
+                const rate = parseFloat(asset.depreciation_rate);
+
+                totalWDV += wdv;
+
+                let rowHtml = `
+                    <td style="padding:8px; border:1px solid #ddd;">${asset.asset_name}</td>
+                    <td style="padding:8px; border:1px solid #ddd;">${asset.category}</td>
+                    <td style="padding:8px; border:1px solid #ddd;">${rate}%</td>
+                    <td style="padding:8px; border:1px solid #ddd; font-weight:bold;">₹ ${wdv.toFixed(2)}</td>
+                `;
+
+                for (let i = 1; i <= 5; i++) {
+                    let dep = (wdv * rate) / 100;
+
+                    // 180-day rule logic for Year 1 (if new asset in current FY)
+                    if (i === 1) {
+                        const today = new Date();
+                        const fyStart = getFinancialYearStart(today);
+                        const fyEnd = getFinancialYearEnd(today);
+                        const pParts = asset.purchase_date.split('-');
+                        const pDate = new Date(pParts[0], pParts[1] - 1, pParts[2]);
+
+                        if (!asset.last_depreciation_date && pDate >= fyStart && pDate <= fyEnd) {
+                            const oneDay = 24 * 60 * 60 * 1000;
+                            const diffTime = fyEnd - pDate;
+                            const diffDays = Math.floor(diffTime / oneDay) + 1;
+                            if (diffDays < 180) {
+                                dep = (wdv * (rate / 2)) / 100;
+                            }
+                        }
+                    }
+
+                    wdv -= dep;
+                    totalYears[i - 1].wdv += wdv;
+                    totalYears[i - 1].dep += dep;
+                    rowHtml += `<td style="padding:8px; border:1px solid #ddd;">₹ ${wdv.toFixed(2)}<br><small style="color:#666;">(Dep: ₹ ${dep.toFixed(2)})</small></td>`;
+                }
+
+                totalClosing += wdv;
+
+                rowHtml += `<td style="padding:8px; border:1px solid #ddd; font-weight:bold;">₹ ${wdv.toFixed(2)}</td>`;
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = rowHtml;
+                tbody.appendChild(tr);
+            });
+
+            if (activeAssets.length > 0) {
+                const trFoot = document.createElement('tr');
+                trFoot.style.fontWeight = 'bold';
+                trFoot.style.backgroundColor = '#e9ecef';
+                trFoot.innerHTML = `
+                    <td colspan="3" style="text-align:right; padding:8px; border:1px solid #ddd;">Total:</td>
+                    <td style="padding:8px; border:1px solid #ddd;">₹ ${totalWDV.toFixed(2)}</td>
+                    <td style="padding:8px; border:1px solid #ddd;">₹ ${totalYears[0].wdv.toFixed(2)}<br><small style="color:#666;">(Dep: ₹ ${totalYears[0].dep.toFixed(2)})</small></td>
+                    <td style="padding:8px; border:1px solid #ddd;">₹ ${totalYears[1].wdv.toFixed(2)}<br><small style="color:#666;">(Dep: ₹ ${totalYears[1].dep.toFixed(2)})</small></td>
+                    <td style="padding:8px; border:1px solid #ddd;">₹ ${totalYears[2].wdv.toFixed(2)}<br><small style="color:#666;">(Dep: ₹ ${totalYears[2].dep.toFixed(2)})</small></td>
+                    <td style="padding:8px; border:1px solid #ddd;">₹ ${totalYears[3].wdv.toFixed(2)}<br><small style="color:#666;">(Dep: ₹ ${totalYears[3].dep.toFixed(2)})</small></td>
+                    <td style="padding:8px; border:1px solid #ddd;">₹ ${totalYears[4].wdv.toFixed(2)}<br><small style="color:#666;">(Dep: ₹ ${totalYears[4].dep.toFixed(2)})</small></td>
+                    <td style="padding:8px; border:1px solid #ddd;">₹ ${totalClosing.toFixed(2)}</td>
+                `;
+                tbody.appendChild(trFoot);
+            }
+        }
+
+        function exportDepreciationScheduleToExcel() {
+            const searchInput = document.getElementById('depreciationSearch');
+            const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
+
+            const activeAssets = fixedAssets.filter(a => {
+                if (a.status !== 'Active' || parseFloat(a.current_wdv) <= 0) return false;
+                if (searchTerm && !(a.asset_name.toLowerCase().includes(searchTerm) || a.category.toLowerCase().includes(searchTerm))) return false;
+                return true;
+            });
+            
+            if (activeAssets.length === 0) return showWarning("No assets to export");
+
+            const data = [
+                ["Asset Name", "Category", "Rate (%)", "Current WDV", "Year 1", "Year 2", "Year 3", "Year 4", "Year 5", "Closing WDV"]
+            ];
+
+            let totalWDV = 0;
+            let totalYears = [{wdv: 0, dep: 0}, {wdv: 0, dep: 0}, {wdv: 0, dep: 0}, {wdv: 0, dep: 0}, {wdv: 0, dep: 0}];
+            let totalClosing = 0;
+
+            // Re-calculate for export (duplicating logic for simplicity to avoid dependency on DOM)
+            activeAssets.forEach(asset => {
+                let wdv = parseFloat(asset.current_wdv);
+                const rate = parseFloat(asset.depreciation_rate);
+                totalWDV += wdv;
+                const row = [asset.asset_name, asset.category, rate + "%", wdv.toFixed(2)];
+
+                for (let i = 1; i <= 5; i++) {
+                    let dep = (wdv * rate) / 100;
+                    if (i === 1) {
+                        const today = new Date();
+                        const fyStart = getFinancialYearStart(today);
+                        const fyEnd = getFinancialYearEnd(today);
+                        const pParts = asset.purchase_date.split('-');
+                        const pDate = new Date(pParts[0], pParts[1] - 1, pParts[2]);
+                        
+                        if (!asset.last_depreciation_date && pDate >= fyStart && pDate <= fyEnd) {
+                            const oneDay = 24 * 60 * 60 * 1000;
+                            const diffTime = fyEnd - pDate;
+                            const diffDays = Math.floor(diffTime / oneDay) + 1;
+                            if (diffDays < 180) dep = (wdv * (rate / 2)) / 100;
+                        }
+                    }
+                    wdv -= dep;
+                    totalYears[i - 1].wdv += wdv;
+                    totalYears[i - 1].dep += dep;
+                    row.push(`${wdv.toFixed(2)}\n(Dep: ${dep.toFixed(2)})`);
+                }
+                totalClosing += wdv;
+                row.push(wdv.toFixed(2));
+                data.push(row);
+            });
+
+            data.push(["Total", "", "", totalWDV.toFixed(2), `${totalYears[0].wdv.toFixed(2)}\n(Dep: ${totalYears[0].dep.toFixed(2)})`, `${totalYears[1].wdv.toFixed(2)}\n(Dep: ${totalYears[1].dep.toFixed(2)})`, `${totalYears[2].wdv.toFixed(2)}\n(Dep: ${totalYears[2].dep.toFixed(2)})`, `${totalYears[3].wdv.toFixed(2)}\n(Dep: ${totalYears[3].dep.toFixed(2)})`, `${totalYears[4].wdv.toFixed(2)}\n(Dep: ${totalYears[4].dep.toFixed(2)})`, totalClosing.toFixed(2)]);
+
+            const ws = XLSX.utils.aoa_to_sheet(data);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Depreciation Schedule");
+            XLSX.writeFile(wb, "Depreciation_Schedule_5Years.xlsx");
+            showSuccess("Depreciation Schedule exported successfully!");
+        }
+
+        function exportDepreciationScheduleToPDF() {
+            if (!window.jspdf) {
+                return showWarning("jsPDF library not loaded!");
+            }
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF("l", "mm", "a4");
+
+            const searchInput = document.getElementById('depreciationSearch');
+            const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
+
+            const activeAssets = fixedAssets.filter(a => {
+                if (a.status !== 'Active' || parseFloat(a.current_wdv) <= 0) return false;
+                if (searchTerm && !(a.asset_name.toLowerCase().includes(searchTerm) || a.category.toLowerCase().includes(searchTerm))) return false;
+                return true;
+            });
+            
+            if (activeAssets.length === 0) return showWarning("No assets to export");
+
+            doc.setFontSize(16);
+            doc.text("Depreciation Schedule (Next 5 Years)", 148.5, 15, { align: "center" });
+
+            const headers = [["Asset Name", "Category", "Rate (%)", "Current WDV", "Year 1", "Year 2", "Year 3", "Year 4", "Year 5", "Closing WDV"]];
+            const data = [];
+
+            let totalWDV = 0;
+            let totalYears = [{wdv: 0, dep: 0}, {wdv: 0, dep: 0}, {wdv: 0, dep: 0}, {wdv: 0, dep: 0}, {wdv: 0, dep: 0}];
+            let totalClosing = 0;
+
+            activeAssets.forEach(asset => {
+                let wdv = parseFloat(asset.current_wdv);
+                const rate = parseFloat(asset.depreciation_rate);
+                totalWDV += wdv;
+                
+                const row = [asset.asset_name, asset.category, rate + "%", wdv.toFixed(2)];
+
+                for (let i = 1; i <= 5; i++) {
+                    let dep = (wdv * rate) / 100;
+                    if (i === 1) {
+                        const today = new Date();
+                        const fyStart = getFinancialYearStart(today);
+                        const fyEnd = getFinancialYearEnd(today);
+                        const pParts = asset.purchase_date.split('-');
+                        const pDate = new Date(pParts[0], pParts[1] - 1, pParts[2]);
+                        
+                        if (!asset.last_depreciation_date && pDate >= fyStart && pDate <= fyEnd) {
+                            const oneDay = 24 * 60 * 60 * 1000;
+                            const diffTime = fyEnd - pDate;
+                            const diffDays = Math.floor(diffTime / oneDay) + 1;
+                            if (diffDays < 180) dep = (wdv * (rate / 2)) / 100;
+                        }
+                    }
+                    wdv -= dep;
+                    totalYears[i - 1].wdv += wdv;
+                    totalYears[i - 1].dep += dep;
+                    row.push(`${wdv.toFixed(2)}\n(Dep: ${dep.toFixed(2)})`);
+                }
+                totalClosing += wdv;
+                row.push(wdv.toFixed(2));
+                data.push(row);
+            });
+
+            data.push([
+                { content: "Total", colSpan: 3, styles: { halign: 'right', fontStyle: 'bold' } }, 
+                { content: totalWDV.toFixed(2), styles: { fontStyle: 'bold', halign: 'right' } }, 
+                { content: `${totalYears[0].wdv.toFixed(2)}\n(Dep: ${totalYears[0].dep.toFixed(2)})`, styles: { fontStyle: 'bold', halign: 'right' } }, 
+                { content: `${totalYears[1].wdv.toFixed(2)}\n(Dep: ${totalYears[1].dep.toFixed(2)})`, styles: { fontStyle: 'bold', halign: 'right' } }, 
+                { content: `${totalYears[2].wdv.toFixed(2)}\n(Dep: ${totalYears[2].dep.toFixed(2)})`, styles: { fontStyle: 'bold', halign: 'right' } }, 
+                { content: `${totalYears[3].wdv.toFixed(2)}\n(Dep: ${totalYears[3].dep.toFixed(2)})`, styles: { fontStyle: 'bold', halign: 'right' } }, 
+                { content: `${totalYears[4].wdv.toFixed(2)}\n(Dep: ${totalYears[4].dep.toFixed(2)})`, styles: { fontStyle: 'bold', halign: 'right' } }, 
+                { content: totalClosing.toFixed(2), styles: { fontStyle: 'bold', halign: 'right' } }
+            ]);
+
+            doc.autoTable({
+                startY: 25,
+                head: headers,
+                body: data,
+                theme: 'striped',
+                headStyles: { fillColor: [44, 62, 80], textColor: 255 },
+                styles: { fontSize: 8, cellPadding: 2, valign: 'middle' },
+                columnStyles: {
+                    2: { halign: 'center' },
+                    3: { halign: 'right' },
+                    4: { halign: 'right' },
+                    5: { halign: 'right' },
+                    6: { halign: 'right' },
+                    7: { halign: 'right' },
+                    8: { halign: 'right' },
+                    9: { halign: 'right' }
+                }
+            });
+
+            doc.save("Depreciation_Schedule_5Years.pdf");
+            showSuccess("Depreciation Schedule PDF generated successfully!");
+        }
+
+
+        function applyDepreciationToJournal() {
+            const amt = document.getElementById('depAmount').value;
+            const assetSelect = document.getElementById('depAssetSelect');
+            const assetId = assetSelect.value;
+            let assetName = assetSelect.options[assetSelect.selectedIndex].text;
+            if (assetId.startsWith('CAT_')) assetName = assetName.replace(" (Category)", "");
+
+
+            if (!amt || parseFloat(amt) <= 0) return showWarning("Invalid Amount");
+            if (!assetId) return showWarning("Select Asset");
+
+            currentDepreciationDetails = {
+                assetId: assetId,
+                assetValue: document.getElementById('depCurrentWDV').value,
+                rate: document.getElementById('depRate').value,
+                depAmount: amt,
+                netValue: document.getElementById('depNetValue').value
+            };
+
+            // Add rows to Journal
+            // Debit Depreciation
+            addEntryRow('Dr', 'Depreciation', amt);
+
+            // Credit Asset
+            addEntryRow('Cr', assetName, amt);
+
+            calculateTotals();
+            closeDepreciationModal();
+            showSuccess("Depreciation applied to journal entry.");
+        }
+
+        // --- Asset Disposal Logic ---
+        function openDisposalModal(id) {
+            const asset = fixedAssets.find(a => a.id === id);
+            if (!asset) return;
+            document.getElementById('disposeAssetId').value = id;
+            document.getElementById('disposeDate').valueAsDate = new Date();
+            document.getElementById('disposeValue').value = '';
+            document.getElementById('disposeAccount').value = 'Cash';
+            calculateDisposalPreview();
+            document.getElementById('disposalModal').style.display = 'flex';
+        }
+
+        function closeDisposalModal() {
+            document.getElementById('disposalModal').style.display = 'none';
+        }
+
+        function calculateDisposalPreview() {
+            const id = document.getElementById('disposeAssetId').value;
+            const asset = fixedAssets.find(a => a.id === id);
+            if (!asset) return;
+
+            const saleDateStr = document.getElementById('disposeDate').value;
+            const saleVal = parseFloat(document.getElementById('disposeValue').value) || 0;
+
+            if (!saleDateStr) return;
+
+            // Simple logic: Assume WDV is current. 
+            // In a real scenario, we might calculate interim depreciation here.
+            // For simplicity, we use current_wdv as the book value.
+            const bookValue = parseFloat(asset.current_wdv);
+            const profitLoss = saleVal - bookValue;
+
+            let html = `
+                <strong>Asset:</strong> ${asset.asset_name}<br>
+                <strong>Book Value (WDV):</strong> ₹ ${bookValue.toFixed(2)}<br>
+                <strong>Sale Value:</strong> ₹ ${saleVal.toFixed(2)}<br>
+                <hr style="margin:5px 0;">
+            `;
+
+            if (profitLoss > 0) {
+                html += `<strong style="color:green;">Profit on Sale: ₹ ${profitLoss.toFixed(2)}</strong>`;
+            } else if (profitLoss < 0) {
+                html += `<strong style="color:red;">Loss on Sale: ₹ ${Math.abs(profitLoss).toFixed(2)}</strong>`;
+            } else {
+                html += `<strong>No Profit / No Loss</strong>`;
+            }
+
+            document.getElementById('disposalPreview').innerHTML = html;
+        }
+
+        function processDisposal() {
+            const id = document.getElementById('disposeAssetId').value;
+            const asset = fixedAssets.find(a => a.id === id);
+            if (!asset) return;
+
+            const saleDate = document.getElementById('disposeDate').value;
+            const saleVal = parseFloat(document.getElementById('disposeValue').value) || 0;
+            const account = document.getElementById('disposeAccount').value || 'Cash';
+            const bookValue = parseFloat(asset.current_wdv);
+            const profitLoss = saleVal - bookValue;
+
+            // Create Journal Entry
+            // 1. Debit Bank/Cash (Sale Value)
+            // 2. Credit Asset (Book Value)
+            // 3. Balancing Figure (P&L)
+
+            openCreateModal(); // Open the main JV modal
+            document.getElementById('voucherDate').value = saleDate;
+            document.getElementById('narration').value = `Disposal of Asset: ${asset.asset_name} (Category: ${asset.category})`;
+
+            const tbody = document.getElementById('entriesBody');
+            tbody.innerHTML = ''; // Clear default rows
+
+            // Row 1: Receipt (Bank/Cash)
+            if (saleVal > 0) {
+                addEntryRow('Dr', account, saleVal);
+            }
+
+            // Row 2: Asset Credit (Book Value)
+            addEntryRow('Cr', asset.asset_name, bookValue);
+
+            // Row 3: Profit or Loss
+            if (profitLoss > 0) {
+                // Profit -> Credit P&L
+                addEntryRow('Cr', 'Profit on Sale of Asset', profitLoss);
+            } else if (profitLoss < 0) {
+                // Loss -> Debit P&L
+                addEntryRow('Dr', 'Loss on Sale of Asset', Math.abs(profitLoss));
+            }
+
+            calculateTotals();
+
+            // Update Asset Status
+            asset.status = 'Disposed';
+            asset.current_wdv = 0;
+            localStorage.setItem('fixed_assets', JSON.stringify(fixedAssets));
+
+            closeDisposalModal();
+            closeFixedAssetRegisterModal();
+            showSuccess("Disposal Entry Prepared. Please Review and Save.");
+        }
+
+        // --- Asset Revaluation Logic ---
+        function openRevaluationModal(id) {
+            const asset = fixedAssets.find(a => a.id === id);
+            if (!asset) return;
+            document.getElementById('revalueAssetId').value = id;
+            document.getElementById('revalueCurrentWDV').value = asset.current_wdv;
+            document.getElementById('revalueAmount').value = '';
+            document.getElementById('revalueDate').valueAsDate = new Date();
+            document.getElementById('revaluationModal').style.display = 'flex';
+        }
+
+        function closeRevaluationModal() {
+            document.getElementById('revaluationModal').style.display = 'none';
+        }
+
+        function processRevaluation() {
+            const id = document.getElementById('revalueAssetId').value;
+            const asset = fixedAssets.find(a => a.id === id);
+            if (!asset) return;
+
+            const newVal = parseFloat(document.getElementById('revalueAmount').value);
+            const oldVal = parseFloat(asset.current_wdv);
+            if (isNaN(newVal)) return showWarning("Enter valid amount");
+
+            const diff = newVal - oldVal;
+            if (diff === 0) return showWarning("No change in value.");
+
+            openCreateModal();
+            document.getElementById('voucherDate').value = document.getElementById('revalueDate').value;
+            document.getElementById('narration').value = `Revaluation of Asset: ${asset.asset_name}`;
+
+            const tbody = document.getElementById('entriesBody');
+            tbody.innerHTML = '';
+
+            if (diff > 0) {
+                // Increase Value: Dr Asset, Cr Reserve
+                addEntryRow('Dr', asset.asset_name, diff);
+                addEntryRow('Cr', 'Revaluation Reserve', diff);
+            } else {
+                // Decrease Value: Dr Reserve/Loss, Cr Asset
+                addEntryRow('Dr', 'Revaluation Loss', Math.abs(diff));
+                addEntryRow('Cr', asset.asset_name, Math.abs(diff));
+            }
+            calculateTotals();
+            closeRevaluationModal();
+            closeFixedAssetRegisterModal();
+            showSuccess("Revaluation Entry Prepared. Please Review and Save.");
+        }
+
+        function closeModal() {
+            document.getElementById('entryModal').style.display = 'none';
+        }
+
+        function generateVoucherNo() {
+            // Simple auto-increment logic
+            let max = 0;
+            vouchers.forEach(v => {
+                if (v.voucher_no) {
+                    const num = parseInt(String(v.voucher_no).replace('JV-', ''));
+                    if (!isNaN(num) && num > max) max = num;
+                }
+            });
+            return `JV-${String(max + 1).padStart(4, '0')}`;
+        }
+
+        function addEntryRow(type = 'Dr', account = '', amount = '') {
+            const tbody = document.getElementById('entriesBody');
+            const tr = document.createElement('tr');
+
+            tr.innerHTML = `
+                <td>
+                    <select class="dr-cr-select" onchange="handleTypeChange(this)">
+                        <option value="Dr" ${type === 'Dr' ? 'selected' : ''}>Dr</option>
+                        <option value="Cr" ${type === 'Cr' ? 'selected' : ''}>Cr</option>
+                    </select>
+                </td>
+                <td>
+                    <div class="autocomplete-wrapper">
+                        <input type="text" class="account-input" value="${account}" placeholder="Select Account" style="min-width: 200px; width: 100%;" oninput="filterAccounts(this)" onfocus="filterAccounts(this)" onkeydown="handleAccountKeyDown(event, this)" autocomplete="off">
+                        <div class="autocomplete-list"></div>
+                    </div>
+                </td>
+                <td>
+                    <input type="number" class="amount-input debit-field" value="${type === 'Dr' ? amount : ''}" placeholder="0.00" ${type === 'Cr' ? 'disabled style="background:#f0f0f0;"' : ''} oninput="calculateTotals()">
+                </td>
+                <td>
+                    <input type="number" class="amount-input credit-field" value="${type === 'Cr' ? amount : ''}" placeholder="0.00" ${type === 'Dr' ? 'disabled style="background:#f0f0f0;"' : ''} oninput="calculateTotals()">
+                </td>
+                <td style="text-align:center;">
+                    <button class="btn btn-danger" style="padding:2px 6px; font-size:12px;" onclick="removeRow(this)">x</button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+
+            // Tally-like: Focus the account input of the new row
+            setTimeout(() => {
+                const accInput = tr.querySelector('.account-input');
+                if (accInput) accInput.focus();
+            }, 50);
+        }
+
+        function handleTypeChange(select) {
+            const row = select.closest('tr');
+            const drInput = row.querySelector('.debit-field');
+            const crInput = row.querySelector('.credit-field');
+
+            if (select.value === 'Dr') {
+                drInput.disabled = false;
+                drInput.style.background = '';
+                // Move value if exists
+                if (crInput.value) { drInput.value = crInput.value; crInput.value = ''; }
+
+                crInput.disabled = true;
+                crInput.style.background = '#f0f0f0';
+                crInput.value = '';
+            } else {
+                crInput.disabled = false;
+                crInput.style.background = '';
+                // Move value if exists
+                if (drInput.value) { crInput.value = drInput.value; drInput.value = ''; }
+
+                drInput.disabled = true;
+                drInput.style.background = '#f0f0f0';
+                drInput.value = '';
+            }
+            calculateTotals();
+        }
+
+        function filterAccounts(input) {
+            const val = input.value.toLowerCase();
+            const wrapper = input.closest('.autocomplete-wrapper');
+            const list = wrapper.querySelector('.autocomplete-list');
+            
+            // Close all other lists
+            document.querySelectorAll('.autocomplete-list').forEach(l => {
+                if (l !== list) l.style.display = 'none';
+            });
+
+            const vType = document.getElementById('voucherType').value;
+            let filtered = accounts;
+            if (vType === 'Contra') {
+                filtered = accounts.filter(a => a.type === 'Bank' || a.name === 'Cash');
+            }
+
+            const matched = filtered.filter(a => a.name.toLowerCase().includes(val));
+
+            list.innerHTML = '';
+            if (matched.length === 0) {
+                list.style.display = 'none';
+                return;
+            }
+
+            matched.forEach(acc => {
+                const div = document.createElement('div');
+                div.className = 'autocomplete-item';
+                div.innerHTML = `<div style="font-weight:bold;">${acc.name}</div><div style="font-size:11px; color:#666;">${acc.type}</div>`;
+                div.onclick = function (e) {
+                    e.stopPropagation();
+                    input.value = acc.name;
+                    list.style.display = 'none';
+                };
+                list.appendChild(div);
+            });
+            list.style.display = 'block';
+            input.currentFocus = -1;
+        }
+
+        function handleAccountKeyDown(e, input) {
+            const wrapper = input.closest('.autocomplete-wrapper');
+            const list = wrapper.querySelector('.autocomplete-list');
+            if (!list || list.style.display === 'none') return;
+
+            const items = list.getElementsByClassName('autocomplete-item');
+            if (input.currentFocus === undefined) input.currentFocus = -1;
+
+            if (e.keyCode === 40) { // Down
+                input.currentFocus++;
+                addActiveAccount(items, input);
+                if (items && items[input.currentFocus]) items[input.currentFocus].scrollIntoView({ block: 'nearest' });
+            } else if (e.keyCode === 38) { // Up
+                input.currentFocus--;
+                addActiveAccount(items, input);
+                if (items && items[input.currentFocus]) items[input.currentFocus].scrollIntoView({ block: 'nearest' });
+            } else if (e.keyCode === 13) { // Enter
+                if (input.currentFocus > -1 && items && items[input.currentFocus]) {
+                    e.preventDefault();
+                    items[input.currentFocus].click();
+                }
+            } else if (e.keyCode === 9) { // Tab
+                if (input.currentFocus > -1 && items && items[input.currentFocus]) {
+                    items[input.currentFocus].click();
+                } else if (items.length > 0) {
+                    items[0].click();
+                } else {
+                    list.style.display = 'none';
+                }
+            } else if (e.keyCode === 27) { // Escape
+                list.style.display = 'none';
+            }
+        }
+
+        function addActiveAccount(items, input) {
+            if (!items || items.length === 0) return false;
+            for (let i = 0; i < items.length; i++) {
+                items[i].classList.remove("active-item");
+            }
+            if (input.currentFocus >= items.length) input.currentFocus = 0;
+            if (input.currentFocus < 0) input.currentFocus = (items.length - 1);
+            items[input.currentFocus].classList.add("active-item");
+        }
+
+        document.addEventListener("click", function (e) {
+            if (!e.target.closest('.autocomplete-wrapper')) {
+                document.querySelectorAll('.autocomplete-list').forEach(l => l.style.display = 'none');
+            }
+        });
+
+        function removeRow(btn) {
+            const row = btn.closest('tr');
+            if (document.querySelectorAll('#entriesBody tr').length > 2) {
+                row.remove();
+                calculateTotals();
+            } else {
+                showWarning("Minimum 2 rows required for double entry.");
+            }
+        }
+
+        function autoBalance() {
+            let totalDr = 0;
+            let totalCr = 0;
+
+            document.querySelectorAll('.debit-field').forEach(i => totalDr += parseFloat(i.value) || 0);
+            document.querySelectorAll('.credit-field').forEach(i => totalCr += parseFloat(i.value) || 0);
+
+            const diff = totalDr - totalCr;
+
+            if (Math.abs(diff) < 0.01) {
+                return showSuccess("Voucher is already balanced.");
+            }
+
+            if (diff > 0) {
+                addEntryRow('Cr', '', diff.toFixed(2));
+            } else {
+                addEntryRow('Dr', '', Math.abs(diff).toFixed(2));
+            }
+            calculateTotals();
+        }
+
+        // Tally-like: Enter on last amount field adds new row
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' && (e.target.classList.contains('debit-field') || e.target.classList.contains('credit-field'))) {
+                const row = e.target.closest('tr');
+                const tbody = document.getElementById('entriesBody');
+                const rows = tbody.querySelectorAll('tr');
+
+                // If it's the last row and value is not empty, add new row
+                if (row === rows[rows.length - 1] && e.target.value.trim() !== '') {
+                    e.preventDefault(); // Prevent default tab behavior if handled here
+                    addEntryRow('Cr'); // Default to Credit for subsequent rows usually
+                }
+            }
+        });
+
+        function calculateTotals() {
+            let totalDr = 0;
+            let totalCr = 0;
+
+            document.querySelectorAll('.debit-field').forEach(i => totalDr += parseFloat(i.value) || 0);
+            document.querySelectorAll('.credit-field').forEach(i => totalCr += parseFloat(i.value) || 0);
+
+            document.getElementById('totalDebit').innerText = totalDr.toFixed(2);
+            document.getElementById('totalCredit').innerText = totalCr.toFixed(2);
+
+            const status = document.getElementById('balanceStatus');
+            const diff = Math.abs(totalDr - totalCr);
+
+            if (diff < 0.01 && totalDr > 0) {
+                status.innerText = "Balanced";
+                status.className = "balanced";
+                return true;
+            } else {
+                status.innerText = `Unbalanced (Diff: ${diff.toFixed(2)})`;
+                status.className = "unbalanced";
+                return false;
+            }
+        }
+
+        function printVoucher() {
+            // 1. Gather data from the modal
+            const voucherNo = document.getElementById('voucherNo').value;
+            const voucherDate = new Date(document.getElementById('voucherDate').value).toLocaleDateString('en-GB');
+            const narration = document.getElementById('narration').value;
+            const totalDebit = document.getElementById('totalDebit').innerText;
+            const totalCredit = document.getElementById('totalCredit').innerText;
+
+            // 2. Gather entries from the table
+            let entriesHtml = '';
+            const rows = document.querySelectorAll('#entriesBody tr');
+            rows.forEach(row => {
+                const type = row.querySelector('.dr-cr-select').value;
+                const account = row.querySelector('.account-input').value;
+                const debit = row.querySelector('.debit-field').value;
+                const credit = row.querySelector('.credit-field').value;
+
+                if (account && (debit || credit)) {
+                    entriesHtml += `
+                        <tr>
+                            <td>${type}</td>
+                            <td>${account}</td>
+                            <td style="text-align:right;">${debit ? parseFloat(debit).toFixed(2) : ''}</td>
+                            <td style="text-align:right;">${credit ? parseFloat(credit).toFixed(2) : ''}</td>
+                        </tr>
+                    `;
+                }
+            });
+
+            // 3. Get Company Info (from settings.js)
+            const companyName = APP_SETTINGS.COMPANY_NAME || "Your Company";
+            const address1 = APP_SETTINGS.ADDRESS_LINE_1 || "";
+            const address2 = APP_SETTINGS.ADDRESS_LINE_2 || "";
+            const contact = APP_SETTINGS.CONTACT_NUMBER || "";
+            const gstin = APP_SETTINGS.COMPANY_GSTIN || "";
+
+            // 4. Construct the print HTML
+            const printContent = `
+                <html><head><title>Voucher - ${voucherNo}</title>
+                <style>
+                    body { font-family: 'Segoe UI', sans-serif; margin: 20px; color: #333; }
+                    .print-container { width: 100%; max-width: 800px; margin: auto; }
+                    .header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 20px; }
+                    .header h1 { margin: 0; color: #2c3e50; }
+                    .header p { margin: 2px 0; font-size: 12px; color: #555; }
+                    .voucher-details { display: flex; justify-content: space-between; margin-bottom: 20px; font-size: 14px; }
+                    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+                    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+                    th { background-color: #f2f2f2; font-weight: 600; }
+                    tfoot tr { background-color: #f9f9f9; font-weight: bold; }
+                    .narration { margin-top: 20px; padding: 10px; border: 1px solid #eee; background: #f9f9f9; font-size: 13px; }
+                    @media print { body { margin: 0; -webkit-print-color-adjust: exact; } .no-print { display: none; } }
+                </style>
+                </head><body>
+                <div class="print-container">
+                    <div class="header">
+                        <h1>${companyName}</h1>
+                        <p>${address1} ${address2}</p>
+                        <p>Contact: ${contact} ${gstin ? `| GSTIN: ${gstin}` : ''}</p>
+                    </div>
+                    <h2 style="text-align:center; margin-bottom: 20px; text-transform: uppercase;">Journal Voucher</h2>
+                    <div class="voucher-details">
+                        <div><strong>Voucher No:</strong> ${voucherNo}</div>
+                        <div><strong>Date:</strong> ${voucherDate}</div>
+                    </div>
+                    <table><thead><tr><th style="width: 50px;">Dr/Cr</th><th>Particulars</th><th style="width: 120px; text-align:right;">Debit (₹)</th><th style="width: 120px; text-align:right;">Credit (₹)</th></tr></thead><tbody>${entriesHtml}</tbody><tfoot><tr><td colspan="2" style="text-align:right;">Total</td><td style="text-align:right;">${totalDebit}</td><td style="text-align:right;">${totalCredit}</td></tr></tfoot></table>
+                    <div class="narration"><strong>Narration:</strong><p style="margin-top:5px; white-space: pre-wrap;">${narration || 'N/A'}</p></div>
+                </div></body></html>`;
+
+            // 5. Open a new window and print
+            const printWindow = window.open('', '_blank', 'width=800,height=600');
+            printWindow.document.write(printContent);
+            printWindow.document.close();
+            printWindow.focus();
+            setTimeout(() => { printWindow.print(); printWindow.close(); }, 250);
+        }
+
+        async function saveVoucher() {
+            const vType = document.getElementById('voucherType').value;
+            const isBalanced = calculateTotals();
+            
+            // Non-accounting/order vouchers do not strictly require balancing
+            const nonAccountingTypes = ['Memorandum', 'Purchase Order', 'Sales Order', 'Delivery Note', 'Receipt Note'];
+            
+            if (!isBalanced && !nonAccountingTypes.includes(vType)) {
+                showWarning("Debit and Credit totals must match for Accounting Vouchers!");
+                return;
+            }
+
+            const date = document.getElementById('voucherDate').value;
+            if (!date) return showWarning("Date is required");
+
+            const rows = document.querySelectorAll('#entriesBody tr');
+            const entries = [];
+            let hasEmptyAccount = false;
+
+            rows.forEach(r => {
+                const type = r.querySelector('.dr-cr-select').value;
+                const account = r.querySelector('.account-input').value.trim();
+                const dr = parseFloat(r.querySelector('.debit-field').value) || 0;
+                const cr = parseFloat(r.querySelector('.credit-field').value) || 0;
+                const amount = type === 'Dr' ? dr : cr;
+
+                if (!account) hasEmptyAccount = true;
+                if (amount > 0) {
+                    entries.push({ type, account, debit: dr, credit: cr });
+                }
+            });
+
+            if (hasEmptyAccount) return showWarning("Please select an account for all rows.");
+            if (entries.length < 2) return showWarning("At least 2 valid entries required.");
+
+            // Contra Validation
+            if (vType === 'Contra') {
+                const invalidEntry = entries.find(e => {
+                    const acc = accounts.find(a => a.name === e.account);
+                    return !acc || (acc.type !== 'Bank' && acc.name !== 'Cash');
+                });
+                if (invalidEntry) return showWarning(`Contra Vouchers only allow Cash and Bank accounts. Invalid: ${invalidEntry.account}`);
+            } else if (vType === 'Payment') {
+                const invalidCredit = entries.find(e => e.type === 'Cr' && e.account !== 'Cash' && (!accounts.find(a => a.name === e.account) || accounts.find(a => a.name === e.account).type !== 'Bank'));
+                if (invalidCredit) return showWarning(`In a Payment Voucher, the Credit (Cr) entry must be a Cash or Bank account.`);
+            } else if (vType === 'Receipt') {
+                const invalidDebit = entries.find(e => e.type === 'Dr' && e.account !== 'Cash' && (!accounts.find(a => a.name === e.account) || accounts.find(a => a.name === e.account).type !== 'Bank'));
+                if (invalidDebit) return showWarning(`In a Receipt Voucher, the Debit (Dr) entry must be a Cash or Bank account.`);
+            }
+
+            // --- Asset Creation & Depreciation Logic ---
+            // 2. Check for Depreciation Entry (Update Asset WDV)
+            if (currentDepreciationDetails && currentDepreciationDetails.assetId) {
+                const assetIndex = fixedAssets.findIndex(a => a.id === currentDepreciationDetails.assetId);
+                if (assetIndex > -1) {
+                    // Prevent double depreciation check is done in calculator, but safe to update here
+                    fixedAssets[assetIndex].current_wdv = parseFloat(currentDepreciationDetails.netValue);
+                    fixedAssets[assetIndex].last_depreciation_date = date;
+                    localStorage.setItem('fixed_assets', JSON.stringify(fixedAssets));
+                }
+            }
+            // -------------------------------------------
+
+            const voucher = {
+                id: editingId || 'jv_' + Date.now(),
+                voucher_no: document.getElementById('voucherNo').value,
+                voucher_type: vType,
+                date: date,
+                narration: document.getElementById('narration').value,
+                entries: entries,
+                total_amount: parseFloat(document.getElementById('totalDebit').innerText),
+                depreciationDetails: currentDepreciationDetails,
+                created_at: new Date().toISOString()
+            };
+
+            const result = await apiClient.saveJournalVoucher(voucher);
+            if (result.success) {
+                if (editingId) {
+                    const idx = vouchers.findIndex(v => v.id === editingId);
+                    if (idx > -1) vouchers[idx] = voucher;
+                } else {
+                    vouchers.push(voucher);
+                }
+                closeModal();
+                renderVoucherList();
+                showSuccess("Voucher Saved Successfully!");
+            } else {
+                showWarning("Error saving voucher: " + result.message);
+            }
+        }
+
+        async function deleteVoucher(id) {
+            showConfirm("Delete Voucher", "Are you sure you want to delete this voucher?", async () => {
+                await apiClient.deleteJournalVoucher(id);
+                vouchers = vouchers.filter(v => v.id !== id);
+                renderVoucherList();
+                showSuccess("Voucher deleted successfully!");
+            });
+        }
+
+        function resetFilters() {
+            document.getElementById('searchBox').value = '';
+            document.getElementById('filterDate').value = '';
+            document.getElementById('filterCategory').value = '';
+            renderVoucherList();
+        }
+
+        function closeLedgerDrillDownModal() {
+            document.getElementById('ledgerDrillDownModal').style.display = 'none';
+        }
+
+        function openLedgerDrillDown(accountName, fromDate, toDate) {
+            document.getElementById('ledgerDrillDownTitle').innerText = `Ledger: ${accountName}`;
+            const tbody = document.getElementById('ledgerDrillDownBody');
+            tbody.innerHTML = '';
+
+            const allVouchers = vouchers;
+
+            let openingBalance = 0;
+            allVouchers.forEach(jv => {
+                if (jv.date < fromDate) {
+                    jv.entries.forEach(entry => {
+                        if (entry.account === accountName) {
+                            if (entry.type === 'Dr') openingBalance += (parseFloat(entry.debit) || 0);
+                            else openingBalance -= (parseFloat(entry.credit) || 0);
+                        }
+                    });
+                }
+            });
+
+            let runningBalance = openingBalance;
+            tbody.innerHTML = `
+                <tr style="font-weight:bold; background:#f0f0f0;">
+                    <td colspan="6" style="text-align:right;">Opening Balance</td>
+                    <td style="text-align:right;">${Math.abs(openingBalance).toFixed(2)} ${openingBalance >= 0 ? 'Dr' : 'Cr'}</td>
+                </tr>
+            `;
+
+            const filteredVouchers = allVouchers.filter(jv => jv.date >= fromDate && jv.date <= toDate);
+            let transactions = [];
+
+            filteredVouchers.forEach(jv => {
+                const relevantEntry = jv.entries.find(e => e.account === accountName);
+                if (relevantEntry) {
+                    const particulars = jv.entries
+                        .filter(e => e.account !== accountName)
+                        .map(e => e.account)
+                        .join(', ');
+
+                    transactions.push({
+                        date: jv.date,
+                        particulars: particulars || '(Self)',
+                        vchType: jv.voucher_type || 'Journal',
+                        vchNo: jv.voucher_no,
+                        debit: parseFloat(relevantEntry.debit) || 0,
+                        credit: parseFloat(relevantEntry.credit) || 0,
+                        jvId: jv.id
+                    });
+                }
+            });
+
+            transactions.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+            transactions.forEach(tx => {
+                runningBalance += (tx.debit - tx.credit);
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${new Date(tx.date).toLocaleDateString('en-GB')}</td>
+                    <td>${tx.particulars}</td>
+                    <td>${tx.vchType}</td>
+                    <td><a href="#" onclick="editVoucher('${tx.jvId}'); return false;" style="color:#2980b9; text-decoration:none;">${tx.vchNo}</a></td>
+                    <td style="text-align:right;">${tx.debit > 0 ? tx.debit.toFixed(2) : ''}</td>
+                    <td style="text-align:right;">${tx.credit > 0 ? tx.credit.toFixed(2) : ''}</td>
+                    <td style="text-align:right; font-weight:bold;">${Math.abs(runningBalance).toFixed(2)} ${runningBalance >= 0 ? 'Dr' : 'Cr'}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            document.getElementById('ledgerDrillDownModal').style.display = 'flex';
+        }
+    </script>
+</body>
+
+</html>

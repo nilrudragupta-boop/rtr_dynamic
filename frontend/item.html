@@ -1,0 +1,2680 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Item Manager</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            padding: 30px;
+            background: #f8f9fa;
+        }
+
+        .modal-box {
+            max-width: 95%;
+            margin: auto;
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            padding: 20px;
+            position: relative;
+        }
+
+        .table input,
+        .table textarea {
+            border: none;
+            background: transparent;
+            width: 100%;
+        }
+
+        .table input.editable,
+        .table textarea.editable,
+        .table select.editable {
+            border: 1px solid #0d6efd;
+            background: #fff;
+            border-radius: 5px;
+            padding: 2px 5px;
+        }
+
+        .toast {
+            visibility: hidden;
+            min-width: 250px;
+            margin-left: -125px;
+            background-color: #333;
+            color: #fff;
+            text-align: center;
+            border-radius: 8px;
+            padding: 12px;
+            position: fixed;
+            z-index: 10000;
+            left: 50%;
+            bottom: 30px;
+            font-size: 16px;
+            transition: visibility 0s, opacity 0.4s;
+            opacity: 0;
+        }
+
+        .toast.show {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        .table-container {
+            max-height: 750px;
+            overflow-y: auto;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .table thead th {
+            position: sticky;
+            top: 0;
+            z-index: 5;
+            background-color: #e9ecef;
+            /* Matches table-light */
+        }
+
+        /* Custom Modal Styles */
+        .custom-modal {
+            display: none;
+            position: fixed;
+            z-index: 1060;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            align-items: center;
+            justify-content: center;
+        }
+
+        .custom-modal-content {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            min-width: 300px;
+            max-width: 400px;
+        }
+
+        .modal-buttons {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .highlight {
+            background-color: #fff176;
+            font-weight: bold;
+        }
+
+        /* Dark Mode */
+        body.dark-mode {
+            background: #121212;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .modal-box,
+        body.dark-mode .card,
+        body.dark-mode .custom-modal-content {
+            background: #2c2c2c !important;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode input,
+        body.dark-mode select,
+        body.dark-mode textarea,
+        body.dark-mode .form-select {
+            background: #3a3a3a;
+            color: #fff;
+            border: 1px solid #555;
+        }
+
+        body.dark-mode table {
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .table-light th {
+            background-color: #333;
+            color: #fff;
+            border-color: #444;
+        }
+
+        body.dark-mode td,
+        body.dark-mode th {
+            border-color: #444;
+        }
+
+        body.dark-mode .text-secondary {
+            color: #aaa !important;
+        }
+
+        /* Compact View */
+        table.compact-table th,
+        table.compact-table td {
+            padding: 4px 5px;
+            font-size: 13px;
+        }
+
+        /* Grey Mode */
+        body.grey-mode button {
+            background-color: #6c757d !important;
+            color: #fff !important;
+        }
+
+        /* Action Dropdown Menu */
+        .action-dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .action-btn-main {
+            background-color: #607d8b;
+            color: white;
+            padding: 6px 12px;
+            font-size: 13px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .action-dropdown-content {
+            display: none;
+            position: fixed;
+            background-color: #fff;
+            min-width: 120px;
+            box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
+            z-index: 9999;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 4px 0;
+            text-align: left;
+        }
+
+        .action-dropdown-content button {
+            color: #333 !important;
+            background: none !important;
+            padding: 8px 16px !important;
+            text-decoration: none !important;
+            display: block !important;
+            width: 100% !important;
+            text-align: left !important;
+            border: none !important;
+            border-radius: 0 !important;
+            margin: 0 !important;
+            box-shadow: none !important;
+            font-weight: normal !important;
+            font-size: 13px !important;
+        }
+
+        .action-dropdown-content button:hover {
+            background-color: #f1f1f1 !important;
+            color: #000 !important;
+        }
+
+        .action-dropdown.active .action-dropdown-content {
+            display: block;
+        }
+
+        body.dark-mode .action-dropdown-content {
+            background-color: #2c2c2c;
+            border-color: #444;
+        }
+
+        body.dark-mode .action-dropdown-content button {
+            color: #e0e0e0 !important;
+        }
+
+        body.dark-mode .action-dropdown-content button:hover {
+            background-color: #3a3a3a !important;
+            color: #fff !important;
+        }
+    </style>
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    <script src="settings.js"></script>
+    <script src="brand.service.js"></script>
+    <script src="brandLoader.js"></script>
+    <script src="apiClient.js"></script>
+    <script>
+        function openWindow(url, width, height) {
+            const windowName = url.split('?')[0].split('/').pop().replace('.html', '').replace(/[^a-zA-Z0-9]/g, '_');
+            window.open(url, windowName, `width=${width},height=${height},resizable=yes,scrollbars=yes`).focus();
+        }
+    </script>
+</head>
+
+<body>
+
+    <div class="modal-box">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px;">
+            <div>
+                <h5><span id="brandName" style="margin-top: 0; margin-bottom: 5px;" data-brand="name"></span> -Item
+                    Entries</h5>
+                <span id="totalItemsDisplay" style="font-weight:bold; color:#0d6efd; font-size: 14px;">Total Items:
+                    0</span>
+            </div>
+            <div style="display: flex; flex-direction: column; align-items: flex-end;">
+                <div style="display:flex; align-items:center; gap:10px; margin-bottom: 5px;">
+                    <select id="themeSelect" onchange="changeTheme()" class="form-select form-select-sm"
+                        style="width: auto;">
+                        <option value="light">Light</option>
+                        <option value="dark">Dark</option>
+                        <option value="system">System Default</option>
+                    </select>
+                </div>
+                <label
+                    style="cursor:pointer; display:flex; align-items:center; gap:5px; font-size:14px; user-select:none;">
+                    <input type="checkbox" id="compactViewToggle" onchange="toggleCompactView()"
+                        class="form-check-input"> Compact View
+                </label>
+            </div>
+        </div>
+
+        <!-- Controls Toolbar -->
+        <div
+            class="d-flex flex-wrap gap-2 mb-4 align-items-center justify-content-between p-3 bg-white rounded shadow-sm">
+            <!-- Data Actions -->
+            <div class="d-flex flex-wrap gap-2">
+                <button id="exportCsvBtn" class="btn btn-outline-primary" onclick="openExportConfirmModal('csv')"
+                    data-permission-id="perm_backup_data">Export CSV</button>
+
+                <button id="importCsvBtn" class="btn btn-outline-secondary"
+                    onclick="document.getElementById('importCsvInput').click()"
+                    data-permission-id="perm_restore_data">Import CSV</button>
+
+                <input type="file" id="importCsvInput" accept=".csv" style="display:none"
+                    onchange="importItemsCSV(this)">
+
+                <button class="btn btn-light border" onclick="openSettingsModal()">⚙️ Settings</button>
+            </div>
+
+            <!-- Bulk Actions -->
+            <div class="d-flex flex-wrap gap-2 justify-content-end">
+                <button class="btn btn-outline-dark" onclick="bulkEditCategory()">Bulk Edit</button>
+                <button class="btn btn-outline-danger" onclick="deleteSelectedItems()"
+                    data-permission-id="perm_delete_action">Delete</button>
+                <button class="btn btn-light border" onclick="location.reload()">Refresh</button>
+            </div>
+        </div>
+
+        <!-- Add New Item -->
+        <div class="card shadow-sm mb-4 border-0">
+            <div class="card-body p-4">
+                <h5 class="card-title mb-2 text-primary d-flex align-items-center gap-2" style="cursor: pointer; justify-content: space-between;" onclick="toggleAddItemForm()">
+                    <div><span class="badge bg-primary rounded-circle p-2"><i class="bi bi-plus-lg"></i>+</span> Add New Item</div>
+                    <span id="toggleAddItemIcon" style="color: #6c757d;">&#9650;</span>
+                </h5>
+                <div id="addItemFormContainer">
+                <div class="d-flex flex-wrap gap-3 mb-3 pb-2 border-bottom" style="font-size: 0.85rem;">
+                    <span class="fw-bold text-secondary">Show Extra Fields:</span>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="toggleFieldCode"
+                            onchange="toggleExtraField('code', this.checked)">
+                        <label class="form-check-label text-secondary" for="toggleFieldCode">Code</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="toggleFieldCategory"
+                            onchange="toggleExtraField('category', this.checked)">
+                        <label class="form-check-label text-secondary" for="toggleFieldCategory">Category</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="toggleFieldHsn"
+                            onchange="toggleExtraField('hsn', this.checked)">
+                        <label class="form-check-label text-secondary" for="toggleFieldHsn">HSN/SAC</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="toggleFieldImei"
+                            onchange="toggleExtraField('imei', this.checked)">
+                        <label class="form-check-label text-secondary" for="toggleFieldImei">IMEI</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="toggleFieldBatch"
+                            onchange="toggleExtraField('batch', this.checked)">
+                        <label class="form-check-label text-secondary" for="toggleFieldBatch">Batch</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="toggleFieldLot"
+                            onchange="toggleExtraField('lot', this.checked)">
+                        <label class="form-check-label text-secondary" for="toggleFieldLot">Lot</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="toggleFieldSerial"
+                            onchange="toggleExtraField('serial', this.checked)">
+                        <label class="form-check-label text-secondary" for="toggleFieldSerial">Serial</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="toggleFieldItemType"
+                            onchange="toggleExtraField('itemType', this.checked)">
+                        <label class="form-check-label text-secondary" for="toggleFieldItemType">Item Type</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="toggleFieldUom"
+                            onchange="toggleExtraField('uom', this.checked)">
+                        <label class="form-check-label text-secondary" for="toggleFieldUom">UOM</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="toggleFieldIndexNo"
+                            onchange="toggleExtraField('indexNo', this.checked)">
+                        <label class="form-check-label text-secondary" for="toggleFieldIndexNo">Index No</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="toggleFieldDescription"
+                            onchange="toggleExtraField('description', this.checked)">
+                        <label class="form-check-label text-secondary" for="toggleFieldDescription">Description</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="toggleFieldSalePrice"
+                            onchange="toggleExtraField('salePrice', this.checked)">
+                        <label class="form-check-label text-secondary" for="toggleFieldSalePrice">Sale Price</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="toggleFieldGst"
+                            onchange="toggleExtraField('gst', this.checked)">
+                        <label class="form-check-label text-secondary" for="toggleFieldGst">GST %</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="toggleFieldConversions"
+                            onchange="toggleExtraField('conversions', this.checked)">
+                        <label class="form-check-label text-secondary" for="toggleFieldConversions">Conversions</label>
+                    </div>
+                </div>
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-1" id="wrapper-code" style="display:none;">
+                        <label for="newItemCode" class="form-label fw-bold text-secondary"
+                            title="If multiple items have the same name but different classifications, assign a unique Item Code to identify them separately."
+                            style="cursor: help;">Code ℹ️</label>
+                        <input type="text" id="newItemCode" class="form-control form-control-lg" placeholder="Code">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="newItemName" class="form-label fw-bold text-secondary">Item Name <span
+                                class="text-danger">*</span></label>
+                        <input type="text" id="newItemName" class="form-control form-control-lg" placeholder="Item Name"
+                            list="itemNameList">
+                        <datalist id="itemNameList"></datalist>
+                    </div>
+                    <div class="col-md-2" id="wrapper-category" style="display:none;">
+                        <label for="newItemCategory" class="form-label fw-bold text-secondary">
+                            Category <a href="#" onclick="openCategoryManager()"
+                                style="text-decoration:none; font-size:0.8rem;" title="Manage Categories">⚙️</a>
+                        </label>
+                        <input type="text" id="newItemCategory" class="form-control form-control-lg"
+                            placeholder="Category" list="categoryList">
+                        <datalist id="categoryList"></datalist>
+                    </div>
+                    <div class="col-md-1" id="wrapper-hsn" style="display:none;">
+                        <label for="newItemHsn" class="form-label fw-bold text-secondary">
+                            HSN/SAC <a href="https://services.gst.gov.in/services/searchhsnsac" target="_blank"
+                                style="text-decoration:none; font-size:0.8rem;"
+                                title="Search HSN/SAC on GST Portal">🔍</a>
+                        </label>
+                        <input type="text" id="newItemHsn" class="form-control form-control-lg" placeholder="HSN/SAC">
+                    </div>
+                    <div class="col-md-2" id="wrapper-itemType" style="display:none;">
+                        <label for="newItemType" class="form-label fw-bold text-secondary">
+                            Item Type <a href="#" onclick="openItemTypeManager()"
+                                style="text-decoration:none; font-size:0.8rem;" title="Manage Item Types">⚙️</a>
+                        </label>
+                        <select id="newItemType" class="form-select form-select-lg">
+                        </select>
+                    </div>
+                    <div class="col-md-1" id="wrapper-uom" style="display:none;">
+                        <label for="newItemUom" class="form-label fw-bold text-secondary">
+                            UOM <a href="#" onclick="openUomManager()" style="text-decoration:none; font-size:0.8rem;"
+                                title="Manage UOMs">⚙️</a>
+                        </label>
+                        <select id="newItemUom" class="form-select form-select-lg">
+                            <option value="">Select UOM</option>
+                        </select>
+                    </div>
+                    <div class="col-md-1" id="wrapper-indexNo" style="display:none;">
+                        <label for="newItemIndex" class="form-label fw-bold text-secondary">Index No</label>
+                        <input type="text" id="newItemIndex" class="form-control form-control-lg" placeholder="Index">
+                    </div>
+                    <div class="col-md-2" id="wrapper-imei" style="display:none;">
+                        <label for="newItemImei" class="form-label fw-bold text-secondary">IMEI</label>
+                        <input type="text" id="newItemImei" class="form-control form-control-lg" placeholder="IMEI">
+                    </div>
+                    <div class="col-md-2" id="wrapper-batch" style="display:none;">
+                        <label for="newItemBatch" class="form-label fw-bold text-secondary">Batch</label>
+                        <input type="text" id="newItemBatch" class="form-control form-control-lg" placeholder="Batch">
+                    </div>
+                    <div class="col-md-2" id="wrapper-lot" style="display:none;">
+                        <label for="newItemLot" class="form-label fw-bold text-secondary">Lot</label>
+                        <input type="text" id="newItemLot" class="form-control form-control-lg" placeholder="Lot">
+                    </div>
+                    <div class="col-md-2" id="wrapper-serial" style="display:none;">
+                        <label for="newItemSerial" class="form-label fw-bold text-secondary">Serial</label>
+                        <input type="text" id="newItemSerial" class="form-control form-control-lg" placeholder="Serial">
+                    </div>
+                    <div class="col-md-2" id="wrapper-description" style="display:none;">
+                        <label for="newItemDescription" class="form-label fw-bold text-secondary">Description</label>
+                        <input type="text" id="newItemDescription" class="form-control form-control-lg"
+                            placeholder="Description">
+                    </div>
+                    <div class="col-md-2" id="wrapper-salePrice" style="display:none;">
+                        <label for="newItemSalePrice" class="form-label fw-bold text-secondary">Sale Price</label>
+                        <input type="number" id="newItemSalePrice" class="form-control form-control-lg"
+                            placeholder="Price">
+                    </div>
+                    <div class="col-md-1" id="wrapper-gst" style="display:none;">
+                        <label for="newItemGst" class="form-label fw-bold text-secondary">GST %</label>
+                        <input type="number" id="newItemGst" class="form-control form-control-lg" placeholder="0" min="0" max="100">
+                    </div>
+                    <div class="col-md-3" id="wrapper-conversions" style="display:none;">
+                        <label class="form-label fw-bold text-secondary">Alt UOM Conversions</label>
+                        <div id="addFormConversionsContainer" class="mb-1"></div>
+                        <button type="button" class="btn btn-sm btn-outline-primary w-100" onclick="addAddFormConversionRow()">+ Add Conversion</button>
+                    </div>
+                    <div class="col-md-2">
+                        <button class="btn btn-primary w-100 shadow-sm" style="height: 48px;"
+                            onclick="initiateAddItem()">
+                            Save Item</button>
+                    </div>
+                </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Search + Sort Options -->
+        <div class="row mb-3 g-2">
+            <div class="col-md-2">
+                <input type="text" id="searchName" class="form-control" placeholder="Search Item"
+                    oninput="currentPage=1;applyFilters()">
+            </div>
+            <div class="col-md-1">
+                <input type="text" id="searchCode" class="form-control" placeholder="Code"
+                    oninput="currentPage=1;applyFilters()">
+            </div>
+            <div class="col-md-1">
+                <input type="text" id="searchIndex" class="form-control" placeholder="Index"
+                    oninput="currentPage=1;applyFilters()">
+            </div>
+            <div class="col-md-2">
+                <div id="categoryFilterContainer" style="position: relative;">
+                    <button type="button" class="form-select text-start text-truncate"
+                        onclick="toggleCategoryDropdown()" id="categoryFilterBtn">All Categories</button>
+                    <div id="categoryFilterMenu" class="d-none position-absolute bg-white border rounded shadow p-2"
+                        style="z-index: 1000; width: 100%; max-height: 300px; overflow-y: auto;">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="cat_all" checked
+                                onchange="toggleAllCategories(this)">
+                            <label class="form-check-label" for="cat_all">Select All</label>
+                        </div>
+                        <hr class="my-1">
+                        <div id="categoryCheckboxes"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <input type="text" id="searchDescription" class="form-control" placeholder="Search Desc"
+                    oninput="currentPage=1;applyFilters()">
+            </div>
+            <div class="col-md-2">
+                <select id="sortOption" class="form-select" onchange="handleSortOptionChange()">
+                    <option value="">Sort by...</option>
+                    <option value="codeAsc">Item Code (A → Z)</option>
+                    <option value="codeDesc">Item Code (Z → A)</option>
+                    <option value="indexAsc">Index No (A → Z)</option>
+                    <option value="indexDesc">Index No (Z → A)</option>
+                    <option value="nameAsc">Item Name (A → Z)</option>
+                    <option value="nameDesc">Item Name (Z → A)</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button class="btn btn-dark w-100" onclick="applyFilters()">Apply Filters</button>
+            </div>
+        </div>
+
+        <!-- Item Table -->
+        <div class="table-container">
+            <table class="table table-bordered align-middle" id="mainItemTable">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width: 40px;"><input type="checkbox" id="selectAll" onclick="toggleSelectAll()">
+                        </th>
+                        <th>Sl No</th>
+                        <th style="cursor:pointer;" onclick="handleHeaderClick('itemCode')">Item Code <span
+                                id="sort-icon-itemCode"></span></th>
+                        <th style="cursor:pointer;" onclick="handleHeaderClick('indexNo')">Index No <span
+                                id="sort-icon-indexNo"></span></th>
+                        <th style="cursor:pointer;" onclick="handleHeaderClick('category')">Category <span
+                                id="sort-icon-category"></span></th>
+                        <th style="cursor:pointer;" onclick="handleHeaderClick('hsn')">HSN/SAC <span
+                                id="sort-icon-hsn"></span></th>
+                        <th style="cursor:pointer;" onclick="handleHeaderClick('itemType')">Item Type <span
+                                id="sort-icon-itemType"></span></th>
+                        <th style="cursor:pointer;" onclick="handleHeaderClick('uom')">UOM <span
+                                id="sort-icon-uom"></span></th>
+                        <th>IMEI</th>
+                        <th>Batch</th>
+                        <th>Lot</th>
+                        <th>Serial</th>
+                        <th style="cursor:pointer;" onclick="handleHeaderClick('name')">Name <span
+                                id="sort-icon-name"></span></th>
+                        <th style="cursor:pointer;" onclick="handleHeaderClick('description')">Description <span
+                                id="sort-icon-description"></span></th>
+                        <th style="cursor:pointer;" onclick="handleHeaderClick('salePrice')">Sale Price <span
+                                id="sort-icon-salePrice"></span></th>
+                        <th style="cursor:pointer;" onclick="handleHeaderClick('gst')">GST % <span
+                                id="sort-icon-gst"></span></th>
+                        <th style="width: 140px;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="itemTable"></tbody>
+            </table>
+        </div>
+
+        <!-- Pagination Controls -->
+        <div class="d-flex justify-content-between align-items-center mt-3">
+            <div class="d-flex align-items-center gap-2">
+                <div id="paginationInfo" class="text-muted"></div>
+                <select id="rowsPerPageSelect" class="form-select form-select-sm" style="width: auto;"
+                    onchange="changeRowsPerPage()">
+                    <option value="10">10 rows</option>
+                    <option value="20" selected>20 rows</option>
+                    <option value="50">50 rows</option>
+                </select>
+                <input type="number" id="goToPageInput" class="form-control form-control-sm" style="width: 80px;"
+                    placeholder="Go to" min="1" onchange="goToPage()">
+            </div>
+            <nav>
+                <ul class="pagination mb-0" id="paginationControls"></ul>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div id="confirmationModal" class="custom-modal">
+        <div class="custom-modal-content">
+            <h3>🚨 Confirm Deletion !</h3>
+            <p id="modalMessage">Are you sure?</p>
+            <div class="modal-buttons">
+                <button class="btn btn-danger" onclick="confirmDelete()">Yes, Delete</button>
+                <button class="btn btn-secondary" onclick="closeConfirmModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Export Confirmation Modal -->
+    <div id="exportConfirmModal" class="custom-modal">
+        <div class="custom-modal-content">
+            <h3 style="color: #f39c12;">📤 Confirm Export</h3>
+            <p>Are you sure you want to export item data as <span id="exportTypeDisplay" class="fw-bold"></span>?</p>
+            <div class="modal-buttons">
+                <button class="btn btn-primary" onclick="performExport()">Yes, Proceed</button>
+                <button class="btn btn-secondary" onclick="closeExportConfirmModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="custom-modal">
+        <div class="custom-modal-content" style="width: 400px; max-height: 85vh; overflow-y: auto;">
+            <h3 style="color: #607d8b;">⚙️ Settings</h3>
+            <div
+                style="margin: 15px 0; text-align: left; padding-left: 20px; border-bottom: 1px solid #eee; padding-bottom: 10px;">
+                <h5 style="font-size: 1rem;" class="text-secondary">Button Visibility</h5>
+                <label
+                    style="cursor:pointer; display:flex; align-items:center; gap:10px; font-weight:bold; margin-top: 5px;">
+                    <input type="checkbox" id="showExportCsvBtnToggle"
+                        onchange="toggleButtonVisibility('exportCsvBtn', this.checked)"> Show Export CSV
+                </label>
+                <label
+                    style="cursor:pointer; display:flex; align-items:center; gap:10px; font-weight:bold; margin-top: 5px;">
+                    <input type="checkbox" id="showImportCsvBtnToggle"
+                        onchange="toggleButtonVisibility('importCsvBtn', this.checked)"> Show Import CSV
+                </label>
+
+                <label
+                    style="cursor:pointer; display:flex; align-items:center; gap:10px; font-weight:bold; margin-top: 15px;">
+                    <input type="checkbox" id="greyButtonsToggle" onchange="toggleGreyButtons()"> Grey Buttons Mode
+                </label>
+            </div>
+            <p style="font-size:14px; color:#666; margin-bottom:10px;">Select columns to display:</p>
+            <input type="text" id="columnSearchInput" placeholder="Search columns..." oninput="filterColumnSettings()"
+                style="width: 100%; margin-bottom: 10px; padding: 6px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px;">
+            <div style="margin-bottom: 10px; display: flex; gap: 10px; justify-content: center;">
+                <button class="btn btn-sm btn-primary" onclick="toggleAllColumns(true)">Select All</button>
+                <button class="btn btn-sm btn-secondary" onclick="toggleAllColumns(false)">Deselect All</button>
+            </div>
+            <div id="columnToggles"
+                style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; text-align:left; max-height:300px; overflow-y:auto; margin-bottom: 15px;">
+                <!-- Checkboxes generated by JS -->
+            </div>
+            <div class="modal-buttons">
+                <button class="btn btn-secondary" onclick="closeSettingsModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Item Type Manager Modal -->
+    <div id="itemTypeManagerModal" class="custom-modal">
+        <div class="custom-modal-content" style="width: 400px;">
+            <h3 style="color: #17a2b8;">Manage Item Types</h3>
+            <div class="input-group mb-3">
+                <input type="text" id="newManagedItemTypeInput" class="form-control" placeholder="New Item Type Name">
+                <button class="btn btn-success" onclick="addManagedItemType()">Add</button>
+            </div>
+            <div class="mb-2">
+                <input type="text" id="searchItemTypeInput" class="form-control form-control-sm"
+                    placeholder="Search types..." oninput="renderManagedItemTypes()">
+            </div>
+            <div class="text-end mb-2">
+                <button class="btn btn-sm btn-outline-secondary" onclick="sortManagedItemTypes()">Sort A-Z</button>
+            </div>
+            <ul id="managedItemTypeList" class="list-group text-start" style="max-height: 300px; overflow-y: auto;">
+            </ul>
+            <div class="modal-buttons">
+                <button class="btn btn-secondary" onclick="closeItemTypeManager()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- UOM Manager Modal -->
+    <div id="uomManagerModal" class="custom-modal">
+        <div class="custom-modal-content" style="width: 400px;">
+            <h3 style="color: #17a2b8;">Manage UOMs</h3>
+            <div class="input-group mb-3">
+                <input type="text" id="newManagedUomInput" class="form-control" placeholder="New UOM (e.g. Kg, Pcs)">
+                <button class="btn btn-success" onclick="addManagedUom()">Add</button>
+            </div>
+            <div class="mb-2">
+                <input type="text" id="searchUomInput" class="form-control form-control-sm" placeholder="Search UOMs..." oninput="renderManagedUoms()">
+            </div>
+            <div class="text-end mb-2">
+                <button class="btn btn-sm btn-outline-secondary" onclick="sortManagedUoms()">Sort A-Z</button>
+            </div>
+            <ul id="managedUomList" class="list-group text-start" style="max-height: 300px; overflow-y: auto;">
+            </ul>
+            <div class="modal-buttons">
+                <button class="btn btn-secondary" onclick="closeUomManager()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Generic Action Confirmation Modal -->
+    <div id="actionConfirmModal" class="custom-modal">
+        <div class="custom-modal-content">
+            <h3 id="actionConfirmTitle" style="color: #d35400;">⚠️ Confirmation</h3>
+            <p id="actionConfirmMsg"></p>
+            <div class="modal-buttons">
+                <button id="actionConfirmBtnYes" class="btn btn-warning">Yes</button>
+                <button class="btn btn-secondary" onclick="closeActionConfirmModal()">No</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bulk Edit Modal -->
+    <div id="bulkEditModal" class="custom-modal">
+        <div class="custom-modal-content">
+            <h3>✏️ Bulk Edit Category</h3>
+            <p>Enter new category for selected items:</p>
+            <input type="text" id="bulkEditCategoryInput" class="form-control mb-3" placeholder="New Category"
+                list="categoryList">
+            <div class="modal-buttons">
+                <button class="btn btn-primary" onclick="confirmBulkEdit()">Update</button>
+                <button class="btn btn-secondary" onclick="closeBulkEditModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Category Manager Modal -->
+    <div id="categoryManagerModal" class="custom-modal">
+        <div class="custom-modal-content" style="width: 400px;">
+            <h3 style="color: #17a2b8;">Manage Categories</h3>
+            <div class="input-group mb-3">
+                <input type="text" id="newCatInput" class="form-control" placeholder="New Category Name">
+                <button class="btn btn-success" onclick="addManagedCategory()">Add</button>
+            </div>
+            <div class="mb-2">
+                <input type="text" id="searchCategoryInput" class="form-control form-control-sm"
+                    placeholder="Search categories..." oninput="renderManagedCategories()">
+            </div>
+            <div class="text-end mb-2">
+                <button class="btn btn-sm btn-outline-secondary" onclick="sortManagedCategories()">Sort A-Z</button>
+            </div>
+            <ul id="managedCategoryList" class="list-group text-start" style="max-height: 300px; overflow-y: auto;">
+            </ul>
+            <div class="modal-buttons">
+                <button class="btn btn-secondary" onclick="closeCategoryManager()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Generic Success/Info Modal -->
+    <div id="successModal" class="custom-modal">
+        <div class="custom-modal-content">
+            <h3 id="successModalTitle" style="color: #27ae60;">✅ Success</h3>
+            <p id="successMsg"></p>
+            <div class="modal-buttons">
+                <button class="btn btn-primary" onclick="closeSuccessModal()">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Barcode Modal -->
+    <div id="barcodeModal" class="custom-modal">
+        <div class="custom-modal-content" style="width: 350px;">
+            <h3 style="color: #0d6efd; margin-top: 0;">Item Barcode</h3>
+            <div id="barcodeContainer"
+                style="padding: 20px; background: #fff; margin: 15px 0; border-radius: 8px; border: 1px solid #eee;">
+                <svg id="barcodeCanvas"></svg>
+                <div id="barcodeText" style="margin-top: 10px; font-weight: bold; color: #333; font-size: 14px;"></div>
+            </div>
+            <div class="modal-buttons">
+                <button class="btn btn-primary" onclick="printBarcode()">Print</button>
+                <button class="btn btn-secondary" onclick="closeBarcodeModal()">Close</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Conversions Modal -->
+    <div id="conversionsModal" class="custom-modal">
+        <div class="custom-modal-content" style="width: 400px;">
+            <h3 style="color: #0d6efd;">UOM Conversions</h3>
+            <p class="text-muted" style="font-size: 13px;">Define alternate UOMs and their multipliers based on the Base UOM.</p>
+            <input type="hidden" id="editConvItemId">
+            <div id="modalConversionsContainer" class="mb-3 text-start" style="max-height: 200px; overflow-y: auto;">
+            </div>
+            <button class="btn btn-sm btn-outline-primary mb-3 w-100" onclick="addModalConversionRow()">+ Add Conversion</button>
+            <div class="modal-buttons">
+                <button class="btn btn-primary" onclick="saveModalConversions()">Save</button>
+                <button class="btn btn-secondary" onclick="closeConversionsModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+    <div id="loadingOverlay">
+        <div class="spinner"></div>
+        <p style="color:white; margin-top:15px; font-size:18px; font-weight:bold;">Processing...</p>
+    </div>
+
+    <script>
+        // --- Firebase Configuration ---
+        const FIREBASE_CONFIG = {
+            apiKey: 'YOUR_API_KEY',
+            authDomain: 'YOUR_PROJECT.firebaseapp.com',
+            projectId: 'YOUR_PROJECT',
+            storageBucket: 'YOUR_PROJECT.appspot.com',
+            messagingSenderId: 'SENDER_ID',
+            appId: 'APP_ID'
+        };
+
+        let items = [];
+        let db = null;
+        let toastTimeout;
+        let idsToDelete = [];
+        
+        async function fetchItemsData() {
+            let localItems = JSON.parse(localStorage.getItem("items")) || [];
+            const overlay = document.getElementById('loadingOverlay');
+            if (overlay && localItems.length === 0) {
+                overlay.style.display = 'flex';
+                await new Promise(resolve => setTimeout(resolve, 15));
+            }
+
+            const remoteData = await apiClient.getItems();
+            if (remoteData && remoteData.length > 0) {
+                items = remoteData;
+                localStorage.setItem("items", JSON.stringify(items));
+            } else {
+                items = localItems;
+            }
+            populateCategoryFilter();
+            populateItemNameList();
+            applyFilters();
+
+            if (overlay) overlay.style.display = 'none';
+        }
+        let currentPage = 1;
+        let rowsPerPage = 20;
+        let currentSortColumn = 'name';
+        let currentSortDirection = 'asc';
+
+        // Column visibility state (16 columns total)
+        // Default: Hide HSN(5), IMEI(8), Batch(9), Lot(10), Serial(11) 
+        let defaultVisibility = new Array(16).fill(true);
+        [5, 8, 9, 10, 11].forEach(i => defaultVisibility[i] = false);
+        let columnVisibility = JSON.parse(localStorage.getItem("itemColumnVisibility")) || defaultVisibility;
+        if (columnVisibility.length !== 16) {
+            columnVisibility = defaultVisibility;
+        }
+        let isGreyButtons = localStorage.getItem("itemGreyButtons") === "true";
+
+        // --- Settings Logic ---
+        let savedButtonVisibility = JSON.parse(localStorage.getItem("itemButtonVisibility")) || {};
+        let buttonVisibility = {
+            exportCsvBtn: true,
+            importCsvBtn: true,
+            ...savedButtonVisibility
+        };
+
+        // Hook global applyUIPermissions to enforce local visibility settings after permissions are applied
+        const _globalApplyUIPermissions = window.applyUIPermissions;
+        window.applyUIPermissions = function () {
+            if (typeof _globalApplyUIPermissions === 'function') {
+                _globalApplyUIPermissions();
+            }
+            enforceButtonVisibility();
+        };
+
+        function enforceButtonVisibility() {
+            for (const btnId in buttonVisibility) {
+                const btn = document.getElementById(btnId);
+                if (btn) {
+                    if (!buttonVisibility[btnId]) {
+                        btn.style.display = 'none';
+                    } else {
+                        const hasPermission = btn.hasAttribute('data-permission-id');
+                        if (!hasPermission) {
+                            btn.style.display = '';
+                        }
+                    }
+                }
+            }
+        }
+
+        function toggleButtonVisibility(btnId, isVisible) {
+            buttonVisibility[btnId] = isVisible;
+            localStorage.setItem("itemButtonVisibility", JSON.stringify(buttonVisibility));
+            applyButtonVisibility();
+        }
+
+        function toggleGreyButtons() {
+            isGreyButtons = document.getElementById("greyButtonsToggle").checked;
+            localStorage.setItem("itemGreyButtons", isGreyButtons);
+            applyGreyButtons();
+        }
+
+        function applyGreyButtons() {
+            if (isGreyButtons) document.body.classList.add("grey-mode");
+            else document.body.classList.remove("grey-mode");
+        }
+
+        function applyButtonVisibility() {
+            if (typeof window.applyUIPermissions === 'function') {
+                window.applyUIPermissions();
+            } else {
+                enforceButtonVisibility();
+            }
+        }
+
+        function openSettingsModal() {
+            document.getElementById('settingsModal').style.display = 'flex';
+            for (const btnId in buttonVisibility) {
+                const toggleId = `show${btnId.charAt(0).toUpperCase() + btnId.slice(1)}Toggle`;
+                const toggle = document.getElementById(toggleId);
+                if (toggle) {
+                    toggle.checked = buttonVisibility[btnId];
+                }
+            }
+
+            const greyToggle = document.getElementById("greyButtonsToggle");
+            if (greyToggle) greyToggle.checked = isGreyButtons;
+
+            const searchInput = document.getElementById("columnSearchInput");
+            if (searchInput) {
+                searchInput.value = "";
+                filterColumnSettings();
+            }
+            renderColumnToggles();
+        }
+
+        function closeSettingsModal() {
+            document.getElementById('settingsModal').style.display = 'none';
+        }
+
+        function filterColumnSettings() {
+            const input = document.getElementById("columnSearchInput");
+            const filter = input.value.toLowerCase();
+            const container = document.getElementById("columnToggles");
+            const labels = container.getElementsByTagName("label");
+
+            for (let i = 0; i < labels.length; i++) {
+                const label = labels[i];
+                const text = label.textContent || label.innerText;
+                label.style.display = text.toLowerCase().indexOf(filter) > -1 ? "flex" : "none";
+            }
+        }
+
+        function renderColumnToggles() {
+            const container = document.getElementById("columnToggles");
+            container.innerHTML = "";
+            const headers = Array.from(document.querySelectorAll("#mainItemTable thead th"));
+
+            const items = headers.map((th, index) => {
+                let text = th.innerText.trim();
+                // Skip checkbox (0) only
+                if (index === 0) return null;
+                return { index, text };
+            }).filter(item => item !== null);
+
+            items.forEach(item => {
+                const label = document.createElement("label");
+                label.style.cursor = "pointer";
+                label.style.display = "flex";
+                label.style.alignItems = "center";
+                label.style.gap = "5px";
+
+                const cb = document.createElement("input");
+                cb.type = "checkbox";
+                cb.checked = columnVisibility[item.index];
+                cb.style.margin = "0";
+                cb.onchange = () => toggleColumn(item.index, cb.checked);
+
+                label.appendChild(cb);
+                label.appendChild(document.createTextNode(item.text));
+                container.appendChild(label);
+            });
+        }
+
+        function toggleAllColumns(isVisible) {
+            for (let i = 1; i <= 14; i++) {
+                columnVisibility[i] = isVisible;
+            }
+            localStorage.setItem("itemColumnVisibility", JSON.stringify(columnVisibility));
+            updateColumnStyles();
+            renderColumnToggles();
+        }
+
+        function toggleColumn(index, isVisible) {
+            columnVisibility[index] = isVisible;
+            localStorage.setItem("itemColumnVisibility", JSON.stringify(columnVisibility));
+            updateColumnStyles();
+        }
+
+        function updateColumnStyles() {
+            let style = document.getElementById('dynamicColumnStyles');
+            if (!style) {
+                style = document.createElement('style');
+                style.id = 'dynamicColumnStyles';
+                document.head.appendChild(style);
+            }
+            let css = '';
+            columnVisibility.forEach((visible, i) => {
+                if (!visible) {
+                    css += `#mainItemTable th:nth-child(${i + 1}), #mainItemTable td:nth-child(${i + 1}) { display: none; }\n`;
+                }
+            });
+            style.textContent = css;
+        }
+
+        // --- Category Management ---
+        function openCategoryManager() {
+            if (document.getElementById('searchCategoryInput')) document.getElementById('searchCategoryInput').value = '';
+            renderManagedCategories();
+            document.getElementById('categoryManagerModal').style.display = 'flex';
+        }
+
+        function closeCategoryManager() {
+            document.getElementById('categoryManagerModal').style.display = 'none';
+            populateCategoryFilter(); // Refresh dropdowns
+        }
+
+        function getManagedCategories() {
+            const list = JSON.parse(localStorage.getItem('managed_item_categories')) || [];
+            return list;
+        }
+
+        function renderManagedCategories() {
+            const list = getManagedCategories();
+            const searchTerm = document.getElementById('searchCategoryInput') ? document.getElementById('searchCategoryInput').value.toLowerCase() : '';
+            const ul = document.getElementById('managedCategoryList');
+            ul.innerHTML = '';
+            if (list.length === 0) {
+                ul.innerHTML = '<li class="list-group-item text-muted text-center">No saved categories.</li>';
+                return;
+            }
+
+            let hasMatch = false;
+            list.forEach((cat, index) => {
+                if (searchTerm && !cat.toLowerCase().includes(searchTerm)) return;
+                hasMatch = true;
+                const li = document.createElement('li');
+                li.className = 'list-group-item d-flex justify-content-between align-items-center';
+                li.innerHTML = `
+                    <span>${escapeHtml(cat)}</span>
+                    <div>
+                        <button class="btn btn-sm btn-warning me-1" onclick="editManagedCategory(${index})" style="padding: 0px 6px;" title="Rename">✎</button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteManagedCategory(${index})" style="padding: 0px 6px;" title="Delete">×</button>
+                    </div>
+                `;
+                ul.appendChild(li);
+            });
+
+            if (!hasMatch) {
+                ul.innerHTML = '<li class="list-group-item text-muted text-center">No matching categories.</li>';
+            }
+        }
+
+        function addManagedCategory() {
+            const input = document.getElementById('newCatInput');
+            const val = input.value.trim();
+            if (!val) return;
+
+            const list = getManagedCategories();
+            if (list.includes(val)) {
+                openInfoModal('Category already exists');
+                return;
+            }
+            list.push(val);
+            localStorage.setItem('managed_item_categories', JSON.stringify(list));
+            input.value = '';
+            renderManagedCategories();
+        }
+
+        async function editManagedCategory(index) {
+            const list = getManagedCategories();
+            const oldName = list[index];
+            const newName = prompt("Rename Category:", oldName);
+
+            if (newName && newName.trim() !== "" && newName !== oldName) {
+                const trimmedName = newName.trim();
+
+                // Check for duplicates
+                if (list.some(c => c.toLowerCase() === trimmedName.toLowerCase())) {
+                    openInfoModal('Category already exists');
+                    return;
+                }
+
+                // Update managed list
+                list[index] = trimmedName;
+                localStorage.setItem('managed_item_categories', JSON.stringify(list));
+
+                // Update items that use this category
+                let updatedCount = 0;
+                items.forEach(item => {
+                    if (item.category === oldName) {
+                        item.category = trimmedName;
+                        updatedCount++;
+                        // Update Firestore if needed
+                        if (db) {
+                            db.collection('items').doc(item.id).update({ category: trimmedName }).catch(console.error);
+                        }
+                    }
+                });
+
+                if (updatedCount > 0) {
+                    localStorage.setItem("items", JSON.stringify(items));
+                    populateCategoryFilter();
+                    applyFilters();
+                    showToast(`Renamed category and updated ${updatedCount} items.`);
+                } else {
+                    showToast("Category renamed.");
+                }
+
+                renderManagedCategories();
+                populateCategoryFilter(); // Refresh dropdowns
+            }
+        }
+
+        function deleteManagedCategory(index) {
+            if (!confirm("Delete this category?")) return;
+            const list = getManagedCategories();
+            list.splice(index, 1);
+            localStorage.setItem('managed_item_categories', JSON.stringify(list));
+            renderManagedCategories();
+        }
+
+        function sortManagedCategories() {
+            const list = getManagedCategories();
+            list.sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
+            localStorage.setItem('managed_item_categories', JSON.stringify(list));
+            renderManagedCategories();
+            populateCategoryFilter();
+            showToast("Categories sorted A-Z");
+        }
+
+        // Dark Mode Logic
+        let currentTheme = localStorage.getItem("appThemeMode") || "system";
+
+        function changeTheme() {
+            currentTheme = document.getElementById("themeSelect").value;
+            localStorage.setItem("appThemeMode", currentTheme);
+            applyTheme();
+        }
+
+        function applyTheme() {
+            // Migrate old key if exists
+            if (!localStorage.getItem("appThemeMode") && localStorage.getItem("itemDarkMode")) {
+                currentTheme = localStorage.getItem("itemDarkMode") === "true" ? "dark" : "light";
+                localStorage.setItem("appThemeMode", currentTheme);
+            }
+            const isDark = currentTheme === "dark" || (currentTheme === "system" && window.matchMedia('(prefers-color-scheme: dark)').matches);
+            if (isDark) document.body.classList.add("dark-mode");
+            else document.body.classList.remove("dark-mode");
+
+            const sel = document.getElementById("themeSelect");
+            if (sel) sel.value = currentTheme;
+        }
+
+        // Compact View Logic
+        let isCompactView = localStorage.getItem("itemCompactView") === "true";
+
+        function toggleCompactView() {
+            isCompactView = document.getElementById("compactViewToggle").checked;
+            localStorage.setItem("itemCompactView", isCompactView);
+            applyCompactView();
+        }
+
+        function applyCompactView() {
+            const table = document.querySelector("table");
+            if (isCompactView) table.classList.add("compact-table");
+            else table.classList.remove("compact-table");
+
+            const toggle = document.getElementById("compactViewToggle");
+            if (toggle) toggle.checked = isCompactView;
+        }
+
+        // --- Add Item Form Collapsible Logic ---
+        let isAddItemFormVisible = localStorage.getItem("itemAddItemFormVisible") !== "false";
+
+        function toggleAddItemForm() {
+            isAddItemFormVisible = !isAddItemFormVisible;
+            localStorage.setItem("itemAddItemFormVisible", isAddItemFormVisible);
+            applyAddItemFormVisibility();
+        }
+
+        function applyAddItemFormVisibility() {
+            const container = document.getElementById('addItemFormContainer');
+            const icon = document.getElementById('toggleAddItemIcon');
+            if (container && icon) {
+                container.style.display = isAddItemFormVisible ? 'block' : 'none';
+                icon.innerHTML = isAddItemFormVisible ? '&#9650;' : '&#9660;';
+            }
+        }
+
+        function escapeHtml(text) {
+            if (text == null) return "";
+            return String(text)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        function highlightMatch(text, term) {
+            if (!text) return "";
+            text = String(text);
+            if (!term) return escapeHtml(text);
+            const escapedTerm = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const regex = new RegExp(`(${escapedTerm})`, 'gi');
+            return text.split(regex).map(part => {
+                return part.toLowerCase() === term.toLowerCase()
+                    ? `<span class="highlight">${escapeHtml(part)}</span>`
+                    : escapeHtml(part);
+            }).join('');
+        }
+
+        function generateItemTypeOptions(selectedValue) {
+            const allTypes = getManagedItemTypes();
+            return allTypes.map(type =>
+                `<option value="${escapeHtml(type)}" ${type === selectedValue ? 'selected' : ''}>${escapeHtml(type)}</option>`
+            ).join('');
+        }
+
+        function populateItemTypeDropdown() {
+            const select = document.getElementById('newItemType');
+            if (!select) return;
+            const currentVal = select.value;
+            select.innerHTML = generateItemTypeOptions(currentVal || 'Finished Good');
+        }
+
+
+        // --- Barcode Logic ---
+        function openBarcodeModal(id) {
+            const item = items.find(i => i.id === id);
+            if (!item) return;
+
+            const barcodeValue = item.itemCode || item.indexNo || item.id.substring(0, 8);
+            const barcodeText = item.name;
+
+            document.getElementById('barcodeText').innerText = barcodeText;
+
+            try {
+                JsBarcode("#barcodeCanvas", barcodeValue, {
+                    format: "CODE128",
+                    lineColor: "#000",
+                    width: 2,
+                    height: 50,
+                    displayValue: true
+                });
+                document.getElementById('barcodeModal').style.display = 'flex';
+            } catch (e) {
+                openInfoModal("Error generating barcode. Ensure the Item Code contains valid characters.");
+            }
+        }
+
+        function closeBarcodeModal() {
+            document.getElementById('barcodeModal').style.display = 'none';
+        }
+
+        function printBarcode() {
+            const printContent = document.getElementById('barcodeContainer').innerHTML;
+            const printWindow = window.open('', '', 'height=500,width=500');
+            printWindow.document.write('<html><head><title>Print Barcode</title>');
+            printWindow.document.write('<style>body{display:flex;justify-content:center;align-items:center;height:100vh;margin:0;} svg{max-width:100%;}</style>');
+            printWindow.document.write('</head><body>');
+            printWindow.document.write('<div style="text-align:center;">');
+            printWindow.document.write(printContent);
+            printWindow.document.write('</div></body></html>');
+            printWindow.document.close();
+            printWindow.focus();
+            setTimeout(() => {
+                printWindow.print();
+                printWindow.close();
+            }, 250);
+        }
+
+        // --- Action Dropdown Logic ---
+        function toggleActionMenu(btn) {
+            document.querySelectorAll('.action-dropdown.active').forEach(d => {
+                if (d !== btn.parentElement) d.classList.remove('active');
+            });
+
+            const dropdown = btn.parentElement;
+            dropdown.classList.toggle('active');
+
+            if (dropdown.classList.contains('active')) {
+                const content = dropdown.querySelector('.action-dropdown-content');
+                content.style.display = 'block';
+                const rect = btn.getBoundingClientRect();
+
+                let top = rect.bottom;
+                let left = rect.right - content.offsetWidth;
+
+                if (top + content.offsetHeight > window.innerHeight) {
+                    top = rect.top - content.offsetHeight;
+                }
+
+                content.style.top = top + 'px';
+                content.style.left = left + 'px';
+                content.style.display = '';
+            }
+        }
+
+        document.addEventListener('click', function (e) {
+            if (!e.target.matches('.action-btn-main')) {
+                document.querySelectorAll('.action-dropdown.active').forEach(d => d.classList.remove('active'));
+            }
+        });
+
+        window.addEventListener('scroll', function () {
+            document.querySelectorAll('.action-dropdown.active').forEach(d => d.classList.remove('active'));
+        }, true);
+
+        function showToast(msg, bg = "#333") {
+            let t = document.getElementById("toast");
+            if (!t) return;
+            clearTimeout(toastTimeout);
+            t.textContent = msg;
+            t.style.background = bg;
+            t.classList.add("show");
+            toastTimeout = setTimeout(() => { t.classList.remove("show"); }, 3000);
+        }
+
+        // Initialize Firebase
+        function initFirebase() {
+            // Prevent wiping local data if Firebase is not configured
+            if (FIREBASE_CONFIG.apiKey === 'YOUR_API_KEY') {
+                console.log("Firebase not configured. Using local storage only.");
+                return;
+            }
+            try {
+                firebase.initializeApp(FIREBASE_CONFIG);
+                db = firebase.firestore();
+                // Enable offline persistence
+                db.enablePersistence().catch(err => console.warn("Persistence error", err));
+
+                // Listen for real-time updates
+                db.collection('items').onSnapshot(snapshot => {
+                    const remoteItems = [];
+                    snapshot.forEach(doc => {
+                        remoteItems.push({ id: doc.id, ...doc.data() });
+                    });
+                    items = remoteItems;
+                    localStorage.setItem("items", JSON.stringify(items));
+                    populateCategoryFilter();
+                    populateItemNameList();
+                    applyFilters();
+                }, err => {
+                    console.error("Firestore listener error:", err);
+                    alert("Error connecting to Firestore");
+                });
+
+            } catch (e) {
+                console.error("Firebase init error", e);
+                alert("Failed to initialize Firebase. Check console.");
+            }
+        }
+
+        // 🔹 Render items into table
+        function renderItems(list, startIndex = 0) {
+            const table = document.getElementById("itemTable");
+            const searchName = document.getElementById("searchName").value.trim();
+            const searchCode = document.getElementById("searchCode").value.trim();
+            const searchIndex = document.getElementById("searchIndex").value.trim();
+            const searchDescription = document.getElementById("searchDescription").value.trim();
+
+            const rows = list.map((item, i) => {
+                const itemTypeStr = escapeHtml(item.itemType || 'Finished Good');
+                let typeBadgeClass = 'bg-secondary';
+                const lowerType = itemTypeStr.toLowerCase();
+                
+                if (lowerType === 'finished good') typeBadgeClass = 'bg-success';
+                else if (lowerType === 'raw material') typeBadgeClass = 'bg-warning text-dark';
+                else if (lowerType === 'consumable') typeBadgeClass = 'bg-info text-dark';
+                else if (lowerType === 'service') typeBadgeClass = 'bg-primary';
+                
+                const convCount = item.conversions ? Object.keys(item.conversions).length : 0;
+                let convBadge = '';
+                if (convCount > 0) {
+                    let titleText = Object.entries(item.conversions).map(([u, f]) => `1 ${u} = ${f} ${item.uom || 'Base'}`).join('\n');
+                    convBadge = `<span class="badge bg-info ms-1" style="font-size:10px; cursor:help;" title="${escapeHtml(titleText)}">${convCount} Alt</span>`;
+                }
+
+                return `
+          <tr>
+            <td><input type="checkbox" class="item-checkbox" value="${item.id}"></td>
+            <td>${startIndex + i + 1}</td>
+            <td>
+                <span id="view-code-${item.id}">${highlightMatch(item.itemCode, searchCode)}</span>
+                <input type="text" id="code-${item.id}" value="${item.itemCode || ''}" style="display:none">
+            </td>
+            <td>
+                <span id="view-index-${item.id}">${highlightMatch(item.indexNo, searchIndex)}</span>
+                <input type="text" id="index-${item.id}" value="${item.indexNo || ''}" style="display:none">
+            </td>
+            <td>
+                <span id="view-category-${item.id}">${escapeHtml(item.category)}</span>
+                <input type="text" id="category-${item.id}" value="${item.category || ''}" style="display:none" list="categoryList">
+            </td>
+            <td>
+                <span id="view-hsn-${item.id}">${escapeHtml(item.hsn || '')}</span>
+                <input type="text" id="hsn-${item.id}" value="${item.hsn || ''}" style="display:none">
+            </td>
+            <td>
+                <span id="view-itemType-${item.id}" class="badge ${typeBadgeClass}" style="font-size: 12px; padding: 5px 8px; font-weight: 500;">${itemTypeStr}</span>
+                <select id="itemType-${item.id}" style="display:none" class="form-select">${generateItemTypeOptions(item.itemType || 'Finished Good')}</select>
+            </td>
+            <td>
+                <span id="view-uom-${item.id}">${escapeHtml(item.uom || '')}${convBadge}</span>
+                <div id="uom-wrapper-${item.id}" style="display:none; align-items:center; gap:2px;">
+                    <select id="uom-${item.id}" class="form-select" style="min-width: 80px;">${generateUomOptions(item.uom)}</select>
+                    <button class="btn btn-sm btn-outline-info py-1 px-2" onclick="openEditConversionsModal('${item.id}')" title="Edit Conversions">⚙️</button>
+                </div>
+            </td>
+            <td>
+                <span id="view-imei-${item.id}">${escapeHtml(item.imei || '')}</span>
+                <input type="text" id="imei-${item.id}" value="${item.imei || ''}" style="display:none">
+            </td>
+            <td>
+                <span id="view-batch-${item.id}">${escapeHtml(item.batch || '')}</span>
+                <input type="text" id="batch-${item.id}" value="${item.batch || ''}" style="display:none">
+            </td>
+            <td>
+                <span id="view-lot-${item.id}">${escapeHtml(item.lot || '')}</span>
+                <input type="text" id="lot-${item.id}" value="${item.lot || ''}" style="display:none">
+            </td>
+            <td>
+                <span id="view-serial-${item.id}">${escapeHtml(item.serial || '')}</span>
+                <input type="text" id="serial-${item.id}" value="${item.serial || ''}" style="display:none">
+            </td>
+            <td>
+                <span id="view-name-${item.id}" style="white-space: pre-wrap;">${highlightMatch(item.name, searchName)}</span>
+                <textarea id="name-${item.id}" rows="1" style="display:none; resize:horizontal; min-height:30px; overflow:hidden; padding-right: 85px;" oninput="this.style.height='auto';this.style.height=(this.scrollHeight)+'px'">${item.name || ''}</textarea>
+            </td>
+            <td>
+                <div id="view-description-${item.id}" 
+                     style="max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer;" 
+                     title="${escapeHtml(item.description || '')}"
+                     onclick="this.style.whiteSpace = this.style.whiteSpace === 'nowrap' ? 'pre-wrap' : 'nowrap'">
+                    ${highlightMatch(item.description, searchDescription)}
+                </div>
+                <textarea id="description-${item.id}" rows="1" style="display:none; resize:vertical; min-height:30px; width:100%; overflow:hidden;" oninput="this.style.height='auto';this.style.height=(this.scrollHeight)+'px'">${item.description || ''}</textarea>
+            </td>
+                    <td>
+                        <span id="view-salePrice-${item.id}">₹ ${parseFloat(item.salePrice || 0).toFixed(2)}</span>
+                        <input type="number" id="salePrice-${item.id}" value="${item.salePrice || 0}" style="display:none; width: 80px;" class="form-control">
+                    </td>
+                    <td>
+                        <span id="view-gst-${item.id}">${item.gst || 0}%</span>
+                        <input type="number" id="gst-${item.id}" value="${item.gst || 0}" style="display:none; width: 60px;" class="form-control" min="0" max="100">
+                    </td>
+            <td style="text-align: center;">
+                <div class="action-dropdown" id="actionDropdown-${item.id}">
+                    <button class="action-btn-main" onclick="toggleActionMenu(this)">Actions ▼</button>
+                    <div class="action-dropdown-content">
+                        <button id="editBtn-${item.id}" onclick="editItem('${item.id}')" data-permission-id="perm_manage_items">✏️ Edit</button>
+                        <button onclick="copyItem('${item.id}')" data-permission-id="perm_manage_items">📋 Copy</button>
+                        <button onclick="openBarcodeModal('${item.id}')">🏷️ Barcode</button>
+                        <button onclick="deleteItem('${item.id}')" data-permission-id="perm_delete_action" style="color: #dc3545 !important;">🗑️ Delete</button>
+                    </div>
+                </div>
+                <button class="btn btn-sm btn-success" id="saveBtn-${item.id}" style="display:none;" onclick="editItem('${item.id}')">💾 Save</button>
+            </td>
+          </tr>
+        `;
+            }).join('');
+
+            table.innerHTML = rows;
+            document.getElementById("selectAll").checked = false;
+
+            // Auto-resize textareas to fit content
+            document.querySelectorAll("#itemTable textarea").forEach(ta => {
+                ta.style.height = "auto";
+                ta.style.height = (ta.scrollHeight) + "px";
+            });
+            applyUIPermissions();
+        }
+
+        // --- Conversion Logic Helpers ---
+        function getConversionRowHtml(uom, factor) {
+            return `
+                <div class="d-flex gap-1 mb-1 conversion-row align-items-center">
+                    <select class="form-select form-select-sm conv-uom" style="flex: 1;">
+                        ${generateUomOptions(uom)}
+                    </select>
+                    <span class="fw-bold">=</span>
+                    <input type="number" class="form-control form-control-sm conv-factor" placeholder="Factor" value="${factor}" min="0.001" step="any" style="width: 70px;">
+                    <button class="btn btn-sm btn-danger py-0 px-2" onclick="this.parentElement.remove()">X</button>
+                </div>
+            `;
+        }
+        function addAddFormConversionRow(uom='', factor='') {
+            if (typeof uom !== 'string') uom = '';
+            if (typeof factor !== 'number' && typeof factor !== 'string') factor = '';
+            const container = document.getElementById("addFormConversionsContainer");
+            container.insertAdjacentHTML('beforeend', getConversionRowHtml(uom, factor));
+        }
+        function addModalConversionRow(uom='', factor='') {
+            if (typeof uom !== 'string') uom = '';
+            if (typeof factor !== 'number' && typeof factor !== 'string') factor = '';
+            const container = document.getElementById("modalConversionsContainer");
+            container.insertAdjacentHTML('beforeend', getConversionRowHtml(uom, factor));
+        }
+        function extractConversions(containerId) {
+            const container = document.getElementById(containerId);
+            const rows = container.querySelectorAll(".conversion-row");
+            const conversions = {};
+            rows.forEach(row => {
+                const uom = row.querySelector(".conv-uom").value;
+                const factor = parseFloat(row.querySelector(".conv-factor").value);
+                if (uom && factor > 0) {
+                    conversions[uom] = factor;
+                }
+            });
+            return conversions;
+        }
+        function closeConversionsModal() { document.getElementById("conversionsModal").style.display = "none"; }
+        function openEditConversionsModal(itemId) {
+            const item = items.find(i => i.id === itemId);
+            if (!item) return;
+            document.getElementById("editConvItemId").value = itemId;
+            const container = document.getElementById("modalConversionsContainer");
+            container.innerHTML = "";
+            if (item.conversions) {
+                for (const [uom, factor] of Object.entries(item.conversions)) {
+                    addModalConversionRow(uom, factor);
+                }
+            }
+            document.getElementById("conversionsModal").style.display = "flex";
+        }
+        async function saveModalConversions() {
+            const itemId = document.getElementById("editConvItemId").value;
+            const conversions = extractConversions("modalConversionsContainer");
+            const idx = items.findIndex(i => i.id === itemId);
+            if (idx > -1) {
+                items[idx].conversions = conversions;
+                localStorage.setItem("items", JSON.stringify(items));
+                if (db) {
+                    try { await db.collection('items').doc(itemId).update({ conversions }); } catch(e) { console.error(e); }
+                }
+                
+                // Update badge instead of full re-render to preserve edit states
+                const viewUomSpan = document.getElementById(`view-uom-${itemId}`);
+                if (viewUomSpan) {
+                    const convCount = Object.keys(conversions).length;
+                    let convBadge = '';
+                    if (convCount > 0) {
+                        let titleText = Object.entries(conversions).map(([u, f]) => `1 ${u} = ${f} ${items[idx].uom || 'Base'}`).join('\n');
+                        convBadge = `<span class="badge bg-info ms-1" style="font-size:10px; cursor:help;" title="${escapeHtml(titleText)}">${convCount} Alt</span>`;
+                    }
+                    viewUomSpan.innerHTML = `${escapeHtml(items[idx].uom || '')}${convBadge}`;
+                }
+            }
+            closeConversionsModal();
+            showToast("Conversions updated successfully!");
+        }
+
+        let extraFieldsState = JSON.parse(localStorage.getItem('itemExtraFieldsState')) || {
+            code: false, category: false, hsn: false, imei: false, batch: false, lot: false, serial: false, itemType: false, uom: false, indexNo: false, description: false, salePrice: false, gst: false, conversions: false
+        };
+
+        function initExtraFields() {
+            Object.keys(extraFieldsState).forEach(field => {
+                const toggle = document.getElementById('toggleField' + field.charAt(0).toUpperCase() + field.slice(1));
+                if (toggle) toggle.checked = extraFieldsState[field];
+                const wrapper = document.getElementById('wrapper-' + field);
+                if (wrapper) wrapper.style.display = extraFieldsState[field] ? 'block' : 'none';
+            });
+        }
+
+        function toggleExtraField(field, isChecked) {
+            extraFieldsState[field] = isChecked;
+            localStorage.setItem('itemExtraFieldsState', JSON.stringify(extraFieldsState));
+            const wrapper = document.getElementById('wrapper-' + field);
+            if (wrapper) wrapper.style.display = isChecked ? 'block' : 'none';
+        }
+
+        // --- Item Type Management ---
+        const DEFAULT_ITEM_TYPES = ["Finished Good", "Raw Material", "Consumable", "Service"];
+
+        function openItemTypeManager() {
+            if (document.getElementById('searchItemTypeInput')) document.getElementById('searchItemTypeInput').value = '';
+            renderManagedItemTypes();
+            document.getElementById('itemTypeManagerModal').style.display = 'flex';
+        }
+
+        function closeItemTypeManager() {
+            document.getElementById('itemTypeManagerModal').style.display = 'none';
+            populateItemTypeDropdown(); // Refresh dropdown in main form
+        }
+
+        function getManagedItemTypes(includeDefaults = true) {
+            const custom = JSON.parse(localStorage.getItem('managed_item_types')) || [];
+            if (includeDefaults) {
+                return [...new Set([...DEFAULT_ITEM_TYPES, ...custom])].sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
+            }
+            return custom.sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
+        }
+
+        function renderManagedItemTypes() {
+            const list = getManagedItemTypes();
+            const searchTerm = document.getElementById('searchItemTypeInput') ? document.getElementById('searchItemTypeInput').value.toLowerCase() : '';
+            const ul = document.getElementById('managedItemTypeList');
+            ul.innerHTML = '';
+            if (list.length === 0) {
+                ul.innerHTML = '<li class="list-group-item text-muted text-center">No item types found.</li>';
+                return;
+            }
+
+            let hasMatch = false;
+            list.forEach((type) => {
+                if (searchTerm && !type.toLowerCase().includes(searchTerm)) return;
+                hasMatch = true;
+                const isDefault = DEFAULT_ITEM_TYPES.includes(type);
+                const li = document.createElement('li');
+                li.className = 'list-group-item d-flex justify-content-between align-items-center';
+
+                let buttonsHtml = '';
+                if (!isDefault) {
+                    buttonsHtml = `
+                        <button class="btn btn-sm btn-warning me-1" onclick="editManagedItemType('${escapeHtml(type)}')" style="padding: 0px 6px;" title="Rename">✎</button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteManagedItemType('${escapeHtml(type)}')" style="padding: 0px 6px;" title="Delete">×</button>
+                    `;
+                } else {
+                    buttonsHtml = `<span class="badge bg-secondary">Default</span>`;
+                }
+
+                li.innerHTML = `<span>${escapeHtml(type)}</span><div>${buttonsHtml}</div>`;
+                ul.appendChild(li);
+            });
+
+            if (!hasMatch) {
+                ul.innerHTML = '<li class="list-group-item text-muted text-center">No matching types.</li>';
+            }
+        }
+
+        function addManagedItemType() {
+            const input = document.getElementById('newManagedItemTypeInput');
+            const val = input.value.trim();
+            if (!val) return;
+
+            const list = getManagedItemTypes();
+            if (list.some(t => t.toLowerCase() === val.toLowerCase())) {
+                openInfoModal('Item Type already exists');
+                return;
+            }
+
+            const custom = getManagedItemTypes(false);
+            custom.push(val);
+            localStorage.setItem('managed_item_types', JSON.stringify(custom));
+            input.value = '';
+            renderManagedItemTypes();
+        }
+
+        function editManagedItemType(oldName) {
+            // This function is left simple as it's less critical than category rename.
+            // A full implementation would update all items using this type.
+            openInfoModal("Editing item types is not fully supported yet. Please delete and re-add with a new name.");
+        }
+
+        function deleteManagedItemType(name) {
+            if (DEFAULT_ITEM_TYPES.includes(name)) return openInfoModal("Default item types cannot be deleted.");
+            if (!confirm(`Delete type "${name}"? This cannot be undone.`)) return;
+
+            const custom = getManagedItemTypes(false);
+            const newList = custom.filter(t => t !== name);
+            localStorage.setItem('managed_item_types', JSON.stringify(newList));
+            renderManagedItemTypes();
+        }
+
+        function sortManagedItemTypes() {
+            const custom = getManagedItemTypes(false);
+            custom.sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
+            localStorage.setItem('managed_item_types', JSON.stringify(custom));
+            renderManagedItemTypes();
+            showToast("Custom types sorted A-Z");
+        }
+
+        // --- UOM Management ---
+        function openUomManager() {
+            if (document.getElementById('searchUomInput')) document.getElementById('searchUomInput').value = '';
+            renderManagedUoms();
+            document.getElementById('uomManagerModal').style.display = 'flex';
+        }
+
+        function closeUomManager() {
+            document.getElementById('uomManagerModal').style.display = 'none';
+            populateUOMList(); // Refresh dropdown in main form
+        }
+
+        function getManagedUoms(includeDefaults = true) {
+            const custom = JSON.parse(localStorage.getItem('custom_uoms')) || [];
+            let combined = custom;
+            if (includeDefaults && typeof UNIT_MASTER_LIST !== 'undefined') {
+                combined = [...UNIT_MASTER_LIST, ...custom];
+            }
+            return [...new Set(combined)].filter(Boolean).sort((a, b) => String(a).toLowerCase().localeCompare(String(b).toLowerCase()));
+        }
+
+        function renderManagedUoms() {
+            const list = getManagedUoms();
+            const searchTerm = document.getElementById('searchUomInput') ? document.getElementById('searchUomInput').value.toLowerCase() : '';
+            const ul = document.getElementById('managedUomList');
+            ul.innerHTML = '';
+            if (list.length === 0) {
+                ul.innerHTML = '<li class="list-group-item text-muted text-center">No UOMs found.</li>';
+                return;
+            }
+
+            let hasMatch = false;
+            list.forEach((uom) => {
+                if (searchTerm && !String(uom).toLowerCase().includes(searchTerm)) return;
+                hasMatch = true;
+                const isDefault = typeof UNIT_MASTER_LIST !== 'undefined' && UNIT_MASTER_LIST.includes(uom);
+                const li = document.createElement('li');
+                li.className = 'list-group-item d-flex justify-content-between align-items-center';
+                
+                let buttonsHtml = '';
+                if (!isDefault) {
+                    buttonsHtml = `
+                        <button class="btn btn-sm btn-danger" onclick="deleteManagedUom('${escapeHtml(uom)}')" style="padding: 0px 6px;" title="Delete">×</button>
+                    `;
+                } else {
+                    buttonsHtml = `<span class="badge bg-secondary">Default</span>`;
+                }
+
+                li.innerHTML = `<span>${escapeHtml(uom)}</span><div>${buttonsHtml}</div>`;
+                ul.appendChild(li);
+            });
+
+            if (!hasMatch) {
+                ul.innerHTML = '<li class="list-group-item text-muted text-center">No matching UOMs.</li>';
+            }
+        }
+
+        function addManagedUom() {
+            const input = document.getElementById('newManagedUomInput');
+            const val = input.value.trim();
+            if (!val) return;
+
+            const list = getManagedUoms();
+            if (list.some(u => String(u).toLowerCase() === val.toLowerCase())) {
+                openInfoModal('UOM already exists');
+                return;
+            }
+            
+            const custom = getManagedUoms(false);
+            custom.push(val);
+            localStorage.setItem('custom_uoms', JSON.stringify(custom));
+            input.value = '';
+            renderManagedUoms();
+        }
+
+        function deleteManagedUom(name) {
+            if (typeof UNIT_MASTER_LIST !== 'undefined' && UNIT_MASTER_LIST.includes(name)) return openInfoModal("Default UOMs cannot be deleted.");
+            if (!confirm(`Delete UOM "${name}"? This cannot be undone.`)) return;
+
+            const custom = getManagedUoms(false);
+            const newList = custom.filter(u => u !== name);
+            localStorage.setItem('custom_uoms', JSON.stringify(newList));
+            renderManagedUoms();
+        }
+
+        function sortManagedUoms() {
+            const custom = getManagedUoms(false);
+            custom.sort((a, b) => String(a).toLowerCase().localeCompare(String(b).toLowerCase()));
+            localStorage.setItem('custom_uoms', JSON.stringify(custom));
+            renderManagedUoms();
+            showToast("Custom UOMs sorted A-Z");
+        }
+
+        function generateUomOptions(selectedValue) {
+            const allUOMs = getManagedUoms();
+            return '<option value="">Select UOM</option>' + allUOMs.map(uom => 
+                `<option value="${escapeHtml(uom)}" ${uom === selectedValue ? 'selected' : ''}>${escapeHtml(uom)}</option>`
+            ).join('');
+        }
+
+        function populateUOMList() {
+            const select = document.getElementById('newItemUom');
+            if (select) {
+                const currentVal = select.value;
+                select.innerHTML = generateUomOptions(currentVal);
+            }
+            document.querySelectorAll('select[id^="uom-"]').forEach(sel => {
+                const currentVal = sel.value;
+                sel.innerHTML = generateUomOptions(currentVal);
+            });
+        }
+
+        // 🔹 Add new item
+        function initiateAddItem() {
+            const name = document.getElementById("newItemName").value.trim();
+            const code = document.getElementById("newItemCode").value.trim();
+            const hsn = document.getElementById("newItemHsn").value.trim();
+
+            if (!name) return openInfoModal("Item name cannot be empty");
+
+            if (hsn && !/^(?:\d{4}|\d{6}|\d{8})$/.test(hsn)) {
+                return openInfoModal("HSN/SAC code must be 4, 6, or 8 digits.");
+            }
+
+            if (code) {
+                const codeExists = items.some(i => (i.itemCode || "").toLowerCase() === code.toLowerCase());
+                if (codeExists) {
+                    return openInfoModal("Item Code already exists. Please use a unique code.");
+                }
+            }
+
+            const exists = items.some(i => (i.name || "").toLowerCase() === name.toLowerCase());
+            if (exists) {
+                openActionConfirmModal("Duplicate Item", "Item name already exists. Do you want to add it anyway?", () => {
+                    performAddItem();
+                });
+                return;
+            }
+
+            openActionConfirmModal("Confirm Addition", "Are you sure you want to add this item?", () => {
+                performAddItem();
+            });
+        }
+
+        async function performAddItem() {
+            const name = document.getElementById("newItemName").value.trim();
+            const itemCode = document.getElementById("newItemCode").value.trim();
+            const category = document.getElementById("newItemCategory").value.trim();
+            const hsn = document.getElementById("newItemHsn").value.trim();
+            const indexNo = document.getElementById("newItemIndex").value.trim();
+            const itemType = document.getElementById("newItemType").value;
+            const uom = document.getElementById("newItemUom").value.trim();
+            const description = document.getElementById("newItemDescription").value.trim();
+            const imei = document.getElementById("newItemImei").value.trim();
+            const batch = document.getElementById("newItemBatch").value.trim();
+            const lot = document.getElementById("newItemLot").value.trim();
+            const serial = document.getElementById("newItemSerial").value.trim();
+            const salePrice = parseFloat(document.getElementById("newItemSalePrice").value) || 0;
+            const gst = parseFloat(document.getElementById("newItemGst").value) || 0;
+            const conversions = extractConversions("addFormConversionsContainer");
+
+            const id = Date.now().toString();
+            const newItem = { id, name, itemCode, category, hsn, indexNo, itemType, uom, description, imei, batch, lot, serial, salePrice, gst, conversions, createdAt: new Date().toISOString() };
+
+            items.push(newItem);
+            localStorage.setItem("items", JSON.stringify(items));
+            apiClient.saveItem(newItem).catch(e => console.warn("API sync failed", e));
+
+            document.getElementById("newItemName").value = "";
+            document.getElementById("newItemCode").value = "";
+            document.getElementById("newItemCategory").value = "";
+            document.getElementById("newItemHsn").value = "";
+            document.getElementById("newItemIndex").value = "";
+            document.getElementById("newItemType").value = "Finished Good";
+            document.getElementById("newItemUom").value = "";
+            document.getElementById("newItemDescription").value = "";
+            document.getElementById("newItemImei").value = "";
+            document.getElementById("newItemBatch").value = "";
+            document.getElementById("newItemLot").value = "";
+            document.getElementById("newItemSerial").value = "";
+            document.getElementById("newItemSalePrice").value = "";
+            document.getElementById("newItemGst").value = "";
+            document.getElementById("addFormConversionsContainer").innerHTML = "";
+
+            // Save Firestore
+            if (db) {
+                try { await db.collection('items').doc(id).set(newItem); } catch (e) { console.error("Firestore save error", e); }
+            }
+            applyFilters();
+            openSuccessModal("Item added successfully!");
+        }
+
+        // 🔹 Edit existing item
+        function editItem(id) {
+            const editBtn = document.getElementById(`editBtn-${id}`);
+            if (editBtn && editBtn.textContent.includes("Edit")) {
+                openActionConfirmModal("Confirm Edit", "Do you want to edit this item?", () => {
+                    performEditToggle(id);
+                });
+            } else {
+                openActionConfirmModal("Confirm Update", "Are you sure you want to update this item?", () => {
+                    performUpdateItem(id);
+                });
+            }
+        }
+
+        function performEditToggle(id) {
+            // Toggle visibility
+            ['code', 'index', 'category', 'hsn', 'itemType', 'uom', 'name', 'description', 'imei', 'batch', 'lot', 'serial', 'salePrice', 'gst'].forEach(field => {
+                const view = document.getElementById(`view-${field}-${id}`);
+                const input = document.getElementById(`${field}-${id}`);
+                if (view) view.style.display = 'none';
+                if (field === 'uom') {
+                    const uomWrapper = document.getElementById(`uom-wrapper-${id}`);
+                    if (uomWrapper) uomWrapper.style.display = 'flex';
+                    if (input) input.classList.add("editable");
+                } else if (input) {
+                    input.style.display = 'block';
+                    input.classList.add("editable");
+                }
+            });
+
+            const editBtn = document.getElementById(`editBtn-${id}`);
+            if (editBtn) editBtn.textContent = "Save";
+
+            const dd = document.getElementById(`actionDropdown-${id}`);
+            const saveBtn = document.getElementById(`saveBtn-${id}`);
+            if (dd && saveBtn) {
+                dd.style.display = 'none';
+                saveBtn.style.display = 'inline-block';
+            }
+        }
+
+        async function performUpdateItem(id) {
+            const codeInput = document.getElementById(`code-${id}`);
+            const indexInput = document.getElementById(`index-${id}`);
+            const categoryInput = document.getElementById(`category-${id}`);
+            const hsnInput = document.getElementById(`hsn-${id}`);
+            const itemTypeInput = document.getElementById(`itemType-${id}`);
+            const uomInput = document.getElementById(`uom-${id}`);
+            const nameInput = document.getElementById(`name-${id}`);
+            const descriptionInput = document.getElementById(`description-${id}`);
+            const imeiInput = document.getElementById(`imei-${id}`);
+            const batchInput = document.getElementById(`batch-${id}`);
+            const lotInput = document.getElementById(`lot-${id}`);
+            const serialInput = document.getElementById(`serial-${id}`);
+            const salePriceInput = document.getElementById(`salePrice-${id}`);
+            const gstInput = document.getElementById(`gst-${id}`);
+
+            if (!nameInput.value.trim()) return openInfoModal("Item name cannot be empty");
+
+            const newName = nameInput.value.trim();
+            const newCode = codeInput.value.trim();
+
+            if (newCode) {
+                const codeExists = items.some(i => i.id !== id && (i.itemCode || "").toLowerCase() === newCode.toLowerCase());
+                if (codeExists) {
+                    return openInfoModal("Item Code already exists. Please use a unique code.");
+                }
+            }
+
+            const newCategory = categoryInput.value.trim();
+            const newHsn = hsnInput.value.trim();
+
+            const newItemType = itemTypeInput.value;
+            if (newHsn && !/^(?:\d{4}|\d{6}|\d{8})$/.test(newHsn)) {
+                return openInfoModal("HSN/SAC code must be 4, 6, or 8 digits.");
+            }
+
+            const newIndex = indexInput.value.trim();
+            const newUom = uomInput.value.trim();
+            const newDescription = descriptionInput.value.trim();
+            const newImei = imeiInput.value.trim();
+            const newBatch = batchInput.value.trim();
+            const newLot = lotInput.value.trim();
+            const newSerial = serialInput.value.trim();
+            const newSalePrice = parseFloat(salePriceInput.value) || 0;
+            const newGst = parseFloat(gstInput.value) || 0;
+
+            // Update Local
+            const idx = items.findIndex(x => x.id === id);
+            let oldName = "";
+            let oldCode = "";
+            if (idx > -1) {
+                oldName = items[idx].name;
+                oldCode = items[idx].itemCode || "";
+                items[idx].name = newName;
+                items[idx].itemCode = newCode;
+                items[idx].category = newCategory;
+                items[idx].hsn = newHsn;
+                items[idx].itemType = newItemType;
+                items[idx].uom = newUom;
+                items[idx].indexNo = newIndex;
+                items[idx].description = newDescription;
+                items[idx].imei = newImei;
+                items[idx].batch = newBatch;
+                items[idx].lot = newLot;
+                items[idx].serial = newSerial;
+                items[idx].salePrice = newSalePrice;
+                items[idx].gst = newGst;
+                
+                localStorage.setItem("items", JSON.stringify(items));
+                apiClient.saveItem(items[idx]).catch(e => console.warn("API sync failed", e));
+                applyFilters();
+                
+                if (oldName !== newName || oldCode !== newCode) {
+                    let productions = JSON.parse(localStorage.getItem("production")) || [];
+                    let prodUpdated = false;
+                    productions.forEach(prod => {
+                        if ((prod.finishedGood || "").trim() === oldName && (prod.fgCode || "").trim() === oldCode) {
+                            prod.finishedGood = newName;
+                            prod.fgCode = newCode;
+                            prodUpdated = true;
+                        }
+                        if (prod.materialsConsumed) {
+                            prod.materialsConsumed.forEach(rm => {
+                                if ((rm.item || "").trim() === oldName && (rm.code || "").trim() === oldCode) {
+                                    rm.item = newName;
+                                    rm.code = newCode;
+                                    prodUpdated = true;
+                                }
+                            });
+                        }
+                    });
+                    if (prodUpdated) localStorage.setItem("production", JSON.stringify(productions));
+                }
+            }
+
+            if (db) {
+                try {
+                    await db.collection('items').doc(id).update({ name: newName, itemCode: newCode, category: newCategory, hsn: newHsn, itemType: newItemType, uom: newUom, indexNo: newIndex, description: newDescription, imei: newImei, batch: newBatch, lot: newLot, serial: newSerial, salePrice: newSalePrice, gst: newGst });
+                } catch (e) { console.error("Firestore update error", e); }
+            }
+
+            openSuccessModal("Item updated successfully!");
+        }
+
+        // 🔹 Copy item
+        function copyItem(id) {
+            const itemToCopy = items.find(i => i.id === id);
+            if (!itemToCopy) return;
+
+            openActionConfirmModal("Confirm Copy", `Are you sure you want to duplicate "${itemToCopy.name}"?`, () => {
+                performCopyItem(itemToCopy);
+            });
+        }
+
+        async function performCopyItem(originalItem) {
+            const newId = Date.now().toString() + Math.random().toString(36).slice(2, 8);
+            let newName = originalItem.name + " - Copy";
+            let newCode = originalItem.itemCode ? originalItem.itemCode + "-C" : "";
+            
+            let counter = 1;
+            let tempName = newName;
+            while(items.some(i => i.name.toLowerCase() === tempName.toLowerCase())) {
+                counter++;
+                tempName = newName + ` (${counter})`;
+            }
+            newName = tempName;
+            
+            if (newCode) {
+                let codeCounter = 1;
+                let tempCode = newCode;
+                while(items.some(i => (i.itemCode || "").toLowerCase() === tempCode.toLowerCase())) {
+                    codeCounter++;
+                    tempCode = newCode + codeCounter;
+                }
+                newCode = tempCode;
+            }
+
+            const newItem = {
+                ...originalItem,
+                id: newId,
+                name: newName,
+                itemCode: newCode,
+                createdAt: new Date().toISOString()
+            };
+
+            items.push(newItem);
+            localStorage.setItem("items", JSON.stringify(items));
+            apiClient.saveItem(newItem).catch(e => console.warn("API sync failed", e));
+            applyFilters();
+            
+            if (db) {
+                try { await db.collection('items').doc(newId).set(newItem); } catch (e) { console.error("Firestore save error", e); }
+            }
+            
+            openSuccessModal("Item duplicated successfully!");
+        }
+
+        // 🔹 Delete item
+        function deleteItem(id) {
+            idsToDelete = [id];
+            document.getElementById("modalMessage").innerText = "Are you sure to delete this item?";
+            document.getElementById("confirmationModal").style.display = "flex";
+        }
+
+        // 🔹 Toggle Select All
+        function toggleSelectAll() {
+            const selectAll = document.getElementById("selectAll");
+            const checkboxes = document.querySelectorAll(".item-checkbox");
+            checkboxes.forEach(cb => cb.checked = selectAll.checked);
+        }
+
+        // 🔹 Delete Selected Items
+        function deleteSelectedItems() {
+            const checkboxes = document.querySelectorAll(".item-checkbox:checked");
+            if (checkboxes.length === 0) return openInfoModal("Please select items to delete.");
+
+            idsToDelete = Array.from(checkboxes).map(cb => cb.value);
+            document.getElementById("modalMessage").innerText = `Are you sure you want to delete ${idsToDelete.length} selected items?`;
+            document.getElementById("confirmationModal").style.display = "flex";
+        }
+
+        // 🔹 Bulk Edit Category
+        function bulkEditCategory() {
+            const checkboxes = document.querySelectorAll(".item-checkbox:checked");
+            if (checkboxes.length === 0) return openInfoModal("Please select items to edit.");
+
+            document.getElementById("bulkEditCategoryInput").value = "";
+            document.getElementById("bulkEditModal").style.display = "flex";
+            document.getElementById("bulkEditCategoryInput").focus();
+        }
+
+        function closeBulkEditModal() {
+            document.getElementById("bulkEditModal").style.display = "none";
+        }
+
+        async function confirmBulkEdit() {
+            const newCategory = document.getElementById("bulkEditCategoryInput").value.trim();
+            const checkboxes = document.querySelectorAll(".item-checkbox:checked");
+            const idsToUpdate = Array.from(checkboxes).map(cb => cb.value);
+
+            if (idsToUpdate.length === 0) return;
+
+            // Update Local
+            items.forEach(item => {
+                if (idsToUpdate.includes(item.id)) {
+                    item.category = newCategory;
+                }
+            });
+
+            localStorage.setItem("items", JSON.stringify(items));
+            populateCategoryFilter();
+            applyFilters();
+
+            // Update Firestore
+            if (db) {
+                idsToUpdate.forEach(id => {
+                    db.collection('items').doc(id).update({ category: newCategory }).catch(e => console.error("Firestore update error", e));
+                });
+            }
+
+            closeBulkEditModal();
+            openSuccessModal(`Updated category for ${idsToUpdate.length} items.`);
+            document.getElementById("selectAll").checked = false;
+            // Uncheck all boxes
+            checkboxes.forEach(cb => cb.checked = false);
+        }
+
+        async function confirmDelete() {
+            if (idsToDelete.length === 0) return;
+            
+            for (let id of idsToDelete) {
+                await apiClient.deleteItem(id);
+            }
+            await fetchItemsData();
+
+            // Delete Firestore
+            if (db) {
+                idsToDelete.forEach(id => db.collection('items').doc(id).delete().catch(e => console.error(e)));
+            }
+            openSuccessModal(`Deleted ${idsToDelete.length} items.`);
+            closeConfirmModal();
+        }
+
+        function closeConfirmModal() {
+            document.getElementById("confirmationModal").style.display = "none";
+            idsToDelete = [];
+        }
+
+        let currentExportType = 'json';
+
+        function openExportConfirmModal(type = 'json') {
+            currentExportType = type;
+            document.getElementById("exportTypeDisplay").textContent = type.toUpperCase();
+            document.getElementById("exportConfirmModal").style.display = "flex";
+        }
+        function closeExportConfirmModal() { document.getElementById("exportConfirmModal").style.display = "none"; }
+
+        function performExport() {
+            closeExportConfirmModal();
+            if (currentExportType === 'csv') {
+                exportItemsCSV();
+            }
+        }
+
+        // 🔹 Export CSV
+        function exportItemsCSV() {
+            if (!items || items.length === 0) return openInfoModal("No items to export");
+
+            const headers = ["Item Code", "Index No", "Category", "HSN/SAC", "Item Type", "UOM", "Item Name", "Description", "Sale Price", "GST %", "IMEI", "Batch", "Lot", "Serial", "Conversions"];
+            const rows = items.map(item => {
+                const escape = (t) => `"${String(t || "").replace(/"/g, '""')}"`;
+                return [escape(item.itemCode), escape(item.indexNo), escape(item.category), escape(item.hsn), escape(item.itemType || "Finished Good"), escape(item.uom), escape(item.name), escape(item.description), escape(item.salePrice || 0), escape(item.gst || 0), escape(item.imei), escape(item.batch), escape(item.lot), escape(item.serial), escape(JSON.stringify(item.conversions || {}))].join(",");
+            });
+
+            const csvContent = [headers.join(",")].concat(rows).join("\n");
+            const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "items_export.csv";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            openSuccessModal("Items exported to CSV successfully!");
+        }
+
+        // 🔹 Import CSV
+        function importItemsCSV(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                try {
+                    const text = e.target.result;
+                    const rows = parseCSV(text);
+                    if (rows.length < 2) throw new Error("Invalid CSV format (no data)");
+
+                    // Normalize headers
+                    const headers = rows[0].map(h => h.trim().toLowerCase());
+
+                    // Map columns
+                    const nameIdx = headers.findIndex(h => h.includes('name'));
+                    const codeIdx = headers.findIndex(h => h.includes('code'));
+                    const catIdx = headers.findIndex(h => h.includes('category'));
+                    const hsnIdx = headers.findIndex(h => h.includes('hsn'));
+                    const typeIdx = headers.findIndex(h => h.includes('item type'));
+                    const uomIdx = headers.findIndex(h => h.includes('uom'));
+                    const indexIdx = headers.findIndex(h => h.includes('index'));
+                    const descIdx = headers.findIndex(h => h.includes('description'));
+                    const salePriceIdx = headers.findIndex(h => h.includes('sale price'));
+                    const gstIdx = headers.findIndex(h => h.includes('gst'));
+                    const imeiIdx = headers.findIndex(h => h.includes('imei'));
+                    const batchIdx = headers.findIndex(h => h.includes('batch'));
+                    const lotIdx = headers.findIndex(h => h.includes('lot'));
+                    const serialIdx = headers.findIndex(h => h.includes('serial'));
+                    const convIdx = headers.findIndex(h => h.includes('conversions'));
+
+                    if (nameIdx === -1) throw new Error("CSV must have a 'Name' column");
+
+                    let addedCount = 0;
+                    let updatedCount = 0;
+                    for (let i = 1; i < rows.length; i++) {
+                        const row = rows[i];
+                        if (row.length < 1) continue;
+
+                        const name = row[nameIdx] ? row[nameIdx].trim() : "";
+                        if (!name) continue;
+
+                        const itemCode = (codeIdx > -1 && row[codeIdx]) ? row[codeIdx].trim() : "";
+                        const category = (catIdx > -1 && row[catIdx]) ? row[catIdx].trim() : "";
+                        const hsn = (hsnIdx > -1 && row[hsnIdx]) ? row[hsnIdx].trim() : "";
+                        const itemType = (typeIdx > -1 && row[typeIdx]) ? row[typeIdx].trim() : "Finished Good";
+                        const uom = (uomIdx > -1 && row[uomIdx]) ? row[uomIdx].trim() : "";
+                        const indexNo = (indexIdx > -1 && row[indexIdx]) ? row[indexIdx].trim() : "";
+                        const description = (descIdx > -1 && row[descIdx]) ? row[descIdx].trim() : "";
+                        const salePrice = (salePriceIdx > -1 && row[salePriceIdx]) ? parseFloat(row[salePriceIdx].trim()) || 0 : 0;
+                        const gst = (gstIdx > -1 && row[gstIdx]) ? parseFloat(row[gstIdx].trim()) || 0 : 0;
+                        const imei = (imeiIdx > -1 && row[imeiIdx]) ? row[imeiIdx].trim() : "";
+                        const batch = (batchIdx > -1 && row[batchIdx]) ? row[batchIdx].trim() : "";
+                        const lot = (lotIdx > -1 && row[lotIdx]) ? row[lotIdx].trim() : "";
+                        const serial = (serialIdx > -1 && row[serialIdx]) ? row[serialIdx].trim() : "";
+                        let conversions = {};
+                        if (convIdx > -1 && row[convIdx]) {
+                            try { conversions = JSON.parse(row[convIdx].trim()); } catch(e) {}
+                        }
+
+                        // Check existing
+                        const existing = items.find(it => (it.name || "").trim().toLowerCase() === name.toLowerCase() && (it.itemCode || "").trim().toLowerCase() === itemCode.toLowerCase());
+                        const id = existing ? existing.id : (Date.now().toString() + Math.random().toString(36).slice(2));
+
+                        const newItem = {
+                            id, name,
+                            itemCode: itemCode || (existing ? existing.itemCode : ""),
+                            category: category || (existing ? existing.category : ""),
+                            hsn: hsn || (existing ? existing.hsn : ""),
+                            indexNo: indexNo || (existing ? existing.indexNo : ""),
+                            itemType: itemType || (existing ? existing.itemType : "Finished Good"),
+                            uom: uom || (existing ? existing.uom : ""),
+                            description: description || (existing ? existing.description : ""),
+                            createdAt: existing ? existing.createdAt : new Date().toISOString(),
+                            salePrice: salePrice || (existing ? existing.salePrice : 0),
+                            gst: gst || (existing ? existing.gst : 0),
+                            imei: imei || (existing ? existing.imei : ""),
+                            batch: batch || (existing ? existing.batch : ""),
+                            lot: lot || (existing ? existing.lot : ""),
+                            serial: serial || (existing ? existing.serial : ""),
+                            conversions: (Object.keys(conversions).length > 0) ? conversions : (existing ? existing.conversions : {})
+                        };
+
+                        const idx = items.findIndex(x => x.id === id);
+                        if (idx > -1) {
+                            items[idx] = newItem;
+                            updatedCount++;
+                        } else {
+                            items.push(newItem);
+                            addedCount++;
+                        }
+
+                        if (db) {
+                            await db.collection("items").doc(id).set(newItem).catch(console.error);
+                        }
+                    }
+
+                    localStorage.setItem("items", JSON.stringify(items));
+                    populateCategoryFilter();
+                    populateItemNameList();
+                    applyFilters();
+                    openSuccessModal(`Import Successful! Added: ${addedCount}, Updated: ${updatedCount}`);
+                } catch (err) {
+                    console.error("Import error:", err);
+                    openInfoModal("Error importing CSV: " + err.message);
+                }
+                input.value = "";
+            };
+            reader.readAsText(file);
+        }
+
+        function parseCSV(text) {
+            const rows = [];
+            let row = [];
+            let cur = '';
+            let inQuote = false;
+            for (let i = 0; i < text.length; i++) {
+                const c = text[i];
+                if (inQuote) {
+                    if (c === '"') {
+                        if (i + 1 < text.length && text[i + 1] === '"') { cur += '"'; i++; }
+                        else inQuote = false;
+                    } else cur += c;
+                } else {
+                    if (c === '"') inQuote = true;
+                    else if (c === ',') { row.push(cur); cur = ''; }
+                    else if (c === '\n' || c === '\r') {
+                        if (cur || row.length > 0) row.push(cur);
+                        if (row.length > 0) rows.push(row);
+                        row = []; cur = '';
+                        if (c === '\r' && i + 1 < text.length && text[i + 1] === '\n') i++;
+                    } else cur += c;
+                }
+            }
+            if (cur || row.length > 0) { row.push(cur); rows.push(row); }
+            return rows;
+        }
+
+        // 🔹 Search + sort filter
+        function applyFilters() {
+            const searchName = document.getElementById("searchName").value.toLowerCase();
+            const searchCode = document.getElementById("searchCode").value.toLowerCase();
+            const searchIndex = document.getElementById("searchIndex").value.toLowerCase();
+            const searchDescription = document.getElementById("searchDescription").value.toLowerCase();
+
+            // Category Filter
+            const allCb = document.getElementById("cat_all");
+            const checkedCbs = document.querySelectorAll(".category-filter-cb:checked");
+            const selectedCategories = Array.from(checkedCbs).map(cb => cb.value);
+            const isAllSelected = allCb.checked || (selectedCategories.length === document.querySelectorAll(".category-filter-cb").length);
+
+            let filtered = items.filter(item => {
+                const name = (item.name || "").toLowerCase();
+                const code = (item.itemCode || "").toLowerCase();
+                const index = (item.indexNo || "").toLowerCase();
+                const category = (item.category || "");
+                const description = (item.description || "").toLowerCase();
+                const nameMatch = searchName ? name.includes(searchName) : true;
+                const codeMatch = searchCode ? code.includes(searchCode) : true;
+                const indexMatch = searchIndex ? index.includes(searchIndex) : true;
+                const descriptionMatch = searchDescription ? description.includes(searchDescription) : true;
+
+                let categoryMatch = true;
+                if (!isAllSelected) {
+                    if (selectedCategories.length === 0) categoryMatch = false;
+                    else categoryMatch = selectedCategories.includes(category);
+                }
+
+                return nameMatch && codeMatch && indexMatch && categoryMatch && descriptionMatch;
+            });
+
+            // Update Total Count Display
+            const totalDisplay = document.getElementById("totalItemsDisplay");
+            if (totalDisplay) totalDisplay.innerText = `Total Items: ${filtered.length}`;
+
+            filtered.sort((a, b) => {
+                let valA = (a[currentSortColumn] || "").toString().toLowerCase();
+                let valB = (b[currentSortColumn] || "").toString().toLowerCase();
+
+                if (currentSortColumn === 'indexNo') {
+                    return currentSortDirection === 'asc' ? valA.localeCompare(valB, undefined, { numeric: true }) : valB.localeCompare(valA, undefined, { numeric: true });
+                }
+                if (currentSortColumn === 'salePrice') {
+                    return currentSortDirection === 'asc' ? (parseFloat(a.salePrice) || 0) - (parseFloat(b.salePrice) || 0) : (parseFloat(b.salePrice) || 0) - (parseFloat(a.salePrice) || 0);
+                }
+                if (currentSortColumn === 'gst') {
+                    return currentSortDirection === 'asc' ? (parseFloat(a.gst) || 0) - (parseFloat(b.gst) || 0) : (parseFloat(b.gst) || 0) - (parseFloat(a.gst) || 0);
+                }
+                return currentSortDirection === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
+            });
+
+            // Pagination Logic
+            const totalItems = filtered.length;
+            const totalPages = Math.ceil(totalItems / rowsPerPage);
+
+            if (currentPage > totalPages) currentPage = totalPages || 1;
+            if (currentPage < 1) currentPage = 1;
+
+            const startIndex = (currentPage - 1) * rowsPerPage;
+            const endIndex = startIndex + rowsPerPage;
+            const paginatedItems = filtered.slice(startIndex, endIndex);
+
+            renderItems(paginatedItems, startIndex);
+            renderPagination(totalItems, startIndex + 1, Math.min(endIndex, totalItems), totalPages);
+            updateHeaderIcons();
+        }
+
+        function handleHeaderClick(column) {
+            if (currentSortColumn === column) {
+                currentSortDirection = currentSortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSortColumn = column;
+                currentSortDirection = 'asc';
+            }
+            applyFilters();
+        }
+
+        function handleSortOptionChange() {
+            const val = document.getElementById("sortOption").value;
+            if (val === "codeAsc") { currentSortColumn = 'itemCode'; currentSortDirection = 'asc'; }
+            else if (val === "codeDesc") { currentSortColumn = 'itemCode'; currentSortDirection = 'desc'; }
+            else if (val === "indexAsc") { currentSortColumn = 'indexNo'; currentSortDirection = 'asc'; }
+            else if (val === "indexDesc") { currentSortColumn = 'indexNo'; currentSortDirection = 'desc'; }
+            else if (val === "nameAsc") { currentSortColumn = 'name'; currentSortDirection = 'asc'; }
+            else if (val === "nameDesc") { currentSortColumn = 'name'; currentSortDirection = 'desc'; }
+            applyFilters();
+        }
+
+        function updateHeaderIcons() {
+            ['itemCode', 'indexNo', 'category', 'hsn', 'itemType', 'uom', 'name', 'description', 'salePrice', 'gst'].forEach(col => {
+                const icon = document.getElementById(`sort-icon-${col}`);
+                if (!icon) return;
+                icon.textContent = (currentSortColumn === col) ? (currentSortDirection === 'asc' ? ' ▲' : ' ▼') : '';
+            });
+        }
+
+        function populateCategoryFilter() {
+            const categoryCheckboxes = document.getElementById("categoryCheckboxes");
+            const categoryList = document.getElementById("categoryList");
+
+            const categories = new Set();
+            items.forEach(item => {
+                if (item.category && item.category.trim() !== "") {
+                    categories.add(item.category.trim());
+                }
+            });
+
+            const managed = getManagedCategories();
+            managed.forEach(c => categories.add(c));
+
+            const sortedCategories = Array.from(categories).sort();
+
+            // Populate Datalist
+            if (categoryList) categoryList.innerHTML = "";
+            sortedCategories.forEach(cat => {
+                if (categoryList) {
+                    const listOpt = document.createElement("option");
+                    listOpt.value = cat;
+                    categoryList.appendChild(listOpt);
+                }
+            });
+
+            // Populate Checkboxes
+            if (categoryCheckboxes) {
+                categoryCheckboxes.innerHTML = "";
+                sortedCategories.forEach(cat => {
+                    const div = document.createElement("div");
+                    div.className = "form-check";
+                    div.innerHTML = `
+                            <input class="form-check-input category-filter-cb" type="checkbox" value="${escapeHtml(cat)}" id="cat_${escapeHtml(cat.replace(/\s+/g, '_'))}" onchange="handleCategoryChange()">
+                            <label class="form-check-label" for="cat_${escapeHtml(cat.replace(/\s+/g, '_'))}">${escapeHtml(cat)}</label>
+                        `;
+                    categoryCheckboxes.appendChild(div);
+                });
+                // Reset to Select All
+                document.getElementById("cat_all").checked = true;
+                toggleAllCategories(document.getElementById("cat_all"));
+            }
+        }
+
+        function populateItemNameList() {
+            const dataList = document.getElementById("itemNameList");
+            if (!dataList) return;
+            dataList.innerHTML = "";
+            const names = new Set();
+            items.forEach(item => {
+                if (item.name) names.add(item.name.trim());
+            });
+            Array.from(names).sort().forEach(name => {
+                const opt = document.createElement("option");
+                opt.value = name;
+                dataList.appendChild(opt);
+            });
+        }
+
+        // --- Category Filter Logic ---
+        function toggleCategoryDropdown() {
+            const menu = document.getElementById("categoryFilterMenu");
+            menu.classList.toggle("d-none");
+        }
+
+        function toggleAllCategories(source) {
+            const cbs = document.querySelectorAll(".category-filter-cb");
+            cbs.forEach(cb => cb.checked = source.checked);
+            updateCategoryButtonText();
+            currentPage = 1;
+            applyFilters();
+        }
+
+        function handleCategoryChange() {
+            const allCb = document.getElementById("cat_all");
+            const cbs = document.querySelectorAll(".category-filter-cb");
+            const allChecked = Array.from(cbs).every(cb => cb.checked);
+
+            allCb.checked = allChecked;
+            allCb.indeterminate = !allChecked && Array.from(cbs).some(cb => cb.checked);
+
+            updateCategoryButtonText();
+            currentPage = 1;
+            applyFilters();
+        }
+
+        function updateCategoryButtonText() {
+            const cbs = document.querySelectorAll(".category-filter-cb:checked");
+            const total = document.querySelectorAll(".category-filter-cb").length;
+            const btn = document.getElementById("categoryFilterBtn");
+
+            if (document.getElementById("cat_all").checked || cbs.length === total) {
+                btn.textContent = "All Categories";
+            } else if (cbs.length === 0) {
+                btn.textContent = "Select Category";
+            } else if (cbs.length === 1) {
+                btn.textContent = cbs[0].value;
+            } else {
+                btn.textContent = `${cbs.length} Selected`;
+            }
+        }
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function (event) {
+            const container = document.getElementById("categoryFilterContainer");
+            if (container && !container.contains(event.target)) {
+                document.getElementById("categoryFilterMenu").classList.add("d-none");
+            }
+        });
+
+        function renderPagination(totalItems, start, end, totalPages) {
+            const info = document.getElementById("paginationInfo");
+            const controls = document.getElementById("paginationControls");
+
+            if (totalItems === 0) {
+                info.innerText = "No items found";
+                controls.innerHTML = "";
+                return;
+            }
+
+            info.innerText = `Showing ${start} to ${end} of ${totalItems} entries`;
+
+            let html = "";
+            // Previous
+            html += `<li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+                        <button class="page-link" onclick="changePage(${currentPage - 1})">Previous</button>
+                     </li>`;
+
+            // Page Numbers
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
+                    html += `<li class="page-item ${i === currentPage ? 'active' : ''}">
+                                <button class="page-link" onclick="changePage(${i})">${i}</button>
+                             </li>`;
+                } else if (i === currentPage - 3 || i === currentPage + 3) {
+                    html += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+                }
+            }
+
+            // Next
+            html += `<li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+                        <button class="page-link" onclick="changePage(${currentPage + 1})">Next</button>
+                     </li>`;
+
+            controls.innerHTML = html;
+        }
+
+        function changePage(page) {
+            currentPage = page;
+            applyFilters();
+        }
+
+        function changeRowsPerPage() {
+            rowsPerPage = parseInt(document.getElementById("rowsPerPageSelect").value);
+            currentPage = 1;
+            applyFilters();
+        }
+
+        function goToPage() {
+            const pageInput = document.getElementById("goToPageInput");
+            const page = parseInt(pageInput.value);
+            if (page >= 1) {
+                currentPage = page;
+                applyFilters();
+            }
+            pageInput.value = "";
+        }
+
+        // Generic Modal Functions
+        function openActionConfirmModal(title, msg, callback) {
+            const modal = document.getElementById('actionConfirmModal');
+            document.getElementById('actionConfirmTitle').textContent = title;
+            document.getElementById('actionConfirmMsg').textContent = msg;
+
+            const yesBtn = document.getElementById('actionConfirmBtnYes');
+            const newYesBtn = yesBtn.cloneNode(true);
+            yesBtn.parentNode.replaceChild(newYesBtn, yesBtn);
+
+            newYesBtn.onclick = () => {
+                closeActionConfirmModal();
+                if (callback) callback();
+            };
+
+            modal.style.display = "flex";
+        }
+        function closeActionConfirmModal() { document.getElementById("actionConfirmModal").style.display = "none"; }
+
+        function openInfoModal(msg) {
+            document.getElementById("successModalTitle").textContent = "⚠️ Warning";
+            document.getElementById("successModalTitle").style.color = "#d35400";
+            document.getElementById("successMsg").textContent = msg;
+            document.getElementById("successModal").style.display = "flex";
+        }
+
+        function openSuccessModal(msg) {
+            document.getElementById("successModalTitle").textContent = "✅ Success";
+            document.getElementById("successModalTitle").style.color = "#27ae60";
+            document.getElementById("successMsg").textContent = msg;
+            document.getElementById("successModal").style.display = "flex";
+        }
+        function closeSuccessModal() {
+            document.getElementById("successModal").style.display = "none";
+        }
+        function closeInfoModal() { closeSuccessModal(); }
+
+        // Load Brand Name
+
+        // Initial load
+        populateCategoryFilter();
+        populateItemNameList();
+        populateItemTypeDropdown();
+        populateUOMList();
+        initExtraFields();
+        initFirebase();
+        applyTheme();
+            fetchItemsData();
+        applyCompactView();
+        applyButtonVisibility();
+        applyGreyButtons();
+        updateColumnStyles();
+        applyAddItemFormVisibility();
+
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+            if (currentTheme === "system") {
+                applyTheme();
+            }
+        });
+
+        // Add Enter key listener for saving item
+        const addItemForm = document.querySelector('.card-body');
+        if (addItemForm) {
+            addItemForm.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' && (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT')) {
+                    e.preventDefault();
+                    initiateAddItem();
+                }
+            });
+        }
+    </script>
+</body>
+
+</html>

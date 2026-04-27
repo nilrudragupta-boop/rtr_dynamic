@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Production Report</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="settings.js"></script>
+    <script src="brand.service.js"></script>
+    <script src="brandLoader.js"></script>
+    <script src="apiClient.js"></script>
+
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            padding: 20px;
+            background: #f4f6f8;
+        }
+
+        h2 {
+            color: #2c3e50;
+            text-align: center;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            justify-content: center;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+
+        th,
+        td {
+            padding: 10px;
+            border: 1px solid #ddd;
+            text-align: center;
+        }
+
+        th {
+            background: #2c3e50;
+            color: white;
+        }
+
+        input, select {
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .btn {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            color: white;
+            font-weight: bold;
+        }
+
+        .btn-primary { background: #3498db; }
+        .btn-success { background: #27ae60; }
+        .btn-danger { background: #e74c3c; }
+
+        /* Dark Mode */
+        body.dark-mode {
+            background: #121212;
+            color: #e0e0e0;
+        }
+        body.dark-mode table {
+            background: #2c2c2c;
+            border-color: #444;
+        }
+        body.dark-mode th { background: #1f1f1f; border-color: #444; }
+        body.dark-mode td { border-color: #444; }
+        body.dark-mode input, body.dark-mode select { background: #3a3a3a; color: white; border-color: #555; }
+    </style>
+</head>
+
+<body>
+
+    <h2><span id="brandName" data-brand="name"></span> - 🏭 Production Report </h2>
+
+    <div class="controls">
+        <input type="date" id="fromDate">
+        <input type="date" id="toDate">
+        <select id="stageFilter">
+            <option value="">All Stages</option>
+            <option value="Planned">Planned</option>
+            <option value="WIP">Work in Progress (WIP)</option>
+            <option value="Completed">Completed</option>
+        </select>
+        <button class="btn btn-primary" onclick="loadData()">Filter</button>
+        <button class="btn btn-success" onclick="exportExcel()">Export Excel</button>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Production No</th>
+                <th>Finished Good</th>
+                <th>Recipe (BOM)</th>
+                <th>Produced Qty</th>
+                <th>Material Cost</th>
+                <th>Total Est. Cost</th>
+                <th>Stage</th>
+            </tr>
+        </thead>
+        <tbody id="reportBody"></tbody>
+        <tfoot id="reportFooter"></tfoot>
+    </table>
+
+    <script>
+        let productions = [];
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (localStorage.getItem('appThemeMode') === 'dark') document.body.classList.add('dark-mode');
+            
+            const today = new Date();
+            const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+            document.getElementById('fromDate').valueAsDate = firstDay;
+            document.getElementById('toDate').valueAsDate = today;
+            
+            await loadData();
+        });
+
+        async function loadData() {
+            document.getElementById('reportBody').innerHTML = '<tr><td colspan="8" style="text-align:center;">Loading...</td></tr>';
+            
+            // Fetch data from backend API
+            productions = await apiClient.getProductions();
+            renderTable();
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('reportBody');
+            const tfoot = document.getElementById('reportFooter');
+            tbody.innerHTML = '';
+            tfoot.innerHTML = '';
+
+            const fromDate = document.getElementById('fromDate').value;
+            const toDate = document.getElementById('toDate').value;
+            const stageFilter = document.getElementById('stageFilter').value;
+
+            const filtered = productions.filter(p => {
+                const d = p.date || p.createdAt;
+                if (fromDate && d < fromDate) return false;
+                if (toDate && d > toDate) return false;
+                if (stageFilter && p.stage !== stageFilter) return false;
+                return true;
+            });
+
+            let totalMaterial = 0;
+            let totalEstCost = 0;
+
+            filtered.forEach(p => {
+                totalMaterial += parseFloat(p.materialCost) || 0;
+                totalEstCost += parseFloat(p.totalCost) || 0;
+                
+                const tr = document.createElement('tr');
+                tr.innerHTML = \`
+                    <td>\${new Date(p.date || p.createdAt).toLocaleDateString('en-GB')}</td>
+                    <td>\${p.productionNo || '-'}</td>
+                    <td>\${p.finishedGood} \${p.fgCode ? '['+p.fgCode+']' : ''}</td>
+                    <td>\${p.bomName || 'Standard'}</td>
+                    <td>\${p.fgQtyProduced} \${p.fgUom || ''}</td>
+                    <td style="text-align:right;">₹ \${(parseFloat(p.materialCost) || 0).toFixed(2)}</td>
+                    <td style="text-align:right; font-weight:bold;">₹ \${(parseFloat(p.totalCost) || 0).toFixed(2)}</td>
+                    <td>\${p.stage || 'Completed'}</td>
+                \`;
+                tbody.appendChild(tr);
+                if (localStorage.getItem('appThemeMode') === 'dark') tr.style.backgroundColor = '#3a3a3a';
+            });
+
+            if (filtered.length > 0) {
+                tfoot.innerHTML = \`
+                    <tr style="font-weight: bold; background-color: #e9ecef;">
+                        <td colspan="5" style="text-align: right;">Total:</td>
+                        <td style="text-align: right; color: #d35400;">₹ \${totalMaterial.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                        <td style="text-align: right; color: #27ae60;">₹ \${totalEstCost.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                        <td></td>
+                    </tr>
+                \`;
+                if (localStorage.getItem('appThemeMode') === 'dark') {
+                    tfoot.querySelector('tr').style.backgroundColor = '#3a3a3a';
+                }
+            } else {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:#666;">No production records found for the selected filters.</td></tr>';
+            }
+        }
+
+        function exportExcel() {
+            if (productions.length === 0) return alert("No data to export!");
+            const table = document.querySelector('table');
+            const wb = XLSX.utils.table_to_book(table, {sheet: "Production Report"});
+            XLSX.writeFile(wb, 'Production_Report.xlsx');
+        }
+    </script>
+</body>
+</html>

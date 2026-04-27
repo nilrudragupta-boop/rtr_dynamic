@@ -1,0 +1,2421 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Customers Details</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="apiClient.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            padding: 20px;
+            background: #f8f9fa;
+        }
+
+        h2 {
+            margin-bottom: 15px;
+        }
+
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .close-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .controls {
+            margin: 10px 0;
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        input,
+        select,
+        button {
+            padding: 6px 10px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+            font-size: 14px;
+        }
+
+        button.action {
+            background: #0d6efd;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+        }
+
+        button.clear {
+            background: #6c757d;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        th,
+        td {
+            padding: 8px;
+            text-align: center;
+            border: 1px solid #ddd;
+        }
+
+        th {
+            background: #eee;
+        }
+
+        .action-btn {
+            padding: 4px 8px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 0 2px;
+            font-size: 13px;
+        }
+
+        .edit-btn {
+            background: #0d6efd;
+            color: white;
+        }
+
+        .delete-btn {
+            background: #dc3545;
+            color: white;
+        }
+
+        #toast {
+            visibility: hidden;
+            min-width: 200px;
+            background: #333;
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 10px;
+            position: fixed;
+            z-index: 1000;
+            bottom: 30px;
+            right: 30px;
+            font-size: 14px;
+            opacity: 0;
+            transition: opacity 0.4s, bottom 0.4s;
+        }
+
+        #toast.show {
+            visibility: visible;
+            opacity: 1;
+            bottom: 50px;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            min-width: 300px;
+        }
+
+        .modal-buttons {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        /* Pagination Styles */
+        .pagination-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 15px;
+        }
+
+        .pagination {
+            display: flex;
+            gap: 5px;
+        }
+
+        .pagination button {
+            padding: 6px 12px;
+            border: 1px solid #ccc;
+            background: #fff;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        .pagination button.active {
+            background: #0d6efd;
+            color: #fff;
+            border-color: #0d6efd;
+        }
+
+        .pagination button:disabled {
+            background: #e9ecef;
+            cursor: not-allowed;
+        }
+
+        .highlight {
+            background-color: #fff176;
+            font-weight: bold;
+        }
+
+        /* Dark Mode */
+        body.dark-mode {
+            background: #121212;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .modal-content {
+            background: #2c2c2c;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode input,
+        body.dark-mode select,
+        body.dark-mode button:not(.action):not(.clear) {
+            background: #2c2c2c;
+            color: #fff;
+            border: 1px solid #444;
+        }
+
+        body.dark-mode table th {
+            background: #333;
+            color: #fff;
+            border-color: #444;
+        }
+
+        body.dark-mode table td {
+            border-color: #444;
+        }
+
+        /* Compact View */
+        table.compact-table th,
+        table.compact-table td {
+            padding: 4px 5px;
+            font-size: 13px;
+        }
+
+        /* Grey Mode */
+        body.grey-mode button {
+            background-color: #6c757d !important;
+            color: #fff !important;
+        }
+
+        /* Action Dropdown Menu */
+        .action-dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .action-btn-main {
+            background-color: #607d8b;
+            color: white;
+            padding: 6px 12px;
+            font-size: 13px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .action-dropdown-content {
+            display: none;
+            position: fixed;
+            background-color: #fff;
+            min-width: 120px;
+            box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
+            z-index: 9999;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 4px 0;
+            text-align: left;
+        }
+
+        .action-dropdown-content button {
+            color: #333 !important;
+            background: none !important;
+            padding: 8px 16px !important;
+            text-decoration: none !important;
+            display: block !important;
+            width: 100% !important;
+            text-align: left !important;
+            border: none !important;
+            border-radius: 0 !important;
+            margin: 0 !important;
+            box-shadow: none !important;
+            font-weight: normal !important;
+            font-size: 13px !important;
+            white-space: nowrap !important;
+        }
+
+        .action-dropdown-content button:hover {
+            background-color: #f1f1f1 !important;
+            color: #000 !important;
+        }
+
+        .action-dropdown.active .action-dropdown-content {
+            display: block;
+        }
+
+        body.dark-mode .action-dropdown-content {
+            background-color: #2c2c2c;
+            border-color: #444;
+        }
+
+        body.dark-mode .action-dropdown-content button {
+            color: #e0e0e0 !important;
+        }
+
+        body.dark-mode .action-dropdown-content button:hover {
+            background-color: #3a3a3a !important;
+            color: #fff !important;
+        }
+    </style>
+    <!-- Payment Receipt Modal -->
+    <div id="receiptDescModal" class="modal">
+        <div class="modal-content" style="max-width: 400px; text-align: left;">
+            <div
+                style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee; padding-bottom:10px; margin-bottom:15px;">
+                <h3 style="color: #0d6efd; margin: 0;">Generate Payment Receipt</h3>
+                <button class="close-btn" onclick="closeReceiptDescModal()"
+                    style="padding: 2px 8px; font-size: 16px; background: #dc3545; border: none; color: white; border-radius: 4px; cursor: pointer;">&times;</button>
+            </div>
+
+            <label style="font-size:13px; font-weight:bold; color:#555; display:block; margin-bottom:5px;">Amount
+                Received (₹):</label>
+            <input type="number" id="receiptAmountInput" placeholder="0.00"
+                style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px; margin-bottom:15px; box-sizing:border-box;">
+
+            <label style="font-size:13px; font-weight:bold; color:#555; display:block; margin-bottom:5px;">Payment
+                Mode:</label>
+            <select id="receiptModeInput"
+                style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px; margin-bottom:15px; box-sizing:border-box;">
+                <option value="Cash">Cash</option>
+                <option value="Bank">Bank</option>
+                <option value="Mixed">Mixed</option>
+            </select>
+
+            <label style="font-size:13px; font-weight:bold; color:#555; display:block; margin-bottom:5px;">Description /
+                Remarks:</label>
+            <textarea id="receiptDescInput" rows="3"
+                style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px; font-family:inherit; margin-bottom:15px; box-sizing:border-box;"></textarea>
+
+            <div class="modal-buttons" style="margin-top: 10px;">
+                <button class="action" id="btnConfirmReceipt">Generate Receipt</button>
+                <button class="action" id="btnWhatsAppReceipt" style="background:#25D366;"><i
+                        class="fab fa-whatsapp"></i> WhatsApp</button>
+                <button class="clear" id="btnCancelReceipt">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Receipt Log Modal -->
+    <div id="receiptLogModal" class="modal">
+        <div class="modal-content"
+            style="width: 80%; max-width: 800px; text-align: left; max-height: 80vh; display: flex; flex-direction: column;">
+            <div
+                style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee; padding-bottom:10px; margin-bottom:15px;">
+                <h3 style="color: #0d6efd; margin: 0;">Payment Receipt History</h3>
+                <button class="close-btn" onclick="closeReceiptLogModal()"
+                    style="padding: 2px 8px; font-size: 16px; background: #dc3545; border: none; color: white; border-radius: 4px; cursor: pointer;">&times;</button>
+            </div>
+            <div style="overflow-y:auto; flex: 1;">
+                <table style="width:100%; border-collapse:collapse; font-size:13px; text-align:left;">
+                    <thead style="position: sticky; top: 0; background: #f8f9fa;">
+                        <tr>
+                            <th style="padding:8px; border:1px solid #ddd;">Date Generated</th>
+                            <th style="padding:8px; border:1px solid #ddd;">Receipt No</th>
+                            <th style="padding:8px; border:1px solid #ddd;">Customer</th>
+                            <th style="padding:8px; border:1px solid #ddd;">Amount</th>
+                            <th style="padding:8px; border:1px solid #ddd;">Mode</th>
+                            <th style="padding:8px; border:1px solid #ddd;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="receiptLogBody">
+                        <tr>
+                            <td colspan="6" style="text-align:center; padding: 20px;">Loading...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <script src="settings.js"></script>
+    <script src="apiClient.js"></script>
+    <script src="brand.service.js"></script>
+    <script src="brandLoader.js"></script>
+    <script>
+        function openWindow(url, width, height) {
+            const windowName = url.split('?')[0].split('/').pop().replace('.html', '').replace(/[^a-zA-Z0-9]/g, '_');
+            window.open(url, windowName, `width=${width},height=${height},resizable=yes,scrollbars=yes`).focus();
+        }
+    </script>
+    <script>
+        // --- Receipt Modal Logic ---
+        let pendingReceiptCallback = null;
+        function openReceiptDescModal(defaultDesc, defaultAmount, callback) {
+            document.getElementById('receiptDescInput').value = defaultDesc;
+            document.getElementById('receiptAmountInput').value = defaultAmount > 0 ? defaultAmount.toFixed(2) : '';
+            document.getElementById('receiptModeInput').value = 'Cash';
+            pendingReceiptCallback = callback;
+            document.getElementById('receiptDescModal').style.display = 'flex';
+        }
+        function closeReceiptDescModal() {
+            document.getElementById('receiptDescModal').style.display = 'none';
+            pendingReceiptCallback = null;
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            const btnConfirm = document.getElementById('btnConfirmReceipt');
+            const btnWhatsApp = document.getElementById('btnWhatsAppReceipt');
+            const btnCancel = document.getElementById('btnCancelReceipt');
+            if (btnConfirm) btnConfirm.onclick = () => {
+                const amount = parseFloat(document.getElementById('receiptAmountInput').value) || 0;
+                const mode = document.getElementById('receiptModeInput').value;
+                const desc = document.getElementById('receiptDescInput').value;
+                if (pendingReceiptCallback) pendingReceiptCallback(amount, mode, desc, false);
+                closeReceiptDescModal();
+            };
+            if (btnWhatsApp) btnWhatsApp.onclick = () => {
+                const amount = parseFloat(document.getElementById('receiptAmountInput').value) || 0;
+                const mode = document.getElementById('receiptModeInput').value;
+                const desc = document.getElementById('receiptDescInput').value;
+                if (pendingReceiptCallback) pendingReceiptCallback(amount, mode, desc, true);
+                closeReceiptDescModal();
+            };
+            if (btnCancel) btnCancel.onclick = closeReceiptDescModal;
+        });
+
+        function convertNumberToWords(amount) {
+            var a = ['', 'One ', 'Two ', 'Three ', 'Four ', 'Five ', 'Six ', 'Seven ', 'Eight ', 'Nine ', 'Ten ', 'Eleven ', 'Twelve ', 'Thirteen ', 'Fourteen ', 'Fifteen ', 'Sixteen ', 'Seventeen ', 'Eighteen ', 'Nineteen '];
+            var b = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+
+            function numToWords(n) {
+                if ((n = n.toString()).length > 9) return 'overflow';
+                var n_array = ('000000000' + n).substr(-9).match(/^(\d{2})(\d{2})(\d{2})(\d{1})(\d{2})$/);
+                if (!n_array) return;
+                var str = '';
+                str += (n_array[1] != 0) ? (a[Number(n_array[1])] || b[n_array[1][0]] + ' ' + a[n_array[1][1]]) + 'Crore ' : '';
+                str += (n_array[2] != 0) ? (a[Number(n_array[2])] || b[n_array[2][0]] + ' ' + a[n_array[2][1]]) + 'Lakh ' : '';
+                str += (n_array[3] != 0) ? (a[Number(n_array[3])] || b[n_array[3][0]] + ' ' + a[n_array[3][1]]) + 'Thousand ' : '';
+                str += (n_array[4] != 0) ? (a[Number(n_array[4])] || b[n_array[4][0]] + ' ' + a[n_array[4][1]]) + 'Hundred ' : '';
+                str += (n_array[5] != 0) ? ((str != '') ? 'and ' : '') + (a[Number(n_array[5])] || b[n_array[5][0]] + ' ' + a[n_array[5][1]]) : '';
+                return str;
+            }
+            const [intPart, decPart] = parseFloat(amount).toFixed(2).split('.');
+            let words = numToWords(parseInt(intPart));
+            if (!words || words.trim() === '') words = "Zero ";
+            words += "Rupees";
+            if (parseInt(decPart) > 0) words += " and " + numToWords(parseInt(decPart)) + "Paise";
+            return words + " Only";
+        }
+
+        async function printPaymentReceipt(paymentData, isPreview = false, isReprint = false) {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('p', 'mm', 'a4');
+            let companyName = "Your Company Name";
+            let addressLine1 = ""; let addressLine2 = ""; let contactNumber = "";
+            if (window.electronAPI && window.electronAPI.getAppSettings) {
+                const res = await window.electronAPI.getAppSettings();
+                if (res.success) { companyName = res.companyName || companyName; addressLine1 = res.addressLine1 || addressLine1; addressLine2 = res.addressLine2 || addressLine2; contactNumber = res.contactNumber || contactNumber; }
+            } else if (typeof getBrandSettings === 'function') {
+                const brand = getBrandSettings() || {};
+                companyName = brand.companyName || companyName; addressLine1 = brand.addressLine1 || addressLine1; addressLine2 = brand.addressLine2 || addressLine2; contactNumber = brand.contactNumber || contactNumber;
+            }
+
+            let y = 20;
+            doc.setFont("helvetica", "bold"); doc.setFontSize(16); doc.setTextColor(0, 0, 0); doc.text(companyName, 14, y); y += 6;
+            doc.setFont("helvetica", "normal"); doc.setFontSize(10);
+            if (addressLine1) { doc.text(addressLine1, 14, y); y += 5; }
+            if (addressLine2) { doc.text(addressLine2, 14, y); y += 5; }
+            if (contactNumber) { doc.text(`Phone no.: ${contactNumber}`, 14, y); y += 6; }
+
+            doc.setDrawColor(150, 150, 255); doc.setLineWidth(0.5); doc.line(14, y, 196, y); y += 10;
+            doc.setFont("helvetica", "bold"); doc.setFontSize(18); doc.setTextColor(130, 140, 250);
+            doc.text("Payment-Receipt", 105, y, { align: "center" }); y += 15;
+
+            doc.setTextColor(0, 0, 0); doc.setFontSize(11); doc.setFont("helvetica", "bold"); doc.text("Received From", 14, y);
+            doc.text(paymentData.customerName || "Customer Name", 14, y + 6); doc.setFont("helvetica", "normal");
+
+            const splitAddress = doc.splitTextToSize(paymentData.customerAddress || "", 90);
+            doc.text(splitAddress, 14, y + 12);
+            doc.setFont("helvetica", "bold"); doc.text("Receipt Details", 196, y, { align: "right" });
+            doc.setFont("helvetica", "normal"); doc.text(`Receipt No.: ${paymentData.receiptNo || '-'}`, 196, y + 6, { align: "right" });
+            doc.text(`Date: ${paymentData.date || new Date().toLocaleDateString('en-GB')}`, 196, y + 12, { align: "right" });
+            y += Math.max(25, splitAddress.length * 5 + 15);
+
+            doc.setFont("helvetica", "bold"); doc.text("Description", 14, y); doc.text("Received", 140, y);
+            doc.text(`Rs. ${parseFloat(paymentData.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, 196, y, { align: "right" }); y += 8;
+
+            doc.setFont("helvetica", "normal");
+            const descriptions = paymentData.descriptions || ["Payment Received"]; let descY = y;
+            descriptions.forEach(desc => {
+                const splitDesc = doc.splitTextToSize(desc, 120);
+                doc.text(splitDesc, 14, descY);
+                descY += splitDesc.length * 5;
+            });
+
+            doc.text("Payment Mode", 140, y); doc.text(paymentData.paymentMode || "Cash", 196, y, { align: "right" }); y += 8;
+            doc.text("Previous Balance", 140, y); doc.text(`Rs. ${parseFloat(paymentData.previousBalance || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, 196, y, { align: "right" }); y += 8;
+            doc.text("Current Balance", 140, y); doc.text(`Rs. ${parseFloat(paymentData.currentBalance || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, 196, y, { align: "right" }); y += 8;
+
+            doc.setDrawColor(0); doc.setLineWidth(0.2); doc.line(135, y - 5, 196, y - 5); y = Math.max(y + 10, descY + 10);
+
+            doc.setFont("helvetica", "bold"); doc.text("Amount In Words", 14, y); y += 6; doc.setFont("helvetica", "normal");
+            const amtWords = convertNumberToWords(paymentData.amount);
+            const splitWords = doc.splitTextToSize(amtWords, 110); doc.text(splitWords, 14, y);
+
+            let sigY = y + 30; if (sigY > 270) { doc.addPage(); sigY = 20; }
+            doc.text(`For: ${companyName}`, 196, sigY, { align: "right" });
+
+            const signatureImage = localStorage.getItem("authorizedSignature");
+            if (signatureImage) {
+                try {
+                    doc.addImage(signatureImage, 'PNG', 156, sigY + 2, 40, 15);
+                } catch (e) { console.warn("Error adding signature", e); }
+            }
+
+            doc.setFont("helvetica", "bold"); doc.text("Authorized Signatory", 196, sigY + 25, { align: "right" });
+
+            // --- Acknowledgment Page ---
+            doc.addPage();
+            let ackY = 20;
+
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(16);
+            doc.setTextColor(0, 0, 0);
+            doc.text(companyName, 14, ackY);
+            ackY += 6;
+
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(10);
+            if (addressLine1) { doc.text(addressLine1, 14, ackY); ackY += 5; }
+            if (addressLine2) { doc.text(addressLine2, 14, ackY); ackY += 5; }
+            if (contactNumber) { doc.text(contactNumber.includes('Phone') || contactNumber.includes('Mo:') ? contactNumber : `Phone no.: ${contactNumber}`, 14, ackY); ackY += 6; }
+
+            doc.setLineDashPattern([2, 2], 0);
+            doc.setDrawColor(150, 150, 150);
+            doc.setLineWidth(0.5);
+            doc.line(14, ackY, 196, ackY);
+            doc.setLineDashPattern([], 0);
+            ackY += 10;
+
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(16);
+            doc.text("Acknowledgment", 105, ackY, { align: "center" });
+            ackY += 8;
+            doc.setFontSize(12);
+            doc.setTextColor(100, 100, 100);
+            doc.text(companyName, 105, ackY, { align: "center" });
+            ackY += 15;
+
+            doc.setTextColor(150, 150, 150);
+            doc.setFontSize(11);
+            doc.setFont("helvetica", "normal");
+            doc.text("Received From:", 14, ackY);
+            doc.text("Receipt Details:", 110, ackY);
+
+            doc.setTextColor(0, 0, 0);
+            ackY += 6;
+            doc.setFont("helvetica", "bold");
+            doc.text(paymentData.customerName || "Customer Name", 14, ackY);
+            doc.setFont("helvetica", "normal");
+
+            doc.text(`Receipt No. : ${paymentData.receiptNo || '-'}`, 110, ackY);
+            doc.text(`Receipt Date : ${paymentData.date || new Date().toLocaleDateString('en-GB')}`, 110, ackY + 6);
+            doc.text(`Receipt Amount : Rs. ${parseFloat(paymentData.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, 110, ackY + 12);
+
+            const splitCustAddrAck = doc.splitTextToSize(paymentData.customerAddress || "", 80);
+            doc.text(splitCustAddrAck, 14, ackY + 6);
+
+            ackY += Math.max(35, splitCustAddrAck.length * 5 + 15);
+
+            doc.setLineDashPattern([2, 2], 0);
+            doc.line(140, ackY, 196, ackY);
+            doc.setLineDashPattern([], 0);
+
+            doc.setFont("helvetica", "bold");
+            doc.text("Receiver's Seal & Sign", 168, ackY + 6, { align: "center" });
+
+            if (!isPreview && !isReprint) {
+                if (window.electronAPI && window.electronAPI.savePaymentReceipt) {
+                    window.electronAPI.savePaymentReceipt(paymentData).catch(console.error);
+                } else {
+                    const receipts = JSON.parse(localStorage.getItem('paymentReceipts')) || [];
+                    receipts.unshift({ id: `rect_${Date.now()}_${Math.random().toString(36).substring(2)}`, ...paymentData, generatedAt: new Date().toISOString() });
+                    if (receipts.length > 500) receipts.length = 500;
+                    localStorage.setItem('paymentReceipts', JSON.stringify(receipts));
+                }
+            }
+
+            if (isPreview) {
+                window.open(doc.output('bloburl'), '_blank');
+            } else {
+                doc.save(`Payment_Receipt_${paymentData.receiptNo || 'New'}.pdf`);
+            }
+        }
+
+        window.cachedReceiptLog = [];
+        async function openReceiptLogModal() {
+            document.getElementById('receiptLogModal').style.display = 'flex';
+            const tbody = document.getElementById('receiptLogBody');
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 20px;">Loading...</td></tr>';
+
+            let receipts = [];
+            if (window.electronAPI && window.electronAPI.getPaymentReceipts) {
+                try {
+                    const res = await window.electronAPI.getPaymentReceipts();
+                    if (res.success) receipts = res.receipts;
+                } catch (e) {
+                    console.error(e);
+                }
+            } else {
+                receipts = JSON.parse(localStorage.getItem('paymentReceipts')) || [];
+            }
+
+            window.cachedReceiptLog = receipts;
+            tbody.innerHTML = '';
+            if (receipts.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 20px;">No receipts logged yet.</td></tr>';
+            } else {
+                receipts.forEach((rect, idx) => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td style="padding:8px; border:1px solid #ddd;">${new Date(rect.generatedAt).toLocaleString('en-GB')}</td>
+                        <td style="padding:8px; border:1px solid #ddd; font-weight:bold;">${rect.receiptNo}</td>
+                        <td style="padding:8px; border:1px solid #ddd;">${rect.customerName}</td>
+                        <td style="padding:8px; border:1px solid #ddd; color:#27ae60; font-weight:bold;">${parseFloat(rect.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                        <td style="padding:8px; border:1px solid #ddd;">${rect.paymentMode}</td>
+                        <td style="padding:8px; border:1px solid #ddd; text-align:center;">
+                            <button class="action" style="padding:4px 8px; font-size:12px; background:#0d6efd; color:white; border:none; border-radius:4px; cursor:pointer;" onclick="printArchivedReceipt(${idx})"><i class="fas fa-print"></i> Re-Print</button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+        }
+
+        function closeReceiptLogModal() {
+            document.getElementById('receiptLogModal').style.display = 'none';
+        }
+
+        function printArchivedReceipt(idx) {
+            if (window.cachedReceiptLog[idx]) {
+                printPaymentReceipt(window.cachedReceiptLog[idx], false, true).catch(console.error);
+            }
+        }
+
+        function handleCustomerReceipt(id) {
+            const cust = customers.find(c => String(c.id) === String(id));
+            if (!cust) return showToast("Customer not found");
+
+            const outstanding = calculateOutstanding(cust);
+
+            let address = cust.address || "";
+            const dist = cust.district || "";
+            const state = cust.state || "";
+            const pin = cust.pin || "";
+            const contact = cust.contact || "";
+            const email = cust.email || "";
+            const gst = cust.gst || "";
+
+            const loc = [dist, state, pin ? "PIN: " + pin : ""].filter(Boolean);
+            if (loc.length > 0) address += "\n" + loc.join(", ");
+            let extraInfo = [];
+            if (contact) extraInfo.push("Ph: " + contact);
+            if (email) extraInfo.push("Email: " + email);
+            if (extraInfo.length > 0) address += "\n" + extraInfo.join(" | ");
+            if (gst) address += "\nGSTIN: " + gst;
+
+            const defaultDesc = `Total Payments Received Against Outstanding Balance`;
+
+            openReceiptDescModal(defaultDesc, outstanding, async (amount, mode, customDesc, isWhatsApp) => {
+                if (!amount || amount <= 0) return showToast("Please enter a valid amount.");
+                if (!customDesc || customDesc.trim() === "") customDesc = defaultDesc;
+                try {
+                    const paymentData = {
+                        customerName: cust.name,
+                        customerAddress: address,
+                        receiptNo: "REC-" + Date.now().toString().slice(-6),
+                        date: new Date().toLocaleDateString('en-GB'),
+                        amount: amount,
+                        paymentMode: mode,
+                        descriptions: [customDesc],
+                        previousBalance: outstanding,
+                        currentBalance: outstanding - amount
+                    };
+
+                    if (isWhatsApp) {
+                        const cleanContact = contact.replace(/\D/g, '');
+                        if (!cleanContact) {
+                            return showToast("No valid contact number found for this customer.");
+                        }
+
+                        const downloadPdf = confirm("Do you want to download the Receipt PDF before opening WhatsApp (so you can attach it to the message)?");
+                        if (downloadPdf) {
+                            await printPaymentReceipt(paymentData, false);
+                        } else if (window.electronAPI && window.electronAPI.savePaymentReceipt) {
+                            window.electronAPI.savePaymentReceipt(paymentData).catch(console.error);
+                        }
+
+                        let companyName = document.querySelector('[data-brand="name"]')?.innerText || "Our Company";
+                        const message = `Dear ${cust.name},\n\nGreetings from ${companyName}!\n\nWe have successfully received your payment of Rs. ${amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })} via ${mode}.\n\nYour current outstanding balance is Rs. ${(outstanding - amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}.\n\nThank you!`;
+                        const waUrl = `https://wa.me/91${cleanContact}?text=${encodeURIComponent(message)}`;
+                        window.open(waUrl, '_blank');
+                    } else {
+                        await printPaymentReceipt(paymentData, false);
+                    }
+                } catch (e) {
+                    console.error(e);
+                    showToast("Error generating receipt");
+                }
+            });
+        }
+    </script>
+</head>
+
+<body>
+
+    <div class="top-bar">
+        <h2 style="margin: 0;">Customers Details - <span data-brand="name">RISE Tech Revolution</span></h2>
+        <div style="display:flex; align-items:center; gap:10px;">
+            <select id="themeSelect" onchange="changeTheme()"
+                style="padding:4px; border-radius:4px; border:1px solid #ccc; font-size:13px;">
+                <option value="light">Light</option>
+                <option value="dark">Dark</option>
+                <option value="system">System Default</option>
+            </select>
+            <label
+                style="cursor:pointer; display:flex; align-items:center; gap:5px; font-size:14px; user-select:none; margin: 0;">
+                <input type="checkbox" id="compactViewToggle" onchange="toggleCompactView()"> Compact View
+            </label>
+        </div>
+    </div>
+
+    <!-- Add / Update form -->
+    <div class="controls">
+        <input type="hidden" id="custId">
+        <input type="text" id="custName" placeholder="Name">
+        <input type="text" id="custAddress" placeholder="Address">
+        <input type="text" id="custContact" placeholder="Contact">
+        <input type="email" id="custEmail" placeholder="Email ID">
+        <input type="text" id="custPin" placeholder="PIN No">
+        <select id="custDistrict">
+            <option value="">Select District</option>
+            <option>Purba Bardhaman</option>
+            <option>Paschim Bardhaman</option>
+            <option>Hooghly</option>
+            <option>Howrah</option>
+            <option>Bankura</option>
+            <option>Birbhum</option>
+            <option>North 24 Parganas</option>
+            <option>South 24 Parganas</option>
+            <option>Purulia</option>
+            <option>Nadia</option>
+            <option>Malda</option>
+        </select>
+        <select id="custState" style="width:150px;"></select>
+        <input type="text" id="custStateCode" placeholder="Code" readonly
+            style="width: 60px; background-color: #e9ecef;">
+        <div style="display:flex; align-items:center;">
+            <input type="text" id="custGST" placeholder="GST No" oninput="this.value = this.value.toUpperCase()"
+                style="border-top-right-radius:0; border-bottom-right-radius:0; flex:1;">
+            <button class="action" onclick="verifyCustGST()" title="Verify GSTIN"
+                style="border-top-left-radius:0; border-bottom-left-radius:0; background: #6c757d; margin-left:-1px; padding: 6px 10px;">🔍</button>
+        </div>
+        <input type="number" id="custCreditLimit" placeholder="Credit Limit (₹)" step="0.01">
+        <input type="number" id="custOpeningBalance" placeholder="Opening Bal (₹)" step="0.01">
+        <select id="custOpeningBalanceType" style="width: 60px;">
+            <option value="Dr">Dr</option>
+            <option value="Cr">Cr</option>
+        </select>
+
+        <!-- Add Attachments -->
+        <div style="flex-basis: 100%; display: flex; flex-direction: column; gap: 5px; margin-top: 10px;">
+            <label style="font-size: 13px; font-weight: bold; color: #555;">Attachments (Max 500KB each)</label>
+            <input type="file" id="custAttachments" multiple onchange="handleCustomerAttachments(this)"
+                accept="image/*,.pdf" style="padding: 4px;">
+            <div id="custAttachmentPreviews" style="display: flex; gap: 10px; flex-wrap: wrap;"></div>
+        </div>
+
+        <button class="action" id="saveBtn" onclick="saveCustomer()">Save</button>
+        <button class="clear" onclick="confirmClearForm()">Clear</button>
+    </div>
+
+    <div class="controls">
+        <input type="text" id="searchBox" placeholder="Live Search..." oninput="searchCustomer()">
+        <input type="text" id="searchContact" placeholder="Filter by Contact..." oninput="searchCustomer()">
+        <label
+            style="cursor:pointer; display:flex; align-items:center; gap:5px; font-size:14px; margin-right: 10px; user-select:none;">
+            <input type="checkbox" id="filterCreditLimit" onchange="searchCustomer()"> Has Credit Limit
+        </label>
+        <select id="sortOption" onchange="sortCustomers()">
+            <option value="asc" selected>A - Z</option>
+            <option value="desc">Z - A</option>
+        </select>
+        <button class="action" onclick="location.reload()" style="background:#17a2b8;">Refresh</button>
+        <button class="action" id="btnExportPdf" onclick="exportCustomersPDF()" style="background:#e67e22;">📄 Export
+            PDF</button>
+        <button class="action" id="btnExportCsv" onclick="exportCustomersCSV()" style="background:#28a745;"
+            data-permission-id="perm_backup_data">Export CSV</button>
+        <button class="action" id="btnImportCsv" onclick="document.getElementById('importCsvFile').click()"
+            style="background:#20c997;" data-permission-id="perm_restore_data">Import CSV</button>
+        <input type="file" id="importCsvFile" style="display:none" onchange="importCustomersCSV(this)" accept=".csv">
+        <button class="action" id="btnReceiptLog" onclick="openReceiptLogModal()" style="background:rgb(28, 14, 219);"
+            data-permission-id="perm_payment_receipt_log">Receipt Log</button>
+        <button class="action" onclick="openSettingsModal()" style="background:#607d8b;">⚙️ Table Settings</button>
+
+
+        <button class="action" onclick="deleteSelectedCustomers()" style="background:#dc3545;"
+            data-permission-id="perm_delete_action">Delete Selected</button>
+    </div>
+
+    <table id="customerTable">
+        <thead>
+            <tr>
+                <th style="width: 40px;"><input type="checkbox" id="selectAll" onclick="toggleSelectAll()"></th>
+                <th>Sl. No</th>
+                <th style="cursor:pointer;" onclick="handleHeaderClick('name')">Name <span id="sort-icon-name"></span>
+                </th>
+                <th style="cursor:pointer;" onclick="handleHeaderClick('address')">Address <span
+                        id="sort-icon-address"></span></th>
+                <th style="cursor:pointer;" onclick="handleHeaderClick('contact')">Contact <span
+                        id="sort-icon-contact"></span></th>
+                <th style="cursor:pointer;" onclick="handleHeaderClick('email')">Email <span
+                        id="sort-icon-email"></span></th>
+                <th style="cursor:pointer;" onclick="handleHeaderClick('pin')">PIN <span id="sort-icon-pin"></span>
+                </th>
+                <th style="cursor:pointer;" onclick="handleHeaderClick('district')">District <span
+                        id="sort-icon-district"></span></th>
+                <th style="cursor:pointer;" onclick="handleHeaderClick('state')">State <span
+                        id="sort-icon-state"></span></th>
+                <th style="cursor:pointer;" onclick="handleHeaderClick('gst')">GST <span id="sort-icon-gst"></span>
+                </th>
+                <th style="cursor:pointer;" onclick="handleHeaderClick('creditLimit')">Credit Limit <span
+                        id="sort-icon-creditLimit"></span>
+                </th>
+                <th style="cursor:pointer;" onclick="handleHeaderClick('openingBalance')">Opening Bal <span
+                        id="sort-icon-openingBalance"></span>
+                </th>
+                <th style="cursor:pointer;" onclick="handleHeaderClick('outstanding')">Total Outstanding <span
+                        id="sort-icon-outstanding"></span>
+                </th>
+                <th style="width: 120px;">Actions</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+        <tfoot id="customerTableFooter"></tfoot>
+    </table>
+
+    <!-- Pagination Controls -->
+    <div class="pagination-container">
+        <div style="display: flex; align-items: center; gap: 5px;">
+            <span id="totalCustomersDisplay" style="font-weight: bold; color: #0d6efd; margin-right: 8px;"></span>
+            <select id="rowsPerPageSelect" onchange="changeRowsPerPage()"
+                style="width: auto; padding: 4px; border: 1px solid #ccc; border-radius: 4px; margin: 0;">
+                <option value="10">10 rows</option>
+                <option value="20" selected>20 rows</option>
+                <option value="50">50 rows</option>
+            </select>
+            <input type="number" id="goToPageInput"
+                style="width: 60px; padding: 4px; border: 1px solid #ccc; border-radius: 4px;" placeholder="Go to"
+                min="1" onchange="goToPage()">
+        </div>
+        <div id="paginationInfo" style="color: #666;"></div>
+        <div class="pagination" id="paginationControls"></div>
+    </div>
+
+    <div id="loadingOverlay"
+        style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999; align-items:center; justify-content:center; flex-direction:column;">
+        <div
+            style="border: 5px solid #f3f3f3; border-top: 5px solid #3498db; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite;">
+        </div>
+        <p style="color:white; margin-top:15px; font-size:18px; font-weight:bold;">Processing...</p>
+    </div>
+    <style>
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+
+    <!-- Edit Confirmation Modal -->
+    <div id="editConfirmModal" class="modal">
+        <div class="modal-content">
+            <h3 style="color: #0d6efd;">⚠️ Edit Customer?</h3>
+            <p>This will load customer details into the form. Any unsaved changes in the form will be lost.</p>
+            <div class="modal-buttons">
+                <button class="action" id="btnConfirmEdit" style="background:#0d6efd;">Yes, Edit</button>
+                <button class="clear" onclick="closeEditModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Clear Confirmation Modal -->
+    <div id="clearConfirmModal" class="modal">
+        <div class="modal-content">
+            <h3 style="color: #6c757d;">🧹 Confirm Clear</h3>
+            <p>Are you sure you want to clear the form? Unsaved changes will be lost.</p>
+            <div class="modal-buttons">
+                <button class="action" style="background:#6c757d;" onclick="performClear()">Yes, Clear</button>
+                <button class="clear" onclick="closeClearModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div id="confirmationModal" class="modal">
+        <div class="modal-content">
+            <h3>🚨 Confirm Deletion !</h3>
+            <p id="modalMessage">Are you sure?</p>
+            <div class="modal-buttons">
+                <button class="action" style="background:#dc3545;" onclick="confirmDelete()">Yes, Delete</button>
+                <button class="clear" onclick="closeModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Warning Modal -->
+    <div id="warningModal" class="modal">
+        <div class="modal-content">
+            <h3 style="color: #d35400;">⚠️ Warning</h3>
+            <p id="warningMsg"></p>
+            <div class="modal-buttons">
+                <button class="action" onclick="closeWarningModal()">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success Modal -->
+    <div id="successModal" class="modal">
+        <div class="modal-content">
+            <h3 style="color: #27ae60;">✅ Success</h3>
+            <p id="successMsg">Operation successful.</p>
+            <div class="modal-buttons">
+                <button class="action" onclick="closeSuccessModal()">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Table Settings Modal -->
+    <div id="settingsModal" class="modal">
+        <div class="modal-content" style="width: 400px; max-height: 85vh; overflow-y: auto;">
+            <h3 style="color: #607d8b;">⚙️ Table Settings</h3>
+            <div
+                style="margin: 15px 0; text-align: left; padding-left: 20px; border-bottom: 1px solid #eee; padding-bottom: 10px;">
+                <h5 style="font-size: 1rem;" class="text-secondary">Button Visibility</h5>
+                <label
+                    style="cursor:pointer; display:flex; align-items:center; gap:10px; font-weight:bold; margin-top: 5px;">
+                    <input type="checkbox" id="showBtnExportPdfToggle"
+                        onchange="toggleButtonVisibility('btnExportPdf', this.checked)"> Show Export PDF
+                </label>
+                <label
+                    style="cursor:pointer; display:flex; align-items:center; gap:10px; font-weight:bold; margin-top: 5px;">
+                    <input type="checkbox" id="showBtnExportCsvToggle"
+                        onchange="toggleButtonVisibility('btnExportCsv', this.checked)"> Show Export CSV
+                </label>
+                <label
+                    style="cursor:pointer; display:flex; align-items:center; gap:10px; font-weight:bold; margin-top: 5px;">
+                    <input type="checkbox" id="showBtnImportCsvToggle"
+                        onchange="toggleButtonVisibility('btnImportCsv', this.checked)"> Show Import CSV
+                </label>
+
+                <h5 style="font-size: 1rem; margin-top: 15px;" class="text-secondary">Action Buttons</h5>
+                <div
+                    style="margin-left: 15px; margin-top: 5px; display: grid; grid-template-columns: 1fr 1fr; gap: 5px;">
+                    <label style="cursor:pointer; display:flex; align-items:center; gap:5px; font-size: 13px;">
+                        <input type="checkbox" id="showActionInvoice"
+                            onchange="toggleActionButton('invoice', this.checked)"> Invoice
+                    </label>
+                    <label style="cursor:pointer; display:flex; align-items:center; gap:5px; font-size: 13px;">
+                        <input type="checkbox" id="showActionLedger"
+                            onchange="toggleActionButton('ledger', this.checked)"> Ledger
+                    </label>
+                    <label style="cursor:pointer; display:flex; align-items:center; gap:5px; font-size: 13px;">
+                        <input type="checkbox" id="showActionEdit" onchange="toggleActionButton('edit', this.checked)">
+                        Edit
+                    </label>
+                    <label style="cursor:pointer; display:flex; align-items:center; gap:5px; font-size: 13px;">
+                        <input type="checkbox" id="showActionDelete"
+                            onchange="toggleActionButton('delete', this.checked)"> Delete
+                    </label>
+                    <label style="cursor:pointer; display:flex; align-items:center; gap:5px; font-size: 13px;">
+                        <input type="checkbox" id="showActionAttach"
+                            onchange="toggleActionButton('attach', this.checked)"> Attach
+                    </label>
+                    <label style="cursor:pointer; display:flex; align-items:center; gap:5px; font-size: 13px;">
+                        <input type="checkbox" id="showActionReceipt"
+                            onchange="toggleActionButton('receipt', this.checked)"> Receipt
+                    </label>
+                </div>
+                <label
+                    style="cursor:pointer; display:flex; align-items:center; gap:10px; font-weight:bold; margin-top: 15px;">
+                    <input type="checkbox" id="greyButtonsToggle" onchange="toggleGreyButtons()"> Grey Buttons Mode
+                </label>
+            </div>
+            <p style="font-size:14px; color:#666; margin-bottom:10px;">Select columns to display:</p>
+            <div style="margin-bottom: 10px; display: flex; gap: 10px; justify-content: center;">
+                <button class="action" onclick="toggleAllColumns(true)"
+                    style="background:#0d6efd; font-size: 12px;">Select All</button>
+                <button class="action" onclick="toggleAllColumns(false)"
+                    style="background:#6c757d; font-size: 12px;">Deselect All</button>
+            </div>
+            <div id="columnToggles"
+                style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; text-align:left; max-height:300px; overflow-y:auto; margin-bottom: 15px;">
+                <!-- Checkboxes generated by JS -->
+            </div>
+            <div class="modal-buttons">
+                <button class="action" onclick="closeSettingsModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast"></div>
+
+    <!-- Attachment Preview Modal -->
+    <div id="attachmentPreviewModal" class="modal" style="z-index: 2000;">
+        <div class="modal-content"
+            style="max-width: 800px; width: 90%; max-height: 90vh; display: flex; flex-direction: column;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <h3 style="margin: 0; color: #0d6efd;" id="previewAttachmentTitle">Attachment Preview</h3>
+                <button class="close-btn"
+                    onclick="document.getElementById('attachmentPreviewModal').style.display='none'">Close</button>
+            </div>
+            <div id="previewAttachmentContent"
+                style="flex: 1; overflow: auto; text-align: center; background: #eee; border-radius: 4px;">
+            </div>
+            <div style="margin-top: 15px; text-align: center;">
+                <button class="action" id="downloadAttachmentBtn">Download</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Manage Attachments Modal -->
+    <div id="manageAttachmentsModal" class="modal" style="z-index: 1050;">
+        <div class="modal-content" style="width: 500px; max-width: 90%;">
+            <div
+                style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom: 1px solid #eee; padding-bottom: 10px;">
+                <h3 style="margin:0; color: #2c3e50;">📎 Manage Attachments</h3>
+                <button class="close-btn" onclick="closeManageAttachmentsModal()" style="padding: 2px 8px;">X</button>
+            </div>
+            <input type="hidden" id="manageAttachId">
+            <div style="display: flex; flex-direction: column; gap: 10px; text-align: left;">
+                <label style="font-size: 13px; font-weight: bold; color: #555;">Add Attachments (Max 500KB
+                    each)</label>
+                <input type="file" id="manageAttachmentsInput" multiple onchange="handleManageAttachments(this)"
+                    accept="image/*,.pdf" style="padding: 4px; border: 1px solid #ccc; border-radius: 4px;">
+                <div id="manageAttachmentPreviews"
+                    style="display: flex; gap: 10px; flex-wrap: wrap; max-height: 300px; overflow-y: auto; padding: 10px; border: 1px solid #eee; border-radius: 4px; background: #f9f9f9;">
+                </div>
+            </div>
+            <div style="margin-top: 15px; text-align: right;">
+                <button class="action" onclick="saveManageAttachments()">💾 Save Attachments</button>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        // --- Firebase Configuration ---
+        const FIREBASE_CONFIG = {
+            apiKey: 'YOUR_API_KEY',
+            authDomain: 'YOUR_PROJECT.firebaseapp.com',
+            projectId: 'YOUR_PROJECT',
+            storageBucket: 'YOUR_PROJECT.appspot.com',
+            messagingSenderId: 'SENDER_ID',
+            appId: 'APP_ID'
+        };
+
+        function populateStateDropdown() {
+            const select = document.getElementById("custState");
+            const codeInput = document.getElementById("custStateCode");
+            select.innerHTML = '<option value="">Select State</option>';
+            STATE_MASTER_LIST.forEach(s => {
+                const opt = document.createElement('option');
+                opt.value = s.name;
+                opt.textContent = `${s.name} (${s.code})`;
+                opt.dataset.code = s.code;
+                select.appendChild(opt);
+            });
+            select.addEventListener('change', () => {
+                const selectedOpt = select.options[select.selectedIndex];
+                codeInput.value = selectedOpt.dataset.code || '';
+                populateDistrictDropdown(select.value);
+            });
+            // Default
+            select.value = "West Bengal";
+            select.dispatchEvent(new Event('change'));
+        }
+
+        function populateDistrictDropdown(stateName, selectedDist = "") {
+            const distSelect = document.getElementById("custDistrict");
+            distSelect.innerHTML = '<option value="">Select District</option>';
+
+            const districts = DISTRICTS_MASTER_LIST[stateName] || [];
+            districts.sort().forEach(d => {
+                const opt = document.createElement('option');
+                opt.value = d;
+                opt.textContent = d;
+                distSelect.appendChild(opt);
+            });
+
+            if (selectedDist && districts.includes(selectedDist)) {
+                distSelect.value = selectedDist;
+            }
+        }
+
+        function generateUniqueId() {
+            return Date.now().toString(36) + Math.random().toString(36).substr(2);
+        }
+
+        let customers = [];
+        let idsToDelete = [];
+        let pendingEditId = null;
+
+        let invoices = JSON.parse(localStorage.getItem("invoices")) || [];
+        let creditNotes = JSON.parse(localStorage.getItem("credit_debit_notes")) || [];
+
+        // Column visibility state (14 columns total including checkbox and actions)
+        let columnVisibility = JSON.parse(localStorage.getItem("customerColumnVisibility")) || new Array(14).fill(true);
+        if (columnVisibility.length !== 14) {
+            columnVisibility = new Array(14).fill(true);
+        }
+        let isGreyButtons = localStorage.getItem("customerGreyButtons") === "true";
+
+        // Action Button Visibility
+        let actionButtonVisibility = JSON.parse(localStorage.getItem("customerActionButtons")) || {
+            invoice: true,
+            ledger: true,
+            edit: true,
+            delete: true,
+            attach: true,
+            receipt: true
+        };
+
+        if (actionButtonVisibility.receipt === undefined) {
+            actionButtonVisibility.receipt = true;
+            localStorage.setItem("customerActionButtons", JSON.stringify(actionButtonVisibility));
+        }
+
+        // Fix: Ensure all customers have an ID (in case they were added via Invoice page without one)
+        customers.forEach(c => { if (!c.id) c.id = generateUniqueId(); });
+
+
+
+        async function fetchCustomersData() {
+            let localCustomers = JSON.parse(localStorage.getItem("customers")) || [];
+            const overlay = document.getElementById('loadingOverlay');
+            if (overlay && localCustomers.length === 0) {
+                overlay.style.display = 'flex';
+                await new Promise(resolve => setTimeout(resolve, 15));
+            }
+
+            const remoteData = await apiClient.getCustomers();
+            if (remoteData && remoteData.length > 0) {
+                customers = remoteData;
+                localStorage.setItem("customers", JSON.stringify(customers));
+            } else {
+                customers = localCustomers;
+            }
+            if (!customers.some(c => c.name === "ANONYMOUS")) {
+                const anon = {
+                    name: "ANONYMOUS",
+                    address: "N/A",
+                    contact: "0000000000",
+                    email: "",
+                    pin: "",
+                    district: "",
+                    state: "West Bengal",
+                    stateCode: "19",
+                    gst: ""
+                };
+                customers.push(anon);
+                localStorage.setItem("customers", JSON.stringify(customers));
+                apiClient.saveCustomer(anon).catch(e => console.warn(e));
+            }
+            applyFilters();
+
+            if (overlay) overlay.style.display = 'none';
+        }
+
+        let currentCustomerAttachments = [];
+
+        function handleCustomerAttachments(input) {
+            const files = input.files;
+            if (!files.length) return;
+
+            Array.from(files).forEach(file => {
+                if (file.size > 500 * 1024) {
+                    openWarningModal(`File ${file.name} is too large (Max 500KB).`);
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    currentCustomerAttachments.push({
+                        name: file.name,
+                        data: e.target.result,
+                        type: file.type
+                    });
+                    renderCustomerAttachments();
+                };
+                reader.readAsDataURL(file);
+            });
+            input.value = "";
+        }
+
+        function renderCustomerAttachments() {
+            const container = document.getElementById("custAttachmentPreviews");
+            container.innerHTML = "";
+            currentCustomerAttachments.forEach((att, index) => {
+                const div = document.createElement("div");
+                div.style.cssText = "position: relative; border: 1px solid #ccc; padding: 5px; border-radius: 4px; display: flex; flex-direction: column; align-items: center; width: 80px;";
+
+                let previewHtml = "";
+                if (att.type.startsWith("image/")) {
+                    previewHtml = `<img src="${att.data}" style="width: 60px; height: 60px; object-fit: cover; cursor: pointer;" onclick="previewAttachment(${index}, 'form')" title="${att.name}">`;
+                } else if (att.type === "application/pdf") {
+                    previewHtml = `<div style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; background: #eee; cursor: pointer; font-weight: bold; color: #dc3545;" onclick="previewAttachment(${index}, 'form')" title="${att.name}">PDF</div>`;
+                } else {
+                    previewHtml = `<div style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; background: #eee; cursor: pointer; font-size: 10px; overflow: hidden;" onclick="previewAttachment(${index}, 'form')" title="${att.name}">FILE</div>`;
+                }
+
+                div.innerHTML = `
+                        ${previewHtml}
+                        <span style="font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; text-align: center;" title="${att.name}">${att.name}</span>
+                        <button onclick="removeCustomerAttachment(${index})" style="position: absolute; top: -5px; right: -5px; background: #dc3545; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer; font-size: 10px; padding: 0;">X</button>
+                    `;
+                container.appendChild(div);
+            });
+        }
+
+        function removeCustomerAttachment(index) {
+            currentCustomerAttachments.splice(index, 1);
+            renderCustomerAttachments();
+        }
+
+        function previewAttachment(index, context = 'form') {
+            const att = context === 'manage' ? currentManageAttachments[index] : currentCustomerAttachments[index];
+            if (!att) return;
+
+            document.getElementById('previewAttachmentTitle').innerText = att.name;
+            const content = document.getElementById('previewAttachmentContent');
+
+            if (att.type.startsWith('image/')) {
+                content.innerHTML = `<img src="${att.data}" style="max-width: 100%; max-height: 60vh; object-fit: contain;">`;
+            } else if (att.type === 'application/pdf') {
+                content.innerHTML = `<iframe src="${att.data}" style="width: 100%; height: 60vh; border: none;"></iframe>`;
+            } else {
+                content.innerHTML = `<p style="padding: 20px;">Preview not available for this file type.</p>`;
+            }
+
+            const downloadBtn = document.getElementById('downloadAttachmentBtn');
+            downloadBtn.onclick = function () {
+                const a = document.createElement('a');
+                a.href = att.data;
+                a.download = att.name;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            };
+
+            document.getElementById('attachmentPreviewModal').style.display = 'flex';
+        }
+
+        let currentManageAttachments = [];
+
+        function openManageAttachments(id) {
+            const cust = customers.find(c => String(c.id) === String(id));
+            if (!cust) return showToast("Customer not found");
+
+            document.getElementById('manageAttachId').value = id;
+            currentManageAttachments = cust.attachments ? JSON.parse(JSON.stringify(cust.attachments)) : []; // Deep copy to discard changes on close
+            document.getElementById('manageAttachmentsInput').value = '';
+            renderManageAttachments();
+            document.getElementById('manageAttachmentsModal').style.display = 'flex';
+        }
+
+        function closeManageAttachmentsModal() {
+            document.getElementById('manageAttachmentsModal').style.display = 'none';
+        }
+
+        function handleManageAttachments(input) {
+            const files = input.files;
+            if (!files.length) return;
+
+            Array.from(files).forEach(file => {
+                if (file.size > 500 * 1024) {
+                    openWarningModal(`File ${file.name} is too large (Max 500KB).`);
+                    return;
+                }
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    currentManageAttachments.push({ name: file.name, data: e.target.result, type: file.type });
+                    renderManageAttachments();
+                };
+                reader.readAsDataURL(file);
+            });
+            input.value = "";
+        }
+
+        function renderManageAttachments() {
+            const container = document.getElementById("manageAttachmentPreviews");
+            container.innerHTML = "";
+            if (currentManageAttachments.length === 0) return container.innerHTML = "<p style='color:#999; font-size:13px; margin:0;'>No attachments found.</p>";
+            currentManageAttachments.forEach((att, index) => {
+                const div = document.createElement("div");
+                div.style.cssText = "position: relative; border: 1px solid #ccc; padding: 5px; border-radius: 4px; display: flex; flex-direction: column; align-items: center; width: 80px; background: #fff;";
+                let previewHtml = "";
+                if (att.type.startsWith("image/")) previewHtml = `<img src="${att.data}" style="width: 60px; height: 60px; object-fit: cover; cursor: pointer;" onclick="previewAttachment(${index}, 'manage')" title="${att.name}">`;
+                else if (att.type === "application/pdf") previewHtml = `<div style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; background: #eee; cursor: pointer; font-weight: bold; color: #dc3545;" onclick="previewAttachment(${index}, 'manage')" title="${att.name}">PDF</div>`;
+                else previewHtml = `<div style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; background: #eee; cursor: pointer; font-size: 10px; overflow: hidden;" onclick="previewAttachment(${index}, 'manage')" title="${att.name}">FILE</div>`;
+                div.innerHTML = `${previewHtml}<span style="font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; text-align: center; margin-top:2px;" title="${att.name}">${att.name}</span><button onclick="removeManageAttachment(${index})" style="position: absolute; top: -5px; right: -5px; background: #dc3545; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer; font-size: 10px; padding: 0; line-height:1;">X</button>`;
+                container.appendChild(div);
+            });
+        }
+
+        function removeManageAttachment(index) { currentManageAttachments.splice(index, 1); renderManageAttachments(); }
+
+        function saveManageAttachments() { const id = document.getElementById('manageAttachId').value; const idx = customers.findIndex(c => String(c.id) === String(id)); if (idx > -1) { customers[idx].attachments = currentManageAttachments; localStorage.setItem("customers", JSON.stringify(customers)); if (db) db.collection('customers').doc(id).update({ attachments: currentManageAttachments }).catch(e => console.error(e)); openSuccessModal("Attachments updated successfully!"); closeManageAttachmentsModal(); } }
+
+        let db = null;
+        let currentPage = 1;
+        let rowsPerPage = 20;
+        let currentSortColumn = 'name';
+        let currentSortDirection = 'asc';
+
+        // Dark Mode Logic
+        let currentTheme = localStorage.getItem("appThemeMode") || "system";
+
+        function changeTheme() {
+            currentTheme = document.getElementById("themeSelect").value;
+            localStorage.setItem("appThemeMode", currentTheme);
+            applyTheme();
+        }
+
+        function applyTheme() {
+            // Migrate old key if exists
+            if (!localStorage.getItem("appThemeMode") && localStorage.getItem("customerDarkMode")) {
+                currentTheme = localStorage.getItem("customerDarkMode") === "true" ? "dark" : "light";
+                localStorage.setItem("appThemeMode", currentTheme);
+            }
+            const isDark = currentTheme === "dark" || (currentTheme === "system" && window.matchMedia('(prefers-color-scheme: dark)').matches);
+            if (isDark) document.body.classList.add("dark-mode");
+            else document.body.classList.remove("dark-mode");
+
+            const sel = document.getElementById("themeSelect");
+            if (sel) sel.value = currentTheme;
+        }
+
+        // Compact View Logic
+        let isCompactView = localStorage.getItem("customerCompactView") === "true";
+
+        function toggleCompactView() {
+            isCompactView = document.getElementById("compactViewToggle").checked;
+            localStorage.setItem("customerCompactView", isCompactView);
+            applyCompactView();
+        }
+
+        function applyCompactView() {
+            const table = document.getElementById("customerTable");
+            if (isCompactView) table.classList.add("compact-table");
+            else table.classList.remove("compact-table");
+
+            const toggle = document.getElementById("compactViewToggle");
+            if (toggle) toggle.checked = isCompactView;
+        }
+
+        function initFirebase() {
+            // Fix: Don't wipe local data if Firebase config is still placeholder
+            if (FIREBASE_CONFIG.apiKey === 'YOUR_API_KEY') {
+                console.log("Firebase not configured. Using local storage only.");
+                return;
+            }
+
+            try {
+                firebase.initializeApp(FIREBASE_CONFIG);
+                db = firebase.firestore();
+                db.enablePersistence().catch(err => console.warn("Persistence error", err));
+
+                db.collection('customers').onSnapshot(snapshot => {
+                    const remote = [];
+                    snapshot.forEach(doc => remote.push({ id: doc.id, ...doc.data() }));
+                    customers = remote;
+                    localStorage.setItem("customers", JSON.stringify(customers));
+                    applyFilters();
+                }, err => console.error("Firestore listener error:", err));
+            } catch (e) {
+                console.error("Firebase init error", e);
+                // Fallback to local data if firebase fails
+            }
+        }
+
+        function escapeHtml(s) {
+            if (s == null) return '';
+            return String(s)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        function highlightMatch(text, term) {
+            if (!text) return "";
+            text = String(text);
+
+            let terms = [];
+            if (Array.isArray(term)) {
+                terms = term.filter(t => t && String(t).trim());
+            } else if (term && String(term).trim()) {
+                terms = [term];
+            }
+
+            if (terms.length === 0) return escapeHtml(text);
+            terms.sort((a, b) => b.length - a.length);
+            const pattern = terms.map(t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
+            const regex = new RegExp(`(${pattern})`, 'gi');
+            return text.split(regex).map(part => {
+                const isMatch = terms.some(t => t.toLowerCase() === part.toLowerCase());
+                return isMatch
+                    ? `<span class="highlight">${escapeHtml(part)}</span>`
+                    : escapeHtml(part);
+            }).join('');
+        }
+
+        function renderTable(data, startIndex = 0) {
+            const tbody = document.querySelector("#customerTable tbody");
+            tbody.innerHTML = "";
+            const searchTerm = document.getElementById("searchBox").value.trim();
+            const searchContact = document.getElementById("searchContact").value.trim();
+            if (!Array.isArray(data)) return;
+            data.forEach((c, i) => {
+                tbody.insertAdjacentHTML('beforeend', `
+        <tr data-id="${c.id}">
+          <td><input type="checkbox" class="cust-checkbox" value="${c.id}"></td>
+          <td>${startIndex + i + 1}</td>
+          <td>${highlightMatch(c.name, searchTerm)}</td>
+          <td>${highlightMatch(c.address, searchTerm)}</td>
+          <td>${c.contact ? `<a href="javascript:void(0)" onclick="openWhatsApp('${escapeHtml(c.contact)}')" style="color:#27ae60; text-decoration:none; font-weight:bold;" title="Message on WhatsApp"><i class="fab fa-whatsapp"></i> ${highlightMatch(c.contact, [searchTerm, searchContact])}</a>` : '-'}</td>
+          <td>${c.email ? `<a href="javascript:void(0)" onclick="openWindow('email_sender.html?to=${encodeURIComponent(c.email)}', 1000, 800)" style="color:#0d6efd; text-decoration:none;" title="Send Email in App"><i class="fas fa-envelope"></i> ${highlightMatch(c.email, searchTerm)}</a>` : '-'}</td>
+          <td>${highlightMatch(c.pin || '', searchTerm)}</td>
+          <td>${highlightMatch(c.district || '', searchTerm)}</td>
+          <td>${highlightMatch(c.state || '', searchTerm)}</td>
+          <td>${highlightMatch(c.gst || '', searchTerm)}</td>
+          <td>${c.creditLimit ? parseFloat(c.creditLimit).toFixed(2) : 'Unlimited'}</td>
+          <td>${c.openingBalance ? (c.openingBalance + ' ' + (c.openingBalanceType || 'Dr')) : '-'}</td>
+          <td style="font-weight:bold; color:${(c.outstanding || 0) > 0.01 ? '#dc3545' : '#28a745'}; white-space: nowrap;">
+            ${(c.outstanding || 0).toFixed(2)}
+            <button class="action-btn btn-action-receipt" data-action="receipt" data-id="${c.id}" title="Download Payment Receipt Against Total Outstanding Balance" style="background:none; color:#27ae60; padding:0; border:none; cursor:pointer; font-size:16px; vertical-align:middle; margin-left:8px;"><i class="fas fa-print"></i></button>
+          </td>
+          <td>
+            <div class="action-dropdown" id="actionDropdown-${c.id}">
+                <button class="action-btn-main" onclick="toggleActionMenu(this)">Actions ▼</button>
+                <div class="action-dropdown-content">
+                    <button class="btn-action-invoice" data-name="${escapeHtml(c.name)}" onclick="openInvoice(this.getAttribute('data-name'))">📄 Invoice</button>
+                    <button class="btn-action-ledger" data-name="${escapeHtml(c.name)}" onclick="openLedger(this.getAttribute('data-name'))">📒 Ledger</button>
+                    <button class="edit-btn btn-action-edit" data-action="edit" data-id="${c.id}" data-permission-id="perm_manage_customers">✏️ Edit</button>
+                    <button class="btn-action-attach" data-action="attach" data-id="${c.id}">📎 Attach</button>
+                    <button class="btn-action-receipt" data-action="receipt" data-id="${c.id}">🧾 Receipt</button>
+                    <button class="delete-btn btn-action-delete" data-action="delete" data-id="${c.id}" data-permission-id="perm_delete_action" style="color: #dc3545 !important;">🗑️ Delete</button>
+                </div>
+            </div>
+          </td>
+        </tr>
+      `);
+            });
+            document.getElementById("selectAll").checked = false;
+            updateColumnStyles();
+            applyUIPermissions();
+        }
+
+        function openWhatsApp(number) {
+            if (!number) return;
+            const cleanNo = number.replace(/\D/g, '');
+            if (!cleanNo) return showToast("Invalid contact number");
+            const url = `https://wa.me/91${cleanNo}`;
+            window.open(url, '_blank');
+        }
+
+        // ✅ handle Edit/Delete clicks
+        document.querySelector("#customerTable").addEventListener("click", (e) => {
+            const btn = e.target.closest("button");
+            if (!btn) return;
+            const action = btn.dataset.action;
+            const id = btn.dataset.id;
+            if (action === "edit") {
+                pendingEditId = id;
+                openEditModal();
+            }
+            else if (action === "delete") deleteCustomer(id);
+            else if (action === "attach") openManageAttachments(id);
+            else if (action === "receipt") handleCustomerReceipt(id);
+        });
+
+        function renderDynamicFields(existingData = {}) {
+            const container = document.getElementById('dynamicFieldsContainer');
+            if (!container) return;
+
+            const allFields = JSON.parse(localStorage.getItem('CUSTOM_FIELDS')) || [];
+            const moduleFields = allFields.filter(f => f.moduleName === 'Customer' && f.isActive);
+
+            if (moduleFields.length === 0) {
+                container.style.display = 'none';
+                container.innerHTML = '';
+                return;
+            }
+
+            container.style.display = 'flex';
+            container.innerHTML = '<div style="flex-basis: 100%; font-size: 13px; font-weight: bold; color: #555; margin-bottom: 5px;">Additional Details</div>';
+
+            moduleFields.sort((a, b) => a.order - b.order).forEach(field => {
+                const wrapper = document.createElement('div');
+                wrapper.style.cssText = 'flex: 1; min-width: 150px; display: flex; flex-direction: column;';
+
+                const label = document.createElement('label');
+                label.innerText = field.fieldLabel + (field.isRequired ? ' *' : '');
+                label.style.cssText = 'font-size: 12px; margin-bottom: 2px; color: #666; font-weight: bold;';
+                
+                let input;
+                if (field.fieldType === 'select') {
+                    input = document.createElement('select');
+                    input.style.cssText = 'padding: 6px 10px; border-radius: 6px; border: 1px solid #ccc; font-size: 14px; width: 100%;';
+                    const defaultOpt = document.createElement('option');
+                    defaultOpt.value = ''; defaultOpt.innerText = 'Select...';
+                    input.appendChild(defaultOpt);
+                    (field.options || []).forEach(opt => {
+                        const option = document.createElement('option');
+                        option.value = opt; option.innerText = opt;
+                        input.appendChild(option);
+                    });
+                } else if (field.fieldType === 'boolean') {
+                    input = document.createElement('input');
+                    input.type = 'checkbox';
+                    input.style.cssText = 'width: auto; margin-right: 8px; cursor: pointer;';
+                    wrapper.style.flexDirection = 'row';
+                    wrapper.style.alignItems = 'center';
+                } else {
+                    input = document.createElement('input');
+                    input.type = field.fieldType; // 'text', 'number', 'date'
+                    input.placeholder = field.fieldLabel;
+                    input.style.cssText = 'padding: 6px 10px; border-radius: 6px; border: 1px solid #ccc; font-size: 14px; width: 100%; box-sizing: border-box;';
+                }
+
+                input.className = 'dynamic-field';
+                input.dataset.fieldName = field.fieldName;
+                if (field.isRequired) input.required = true;
+
+                if (existingData[field.fieldName] !== undefined) {
+                    if (field.fieldType === 'boolean') {
+                        input.checked = existingData[field.fieldName] === true || existingData[field.fieldName] === 'true';
+                    } else {
+                        input.value = existingData[field.fieldName];
+                    }
+                }
+
+                if (field.fieldType === 'boolean') {
+                    wrapper.appendChild(input);
+                    wrapper.appendChild(label);
+                } else {
+                    wrapper.appendChild(label);
+                    wrapper.appendChild(input);
+                }
+
+                container.appendChild(wrapper);
+            });
+        }
+
+        function editCustomer(id) {
+            const cust = customers.find(c => String(c.id) === String(id));
+            if (!cust) return showToast("Customer not found");
+            document.getElementById("custId").value = cust.id;
+            document.getElementById("custName").value = cust.name || "";
+            document.getElementById("custAddress").value = cust.address || "";
+            document.getElementById("custContact").value = cust.contact || "";
+            document.getElementById("custEmail").value = cust.email || "";
+            document.getElementById("custPin").value = cust.pin || "";
+            document.getElementById("custState").value = cust.state || "";
+
+            // Set State Code
+            const stateObj = STATE_MASTER_LIST.find(s => s.name === cust.state);
+            document.getElementById("custStateCode").value = cust.stateCode || (stateObj ? stateObj.code : "");
+
+            // Populate districts then set value
+            populateDistrictDropdown(cust.state, cust.district);
+
+            document.getElementById("custGST").value = cust.gst || "";
+            document.getElementById("custCreditLimit").value = cust.creditLimit || "";
+            document.getElementById("custOpeningBalance").value = cust.openingBalance || "";
+            document.getElementById("custOpeningBalanceType").value = cust.openingBalanceType || "Dr";
+            currentCustomerAttachments = cust.attachments || [];
+            renderCustomerAttachments();
+            renderDynamicFields(cust);
+            document.getElementById("custName").focus();
+        }
+
+        function openInvoice(name) {
+            const win = window.open(`invoice.html?custName=${encodeURIComponent(name)}`, 'invoice', 'width=800,height=600,resizable=yes,scrollbars=yes');
+            if (win) win.focus();
+        }
+
+        function openLedger(name) {
+            const win = window.open(`ledger.html?customer=${encodeURIComponent(name)}`, 'ledger', 'width=1000,height=800,resizable=yes,scrollbars=yes');
+            if (win) win.focus();
+        }
+
+        async function saveCustomer() {
+            const id = document.getElementById("custId").value;
+            const name = document.getElementById("custName").value.trim();
+            const address = document.getElementById("custAddress").value.trim();
+            const contact = document.getElementById("custContact").value.trim();
+            const email = document.getElementById("custEmail").value.trim();
+            const pin = document.getElementById("custPin").value.trim();
+            const district = document.getElementById("custDistrict").value.trim();
+            const state = document.getElementById("custState").value.trim();
+            const stateCode = document.getElementById("custStateCode").value.trim();
+            const gst = document.getElementById("custGST").value.trim();
+            const creditLimit = parseFloat(document.getElementById("custCreditLimit").value) || 0;
+            const openingBalance = parseFloat(document.getElementById("custOpeningBalance").value) || 0;
+            const openingBalanceType = document.getElementById("custOpeningBalanceType").value;
+            if (!name) return showToast("Name required");
+            if (contact && !/^\d{10}$/.test(contact)) {
+                return openWarningModal("Contact Number must be exactly 10 digits.");
+            }
+            if (pin && !/^\d{6}$/.test(pin)) {
+                return openWarningModal("PIN Code must be exactly 6 digits.");
+            }
+            if (gst && gst.length !== 15) {
+                return openWarningModal("GSTIN must be exactly 15 characters long.");
+            }
+
+            const payload = { name, address, contact, email, pin, district, state, stateCode, gst, creditLimit, openingBalance, openingBalanceType, attachments: currentCustomerAttachments, updatedAt: new Date().toISOString() };
+
+            if (id) {
+                payload.id = id;
+                const idx = customers.findIndex(c => String(c.id) === String(id));
+                if (idx > -1) customers[idx] = payload;
+            } else {
+                payload.id = generateUniqueId();
+                customers.push(payload);
+            }
+            localStorage.setItem("customers", JSON.stringify(customers));
+
+            if (db) {
+                try { await db.collection('customers').doc(payload.id).set(payload); } catch (e) { console.error("Firestore save error", e); }
+            }
+
+            apiClient.saveCustomer(payload).catch(e => console.warn("API sync failed", e));
+            openSuccessModal(id ? "Customer updated successfully!" : "Customer added successfully!");
+            applyFilters();
+            clearForm();
+        }
+
+        function deleteCustomer(id) {
+            idsToDelete = [id];
+            document.getElementById("modalMessage").innerText = "Are you sure you want to delete this customer?";
+            document.getElementById("confirmationModal").style.display = "flex";
+        }
+
+        // 🔹 Toggle Select All
+        function toggleSelectAll() {
+            const selectAll = document.getElementById("selectAll");
+            const checkboxes = document.querySelectorAll(".cust-checkbox");
+            checkboxes.forEach(cb => cb.checked = selectAll.checked);
+        }
+
+        // 🔹 Delete Selected Customers
+        function deleteSelectedCustomers() {
+            const checkboxes = document.querySelectorAll(".cust-checkbox:checked");
+            if (checkboxes.length === 0) return showToast("Please select customers to delete.");
+
+            idsToDelete = Array.from(checkboxes).map(cb => cb.value);
+            document.getElementById("modalMessage").innerText = `Are you sure you want to delete ${idsToDelete.length} selected customers?`;
+            document.getElementById("confirmationModal").style.display = "flex";
+        }
+
+        async function confirmDelete() {
+            if (idsToDelete.length === 0) return;
+
+            // Delete Local
+            customers = customers.filter(c => !idsToDelete.includes(String(c.id)));
+            localStorage.setItem("customers", JSON.stringify(customers));
+            applyFilters();
+
+            // Delete Firestore
+            if (db) {
+                idsToDelete.forEach(id => db.collection('customers').doc(id).delete().catch(e => console.error(e)));
+            }
+
+            closeModal();
+            openSuccessModal("Customer(s) deleted successfully.");
+        }
+
+        function openSuccessModal(msg) {
+            if (msg) document.getElementById("successMsg").innerText = msg;
+            document.getElementById("successModal").style.display = "flex";
+        }
+        function closeSuccessModal() {
+            document.getElementById("successModal").style.display = "none";
+        }
+
+        function openWarningModal(msg) {
+            if (msg) document.getElementById("warningMsg").innerText = msg;
+            document.getElementById("warningModal").style.display = "flex";
+        }
+        function closeWarningModal() {
+            document.getElementById("warningModal").style.display = "none";
+        }
+
+        function closeModal() {
+            document.getElementById("confirmationModal").style.display = "none";
+            idsToDelete = [];
+        }
+
+        function openEditModal() {
+            document.getElementById("editConfirmModal").style.display = "flex";
+        }
+
+        function closeEditModal() {
+            document.getElementById("editConfirmModal").style.display = "none";
+            pendingEditId = null;
+        }
+
+        document.getElementById("btnConfirmEdit").addEventListener("click", () => {
+            if (pendingEditId) editCustomer(pendingEditId);
+            closeEditModal();
+        });
+
+        function confirmClearForm() {
+            document.getElementById("clearConfirmModal").style.display = "flex";
+        }
+        function closeClearModal() {
+            document.getElementById("clearConfirmModal").style.display = "none";
+        }
+        function performClear() {
+            closeClearModal();
+            clearForm();
+        }
+        function clearForm() {
+            document.getElementById("custId").value = "";
+            document.getElementById("custName").value = "";
+            document.getElementById("custAddress").value = "";
+            document.getElementById("custContact").value = "";
+            document.getElementById("custEmail").value = "";
+            document.getElementById("custPin").value = "";
+            document.getElementById("custDistrict").value = "";
+            document.getElementById("custState").value = "West Bengal";
+            document.getElementById("custState").dispatchEvent(new Event('change'));
+            document.getElementById("custGST").value = "";
+            document.getElementById("custCreditLimit").value = "";
+            document.getElementById("custOpeningBalance").value = "";
+            document.getElementById("custOpeningBalanceType").value = "Dr";
+            currentCustomerAttachments = [];
+            renderCustomerAttachments();
+            document.getElementById("custName").focus();
+        }
+
+        function searchCustomer() {
+            currentPage = 1;
+            applyFilters();
+        }
+
+        function sortCustomers() {
+            const sortOpt = document.getElementById("sortOption").value;
+            if (sortOpt === 'asc') {
+                currentSortColumn = 'name';
+                currentSortDirection = 'asc';
+            } else {
+                currentSortColumn = 'name';
+                currentSortDirection = 'desc';
+            }
+            applyFilters();
+        }
+
+        function changeRowsPerPage() {
+            rowsPerPage = parseInt(document.getElementById("rowsPerPageSelect").value);
+            currentPage = 1;
+            applyFilters();
+        }
+
+        function goToPage() {
+            const pageInput = document.getElementById("goToPageInput");
+            const page = parseInt(pageInput.value);
+            if (page >= 1) {
+                currentPage = page;
+                applyFilters();
+            }
+            pageInput.value = "";
+        }
+
+        function applyFilters() {
+            const keyword = document.getElementById("searchBox").value.toLowerCase();
+            const contactKeyword = document.getElementById("searchContact").value.toLowerCase();
+            const filterCreditLimit = document.getElementById("filterCreditLimit").checked;
+
+            // 1. Filter
+            let filtered = customers.filter(c => {
+                const contactStr = String(c.contact || '').toLowerCase();
+
+                // Search across all displayed columns
+                const rowText = [
+                    c.name,
+                    c.address,
+                    contactStr,
+                    c.email,
+                    c.pin,
+                    c.district,
+                    c.state,
+                    c.gst,
+                    c.openingBalance,
+                    c.creditLimit
+                ].map(val => String(val || '').toLowerCase()).join(' ');
+
+                const matchesKeyword = rowText.includes(keyword);
+                const matchesContact = contactStr.includes(contactKeyword);
+
+                let matchesCreditLimit = true;
+                if (filterCreditLimit) {
+                    const limit = parseFloat(c.creditLimit);
+                    matchesCreditLimit = limit > 0;
+                }
+                return matchesKeyword && matchesContact && matchesCreditLimit;
+            });
+
+            // Calculate Total Opening Balance
+            let totalOpBal = 0;
+            let totalOutstanding = 0;
+            filtered.forEach(c => {
+                let amt = parseFloat(c.openingBalance) || 0;
+                if (c.openingBalanceType === 'Cr') amt = -amt;
+                totalOpBal += amt;
+
+                c.outstanding = calculateOutstanding(c);
+                totalOutstanding += c.outstanding;
+            });
+
+            // 2. Sort
+            filtered.sort((a, b) => {
+                let valA = (a[currentSortColumn] || "").toString().toLowerCase();
+                let valB = (b[currentSortColumn] || "").toString().toLowerCase();
+                return currentSortDirection === 'asc' ? valA.localeCompare(valB, undefined, { numeric: true }) : valB.localeCompare(valA, undefined, { numeric: true });
+            });
+
+            // 3. Paginate
+            const totalItems = filtered.length;
+            const totalPages = Math.ceil(totalItems / rowsPerPage);
+
+            if (currentPage > totalPages) currentPage = totalPages || 1;
+            if (currentPage < 1) currentPage = 1;
+
+            const startIndex = (currentPage - 1) * rowsPerPage;
+            const endIndex = startIndex + rowsPerPage;
+            const paginatedItems = filtered.slice(startIndex, endIndex);
+
+            renderTable(paginatedItems, startIndex);
+            renderPagination(totalItems, startIndex + 1, Math.min(endIndex, totalItems), totalPages);
+            updateHeaderIcons();
+            renderFooter(totalOpBal, totalOutstanding);
+        }
+
+        function handleHeaderClick(column) {
+            if (currentSortColumn === column) {
+                currentSortDirection = currentSortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSortColumn = column;
+                currentSortDirection = 'asc';
+            }
+            applyFilters();
+        }
+
+        function updateHeaderIcons() {
+            const cols = ['name', 'address', 'contact', 'email', 'pin', 'district', 'state', 'gst', 'creditLimit', 'openingBalance', 'outstanding'];
+            cols.forEach(col => {
+                const icon = document.getElementById(`sort-icon-${col}`);
+                if (icon) icon.textContent = (currentSortColumn === col) ? (currentSortDirection === 'asc' ? ' ▲' : ' ▼') : '';
+            });
+        }
+
+        function renderFooter(totalOp, totalOut) {
+            const tfoot = document.getElementById('customerTableFooter');
+            tfoot.innerHTML = '';
+
+            const tr = document.createElement('tr');
+            tr.style.fontWeight = 'bold';
+            tr.style.backgroundColor = '#f0f0f0';
+
+            // Columns 0 to 10 (Left of Opening Balance)
+            let spanLeft = 0;
+            for (let i = 0; i <= 10; i++) {
+                if (columnVisibility[i]) spanLeft++;
+            }
+
+            if (spanLeft > 0) {
+                const tdLabel = document.createElement('td');
+                tdLabel.colSpan = spanLeft;
+                tdLabel.style.textAlign = 'right';
+                tdLabel.innerText = 'Totals:';
+                tr.appendChild(tdLabel);
+            }
+
+            // Column 11 (Opening Balance)
+            if (columnVisibility[11]) {
+                const tdValue = document.createElement('td');
+                const type = totalOp >= 0 ? 'Dr' : 'Cr';
+                tdValue.innerText = Math.abs(totalOp).toFixed(2) + ' ' + type;
+                tr.appendChild(tdValue);
+            }
+
+            // Column 12 (Outstanding)
+            if (columnVisibility[12]) {
+                const tdValue = document.createElement('td');
+                tdValue.style.fontWeight = 'bold';
+                tdValue.style.color = totalOut > 0.01 ? '#dc3545' : '#28a745';
+                tdValue.innerText = totalOut.toFixed(2);
+                tr.appendChild(tdValue);
+            }
+
+            // Column 13 (Actions)
+            if (columnVisibility[13]) {
+                const tdAction = document.createElement('td');
+                tr.appendChild(tdAction);
+            }
+
+            tfoot.appendChild(tr);
+        }
+
+        function calculateOutstanding(c) {
+            let balance = parseFloat(c.openingBalance) || 0;
+            if (c.openingBalanceType === 'Cr') balance = -balance;
+
+            invoices.forEach(inv => {
+                const cName = inv.customer_name || (inv.customer && inv.customer.name) || "";
+                if (cName.toLowerCase() === c.name.toLowerCase()) {
+                    const total = parseFloat(inv.invoice_total || inv.total || 0);
+                    const paid = parseFloat(inv.total_paid || inv.paid_amount || inv.paid || 0);
+                    balance += (total - paid);
+                }
+            });
+
+            creditNotes.forEach(n => {
+                if (n.customer_name.toLowerCase() === c.name.toLowerCase() && n.status !== 'CANCELLED') {
+                    const amt = parseFloat(n.total_amount) || 0;
+                    if (n.type === 'CREDIT') balance -= amt;
+                    else if (n.type === 'DEBIT') balance += amt;
+                }
+            });
+            return balance;
+        }
+
+        function renderPagination(totalItems, start, end, totalPages) {
+            const info = document.getElementById("paginationInfo");
+            const controls = document.getElementById("paginationControls");
+
+            const totalDisplay = document.getElementById("totalCustomersDisplay");
+            if (totalDisplay) totalDisplay.innerText = `Total Customers: ${totalItems}`;
+
+            if (totalItems === 0) {
+                info.innerText = "No customers found";
+                controls.innerHTML = "";
+                return;
+            }
+
+            info.innerText = `Showing ${start} to ${end} of ${totalItems} entries`;
+            controls.innerHTML = `
+                <button onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>Previous</button>
+                <button class="active">${currentPage}</button>
+                <button onclick="changePage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>Next</button>
+            `;
+        }
+
+        function changePage(page) {
+            currentPage = page;
+            applyFilters();
+        }
+
+        function showToast(msg) {
+            const t = document.getElementById("toast");
+            t.innerText = msg;
+            t.className = "show";
+            setTimeout(() => (t.className = ""), 3000);
+        }
+
+        // Export CSV
+        function exportCustomersCSV() {
+            if (!customers.length) return showToast("No data to export");
+
+            const headers = ["Name", "Address", "Contact", "Email", "PIN", "District", "State", "State Code", "GST", "Credit Limit", "Opening Balance", "Opening Balance Type"];
+            const rows = customers.map(c => {
+                const escape = (t) => `"${String(t || "").replace(/"/g, '""')}"`;
+                return [
+                    escape(c.name),
+                    escape(c.address),
+                    escape(c.contact),
+                    escape(c.email),
+                    escape(c.pin),
+                    escape(c.district),
+                    escape(c.state),
+                    escape(c.stateCode),
+                    escape(c.gst),
+                    escape(c.creditLimit),
+                    escape(c.openingBalance),
+                    escape(c.openingBalanceType)
+                ].join(",");
+            });
+
+            const csvContent = [headers.join(",")].concat(rows).join("\n");
+            const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "customers_export.csv";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            showToast("Customers exported to CSV successfully!");
+        }
+
+        // Import CSV
+        function importCustomersCSV(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            const overlay = document.getElementById('loadingOverlay');
+            if (overlay) overlay.style.display = 'flex';
+
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                // Yield slightly to let the browser paint the spinner
+                await new Promise(resolve => setTimeout(resolve, 15));
+
+                try {
+                    const text = e.target.result;
+                    const rows = parseCSV(text);
+                    if (rows.length < 2) throw new Error("Invalid CSV format (no data)");
+
+                    // Normalize headers
+                    const headers = rows[0].map(h => h.trim().toLowerCase());
+
+                    // Map columns
+                    const nameIdx = headers.indexOf('name');
+                    if (nameIdx === -1) throw new Error("CSV must have a 'Name' column");
+
+                    let added = 0;
+                    let updated = 0;
+
+                    const customerMap = new Map();
+                    customers.forEach((c, index) => {
+                        if (c.name) customerMap.set(c.name.trim().toLowerCase(), index);
+                    });
+
+                    for (let i = 1; i < rows.length; i++) {
+                        const row = rows[i];
+                        if (row.length < 1) continue;
+
+                        const name = row[nameIdx] ? row[nameIdx].trim() : "";
+                        if (!name) continue;
+
+                        const getVal = (colName) => {
+                            const idx = headers.indexOf(colName.toLowerCase());
+                            return (idx > -1 && row[idx]) ? row[idx].trim() : "";
+                        };
+
+                        const customerData = {
+                            name: name,
+                            address: getVal('address'),
+                            contact: getVal('contact'),
+                            email: getVal('email'),
+                            pin: getVal('pin'),
+                            district: getVal('district'),
+                            state: getVal('state'),
+                            stateCode: getVal('state code'),
+                            gst: getVal('gst'),
+                            creditLimit: getVal('credit limit'),
+                            openingBalance: getVal('opening balance'),
+                            openingBalanceType: getVal('opening balance type') || 'Dr',
+                            updatedAt: new Date().toISOString()
+                        };
+
+                        let idx = customerMap.has(name.toLowerCase()) ? customerMap.get(name.toLowerCase()) : -1;
+
+                        if (idx > -1) {
+                            customers[idx] = { ...customers[idx], ...customerData };
+                            if (db) db.collection('customers').doc(customers[idx].id).set(customers[idx]).catch(console.error);
+                            updated++;
+                        } else {
+                            const newId = generateUniqueId();
+                            const newCustomer = { ...customerData, id: newId };
+                            customers.push(newCustomer);
+                            customerMap.set(name.toLowerCase(), customers.length - 1);
+                            if (db) db.collection('customers').doc(newId).set(newCustomer).catch(console.error);
+                            added++;
+                        }
+                    }
+
+                    localStorage.setItem("customers", JSON.stringify(customers));
+                    applyFilters();
+                    openSuccessModal(`Imported: ${added} added, ${updated} updated.`);
+                } catch (err) {
+                    console.error("Import error:", err);
+                    showToast("Error importing CSV: " + err.message);
+                } finally {
+                    if (overlay) overlay.style.display = 'none';
+                    input.value = "";
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function parseCSV(text) {
+            const rows = [];
+            let row = [];
+            let cur = '';
+            let inQuote = false;
+            for (let i = 0; i < text.length; i++) {
+                const c = text[i];
+                if (inQuote) {
+                    if (c === '"') {
+                        if (i + 1 < text.length && text[i + 1] === '"') { cur += '"'; i++; }
+                        else inQuote = false;
+                    } else cur += c;
+                } else {
+                    if (c === '"') inQuote = true;
+                    else if (c === ',') { row.push(cur); cur = ''; }
+                    else if (c === '\n' || c === '\r') {
+                        if (cur || row.length > 0) row.push(cur);
+                        if (row.length > 0) rows.push(row);
+                        row = []; cur = '';
+                        if (c === '\r' && i + 1 < text.length && text[i + 1] === '\n') i++;
+                    } else cur += c;
+                }
+            }
+            if (cur || row.length > 0) { row.push(cur); rows.push(row); }
+            return rows;
+        }
+
+        function exportCustomersPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            doc.text("Customer List", 14, 10);
+            doc.setFontSize(10);
+            doc.text("Generated on: " + new Date().toLocaleDateString(), 14, 16);
+
+            const tableColumn = ["Sl", "Name", "Address", "Contact", "GST", "Credit Limit", "Op. Bal", "Outstanding"];
+            const tableRows = [];
+
+            customers.forEach((c, index) => {
+                const outstanding = calculateOutstanding(c);
+                const rowData = [
+                    index + 1,
+                    c.name || "",
+                    c.address || "",
+                    c.contact || "",
+                    c.gst || "",
+                    c.creditLimit ? c.creditLimit : "Unlimited",
+                    c.openingBalance ? (c.openingBalance + ' ' + (c.openingBalanceType || 'Dr')) : '-',
+                    outstanding.toFixed(2)
+                ];
+                tableRows.push(rowData);
+            });
+
+            doc.autoTable({
+                head: [tableColumn],
+                body: tableRows,
+                startY: 20,
+                styles: { fontSize: 8, cellPadding: 2 },
+                headStyles: { fillColor: [41, 128, 185] }
+            });
+
+            doc.save("customers_list.pdf");
+        }
+
+        // --- Button Visibility Logic ---
+        let savedButtonVisibility = JSON.parse(localStorage.getItem("customerButtonVisibility")) || {};
+        let buttonVisibility = {
+            btnExportPdf: true,
+            btnExportCsv: true,
+            btnImportCsv: true,
+            ...savedButtonVisibility
+        };
+
+        // Hook global applyUIPermissions to enforce local visibility settings after permissions are applied
+        const _globalApplyUIPermissions = window.applyUIPermissions;
+        window.applyUIPermissions = function () {
+            if (typeof _globalApplyUIPermissions === 'function') {
+                _globalApplyUIPermissions();
+            }
+            enforceButtonVisibility();
+        };
+
+        function enforceButtonVisibility() {
+            for (const btnId in buttonVisibility) {
+                const btn = document.getElementById(btnId);
+                if (btn) {
+                    if (!buttonVisibility[btnId]) {
+                        btn.style.display = 'none';
+                    } else {
+                        const hasPermission = btn.hasAttribute('data-permission-id');
+                        if (!hasPermission) {
+                            btn.style.display = '';
+                        }
+                    }
+                }
+            }
+        }
+
+        function toggleButtonVisibility(btnId, isVisible) {
+            buttonVisibility[btnId] = isVisible;
+            localStorage.setItem("customerButtonVisibility", JSON.stringify(buttonVisibility));
+            applyButtonVisibility();
+        }
+
+        function applyButtonVisibility() {
+            if (typeof window.applyUIPermissions === 'function') {
+                window.applyUIPermissions();
+            } else {
+                enforceButtonVisibility();
+            }
+        }
+
+        function toggleGreyButtons() {
+            isGreyButtons = document.getElementById("greyButtonsToggle").checked;
+            localStorage.setItem("customerGreyButtons", isGreyButtons);
+            applyGreyButtons();
+        }
+
+        function applyGreyButtons() {
+            if (isGreyButtons) document.body.classList.add("grey-mode");
+            else document.body.classList.remove("grey-mode");
+        }
+
+        // --- Table Settings Logic ---
+        function openSettingsModal() {
+            document.getElementById('settingsModal').style.display = 'flex';
+            for (const btnId in buttonVisibility) {
+                const toggleId = `show${btnId.charAt(0).toUpperCase() + btnId.slice(1)}Toggle`;
+                const toggle = document.getElementById(toggleId);
+                if (toggle) {
+                    toggle.checked = buttonVisibility[btnId];
+                }
+            }
+
+            document.getElementById("showActionInvoice").checked = actionButtonVisibility.invoice;
+            document.getElementById("showActionLedger").checked = actionButtonVisibility.ledger;
+            document.getElementById("showActionEdit").checked = actionButtonVisibility.edit;
+            document.getElementById("showActionDelete").checked = actionButtonVisibility.delete;
+            document.getElementById("showActionAttach").checked = actionButtonVisibility.attach !== false;
+            document.getElementById("showActionReceipt").checked = actionButtonVisibility.receipt !== false;
+
+            const greyToggle = document.getElementById("greyButtonsToggle");
+            if (greyToggle) greyToggle.checked = isGreyButtons;
+
+            renderColumnToggles();
+        }
+
+        function closeSettingsModal() {
+            document.getElementById('settingsModal').style.display = 'none';
+        }
+
+        function renderColumnToggles() {
+            const container = document.getElementById("columnToggles");
+            container.innerHTML = "";
+            const headers = Array.from(document.querySelectorAll("#customerTable thead th"));
+
+            // Map headers to objects with index and text
+            const items = headers.map((th, index) => {
+                let text = th.innerText.trim();
+                // Skip checkbox column (index 0) and Actions column (last index) from being toggled
+                if (index === 0) return null;
+                return { index, text };
+            }).filter(item => item !== null);
+
+            // Sort A-Z by column name
+            items.sort((a, b) => a.text.localeCompare(b.text));
+
+            items.forEach(item => {
+                const label = document.createElement("label");
+                label.style.cursor = "pointer";
+                label.style.display = "flex";
+                label.style.alignItems = "center";
+                label.style.gap = "5px";
+
+                const cb = document.createElement("input");
+                cb.type = "checkbox";
+                cb.checked = columnVisibility[item.index];
+                cb.style.margin = "0";
+                cb.onchange = () => toggleColumn(item.index, cb.checked);
+
+                label.appendChild(cb);
+                label.appendChild(document.createTextNode(item.text));
+                container.appendChild(label);
+            });
+        }
+
+        function toggleAllColumns(isVisible) {
+            // Only toggle data columns (1 to length-2)
+            for (let i = 1; i < columnVisibility.length; i++) {
+                columnVisibility[i] = isVisible;
+            }
+            localStorage.setItem("customerColumnVisibility", JSON.stringify(columnVisibility));
+            updateColumnStyles();
+            renderColumnToggles();
+        }
+
+        function toggleColumn(index, isVisible) {
+            columnVisibility[index] = isVisible;
+            localStorage.setItem("customerColumnVisibility", JSON.stringify(columnVisibility));
+            updateColumnStyles();
+        }
+
+        function updateColumnStyles() {
+            let style = document.getElementById('dynamicColumnStyles');
+            if (!style) {
+                style = document.createElement('style');
+                style.id = 'dynamicColumnStyles';
+                document.head.appendChild(style);
+            }
+            let css = '';
+            columnVisibility.forEach((visible, i) => {
+                if (!visible) {
+                    css += `#customerTable thead th:nth-child(${i + 1}), #customerTable tbody td:nth-child(${i + 1}) { display: none; }\n`;
+                }
+            });
+            style.textContent = css;
+        }
+
+        function toggleActionButton(type, isVisible) {
+            actionButtonVisibility[type] = isVisible;
+            localStorage.setItem("customerActionButtons", JSON.stringify(actionButtonVisibility));
+            updateActionButtonsVisibility();
+        }
+
+        function updateActionButtonsVisibility() {
+            let style = document.getElementById('actionButtonsStyle');
+            if (!style) {
+                style = document.createElement('style');
+                style.id = 'actionButtonsStyle';
+                document.head.appendChild(style);
+            }
+            let css = '';
+            if (!actionButtonVisibility.invoice) css += `.btn-action-invoice, .action-dropdown-content .btn-action-invoice { display: none !important; }\n`;
+            if (!actionButtonVisibility.ledger) css += `.btn-action-ledger, .action-dropdown-content .btn-action-ledger { display: none !important; }\n`;
+            if (!actionButtonVisibility.edit) css += `.btn-action-edit, .action-dropdown-content .btn-action-edit { display: none !important; }\n`;
+            if (!actionButtonVisibility.delete) css += `.btn-action-delete, .action-dropdown-content .btn-action-delete { display: none !important; }\n`;
+            if (actionButtonVisibility.attach === false) css += `.btn-action-attach, .action-dropdown-content .btn-action-attach { display: none !important; }\n`;
+            if (!actionButtonVisibility.receipt) css += `.btn-action-receipt, .action-dropdown-content .btn-action-receipt { display: none !important; }\n`;
+            style.textContent = css;
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            fetchCustomersData();
+            initFirebase();
+            applyTheme();
+            applyCompactView();
+            applyGreyButtons();
+            populateStateDropdown();
+            updateColumnStyles();
+            applyButtonVisibility();
+            updateActionButtonsVisibility();
+
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+                if (currentTheme === "system") {
+                    applyTheme();
+                }
+            });
+
+            // Add Enter key listener for saving customer
+            const formContainer = document.querySelectorAll('.controls')[0];
+            if (formContainer) {
+                formContainer.addEventListener('keydown', function (e) {
+                    if (e.key === 'Enter' && (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT')) {
+                        e.preventDefault();
+                        saveCustomer();
+                    }
+                });
+            }
+        });
+
+        function verifyCustGST() {
+            const gst = document.getElementById('custGST').value.trim();
+            if (gst) {
+                navigator.clipboard.writeText(gst).then(() => {
+                    showToast("GSTIN copied! Opening portal...");
+                    window.open('https://services.gst.gov.in/services/searchtp', '_blank');
+                }).catch(() => window.open('https://services.gst.gov.in/services/searchtp', '_blank'));
+            } else {
+                window.open('https://services.gst.gov.in/services/searchtp', '_blank');
+            }
+        }
+
+        // --- Action Dropdown Logic ---
+        function toggleActionMenu(btn) {
+            document.querySelectorAll('.action-dropdown.active').forEach(d => {
+                if (d !== btn.parentElement) d.classList.remove('active');
+            });
+
+            const dropdown = btn.parentElement;
+            dropdown.classList.toggle('active');
+
+            if (dropdown.classList.contains('active')) {
+                const content = dropdown.querySelector('.action-dropdown-content');
+                content.style.display = 'block';
+                const rect = btn.getBoundingClientRect();
+                let top = rect.bottom;
+                let left = rect.right - content.offsetWidth;
+                if (top + content.offsetHeight > window.innerHeight) { top = rect.top - content.offsetHeight; }
+                content.style.top = top + 'px';
+                content.style.left = left + 'px';
+                content.style.display = '';
+            }
+        }
+
+        document.addEventListener('click', function (e) { if (!e.target.matches('.action-btn-main')) { document.querySelectorAll('.action-dropdown.active').forEach(d => d.classList.remove('active')); } });
+        window.addEventListener('scroll', function () { document.querySelectorAll('.action-dropdown.active').forEach(d => d.classList.remove('active')); }, true);
+    </script>
+</body>
+
+</html>

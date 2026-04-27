@@ -1,0 +1,1914 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Login</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/otpauth/9.1.4/otpauth.umd.min.js"></script>
+    <script src="settings.js"></script>
+    <script src="brand.service.js"></script>
+    <script src="brandLoader.js"></script>
+    <style>
+        :root {
+            --primary-color: #0313f3;
+            --warning-color: #ff9d00;
+            --danger-color: #e74a3b;
+        }
+
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: 'Segoe UI', 'Roboto', Helvetica, Arial, sans-serif;
+            background: #f5f7fa url('login-bg.jpg') no-repeat center center fixed;
+            background-size: cover;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #login {
+            background: #ffffff;
+            border-radius: 16px;
+            padding: 40px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            position: relative;
+        }
+
+        #login::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 5px;
+            background: linear-gradient(90deg, #0313f3, #c44be9);
+            border-radius: 16px 16px 0 0;
+        }
+
+        h2 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        input {
+            width: 100%;
+            margin: 10px 0;
+            padding: 12px 15px;
+            border-radius: 8px;
+            border: 2px solid #f0f0f0;
+            box-sizing: border-box;
+            font-size: 15px;
+            transition: all 0.3s ease;
+            background-color: #fafafa;
+        }
+
+        input:focus {
+            border-color: #0313f3;
+            background-color: #fff;
+            outline: none;
+            box-shadow: 0 0 0 4px rgba(3, 19, 243, 0.1);
+        }
+
+        button {
+            padding: 12px 24px;
+            margin: 10px 0;
+            border: none;
+            color: white;
+            background: #0313f3;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 6px rgba(3, 19, 243, 0.2);
+            width: 100%;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(3, 19, 243, 0.3);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            background-color: #95a5a6 !important;
+            cursor: not-allowed;
+            transform: none !important;
+            box-shadow: none !important;
+            opacity: 0.7;
+        }
+
+        #closeBtn {
+            background: #fff !important;
+            color: #7f8c8d !important;
+            border: 2px solid #ecf0f1 !important;
+            box-shadow: none !important;
+        }
+
+        #closeBtn:hover {
+            background: #ff0202 !important;
+            color: #ffffff !important;
+            transform: none !important;
+        }
+
+        .password-wrapper {
+            position: relative;
+            width: 100%;
+            margin: 10px 0;
+        }
+
+        .password-wrapper input {
+            margin: 0;
+            padding-right: 40px;
+        }
+
+        .toggle-icon {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            font-size: 1.2em;
+            user-select: none;
+        }
+
+        .toast {
+            visibility: hidden;
+            min-width: 250px;
+            margin-left: -125px;
+            background-color: #333;
+            color: #fff;
+            text-align: center;
+            border-radius: 8px;
+            padding: 12px;
+            position: fixed;
+            z-index: 10000;
+            left: 50%;
+            bottom: 30px;
+            font-size: 16px;
+            transition: visibility 0s, opacity 0.4s;
+            opacity: 0;
+        }
+
+        .toast.show {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            inset: 0;
+            background: rgba(0, 0, 0, .4);
+        }
+
+        .modal-content {
+            background: #fff;
+            margin: 15% auto;
+            padding: 20px;
+            border-radius: 10px;
+            width: 380px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, .25);
+            text-align: center;
+        }
+
+        .close {
+            float: right;
+            font-size: 20px;
+            cursor: pointer;
+        }
+
+        /* Secure OTP Modal Styles */
+        #secureOtpModal {
+            display: none;
+            position: fixed;
+            z-index: 11000;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(4px);
+            align-items: center;
+            justify-content: center;
+        }
+
+        #secureOtpModal .otp-box {
+            background: #fff;
+            padding: 30px;
+            border-radius: 12px;
+            width: 350px;
+            text-align: center;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+            border: 1px solid #444;
+        }
+
+        .otp-digit-group {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        .otp-input-field {
+            width: 100%;
+            letter-spacing: 8px;
+            font-size: 24px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        /* Dark Mode */
+        body.dark-mode {
+            background: #121212;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode #login,
+        body.dark-mode .modal-content,
+        body.dark-mode #secureOtpModal .otp-box {
+            background-color: #2c2c2c;
+            color: #e0e0e0;
+            border-color: #444;
+        }
+
+        body.dark-mode input {
+            background-color: #3a3a3a;
+            color: #fff;
+            border: 1px solid #555;
+        }
+
+        body.dark-mode h2,
+        body.dark-mode h3,
+        body.dark-mode p,
+        body.dark-mode label {
+            color: #e0e0e0 !important;
+        }
+
+        .otp-box {
+            background: #fff;
+            padding: 30px;
+            border-radius: 12px;
+            width: 350px;
+            text-align: center;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+            border: 1px solid #444;
+        }
+
+        body.dark-mode .otp-box {
+            background: #2c2c2c;
+            color: #ffffff;
+        }
+
+        /* Message Ticker */
+        .ticker-container {
+            width: 100%;
+            overflow: hidden;
+            background-color: var(--primary-color);
+            color: white;
+            padding: 8px 0;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 1000;
+        }
+
+        .ticker-wrap {
+            width: 100%;
+            padding-left: 100%;
+            box-sizing: content-box;
+        }
+
+        .ticker-wrap:hover .ticker-move {
+            animation-play-state: paused;
+        }
+
+        .ticker-move {
+            display: inline-block;
+            white-space: nowrap;
+            animation: ticker 20s linear infinite;
+        }
+
+        .ticker-item {
+            display: inline-block;
+            padding: 0 2rem;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        @keyframes ticker {
+            0% {
+                transform: translate3d(0, 0, 0);
+            }
+
+            100% {
+                transform: translate3d(-100%, 0, 0);
+            }
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Message Ticker -->
+    <div id="messageTickerContainer" class="ticker-container" style="display: none;">
+        <div class="ticker-wrap" style="padding-right: 40px;">
+            <div class="ticker-move" id="tickerMove">
+                <!-- Messages injected by JS -->
+            </div>
+        </div>
+        <button onclick="dismissTicker()"
+            style="position: absolute; right: 15px; top: 50%; transform: translateY(-50%); background: transparent; border: none; color: white; font-size: 20px; cursor: pointer; z-index: 10; width: auto; padding: 0; box-shadow: none; margin: 0;"
+            title="Dismiss for session">&times;</button>
+    </div>
+
+    <div id="login">
+        <h2 style="color: #0313f3; margin-bottom: 5px;" data-brand="name">RISE Tech Revolution - CRM</h2>
+        <h3 style="color: #f706c3; margin-top: 0;">Login to Access the Software</h3>
+
+        <form id="loginFormContainer" onsubmit="event.preventDefault(); validateLogin();">
+            <div class="password-wrapper">
+                <input type="password" id="username" placeholder="👤 Username" aria-label="Username">
+                <span class="toggle-icon" onclick="togglePassword('username', this)">🙈</span>
+            </div>
+            <div class="password-wrapper">
+                <input type="password" id="password" placeholder="🗝️ Password" aria-label="Password">
+                <span class="toggle-icon" onclick="togglePassword('password', this)">🙈</span>
+            </div>
+            <div style="display: flex; align-items: center; margin-bottom: 10px; justify-content: flex-start;">
+                <input type="checkbox" id="rememberMe" style="width: auto; margin: 0 8px 0 0; cursor: pointer;">
+                <label for="rememberMe"
+                    style="color: #2c3e50; font-size: 14px; cursor: pointer; user-select: none;">Remember Me</label>
+            </div>
+            <button type="submit" style="background: linear-gradient(135deg, #0313f3 0%, #5b6cf9 100%);">🔓
+                Login</button>
+            <button id="closeBtn" onclick="closeWindowWithWarning()" style="background:#ad2d2d;"> ❌ Close</button>
+            <div style="margin-top: 15px; text-align: center; display: flex; justify-content: center; gap: 15px;">
+                <a href="javascript:void(0)" onclick="openForgotEmailModal()"
+                    style="color: #0313f3; text-decoration: none; font-weight: 600;">Forgot Password?</a>
+                <a href="javascript:void(0)" onclick="openUtilitiesModal()"
+                    style="color: #c44be9; text-decoration: none; font-weight: 600;">🛠️ Support Tools</a>
+                <a href="javascript:void(0)" onclick="document.getElementById('registerModal').style.display='block'"
+                    style="color: #28a745; text-decoration: none; font-weight: 600;">Create Account</a>
+            </div>
+        </form>
+
+        <div id="renewContainer"
+            style="display:none; margin-top: 20px; padding: 15px; background: #f9f9f9; border-radius: 8px;">
+            <h3 style="color: #09139c; margin-top: 0;">🔐 Admin License Renewal</h3>
+            <div id="renewStep1">
+                <input type="password" id="adminId" placeholder="Enter Admin ID" style="margin-bottom: 8px;">
+                <input type="password" id="renewalCode" placeholder="Admin Renewal Code"
+                    style="margin-bottom: 8px; text-transform: uppercase;">
+                <input type="number" id="renewDuration" placeholder="Validity Extension (Days)" value="370"
+                    oninput="updateRenewalPreview()" style="margin-bottom: 8px;">
+                <input type="number" id="renewAmount" placeholder="19,999.00" style="margin-bottom: 8px;">
+                <p id="newExpiryPreview"
+                    style="font-size: 13px; color: #28a745; text-align: center; margin: 5px 0 10px 0; font-weight: bold;">
+                </p>
+                <button onclick="requestRenewalOtp()" style="background: #0313f3; width: 100%;">Request OTP</button>
+            </div>
+            <div id="renewStep2" style="display:none;">
+                <p style="color: #555; font-size: 13px;">OTP sent to Developer Email. <span id="otpTimer"
+                        style="color: #d35400; font-weight: bold; margin-left: 10px;"></span></p>
+                <input type="text" id="otpInput" placeholder="Enter 6-digit OTP" maxlength="6"
+                    style="text-align:center; letter-spacing: 5px; font-weight: bold;">
+                <button id="verifyOtpBtn" onclick="verifyRenewalOtp()" style="background: #28a745; width: 100%;">Verify
+                    & Renew</button>
+                <button id="resendOtpBtn" onclick="resendRenewalOtp()" disabled
+                    style="background: #0313f3; width: 100%; margin-top: 10px;">Resend OTP (300s)</button>
+                <button onclick="openPaymentModal()" style="background: #9c27b0; width: 100%; margin-top: 10px;">📱 Make
+                    Payment</button>
+            </div>
+            <button onclick="showLoginForm()"
+                style="background: #6c757d; width: auto; padding: 8px 16px; margin-top: 10px;">Cancel</button>
+        </div>
+
+        <div style="margin-top: 15px;">
+            <button id="renewLicenseBtn" onclick="confirmRenew()"
+                style="display: none; background: transparent; border: 1px solid #28a745; color: #039651; padding: 8px 15px; width: auto; font-weight: bold; cursor: pointer;">🔄
+                Renew License</button>
+        </div>
+
+        <p style="text-align: right; margin-top: 10px; color: #560eff;">Developed by - RTR</p>
+        <p style="text-align: right; margin-top: 10px; color: #2c3e50; line-height: 1.4;">V2.3.8<br>
+            <span id="apiStatus" style="font-size: 12px; font-weight: 600;">Checking Server...</span>
+            <span id="cloudStatus" style="font-size: 12px; font-weight: 600;"></span>
+        </p>
+    </div>
+
+
+
+    <!-- Maintenance Modal -->
+    <div id="maintenanceModal" class="modal"
+        style="z-index: 25000; background: rgba(0, 0, 0, 0.95); backdrop-filter: blur(5px); display: none; align-items: center; justify-content: center;">
+        <div class="modal-content"
+            style="text-align: center; width: 450px; padding: 40px; border-radius: 15px; border-top: 5px solid #f39c12; box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);">
+            <div style="font-size: 48px; margin-bottom: 20px;">🛠️</div>
+            <h2 style="color: #2c3e50; margin-top: 0; font-size: 24px;">Under Maintenance</h2>
+            <p id="maintenanceMessage" style="font-size: 15px; color: #555; margin-bottom: 25px; line-height: 1.5;">The
+                software is currently under scheduled maintenance. Please try again later.</p>
+            <button onclick="window.close()"
+                style="width: 100%; background: #e74a3b; color: white; padding: 12px; font-size: 16px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;">Exit
+                Application</button>
+        </div>
+    </div>
+
+    <!-- Forgot Password Email Modal -->
+    <div id="forgotEmailModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeForgotEmailModal()">&times;</span>
+            <h3 style="color: #0313f3;">📧 Password Recovery</h3>
+            <p style="color: #666; font-size: 14px; margin-bottom: 15px;">Enter your registered Admin email address to
+                receive the verification OTP.</p>
+            <input type="email" id="forgotEmailInput" placeholder="name@example.com">
+            <button onclick="sendForgotOtp()" style="background: #0313f3; width: 100%; margin-top: 10px;">Send
+                OTP</button>
+        </div>
+    </div>
+
+    <!-- Utilities Modal -->
+    <div id="utilitiesModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeUtilitiesModal()">&times;</span>
+            <h3 style="color: #0313f3;">🛠️ Download Utilities</h3>
+            <p style="color: #666; font-size: 14px; margin-bottom: 15px;">Select software to download for remote
+                support.</p>
+            <div
+                style="display: flex; flex-direction: column; align-items: flex-start; gap: 12px; margin-bottom: 20px;">
+                <label
+                    style="cursor: pointer; display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box;">
+                    <input type="radio" name="loginSoftware" value="ultraviewer" id="loginBtnUltra"
+                        style="width: auto; margin: 0;">
+                    UltraViewer
+                </label>
+                <label
+                    style="cursor: pointer; display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box;">
+                    <input type="radio" name="loginSoftware" value="googledrive" id="loginBtnDrive"
+                        style="width: auto; margin: 0;">
+                    Google Drive
+                </label>
+            </div>
+            <button onclick="handleLoginDownload()" style="background: #0313f3; width: 100%; margin-top: 10px;">Download
+                Selected</button>
+        </div>
+    </div>
+
+    <!-- Registration Modal -->
+    <div id="registerModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="document.getElementById('registerModal').style.display='none'">&times;</span>
+            <h3 style="color: #0313f3;">📝 Create New Account</h3>
+            <p style="color: #666; font-size: 14px; margin-bottom: 15px;">Enter your details to register.</p>
+
+            <form onsubmit="event.preventDefault(); submitRegistration();">
+                <input type="text" id="regUsername" placeholder="👤 Choose a Username (No Spaces)"
+                    style="margin-bottom: 10px;" oninput="this.value = this.value.replace(/\s/g, '');">
+                <input type="text" id="regContact" placeholder="📱 10-Digit Mobile Number" style="margin-bottom: 10px;"
+                    oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);">
+
+                <div class="password-wrapper">
+                    <input type="password" id="regPassword" placeholder="🗝️ Choose a Password">
+                    <span class="toggle-icon" onclick="togglePassword('regPassword', this)">🙈</span>
+                </div>
+
+                <button type="submit" id="registerBtn"
+                    style="background: #28a745; width: 100%; margin-top: 15px;">Register</button>
+            </form>
+        </div>
+    </div>
+
+
+    <!-- Cloud Alert Modal -->
+    <div id="cloudAlertModal" class="modal" style="z-index: 15000;">
+        <div class="modal-content" style="border-top: 5px solid #17a2b8;">
+            <span class="close" onclick="document.getElementById('cloudAlertModal').style.display='none'">&times;</span>
+            <h3 style="color: #0313f3; margin-top: 0;">ℹ️ Important Notice</h3>
+            <p id="cloudAlertMessage" style="font-size: 15px; margin: 20px 0; line-height: 1.5; white-space: pre-wrap;">
+            </p>
+            <button onclick="document.getElementById('cloudAlertModal').style.display='none'"
+                style="width: 100%; background: #0313f3; margin: 0; padding: 10px; border: none; border-radius: 4px; color: white; cursor: pointer;">Understood</button>
+        </div>
+    </div>
+
+    <!-- Reset Password Modal -->
+    <div id="resetModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeResetModal()">&times;</span>
+            <h3 style="color: #0313f3;">🔐 Reset Password</h3>
+            <div class="password-wrapper">
+                <input type="password" id="newPassword" placeholder="New Password"
+                    oninput="checkStrength('newPassword', 'resetStrength')">
+                <span class="toggle-icon" onclick="togglePassword('newPassword', this)">🙈</span>
+            </div>
+            <div id="resetStrength" style="text-align: left; margin-left: 5px; font-size: 12px; height: 18px;"></div>
+            <div style="margin-top: 20px; display: flex; justify-content: center; gap: 10px;">
+                <button onclick="confirmReset()" style="background:#28a745; margin: 0;">Reset Password</button>
+                <button onclick="closeResetModal()" style="background:#6c757d; margin: 0;">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Secure OTP Verification Modal -->
+    <div id="secureOtpModal">
+        <div class="otp-box">
+            <h3 style="color: #0313f3; margin-top: 0;">🔐 Security Verification</h3>
+            <p style="font-size: 13px; color: #666;" id="otpInstruction">Enter the 6-digit code sent to your email.</p>
+            <p style="font-size: 12px; font-weight: bold; color: #2c3e50;" id="otpEmailDisplay"></p>
+            <div class="otp-digit-group">
+                <input type="text" id="secureOtpInput" class="otp-input-field" maxlength="6" placeholder="------">
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <span id="secureOtpTimer" style="font-size: 13px; color: #d35400; font-weight: bold;">10:00</span>
+                <button id="secureResendBtn" onclick="resendSecureOtp()"
+                    style="padding: 4px 10px; font-size: 12px; background: #6c757d;" disabled>Resend</button>
+            </div>
+            <button onclick="submitSecureOtp()" style="width: 100%; background: #28a745; margin: 0;">Verify &
+                Proceed</button>
+            <button onclick="closeSecureOtpModal()"
+                style="width: 100%; background: #dc3545; margin-top: 10px;">Cancel</button>
+        </div>
+    </div>
+
+    <!-- TOTP Modal -->
+    <div id="totpModal" class="modal">
+        <div class="modal-content" style="width: 350px;">
+            <span class="close" onclick="closeTotpModal()">&times;</span>
+            <h3 style="color: #0313f3;">🔐 Authenticator</h3>
+            <p style="color: #666; font-size: 14px;">Enter the 6-digit code from your app.</p>
+            <input type="text" id="totpInput" class="otp-input-field" maxlength="6" placeholder="------"
+                style="margin: 15px 0; width: 100%; text-align: center; letter-spacing: 5px; font-size: 24px; font-weight: bold; padding: 10px; border: 1px solid #ccc; border-radius: 4px;"
+                onkeydown="if(event.key==='Enter') verifyTotpLogin()">
+            <button onclick="verifyTotpLogin()" style="width: 100%; background: #28a745;">Verify</button>
+            <p style="margin-top: 15px; font-size: 12px;"><a href="javascript:void(0)" onclick="fallbackToEmailOtp()"
+                    style="color: #0313f3;">Lost device? Use Email OTP</a></p>
+        </div>
+    </div>
+
+    <!-- Payment QR Modal -->
+    <div id="paymentModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closePaymentModal()">&times;</span>
+            <h3 style="color: #9c27b0;">📱 Scan to Pay</h3>
+            <div
+                style="background: #fff; width: 200px; height: 200px; margin: 20px auto; display: flex; align-items: center; justify-content: center; border: 2px dashed #ccc;">
+                <img id="paymentQrImage" src="" alt="QR Code" style="max-width: 100%; max-height: 100%; display:none;"
+                    onload="this.style.display='block'"
+                    onerror="this.style.display='none'; document.getElementById('qrErrorMsg').style.display='block';">
+                <span id="qrErrorMsg" style="display:none; color:red; font-size:12px;">QR Gen Failed</span>
+            </div>
+            <p>Amount: <span id="paymentAmountDisplay" style="font-weight: bold; color: #28a745;"></span></p>
+            <p style="font-size: 13px; color: #666;">Please scan this QR code to complete the payment.</p>
+            <div style="margin-top: 20px;">
+                <button onclick="closePaymentModal()" style="background:#6c757d; margin: 0;">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dashboard Selection Modal (Developer Only) -->
+    <div id="dashboardSelectionModal" class="modal">
+        <div class="modal-content">
+            <h3 style="color: #673ab7;">🛠️ Select Active Dashboard</h3>
+            <p>Choose which dashboard layout to enable for Admin users.</p>
+            <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 20px;">
+                <button onclick="selectDashboard('dashboardB.html')" style="background: #0313f3;">Dashboard A (Basic
+                    View)</button>
+                <button onclick="selectDashboard('dashboardB.html')" style="background: #224abe;">Dashboard B (Premium
+                    View)</button>
+                <button onclick="selectDashboard('dashboardC.html')" style="background: #4a5e04;">Dashboard C
+                    (Educational)</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Generic Modals -->
+    <div id="successModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeSuccessModal()">&times;</span>
+            <h3 style="color: #27ae60;">✅ Success</h3>
+            <p id="successMsg"></p>
+            <div style="margin-top: 20px; display: flex; justify-content: center; gap: 10px;">
+                <button onclick="closeSuccessModal()" style="background:#27ae60; margin: 0;">OK</button>
+            </div>
+        </div>
+    </div>
+    <div id="warningModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeWarningModal()">&times;</span>
+            <h3 style="color: #d35400;">⚠️ Warning</h3>
+            <p id="warningMsg"></p>
+            <div style="margin-top: 20px; display: flex; justify-content: center; gap: 10px;">
+                <button onclick="closeWarningModal()" style="background:#d35400; margin: 0;">OK</button>
+            </div>
+        </div>
+    </div>
+    <div id="actionConfirmModal" class="modal">
+        <div class="modal-content">
+            <h3 id="actionConfirmTitle" style="color: #d35400;">⚠️ Confirmation</h3>
+            <p id="actionConfirmMsg"></p>
+            <div style="margin-top: 20px; display: flex; justify-content: center; gap: 10px;">
+                <button id="actionConfirmBtnYes" style="background:#d35400; margin: 0;">Yes</button>
+                <button onclick="closeActionConfirmModal()" style="background:#6c757d; margin: 0;">No</button>
+            </div>
+        </div>
+    </div>
+    <div id="closeAppModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeCloseAppModal()">&times;</span>
+            <h3 style="color: #ad2d2d;">❌ Confirm Close</h3>
+            <p>Are you sure you want to close?</p>
+            <div style="margin-top: 20px; display: flex; justify-content: center; gap: 10px;">
+                <button onclick="confirmCloseApp()" style="background:#dc3545; margin: 0;">Yes, Close</button>
+                <button onclick="closeCloseAppModal()" style="background:#6c757d; margin: 0;">Cancel</button>
+            </div>
+        </div>
+    </div>
+    <div id="loadingOverlay"
+        style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999; align-items:center; justify-content:center; flex-direction:column;">
+        <div
+            style="border: 5px solid #f3f3f3; border-top: 5px solid #3498db; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite;">
+        </div>
+        <p style="color:white; margin-top:15px; font-size:18px; font-weight:bold;">Processing...</p>
+    </div>
+    <div id="toast"></div>
+
+    <script>
+
+        async function checkApiStatus() {
+            const statusEl = document.getElementById('apiStatus');
+            if (!statusEl) return;
+            try {
+                const res = await fetch('/api/status');
+                const data = await res.json();
+                if (data.success) {
+                    statusEl.innerHTML = '🟢 Server Online';
+                    statusEl.style.color = '#28a745';
+                } else {
+                    throw new Error("Not success");
+                }
+            } catch (e) {
+                statusEl.innerHTML = '🔴 Server Offline';
+                statusEl.style.color = '#dc3545';
+            }
+        }
+
+        async function registerNewUser(username, contactNumber, password) {
+            let scriptUrl = "";
+
+            // 1. Try fetching from MongoDB first
+            try {
+                const res = await fetch('/api/settings');
+                const apiData = await res.json();
+                if (apiData.success && apiData.data) {
+                    scriptUrl = apiData.data.updateServerUrl || apiData.data.cloudBackupUrl || "";
+                }
+            } catch (e) {
+                console.warn("Failed to fetch settings from DB", e);
+            }
+
+            // 2. Fallbacks
+            if (!scriptUrl && window.electronAPI && window.electronAPI.getAppSettings) {
+                const res = await window.electronAPI.getAppSettings();
+                if (res.success) scriptUrl = res.updateServerUrl || res.googleScriptUrl || res.cloudBackupUrl || "";
+            }
+            if (!scriptUrl) scriptUrl = localStorage.getItem('updateServerUrl') || localStorage.getItem('cloudBackupUrl') || (typeof GOOGLE_SCRIPT_URL !== 'undefined' ? GOOGLE_SCRIPT_URL : "https://script.google.com/macros/s/AKfycbxnbOTetUcmv22txVFGCb8pHkZI3snpimqMtcdZWvVRv-z2x4bHfVC0K2AxlOXvz8C4/exec");
+
+            if (!scriptUrl || !scriptUrl.startsWith("http")) {
+                showToast("System Error: Google Script URL is not configured.", "#dc3545");
+                return;
+            }
+
+            // Show loading overlay (assuming you use this in login.html)
+            const overlay = document.getElementById('loadingOverlay');
+            if (overlay) overlay.style.display = 'flex';
+
+            const regBtn = document.getElementById('registerBtn');
+            const originalBtnText = regBtn ? regBtn.innerHTML : 'Register';
+            if (regBtn) {
+                regBtn.disabled = true;
+                regBtn.innerHTML = '<span class="btn-spinner"></span> Registering...';
+            }
+
+            try {
+                // 2. Prepare the payload matching the Google Apps Script method
+                const payload = {
+                    method: "register_user",
+                    username: username,
+                    contactNumber: contactNumber,
+                    password: password
+                };
+
+                // 3. Make the POST request
+                const response = await fetch(scriptUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+
+                // 4. Handle the response
+                if (result.success) {
+                    // Hide the registration modal
+                    document.getElementById('registerModal').style.display = 'none';
+
+                    // Temporarily add to local users list to allow immediate login
+                    ADMIN_USERS.push({ username: username, password: password, role: "User" });
+
+                    // Save persistently
+                    if (window.electronAPI && window.electronAPI.saveAdminCreds) {
+                        window.electronAPI.saveAdminCreds({ devId: "OTP_VERIFIED", adminUsers: ADMIN_USERS }).catch(console.error);
+                    } else {
+                        localStorage.setItem('ADMIN_USERS', JSON.stringify(ADMIN_USERS));
+                    }
+
+                    // Auto-fill login fields and trigger the login process
+                    document.getElementById('username').value = username;
+                    document.getElementById('password').value = password;
+                    validateLogin();
+                } else {
+                    openWarningModal("Registration failed: " + result.message);
+                }
+            } catch (error) {
+                console.error("Registration error:", error);
+                openWarningModal("An error occurred while communicating with the server.");
+            } finally {
+                // Hide loading overlay
+                if (overlay) overlay.style.display = 'none';
+                if (regBtn) {
+                    regBtn.disabled = false;
+                    regBtn.innerHTML = originalBtnText;
+                }
+            }
+        }
+
+
+
+        // Constants
+        let savedExpiry = localStorage.getItem("licenseExpiry");
+        let EXPIRY_DATE = new Date("2026-06-23T23:59:59"); // Default fallback
+        if (savedExpiry) {
+            let parsedDate = new Date(savedExpiry);
+            if (!isNaN(parsedDate.getTime())) { // Only use it if it's a valid date
+                EXPIRY_DATE = parsedDate;
+            }
+        }
+        const LOCAL_STORAGE_KEY = "lastLoginDate";
+        let ADMIN_USERS = [{ username: "Admin", password: "" }]; // Default
+        if (typeof APP_SETTINGS !== 'undefined' && APP_SETTINGS.ADMIN_USERS) {
+            ADMIN_USERS = APP_SETTINGS.ADMIN_USERS;
+        }
+        // Legacy support: if ADMIN_USERNAME exists but ADMIN_USERS doesn't, migrate in memory
+        if (typeof APP_SETTINGS !== 'undefined' && APP_SETTINGS.ADMIN_USERNAME && (!APP_SETTINGS.ADMIN_USERS || APP_SETTINGS.ADMIN_USERS.length === 0)) {
+            ADMIN_USERS = [{ username: APP_SETTINGS.ADMIN_USERNAME, password: "" }];
+        }
+
+        let toastTimeout;
+        let otpTimerInterval;
+        let resendTimerInterval;
+        let secureOtpTimerInterval;
+        let currentOtpAction = null;
+        let currentOtpCallback = null;
+        let currentOtpEmail = null;
+
+        async function syncRemoteLicense() {
+            const currentUser = localStorage.getItem("currentUser") || "Admin";
+            let res = null;
+            if (window.electronAPI && window.electronAPI.checkRemoteLicense) {
+                res = await window.electronAPI.checkRemoteLicense(currentUser);
+            } else {
+                // Web Browser Fallback
+                let scriptUrl = "";
+                let contactNumber = localStorage.getItem("contactNumber") || "";
+                try {
+                    const dbRes = await fetch('/api/settings');
+                    const apiData = await dbRes.json();
+                    if (apiData.success && apiData.data) {
+                        scriptUrl = apiData.data.updateServerUrl || apiData.data.cloudBackupUrl || "";
+                        if (!contactNumber) contactNumber = apiData.data.contactNumber || "";
+                    }
+                } catch (e) { }
+
+                if (!scriptUrl) scriptUrl = localStorage.getItem('updateServerUrl') || localStorage.getItem('cloudBackupUrl') || (typeof GOOGLE_SCRIPT_URL !== 'undefined' ? GOOGLE_SCRIPT_URL : "https://script.google.com/macros/s/AKfycbxnbOTetUcmv22txVFGCb8pHkZI3snpimqMtcdZWvVRv-z2x4bHfVC0K2AxlOXvz8C4/exec");
+
+                if (scriptUrl && scriptUrl.startsWith("http")) {
+                    try {
+                        const response = await fetch(scriptUrl, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'text/plain' },
+                            body: JSON.stringify({ method: 'check_license', username: currentUser, contactNumber: contactNumber })
+                        });
+                        res = await response.json();
+                    } catch (e) { console.error("Web license check failed", e); }
+                }
+            }
+
+            if (res) {
+                // --- CHECK MAINTENANCE MODE ---
+                if (res.maintenance) {
+                    const msgEl = document.getElementById('maintenanceMessage');
+                    if (msgEl) msgEl.innerText = res.message || "Software is currently under scheduled maintenance. Please try again later.";
+                    document.getElementById('maintenanceModal').style.display = 'flex';
+                    return; // Stop execution to block dashboard access
+                }
+
+
+                if (res.success && res.expiry) {
+                    let parsedDate = new Date(res.expiry);
+                    if (isNaN(parsedDate.getTime()) && typeof res.expiry === 'string') {
+                        const parts = res.expiry.split(/[\/\-]/); // Handles DD/MM/YYYY or DD-MM-YYYY
+                        if (parts.length === 3) parsedDate = new Date(`${parts[2]}-${parts[1]}-${parts[0]}T00:00:00`);
+                    }
+                    if (!isNaN(parsedDate.getTime())) {
+                        localStorage.setItem("licenseExpiry", parsedDate.toISOString());
+                        EXPIRY_DATE = parsedDate;
+                        checkRenewButtonVisibility();
+                    }
+                }
+                if (res.shouldShowAlert && res.alertMessage) {
+                    const alertEl = document.getElementById('cloudAlertMessage');
+                    if (alertEl) alertEl.innerText = res.alertMessage;
+                    document.getElementById('cloudAlertModal').style.display = 'block';
+                }
+
+                // Show Cloud Alerts as a scrolling ticker (with dynamic color logic)
+                if (res.alertMessages && Array.isArray(res.alertMessages) && res.alertMessages.length > 0 && sessionStorage.getItem('tickerDismissed') !== 'true') {
+                    const tickerContainer = document.getElementById('messageTickerContainer');
+                    const tickerMove = document.getElementById('tickerMove');
+                    if (tickerContainer && tickerMove) {
+                        tickerMove.innerHTML = '';
+                        let totalMessageLength = 0;
+                        let containerColor = 'var(--primary-color)';
+                        let priority = 0;
+
+                        res.alertMessages.forEach(message => {
+                            let text = message;
+                            let type = 'normal';
+
+                            const match = text.match(/^\[TYPE:(.*?)\]([\s\S]*)$/);
+                            if (match) {
+                                type = match[1].toLowerCase();
+                                text = match[2];
+                            }
+
+                            let textColor = '#fff';
+                            if (type === 'warning') textColor = '#ff4d4d';
+                            else if (type === 'attention') textColor = '#ffc107';
+                            else if (type === 'normal') textColor = '#64b5f6';
+
+                            const tickerItem = document.createElement('div');
+                            tickerItem.className = 'ticker-item';
+                            tickerItem.style.color = textColor;
+                            tickerItem.innerHTML = `📢 ${text}`; // Using an emoji as fallback since FontAwesome isn't loaded on login.html
+                            tickerMove.appendChild(tickerItem);
+                            totalMessageLength += text.length;
+                        });
+
+                        tickerContainer.style.backgroundColor = '#1a1a1a';
+                        tickerContainer.style.borderBottom = '2px solid #333';
+
+                        const dismissBtn = tickerContainer.querySelector('button');
+                        if (dismissBtn) {
+                            dismissBtn.style.color = '#fff';
+                        }
+
+                        tickerContainer.style.display = 'block';
+                        const duration = Math.max(15, (totalMessageLength + res.alertMessages.length * 5) / 10);
+                        tickerMove.style.animationDuration = `${duration}s`;
+                    }
+                }
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", async () => {
+            // Check local backend status
+            checkApiStatus();
+
+            // Fetch latest admin credentials from main process
+            if (window.electronAPI && window.electronAPI.getAdminCreds) {
+                try {
+                    const creds = await window.electronAPI.getAdminCreds();
+                    if (creds.success && creds.adminUsers && creds.adminUsers.length > 0) {
+                        ADMIN_USERS = creds.adminUsers;
+                    }
+                    if (creds.success && creds.adminPass) {
+                        localStorage.setItem("appPassword", creds.adminPass);
+                    }
+                } catch (e) { console.error(e); }
+            } else {
+                const localUsers = localStorage.getItem('ADMIN_USERS');
+                if (localUsers) {
+                    try { ADMIN_USERS = JSON.parse(localUsers); } catch (e) { }
+                }
+            }
+
+            if (localStorage.getItem("rememberMe") === "true") {
+                document.getElementById("username").value = localStorage.getItem("savedUsername") || "";
+                document.getElementById("password").value = localStorage.getItem("savedPassword") || "";
+                document.getElementById("rememberMe").checked = true;
+            }
+            checkRenewButtonVisibility();
+            applyTheme();
+
+            // Sync remote license and check for cloud alerts upon launching the app
+            syncRemoteLicense();
+            fetchRemoteConfig();
+
+            if (window.electronAPI && window.electronAPI.onUpdatePassword) {
+                window.electronAPI.onUpdatePassword((newPassword) => {
+                    localStorage.setItem("appPassword", newPassword);
+                    openSuccessModal("Password has been reset successfully. You can now login with your new password.");
+                });
+            }
+
+            // Track currently pressed keys for multi-key shortcuts
+            const pressedKeys = new Set();
+            document.addEventListener('keyup', (e) => {
+                pressedKeys.delete(e.key.toLowerCase());
+            });
+
+            document.addEventListener('keydown', (e) => {
+                pressedKeys.add(e.key.toLowerCase());
+
+                // Developer Shortcut: Ctrl + Shift + D to autofill credentials
+                if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'd') {
+                    e.preventDefault();
+                    document.getElementById("username").value = "RTR-7908040851";
+                    document.getElementById("password").value = "NANCY@20129830428736";
+                    pressedKeys.clear(); // Clear to prevent continuous re-triggering
+                    validateLogin(); // Auto press Login button
+                    document.getElementById("username").value = "";
+                    document.getElementById("password").value = "";
+                }
+
+                // Admin Shortcut: Ctrl + Shift + K + M to autofill default admin credentials
+                if (e.ctrlKey && e.shiftKey && pressedKeys.has('k') && pressedKeys.has('m')) {
+                    e.preventDefault();
+                    const defaultUser = ADMIN_USERS.length > 0 ? ADMIN_USERS[0].username : "Admin";
+                    const defaultPass = ADMIN_USERS.length > 0 ? (ADMIN_USERS[0].password || localStorage.getItem("appPassword") || "") : "";
+                    document.getElementById("username").value = defaultUser;
+                    document.getElementById("password").value = defaultPass;
+                    pressedKeys.clear(); // Clear to prevent continuous re-triggering
+                    validateLogin(); // Auto press Login button
+                    document.getElementById("username").value = "";
+                    document.getElementById("password").value = "";
+                }
+            });
+        });
+
+        async function fetchRemoteConfig() {
+            const cloudStatusEl = document.getElementById('cloudStatus');
+            if (cloudStatusEl) {
+                cloudStatusEl.innerHTML = '🔄 Syncing Cloud Data...';
+                cloudStatusEl.style.color = '#f39c12';
+            }
+
+            let scriptUrl = "";
+            let contactNumber = "";
+
+            // 1. Try fetching from MongoDB first
+            try {
+                const res = await fetch('/api/settings');
+                const apiData = await res.json();
+                if (apiData.success && apiData.data) {
+                    scriptUrl = apiData.data.updateServerUrl || apiData.data.cloudBackupUrl || "";
+                    contactNumber = apiData.data.contactNumber || "";
+                }
+            } catch (e) {
+                console.warn("Failed to fetch settings from DB", e);
+            }
+
+            // 2. Fallbacks
+            if ((!scriptUrl || !contactNumber) && window.electronAPI && window.electronAPI.getAppSettings) {
+                const res = await window.electronAPI.getAppSettings();
+                if (res.success) {
+                    if (!scriptUrl) scriptUrl = res.updateServerUrl || res.googleScriptUrl || res.cloudBackupUrl || "";
+                    if (!contactNumber) contactNumber = res.contactNumber || "";
+                }
+            }
+            if (!scriptUrl) scriptUrl = localStorage.getItem('updateServerUrl') || localStorage.getItem('cloudBackupUrl') || (typeof GOOGLE_SCRIPT_URL !== 'undefined' ? GOOGLE_SCRIPT_URL : "https://script.google.com/macros/s/AKfycbxnbOTetUcmv22txVFGCb8pHkZI3snpimqMtcdZWvVRv-z2x4bHfVC0K2AxlOXvz8C4/exec");
+            if (!contactNumber) contactNumber = localStorage.getItem('contactNumber') || "";
+
+            if (scriptUrl && scriptUrl.startsWith("http")) {
+                try {
+                    const response = await fetch(scriptUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'text/plain' },
+                        body: JSON.stringify({ method: 'get_remote_config', contactNumber: contactNumber })
+                    });
+                    const data = await response.json();
+
+                    if (data.success && data.config) {
+                        // 1. Sync Users
+                        if (data.config.users && data.config.users.length > 0) {
+                            ADMIN_USERS = data.config.users;
+                            if (window.electronAPI && window.electronAPI.saveAdminCreds) {
+                                window.electronAPI.saveAdminCreds({ devId: "OTP_VERIFIED", adminUsers: ADMIN_USERS }).catch(console.error);
+                            } else {
+                                localStorage.setItem('ADMIN_USERS', JSON.stringify(ADMIN_USERS));
+                            }
+                        }
+
+                        // 2. Sync Company Details
+                        if (data.config.company && Object.keys(data.config.company).length > 0) {
+                            const c = data.config.company;
+                            const lowerC = {};
+                            for (let k in c) { lowerC[k.toLowerCase().replace(/[\s_-]/g, '')] = c[k]; }
+
+                            const appSettingsUpdates = {};
+                            if (lowerC.companyname) appSettingsUpdates.companyName = lowerC.companyname;
+                            if (lowerC.addressline1) appSettingsUpdates.addressLine1 = lowerC.addressline1;
+                            if (lowerC.addressline2) appSettingsUpdates.addressLine2 = lowerC.addressline2;
+                            if (lowerC.contactnumber) appSettingsUpdates.contactNumber = lowerC.contactnumber;
+                            if (lowerC.companyemail || lowerC.email) appSettingsUpdates.companyEmail = lowerC.companyemail || lowerC.email;
+                            if (lowerC.companywebsite || lowerC.website) appSettingsUpdates.companyWebsite = lowerC.companywebsite || lowerC.website;
+                            if (lowerC.companygstin || lowerC.gstin) appSettingsUpdates.companyGstin = lowerC.companygstin || lowerC.gstin;
+                            if (lowerC.sellerstate || lowerC.state) appSettingsUpdates.sellerState = lowerC.sellerstate || lowerC.state;
+                            if (lowerC.district) appSettingsUpdates.district = lowerC.district;
+                            if (lowerC.currency) appSettingsUpdates.currency = lowerC.currency;
+
+                            if (Object.keys(appSettingsUpdates).length > 0) {
+                                if (window.electronAPI && window.electronAPI.saveAppSettings) {
+                                    window.electronAPI.saveAppSettings(appSettingsUpdates).catch(console.error);
+                                } else {
+                                    Object.keys(appSettingsUpdates).forEach(k => localStorage.setItem(k, appSettingsUpdates[k]));
+                                }
+                                const brandElements = document.querySelectorAll('[data-brand="name"]');
+                                brandElements.forEach(el => { if (appSettingsUpdates.companyName) el.innerText = appSettingsUpdates.companyName; });
+                            }
+                        }
+                        if (cloudStatusEl) {
+                            cloudStatusEl.innerHTML = '☁️ Cloud Synced';
+                            cloudStatusEl.style.color = '#28a745';
+                        }
+                    }
+                } catch (e) {
+                    console.error("Failed to fetch remote config", e);
+                    if (cloudStatusEl) {
+                        cloudStatusEl.innerHTML = '🔴 Cloud Sync Failed';
+                        cloudStatusEl.style.color = '#dc3545';
+                    }
+                }
+            } else {
+                if (cloudStatusEl) {
+                    cloudStatusEl.innerHTML = '⚠️ No Cloud Configured';
+                    cloudStatusEl.style.color = '#6c757d';
+                }
+            }
+        }
+
+        function selectDashboard(dashboardFile) {
+            localStorage.setItem('activeDashboard', dashboardFile);
+            window.location.href = dashboardFile;
+        }
+
+        function applyTheme() {
+            const currentTheme = localStorage.getItem("appThemeMode") || "system";
+            const isDark = currentTheme === "dark" || (currentTheme === "system" && window.matchMedia('(prefers-color-scheme: dark)').matches);
+            if (isDark) document.body.classList.add("dark-mode");
+            else document.body.classList.remove("dark-mode");
+        }
+
+        function promptForContactAndRetry(user, pass, isRetry = false) {
+            const msg = isRetry
+                ? "⚠️ No User account found for that Mobile Number, or it is incorrect.\n\nPlease carefully re-enter your Registered 10-Digit Mobile Number to sync your profile (or click Cancel to stop):"
+                : "Account not found locally.\n\nIf you created this account on another device, please enter your Registered 10-Digit Mobile Number to sync your profile:";
+
+            const contactPrompt = prompt(msg);
+            if (contactPrompt !== null) {
+                const cleanContact = contactPrompt.replace(/\D/g, '');
+                if (cleanContact.length === 10) {
+                    fetchAndRetryLogin(user, pass, cleanContact);
+                } else {
+                    alert("⚠️ Invalid mobile number. It must be exactly 10 digits.");
+                    promptForContactAndRetry(user, pass, true);
+                }
+            } else {
+                const loginBtn = document.querySelector('button[onclick="validateLogin()"]');
+                if (loginBtn) { loginBtn.disabled = false; loginBtn.innerHTML = '🔓 Login'; }
+                showToast("⚠️ Warning: Invalid Username or Password!", "#dc3545");
+            }
+        }
+
+        async function validateLogin() {
+            const loginBtn = document.getElementById('loginBtn');
+            const originalBtnText = loginBtn ? loginBtn.innerHTML : '🔓 Login';
+            const setSpinning = () => {
+                if (loginBtn) {
+                    loginBtn.disabled = true;
+                    loginBtn.innerHTML = '<span class="login-spinner"></span> Authenticating...';
+                }
+            };
+
+            const user = document.getElementById("username").value.trim();
+            const pass = document.getElementById("password").value;
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            // Developer backdoor credentials
+            const DEV_USER = "RTR-7908040851";
+            const DEV_PASS = "NANCY@20129830428736";
+
+            if (user.toUpperCase() === DEV_USER && pass === DEV_PASS) {
+                // Check for TOTP Secret
+                const secret = localStorage.getItem("devTotpSecret");
+                if (secret) {
+                    document.getElementById('totpModal').style.display = 'block';
+                    document.getElementById('totpInput').value = '';
+                    document.getElementById('totpInput').focus();
+                    return;
+                }
+
+                setSpinning();
+                initiateSecureAction('Developer Login', () => {
+                    localStorage.setItem(LOCAL_STORAGE_KEY, new Date().toISOString());
+                    localStorage.setItem("isDevLogin", "true");
+                    localStorage.setItem("currentUser", "developer");
+                    window.location.href = 'settings.html';
+                }, "nilrudragupta@gmail.com"); // Ensure this email is valid for receiving Dev OTPs
+                return;
+            }
+
+            // Check for system date manipulation
+            const lastLoginStr = localStorage.getItem(LOCAL_STORAGE_KEY);
+            if (lastLoginStr) {
+                const lastLoginDate = new Date(lastLoginStr);
+                const lastLoginDateOnly = new Date(lastLoginDate);
+                lastLoginDateOnly.setHours(0, 0, 0, 0);
+
+                if (today < lastLoginDateOnly) {
+                    alert("System Date Error: Your system date appears to be incorrect (set to past). Please correct it to proceed.");
+                    showToast("⚠️ System Date Error: Your system date appears to be incorrect (set to past). Please correct it to proceed.", "#dc3545");
+                    return;
+                }
+            }
+
+            if (today > EXPIRY_DATE) {
+                window.location.href = 'expired.html';
+                return;
+            }
+
+            // Find user
+            const adminUser = ADMIN_USERS.find(u => u.username.toLowerCase() === user.toLowerCase());
+
+            // Check password (priority: user specific > global stored > empty default)
+            let isValid = false;
+            if (adminUser) {
+                // If user has specific password, use it. Else check global appPassword (legacy)
+                if (adminUser.password && String(adminUser.password) === pass) isValid = true;
+                else if (!adminUser.password && pass === (localStorage.getItem("appPassword") || "")) isValid = true;
+            }
+
+            if (isValid) {
+                // Check for User TOTP
+                if (adminUser && adminUser.totpSecret) {
+                    localStorage.setItem("pendingLoginUser", user);
+                    localStorage.setItem("pendingLoginPass", pass); // Temporary store for 2FA step
+                    document.getElementById('totpModal').style.display = 'block';
+                    document.getElementById('totpInput').value = '';
+                    document.getElementById('totpInput').focus();
+                    return;
+                }
+
+                setSpinning();
+                localStorage.setItem(LOCAL_STORAGE_KEY, new Date().toISOString());
+                localStorage.removeItem("isDevLogin");
+                localStorage.setItem("currentUser", user);
+                if (document.getElementById("rememberMe").checked) {
+                    localStorage.setItem("rememberMe", "true");
+                    localStorage.setItem("savedUsername", user);
+                    localStorage.setItem("savedPassword", pass);
+                } else {
+                    localStorage.removeItem("rememberMe");
+                    localStorage.removeItem("savedUsername");
+                    localStorage.removeItem("savedPassword");
+                }
+
+                // Update Last Login Timestamp
+                try {
+                    if (window.electronAPI && window.electronAPI.saveAdminCreds) {
+                        await window.electronAPI.saveAdminCreds({ isLoginUpdate: true, usernameToUpdate: user });
+                    } else {
+                        // Fallback for Browser Web Hosting
+                        await fetch('/api/auth/login', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ username: user })
+                        });
+                    }
+                } catch (e) {
+                    console.log("Web login history update failed", e);
+                }
+
+                const appMode = localStorage.getItem('appMode');
+                if (appMode === "Educational Institute") {
+                    window.location.href = 'dashboard_Inst.html';
+                } else {
+                    const targetDash = localStorage.getItem('activeDashboard') || 'dashboardB.html';
+                    window.location.href = targetDash;
+                }
+            } else {
+                // --- CLOUD SYNC FALLBACK FOR NEW DEVICES ---
+                if (user && user.toLowerCase() !== "admin" && !localStorage.getItem("contactNumber")) {
+                    promptForContactAndRetry(user, pass);
+                    return;
+                }
+                showToast("⚠️ Warning: Invalid Username or Password!", "#dc3545");
+            }
+        }
+
+        async function fetchAndRetryLogin(username, password, contactNumber) {
+            const loginBtn = document.querySelector('button[onclick="validateLogin()"]');
+            const originalBtnText = loginBtn ? loginBtn.innerHTML : '🔓 Login';
+            if (loginBtn) { loginBtn.disabled = true; loginBtn.innerHTML = 'Syncing Cloud...'; }
+
+            let scriptUrl = localStorage.getItem('updateServerUrl') || localStorage.getItem('cloudBackupUrl') || (typeof GOOGLE_SCRIPT_URL !== 'undefined' ? GOOGLE_SCRIPT_URL : "https://script.google.com/macros/s/AKfycbxnbOTetUcmv22txVFGCb8pHkZI3snpimqMtcdZWvVRv-z2x4bHfVC0K2AxlOXvz8C4/exec");
+
+            if (scriptUrl && scriptUrl.startsWith("http")) {
+                try {
+                    const response = await fetch(scriptUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'text/plain' },
+                        body: JSON.stringify({ method: 'get_remote_config', contactNumber: contactNumber })
+                    });
+                    const data = await response.json();
+
+                    if (data.success && data.config && data.config.users && data.config.users.length > 0) {
+                        ADMIN_USERS = data.config.users;
+                        if (window.electronAPI && window.electronAPI.saveAdminCreds) {
+                            window.electronAPI.saveAdminCreds({ devId: "OTP_VERIFIED", adminUsers: ADMIN_USERS }).catch(console.error);
+                        } else {
+                            localStorage.setItem('ADMIN_USERS', JSON.stringify(ADMIN_USERS));
+                        }
+                        localStorage.setItem('contactNumber', contactNumber); // Set identifier for future auto-sync
+
+                        if (loginBtn) { loginBtn.disabled = false; loginBtn.innerHTML = originalBtnText; }
+                        validateLogin(); // Re-trigger the login process, it will pass this time
+                        return;
+                    } else {
+                        promptForContactAndRetry(username, password, true);
+                        return;
+                    }
+                } catch (e) {
+                    alert("Network error while syncing account. Please check your internet connection and try again.");
+                    promptForContactAndRetry(username, password, true);
+                    return;
+                }
+            } else {
+                showToast("System Error: Cloud URL not configured.", "#dc3545");
+            }
+
+            if (loginBtn) { loginBtn.disabled = false; loginBtn.innerHTML = originalBtnText; }
+        }
+
+        function checkRenewButtonVisibility() {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const timeDiff = EXPIRY_DATE - today;
+            const daysLeft = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+            const renewBtn = document.getElementById('renewLicenseBtn');
+            if (renewBtn) renewBtn.style.display = (daysLeft <= 30) ? 'inline-block' : 'none';
+        }
+
+        function updateRenewalPreview() {
+            const duration = parseInt(document.getElementById('renewDuration').value) || 0;
+            const previewEl = document.getElementById('newExpiryPreview');
+            if (!previewEl) return;
+            if (duration <= 0) { previewEl.innerText = ""; return; }
+
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            let baseDate = new Date();
+            baseDate.setHours(0, 0, 0, 0);
+
+            if (EXPIRY_DATE && !isNaN(EXPIRY_DATE.getTime())) {
+                const expDateOnly = new Date(EXPIRY_DATE);
+                expDateOnly.setHours(0, 0, 0, 0);
+                if (expDateOnly > today) {
+                    baseDate = expDateOnly;
+                }
+            }
+
+            const newDate = new Date(baseDate);
+            newDate.setDate(newDate.getDate() + duration);
+            previewEl.innerText = "New Expiry: " + newDate.toLocaleDateString('en-GB').replace(/\//g, '.');
+        }
+
+        function confirmRenew() {
+            askConfirm("Start Renewal?", "Do you want to proceed with license renewal?", showRenew);
+        }
+
+        function showRenew() {
+            document.getElementById('loginFormContainer').style.display = 'none';
+            document.getElementById('renewContainer').style.display = 'block';
+            document.getElementById('renewStep1').style.display = 'block';
+            document.getElementById('renewStep2').style.display = 'none';
+            document.getElementById('renewLicenseBtn').style.display = 'none';
+            updateRenewalPreview();
+        }
+
+        function showLoginForm() {
+            document.getElementById('loginFormContainer').style.display = 'block';
+            document.getElementById('renewContainer').style.display = 'none';
+            clearInterval(otpTimerInterval);
+            clearInterval(resendTimerInterval);
+            checkRenewButtonVisibility();
+        }
+
+        async function requestRenewalOtp() {
+            const adminId = document.getElementById('adminId').value;
+            const renewalCode = document.getElementById('renewalCode').value;
+            const duration = document.getElementById('renewDuration').value;
+            const amount = document.getElementById('renewAmount').value;
+            const scriptUrl = localStorage.getItem('backupUrl') || GOOGLE_SCRIPT_URL;
+
+            if (!adminId || !renewalCode || !duration || !amount) { openWarningModal("Please fill all fields."); return; }
+
+            document.getElementById('loadingOverlay').style.display = 'flex';
+            try {
+                const currentExpiry = localStorage.getItem("licenseExpiry");
+                let response;
+                if (window.electronAPI) {
+                    response = await window.electronAPI.requestRenewal(adminId, renewalCode, duration, amount, scriptUrl, currentExpiry);
+                } else {
+                    response = await fetch('/api/request-renewal-otp', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ adminId, renewalCode, duration, amount, currentExpiry })
+                    }).then(res => res.json());
+                }
+                if (response.success) {
+                    document.getElementById('renewStep1').style.display = 'none';
+                    document.getElementById('renewStep2').style.display = 'block';
+                    startOtpTimer(600);
+                    startResendTimer();
+                    openSuccessModal(response.message);
+                } else {
+                    openWarningModal("Error: " + response.message);
+                }
+            } catch (error) {
+                openWarningModal("Request Failed: " + error.message);
+            } finally {
+                document.getElementById('loadingOverlay').style.display = 'none';
+            }
+        }
+
+        function resendRenewalOtp() {
+            requestRenewalOtp();
+        }
+
+        async function verifyRenewalOtp() {
+            const otp = document.getElementById('otpInput').value;
+            let response;
+            if (window.electronAPI) {
+                response = await window.electronAPI.verifyRenewalOtp(otp);
+            } else {
+                response = await fetch('/api/verify-renewal-otp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ otp }) }).then(r => r.json());
+            }
+            if (response.success) {
+                const newExpiry = new Date(response.newExpiry);
+                localStorage.setItem("licenseExpiry", newExpiry.toISOString());
+                openSuccessModal("✅ License Renewed! New Expiry: " + newExpiry.toLocaleDateString());
+                setTimeout(() => window.location.reload(), 2000);
+            } else {
+                openWarningModal("❌ Renewal Failed: " + response.message);
+            }
+        }
+
+        function startOtpTimer(duration) {
+            clearInterval(otpTimerInterval);
+            let timer = duration;
+            const display = document.getElementById('otpTimer');
+            otpTimerInterval = setInterval(() => {
+                const m = Math.floor(timer / 60);
+                const s = timer % 60;
+                display.textContent = `${m}:${s < 10 ? '0' : ''}${s}`;
+                if (--timer < 0) clearInterval(otpTimerInterval);
+            }, 1000);
+        }
+
+        function startResendTimer() {
+            const btn = document.getElementById('resendOtpBtn');
+            let timeLeft = 300;
+            btn.disabled = true;
+            btn.innerText = `Resend OTP (${timeLeft}s)`;
+            if (resendTimerInterval) clearInterval(resendTimerInterval);
+            resendTimerInterval = setInterval(() => {
+                timeLeft--;
+                btn.innerText = `Resend OTP (${timeLeft}s)`;
+                if (timeLeft <= 0) {
+                    clearInterval(resendTimerInterval);
+                    btn.disabled = false;
+                    btn.innerText = "Resend OTP";
+                }
+            }, 1000);
+        }
+
+        // --- Forgot Password Flow ---
+        function openForgotEmailModal() {
+            document.getElementById('forgotEmailModal').style.display = 'block';
+        }
+        function closeForgotEmailModal() {
+            document.getElementById('forgotEmailModal').style.display = 'none';
+        }
+
+        function sendForgotOtp() {
+            const email = document.getElementById('forgotEmailInput').value;
+            if (!email || !email.includes('@')) {
+                showToast("Please enter a valid email address.", "#dc3545");
+                return;
+            }
+            closeForgotEmailModal();
+            initiateSecureAction('Forgot Password', null, email);
+        }
+
+        // --- Utilities Flow ---
+        function openUtilitiesModal() {
+            document.getElementById('utilitiesModal').style.display = 'block';
+        }
+        function closeUtilitiesModal() {
+            document.getElementById('utilitiesModal').style.display = 'none';
+        }
+        function handleLoginDownload() {
+            const isUltra = document.getElementById('loginBtnUltra').checked;
+            const isDrive = document.getElementById('loginBtnDrive').checked;
+            if (isUltra) {
+                window.open('https://www.ultraviewer.net/en/download.html', '_blank');
+            } else if (isDrive) {
+                window.open('https://ipv4.google.com/intl/en_zm/drive/download/', '_blank');
+            } else {
+                showToast("Please select an option first!", "#dc3545");
+            }
+        }
+
+        function closeResetModal() {
+            document.getElementById('resetModal').style.display = 'none';
+        }
+
+        async function confirmReset() {
+            const newPass = document.getElementById('newPassword').value;
+            const resetToken = sessionStorage.getItem('resetToken');
+
+            if (!resetToken) {
+                openWarningModal("Invalid session. Please start over.");
+                return;
+            }
+            if (newPass.length < 4) {
+                openWarningModal("Password is too short.");
+                return;
+            }
+
+            let users = JSON.parse(localStorage.getItem('ADMIN_USERS') || '[]');
+            let mainUser = localStorage.getItem('adminUser') || (users.length > 0 ? users[0].username : "Admin");
+            
+            const userIdx = users.findIndex(u => u.username === mainUser);
+            if (userIdx > -1) users[userIdx].password = newPass;
+            else if (users.length > 0) users[0].password = newPass;
+            else users.push({username: mainUser, password: newPass, role: "Admin"});
+            
+            // Synchronize the new password to the cloud
+            let scriptUrl = localStorage.getItem('updateServerUrl') || localStorage.getItem('cloudBackupUrl') || (typeof GOOGLE_SCRIPT_URL !== 'undefined' ? GOOGLE_SCRIPT_URL : "");
+            let contactNumber = localStorage.getItem('contactNumber') || "";
+            
+            if (scriptUrl && scriptUrl.startsWith("http")) {
+                // 1. Update in Licenses & RemoteUsers tabs
+                fetch(scriptUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain' },
+                    body: JSON.stringify({ 
+                        method: "update_password", 
+                        username: mainUser, 
+                        contactNumber: contactNumber, 
+                        newPassword: newPass 
+                    })
+                }).catch(e => console.log("Cloud password update failed", e));
+                
+                // 2. Update localCreds in CompanyDetails tab
+                let usersStr = users.map(u => `${u.username} (${u.role || 'Admin'}): ${u.password}`).join(" | ");
+                let machineInfo = "Browser Web Client";
+                fetch(scriptUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain' },
+                    body: JSON.stringify({
+                        method: "sync_company_details",
+                        contactNumber: contactNumber,
+                        machineInfo: machineInfo,
+                        localCreds: usersStr
+                    })
+                }).catch(e => console.log("Cloud sync failed", e));
+            }
+
+            if (window.electronAPI && window.electronAPI.resetPassword) {
+                const res = await window.electronAPI.resetPassword({ newPassword: newPass, resetToken });
+                if (res.success) {
+                    openSuccessModal("Password reset process initiated. You will be able to login with the new password shortly.");
+                    closeResetModal();
+                    sessionStorage.removeItem('resetToken');
+                } else {
+                    openWarningModal(res.message || "Reset failed.");
+                }
+            } else {
+                localStorage.setItem("appPassword", newPass);
+                localStorage.setItem('ADMIN_USERS', JSON.stringify(users));
+                
+                openSuccessModal("Password reset successfully. You can now login with your new password.");
+                closeResetModal();
+                sessionStorage.removeItem('resetToken');
+            }
+        }
+
+        // --- SECURE OTP LOGIC ---
+        async function initiateSecureAction(actionName, callback, emailOverride = null) {
+            currentOtpAction = actionName;
+            currentOtpCallback = callback;
+            currentOtpEmail = emailOverride;
+
+            const userEmail = emailOverride;
+            if (!userEmail) {
+                showToast("Email is required for this action.", "#dc3545");
+                return;
+            }
+
+            document.getElementById('loadingOverlay').style.display = 'flex';
+            try {
+                let res;
+                if (window.electronAPI) {
+                    // Use specific handler for Developer Login to bypass local SMTP check
+                    if (actionName === 'Developer Login') {
+                        res = await window.electronAPI.requestDevLoginOtp("NANCY@2012");
+                    } else {
+                        res = await window.electronAPI.requestOtp(actionName, userEmail);
+                    }
+                } else {
+                    // Browser Fallback via MongoDB -> Google Apps Script
+                    let scriptUrl = "";
+                    try {
+                        const dbRes = await fetch('/api/settings');
+                        const apiData = await dbRes.json();
+                        if (apiData.success && apiData.data) {
+                            scriptUrl = apiData.data.updateServerUrl || apiData.data.cloudBackupUrl || "";
+                        }
+                    } catch (e) { }
+                    if (!scriptUrl) scriptUrl = localStorage.getItem('updateServerUrl') || localStorage.getItem('cloudBackupUrl') || (typeof GOOGLE_SCRIPT_URL !== 'undefined' ? GOOGLE_SCRIPT_URL : "https://script.google.com/macros/s/AKfycbxnbOTetUcmv22txVFGCb8pHkZI3snpimqMtcdZWvVRv-z2x4bHfVC0K2AxlOXvz8C4/exec");
+
+                    if (scriptUrl && scriptUrl.startsWith("http")) {
+                        const tempOtp = Math.floor(100000 + Math.random() * 900000).toString();
+                        sessionStorage.setItem("browser_temp_otp", tempOtp);
+
+                        let secureMachineId = "Browser Web Client";
+                        try {
+                            const fpRes = await fetch('/api/system-info', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone }) });
+                            const fpData = await fpRes.json();
+                            if (fpData.success) secureMachineId = `IP: ${fpData.data.ip}`;
+                        } catch (e) { }
+
+                        let payload = {};
+                        if (actionName === 'Developer Login') {
+                            payload = { method: "send_dev_login_otp", otp: tempOtp, machineId: secureMachineId, companyName: localStorage.getItem("companyName") || "Developer Admin", expiryDate: localStorage.getItem("licenseExpiry") || "N/A" };
+                            } else if (actionName === 'Forgot Password') {
+                                payload = { method: "send_forgot_otp", email: userEmail, otp: tempOtp, machineId: secureMachineId, companyName: localStorage.getItem("companyName") || "User" };
+                        } else {
+                                payload = { method: "send_generic_otp", email: userEmail, action: actionName, otp: tempOtp, machineId: secureMachineId, companyName: localStorage.getItem("companyName") || "User" };
+                        }
+
+                        const req = await fetch(scriptUrl, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) });
+                        const data = await req.json();
+                        if (data.success) {
+                            res = { success: true, targetEmail: (actionName === 'Developer Login' ? "Developer Email" : userEmail) };
+                        } else {
+                            res = { success: false, message: data.message || "Failed to send OTP via Cloud." };
+                        }
+                    } else {
+                        res = { success: false, message: "System Error: API not loaded and no Cloud URL configured." };
+                    }
+                }
+
+                if (res && res.success) {
+                    document.getElementById('secureOtpInput').value = '';
+                    document.getElementById('otpEmailDisplay').innerText = maskEmail(res.targetEmail || userEmail);
+                    document.getElementById('secureOtpModal').style.display = 'flex';
+                    document.getElementById('secureOtpInput').focus();
+                    startSecureOtpTimer(600);
+                    startSecureResendTimer();
+                } else {
+                    showToast(res ? res.message : "Unknown Error", "#dc3545");
+                }
+            } catch (e) {
+                console.error(e);
+                showToast("Failed to initiate security check. Check connection.", "#dc3545");
+            } finally {
+                document.getElementById('loadingOverlay').style.display = 'none';
+            }
+        }
+
+        async function submitSecureOtp() {
+            const otp = document.getElementById('secureOtpInput').value;
+            if (otp.length !== 6) {
+                showToast("Please enter valid 6-digit OTP", "#f39c12");
+                return;
+            }
+
+            let res = { success: false, message: "Invalid OTP" };
+            if (window.electronAPI) {
+                res = await window.electronAPI.verifyOtp(currentOtpAction, otp);
+            } else {
+                const stored = sessionStorage.getItem("browser_temp_otp");
+                if (stored && stored === otp) {
+                    res = { success: true, resetToken: "browser-token-" + Date.now() };
+                    sessionStorage.removeItem("browser_temp_otp");
+                }
+            }
+
+            if (res.success) {
+                closeSecureOtpModal();
+                showToast("Verification Successful ✅", "#28a745");
+
+                if (currentOtpAction === 'Forgot Password' && res.resetToken) {
+                    sessionStorage.setItem('resetToken', res.resetToken);
+                    document.getElementById('resetModal').style.display = 'block';
+                } else if (currentOtpCallback) {
+                    currentOtpCallback();
+                }
+            } else {
+                showToast(res.message || "Invalid OTP", "#dc3545");
+                document.getElementById('secureOtpInput').value = '';
+            }
+        }
+
+        async function resendSecureOtp() {
+            const email = currentOtpEmail;
+            if (!email) {
+                showToast("Could not find email to resend. Please start over.", "#dc3545");
+                return;
+            }
+
+            closeSecureOtpModal();
+            initiateSecureAction(currentOtpAction, currentOtpCallback, email);
+        }
+
+        function verifyTotpLogin() {
+            const token = document.getElementById('totpInput').value;
+            const secret = localStorage.getItem("devTotpSecret");
+            const pendingUser = localStorage.getItem("pendingLoginUser");
+
+            let userSecret = secret;
+            let isRegularUser = false;
+
+            if (pendingUser) {
+                const u = ADMIN_USERS.find(u => u.username === pendingUser);
+                if (u && u.totpSecret) {
+                    userSecret = u.totpSecret;
+                    isRegularUser = true;
+                } else {
+                    localStorage.removeItem("pendingLoginUser");
+                    localStorage.removeItem("pendingLoginPass");
+                }
+            }
+
+            if (!userSecret) {
+                alert("Authenticator not configured.");
+                fallbackToEmailOtp();
+                return;
+            }
+
+            const totp = new OTPAuth.TOTP({ issuer: "Your Company Name", label: isRegularUser ? pendingUser : "Developer Admin", algorithm: "SHA1", digits: 6, period: 30, secret: OTPAuth.Secret.fromBase32(userSecret) });
+            const delta = totp.validate({ token: token, window: 1 });
+
+            if (delta !== null) {
+                closeTotpModal();
+                if (isRegularUser) {
+                    // Complete Regular Login
+                    const pass = localStorage.getItem("pendingLoginPass");
+                    localStorage.removeItem("pendingLoginUser");
+                    localStorage.removeItem("pendingLoginPass");
+
+                    localStorage.setItem(LOCAL_STORAGE_KEY, new Date().toISOString());
+                    localStorage.removeItem("isDevLogin");
+                    localStorage.setItem("currentUser", pendingUser);
+
+                    if (document.getElementById("rememberMe").checked) {
+                        localStorage.setItem("rememberMe", "true");
+                        localStorage.setItem("savedUsername", pendingUser);
+                        localStorage.setItem("savedPassword", pass);
+                    } else {
+                        localStorage.removeItem("rememberMe");
+                        localStorage.removeItem("savedUsername");
+                        localStorage.removeItem("savedPassword");
+                    }
+
+                    if (window.electronAPI && window.electronAPI.saveAdminCreds) {
+                        window.electronAPI.saveAdminCreds({ isLoginUpdate: true, usernameToUpdate: pendingUser }).catch(e => console.error(e));
+                    }
+
+                    const appMode = localStorage.getItem('appMode');
+                    if (appMode === "Educational Institute") {
+                        window.location.href = 'dashboard_Inst.html';
+                    } else {
+                        const targetDash = localStorage.getItem('activeDashboard') || 'dashboardB.html';
+                        window.location.href = targetDash;
+                    }
+                } else {
+                    // Developer Login
+                    localStorage.setItem(LOCAL_STORAGE_KEY, new Date().toISOString());
+                    localStorage.setItem("isDevLogin", "true");
+                    localStorage.setItem("currentUser", "developer");
+                    window.location.href = 'settings.html';
+                }
+            } else {
+                showToast("Invalid Authenticator Code", "#dc3545");
+            }
+        }
+
+        function closeTotpModal() { document.getElementById('totpModal').style.display = 'none'; }
+
+        function fallbackToEmailOtp() {
+            closeTotpModal();
+            const pendingUser = localStorage.getItem("pendingLoginUser");
+            if (pendingUser) {
+                localStorage.removeItem("pendingLoginUser");
+                localStorage.removeItem("pendingLoginPass");
+                alert("Please contact Developer to reset 2FA if lost.");
+                return;
+            }
+
+            initiateSecureAction('Developer Login', () => {
+                localStorage.setItem(LOCAL_STORAGE_KEY, new Date().toISOString());
+                localStorage.setItem("isDevLogin", "true");
+                localStorage.setItem("currentUser", "developer");
+                window.location.href = 'settings.html';
+            }, "nilrudragupta@gmail.com");
+        }
+
+        function closeSecureOtpModal() {
+            document.getElementById('secureOtpModal').style.display = 'none';
+            clearInterval(secureOtpTimerInterval);
+            currentOtpEmail = null;
+        }
+
+        function startSecureOtpTimer(duration) {
+            clearInterval(secureOtpTimerInterval);
+            let timer = duration;
+            const display = document.getElementById('secureOtpTimer');
+            secureOtpTimerInterval = setInterval(() => {
+                const m = Math.floor(timer / 60);
+                const s = timer % 60;
+                display.textContent = `${m}:${s < 10 ? '0' : ''}${s}`;
+                if (--timer < 0) clearInterval(secureOtpTimerInterval);
+            }, 1000);
+        }
+
+        function startSecureResendTimer() {
+            const btn = document.getElementById('secureResendBtn');
+            btn.disabled = true;
+            let cd = 60;
+            const interval = setInterval(() => {
+                btn.innerText = `Wait ${cd}s`;
+                if (--cd < 0) {
+                    clearInterval(interval);
+                    btn.disabled = false;
+                    btn.innerText = "Resend OTP";
+                }
+            }, 1000);
+        }
+
+        // Utilities
+        function showToast(msg, bg = "#333") {
+            let t = document.querySelector(".toast");
+            if (!t) { t = document.createElement("div"); t.className = "toast"; document.body.appendChild(t); }
+            clearTimeout(toastTimeout);
+            t.textContent = msg;
+            t.style.background = bg;
+            t.classList.add("show");
+            toastTimeout = setTimeout(() => { t.classList.remove("show"); }, 2200);
+        }
+
+        function togglePassword(fieldId, icon) {
+            const input = document.getElementById(fieldId);
+            if (input.type === "password") { input.type = "text"; icon.innerText = "👁️"; }
+            else { input.type = "password"; icon.innerText = "🙈"; }
+        }
+
+        function checkStrength(inputId, displayId) {
+            const password = document.getElementById(inputId).value;
+            const display = document.getElementById(displayId);
+            if (!password) { display.innerHTML = ""; return; }
+            let strength = 0;
+            if (password.length >= 4) strength++;
+            if (password.length >= 8) strength++;
+            if (/[A-Z]/.test(password)) strength++;
+            if (/[0-9]/.test(password)) strength++;
+            let message = "Weak", color = "#ffc107";
+            if (strength > 3) { message = "Strong"; color = "#28a745"; }
+            else if (strength > 1) { message = "Medium"; color = "#17a2b8"; }
+            display.innerHTML = `<span style="color:${color}; font-weight:bold;">Strength: ${message}</span>`;
+        }
+
+        function maskEmail(email) {
+            if (!email) return "";
+            const [name, domain] = email.split('@');
+            return `${name[0]}***${name[name.length - 1]}@${domain}`;
+        }
+
+        function closeWindowWithWarning() { document.getElementById('closeAppModal').style.display = 'block'; }
+        function closeCloseAppModal() { document.getElementById('closeAppModal').style.display = 'none'; }
+        function confirmCloseApp() { window.close(); }
+
+        function openPaymentModal() {
+            const amount = document.getElementById('renewAmount').value || '0';
+            const duration = document.getElementById('renewDuration').value;
+            const renewalCode = document.getElementById('renewalCode').value;
+            document.getElementById('paymentAmountDisplay').innerText = '₹ ' + amount;
+            const upiId = "arindammemari-1@okicici";
+            const payeeName = brand - name;
+            const note = `License Renewal for ${renewalCode} of ${duration} Days`;
+            const qrData = `upi://pay?pa=${upiId}&pn=${encodeURIComponent(payeeName)}&am=${amount}&cu=INR&tn=${encodeURIComponent(note)}`;
+            const apiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrData)}`;
+            const img = document.getElementById('paymentQrImage');
+            if (img) { document.getElementById('qrErrorMsg').style.display = 'none'; img.src = apiUrl; }
+            document.getElementById('paymentModal').style.display = 'block';
+        }
+        function closePaymentModal() { document.getElementById('paymentModal').style.display = 'none'; }
+
+        function askConfirm(title, msg, callback) {
+            const modal = document.getElementById('actionConfirmModal');
+            document.getElementById('actionConfirmTitle').textContent = title;
+            document.getElementById('actionConfirmMsg').textContent = msg;
+            const yesBtn = document.getElementById('actionConfirmBtnYes');
+            const newYesBtn = yesBtn.cloneNode(true);
+            yesBtn.parentNode.replaceChild(newYesBtn, yesBtn);
+            newYesBtn.onclick = () => { closeActionConfirmModal(); if (callback) callback(); };
+            modal.style.display = 'block';
+        }
+        function closeActionConfirmModal() { document.getElementById('actionConfirmModal').style.display = 'none'; }
+        function openWarningModal(msg) { document.getElementById('warningMsg').innerText = msg; document.getElementById('warningModal').style.display = 'block'; }
+        function closeWarningModal() { document.getElementById('warningModal').style.display = 'none'; }
+        function openSuccessModal(msg) { document.getElementById('successMsg').innerText = msg; document.getElementById('successModal').style.display = 'block'; }
+        function closeSuccessModal() { document.getElementById('successModal').style.display = 'none'; }
+
+
+
+        function submitRegistration() {
+            const username = document.getElementById('regUsername').value.trim();
+            const contact = document.getElementById('regContact').value.trim();
+            const password = document.getElementById('regPassword').value;
+
+            if (!username || !contact || !password) {
+                showToast("Please fill in all fields.", "#f39c12");
+                return;
+            }
+
+            // Validate username (no spaces)
+            if (/\s/.test(username)) {
+                showToast("Username cannot contain spaces.", "#dc3545");
+                return;
+            }
+
+            // Validate password length (minimum 6 characters)
+            if (password.length < 6) {
+                showToast("Password must be at least 6 characters long.", "#dc3545");
+                return;
+            }
+
+            // Check existing username in the local app environment
+            const isExisting = ADMIN_USERS.some(u => u.username.toLowerCase() === username.toLowerCase());
+            if (isExisting) {
+                showToast("This username is already taken. Please choose another.", "#dc3545");
+                return;
+            }
+
+            // Clean and validate contact number (exactly 10 digits)
+            const cleanContact = contact.replace(/\D/g, '');
+            if (cleanContact.length !== 10) {
+                showToast("Please enter a valid 10-digit mobile number.", "#dc3545");
+                return;
+            }
+
+            // Call the API function
+            registerNewUser(username, cleanContact, password);
+        }
+    </script>
+</body>
+
+</html>

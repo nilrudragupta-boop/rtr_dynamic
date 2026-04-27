@@ -1,0 +1,1547 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Balance Sheet</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+    <script src="apiClient.js"></script>
+    <script src="settings.js"></script>
+    <script src="brand.service.js"></script>
+    <script src="brandLoader.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            padding: 20px;
+            background: #f8f9fa;
+            color: #333;
+        }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 10px;
+            color: #2c3e50;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        input,
+        button {
+            padding: 8px 12px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            font-size: 14px;
+        }
+
+        button {
+            cursor: pointer;
+            color: #fff;
+            border: none;
+            font-weight: bold;
+            transition: opacity 0.2s;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        .btn-primary {
+            background: #0d6efd;
+        }
+
+        .btn-success {
+            background: #198754;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+        }
+
+        .sheet-container {
+            display: flex;
+            gap: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+            flex-wrap: wrap;
+        }
+
+        .sheet-side {
+            flex: 1;
+            min-width: 400px;
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sheet-header {
+            background: #343a40;
+            color: #fff;
+            padding: 10px;
+            text-align: center;
+            font-weight: bold;
+            border-radius: 8px 8px 0 0;
+            text-transform: uppercase;
+        }
+
+        .sheet-body {
+            padding: 0;
+            flex: 1;
+        }
+
+        .row-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 15px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .row-item:last-child {
+            border-bottom: none;
+        }
+
+        .row-item.sub-header {
+            background: #f8f9fa;
+            font-weight: bold;
+            color: #555;
+        }
+
+        .row-item.total {
+            background: #e9ecef;
+            font-weight: bold;
+            border-top: 2px solid #333;
+            font-size: 1.1em;
+        }
+
+        .clickable-row {
+            cursor: pointer;
+            color: #0d6efd;
+        }
+
+        .clickable-row:hover {
+            text-decoration: underline;
+            background-color: rgba(13, 110, 253, 0.05);
+        }
+
+        .amount {
+            font-family: 'Consolas', monospace;
+        }
+
+        .text-danger {
+            color: #dc3545;
+        }
+
+        .text-success {
+            color: #198754;
+        }
+
+        @media print {
+
+            .controls {
+                display: none;
+            }
+
+            .sheet-container {
+                display: flex;
+            }
+
+            #mainSheetContainer:not(.t-format) {
+                flex-direction: column;
+                gap: 20px;
+            }
+
+            #mainSheetContainer.t-format {
+                flex-direction: row;
+            }
+
+            .sheet-side {
+                border: 1px solid #000;
+                box-shadow: none;
+            }
+
+            .sheet-header {
+                background: #eee !important;
+                color: #000 !important;
+                border-bottom: 1px solid #000;
+            }
+
+            body {
+                background: #fff;
+            }
+        }
+
+        /* Dark Mode */
+        body.dark-mode {
+            background: #121212;
+            color: #e0e0e0;
+        }
+
+        /* Grey Mode */
+        body.grey-mode button {
+            background-color: #6c757d !important;
+            color: #fff !important;
+        }
+
+        body.dark-mode .sheet-side {
+            background: #2c2c2c;
+            border-color: #444;
+        }
+
+        body.dark-mode .sheet-header {
+            background: #1f1f1f;
+        }
+
+        body.dark-mode .row-item {
+            border-bottom-color: #444;
+        }
+
+        body.dark-mode .row-item.sub-header {
+            background: #333;
+            color: #ccc;
+        }
+
+        body.dark-mode .row-item.total {
+            background: #3a3a3a;
+            border-top-color: #555;
+        }
+
+        body.dark-mode input {
+            background: #333;
+            color: #fff;
+            border-color: #555;
+        }
+
+        /* Drill Down Styles */
+        .clickable-row {
+            cursor: pointer;
+            color: #0d6efd;
+        }
+
+        .clickable-row:hover {
+            text-decoration: underline;
+            background-color: rgba(13, 110, 253, 0.05);
+        }
+
+        .ratio-box {
+            padding: 15px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+            margin-top: 20px;
+        }
+
+        /* T-Format Styles */
+        #mainSheetContainer.t-format {
+            flex-wrap: nowrap;
+            gap: 0;
+            border: 2px solid #333;
+            border-radius: 0;
+            background: #fff;
+        }
+
+        #mainSheetContainer.t-format .sheet-side {
+            min-width: unset;
+            border: none;
+            border-radius: 0;
+            box-shadow: none;
+            background: transparent;
+        }
+
+        #mainSheetContainer.t-format .sheet-side:first-child {
+            border-right: 2px solid #333;
+        }
+
+        #mainSheetContainer.t-format .sheet-header {
+            border-radius: 0;
+            background: #f8f9fa;
+            color: #333;
+            border-bottom: 2px solid #333;
+        }
+
+        body.dark-mode #mainSheetContainer.t-format {
+            border-color: #555;
+            background: #2c2c2c;
+        }
+
+        body.dark-mode #mainSheetContainer.t-format .sheet-side:first-child {
+            border-color: #555;
+        }
+
+        body.dark-mode #mainSheetContainer.t-format .sheet-header {
+            background: #1f1f1f;
+            color: #fff;
+            border-bottom: 2px solid #555;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h2><span id="brandName" data-brand="name"></span> -Balance Sheet Report</h2>
+    <p style="text-align:center; margin-top:-10px; color:#666;" id="dateDisplay">As on Today</p>
+
+    <div class="controls">
+        <label>From:</label>
+        <input type="date" id="fromDate" onchange="renderBalanceSheet()">
+        <label>To:</label>
+        <input type="date" id="toDate" onchange="renderBalanceSheet()">
+        <label style="cursor:pointer; display:flex; align-items:center; gap:5px; font-size:14px; margin-left:10px;">
+            <input type="checkbox" id="enableComparison" onchange="toggleComparison()"> Compare
+        </label>
+        <div id="comparisonControls"
+            style="display:none; align-items:center; gap:5px; background:#e9ecef; padding:4px 8px; border-radius:4px;">
+            <input type="date" id="compareFromDate" onchange="renderBalanceSheet()" title="Compare From">
+            <input type="date" id="compareToDate" onchange="renderBalanceSheet()" title="Compare To">
+        </div>
+        <button class="btn-primary" onclick="renderBalanceSheet()">🔄 Refresh</button>
+        <button class="btn-success" onclick="exportToExcel()">📊 Export Excel</button>
+        <button class="btn-danger" onclick="exportToPDF()" style="background:#e74c3c;">📄 Export PDF</button>
+        <button class="btn-secondary" onclick="window.print()">🖨️ Print</button>
+
+        <label style="cursor:pointer; display:flex; align-items:center; gap:5px; font-size:14px; margin-left:10px;">
+            <input type="checkbox" id="detailedView" onchange="renderBalanceSheet()"> Detailed View
+        </label>
+        <label style="cursor:pointer; display:flex; align-items:center; gap:5px; font-size:14px; margin-left:10px;">
+            <input type="checkbox" id="tFormatView" onchange="toggleTFormat()"> T-Format View
+        </label>
+        <label
+            style="cursor:pointer; display:flex; align-items:center; gap:5px; font-size:14px; margin-left:10px; font-weight:bold;">
+            <input type="checkbox" id="greyButtonsToggle" onchange="toggleGreyButtons()"> Grey Buttons Mode
+        </label>
+
+        <div style="display:flex; align-items:center; gap:5px; margin-left:10px;">
+            <label style="font-size:14px;">Theme:</label>
+            <select id="themeSelect" onchange="changeTheme()" style="padding:6px; border-radius:4px;">
+                <option value="light">Light</option>
+                <option value="dark">Dark</option>
+                <option value="system">System</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="sheet-container" id="mainSheetContainer">
+        <!-- Liabilities Side -->
+        <div class="sheet-side">
+            <div class="sheet-header">Liabilities</div>
+            <div class="sheet-body" id="liabilitiesBody">
+                <!-- Content injected by JS -->
+            </div>
+            <div class="row-item total">
+                <div>Total</div>
+                <div class="amount" id="totalLiabilities">₹ 0.00</div>
+            </div>
+        </div>
+
+        <!-- Assets Side -->
+        <div class="sheet-side">
+            <div class="sheet-header">Assets</div>
+            <div class="sheet-body" id="assetsBody">
+                <!-- Content injected by JS -->
+            </div>
+            <div class="row-item total">
+                <div>Total</div>
+                <div class="amount" id="totalAssets">₹ 0.00</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ratio Analysis Section -->
+    <div class="sheet-container" style="margin-top: 20px; justify-content: center;">
+        <div class="sheet-side" style="max-width: 600px; flex: 1;">
+            <div class="sheet-header" style="background: #17a2b8;">Key Financial Ratios</div>
+            <div class="sheet-body" id="ratioBody"></div>
+        </div>
+    </div>
+
+    <script>
+        function openJvDrillDown(accountName) {
+            const fromDate = document.getElementById('fromDate').value;
+            const toDate = document.getElementById('toDate').value;
+            if (!accountName) return;
+            const url = `journal_voucher.html?drilldown=${encodeURIComponent(accountName)}&from=${fromDate}&to=${toDate}`;
+            window.open(url, `ledger_${accountName.replace(/\s/g, '_')}`, 'width=1200,height=700,resizable=yes,scrollbars=yes');
+        }
+    </script>
+    <!-- Drill Down Modal -->
+    <div id="drillDownModal" class="modal" style="align-items: center; justify-content: center;">
+        <div class="modal-content"
+            style="width: 600px; max-width: 90%; text-align: left; display: flex; flex-direction: column; max-height: 80vh;">
+            <div
+                style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom: 1px solid #eee; padding-bottom: 10px;">
+                <h3 id="drillDownTitle" style="margin:0; color:#2c3e50;">Details</h3>
+                <span onclick="closeDrillDown()" style="font-size:24px; cursor:pointer; color:#666;">&times;</span>
+            </div>
+            <div style="flex:1; overflow-y:auto;">
+                <table style="width:100%; border-collapse:collapse; font-size:14px;">
+                    <thead style="position:sticky; top:0; background:#f8f9fa;">
+                        <tr>
+                            <th style="padding:10px; text-align:left; border-bottom:2px solid #ddd; color:#333;">Party
+                                Name</th>
+                            <th style="padding:10px; text-align:right; border-bottom:2px solid #ddd; color:#333;">Amount
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody id="drillDownBody"></tbody>
+                </table>
+            </div>
+            <div style="text-align:right; margin-top:15px; padding-top:10px; border-top:1px solid #eee;">
+                <button class="btn-secondary" onclick="closeDrillDown()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function openWindow(url, width, height) {
+            const windowName = url.split('?')[0].split('/').pop().replace('.html', '').replace(/[^a-zA-Z0-9]/g, '_');
+            window.open(url, windowName, `width=${width},height=${height},resizable=yes,scrollbars=yes`).focus();
+        }
+
+        function formatCurrency(amount) {
+            return (amount || 0).toLocaleString('en-IN', { style: 'currency', currency: 'INR' });
+        }
+
+        function getData() {
+            const fromDate = document.getElementById('fromDate').value || "1900-01-01";
+            const toDate = document.getElementById('toDate').value || new Date().toISOString().split('T')[0];
+
+            const purchases = JSON.parse(localStorage.getItem("purchases")) || [];
+            const invoices = JSON.parse(localStorage.getItem("invoices")) || [];
+            const expenses = JSON.parse(localStorage.getItem("expenses")) || [];
+            const customers = JSON.parse(localStorage.getItem("customers")) || [];
+            const suppliers = JSON.parse(localStorage.getItem("suppliers")) || [];
+            const returns = JSON.parse(localStorage.getItem("returns")) || [];
+            const scraps = JSON.parse(localStorage.getItem("scraps")) || [];
+            const creditNotes = JSON.parse(localStorage.getItem("credit_debit_notes")) || [];
+            const fixedAssets = JSON.parse(localStorage.getItem("fixed_assets")) || [];
+            const productions = JSON.parse(localStorage.getItem("production")) || [];
+
+            // 1. Calculate Net Profit (Revenue - COGS - Expenses)
+            // Split into Retained (Pre-FromDate) and Current (FromDate to ToDate)
+
+            // A. Revenue & COGS
+            let retainedRevenue = 0;
+            let retainedCOGS = 0;
+            let periodRevenue = 0;
+            let periodCOGS = 0;
+
+            // Helper for COGS: Average Purchase Price
+            const costMap = {};
+            purchases.forEach(p => {
+                if (p.date > toDate) return; // Skip future purchases for avg cost calc? Usually avg cost is historical.
+                // Actually, for accurate COGS at a point in time, we should consider purchases available then.
+                // For simplicity, we use global average cost from all purchases to avoid complex FIFO/LIFO.
+                const name = (p.itemName || "").trim().toLowerCase();
+                if (!name) return;
+                if (!costMap[name]) costMap[name] = { qty: 0, cost: 0 };
+                costMap[name].qty += (parseFloat(p.qty) || 0);
+                costMap[name].cost += (parseFloat(p.qty) || 0) * (parseFloat(p.price) || 0);
+            });
+
+            // Include Production Costs in Avg Cost (COGS)
+            productions.forEach(prod => {
+                if (prod.date > toDate) return;
+                const name = (prod.finishedGood || "").trim().toLowerCase();
+                if (!name) return;
+                if (!costMap[name]) costMap[name] = { qty: 0, cost: 0 };
+                costMap[name].qty += (parseFloat(prod.fgQtyProduced) || 0);
+                costMap[name].cost += (parseFloat(prod.totalCost) || 0);
+            });
+
+            invoices.forEach(inv => {
+                const d = inv.invoice_date || inv.date;
+                if (d > toDate) return;
+
+                if (inv.items && Array.isArray(inv.items)) {
+                    inv.items.forEach(item => {
+                        const name = (item.item || "").trim().toLowerCase();
+                        const qty = parseFloat(item.qty) || 0;
+                        const totalItem = parseFloat(item.total) || 0;
+                        const gstRate = parseFloat(item.gst) || 0;
+                        const revenue = totalItem / (1 + gstRate / 100);
+
+                        // COGS
+                        const costData = costMap[name];
+                        const avgCost = (costData && costData.qty > 0) ? (costData.cost / costData.qty) : 0;
+                        const cogs = (qty * avgCost);
+
+                        if (d < fromDate) {
+                            retainedRevenue += revenue;
+                            retainedCOGS += cogs;
+                        } else {
+                            periodRevenue += revenue;
+                            periodCOGS += cogs;
+                        }
+                    });
+                }
+            });
+
+            // Adjust Revenue & COGS for Returns
+            creditNotes.forEach(n => {
+                if (n.date <= toDate && n.status !== 'CANCELLED' && n.type === 'CREDIT') {
+                    // Credit Note (Sales Return) reduces Revenue
+                    const amt = (parseFloat(n.total_amount) || 0);
+                    if (n.date < fromDate) retainedRevenue -= amt;
+                    else periodRevenue -= amt;
+                }
+            });
+
+            returns.forEach(ret => {
+                const d = ret.return_date || ret.date;
+                if (d > toDate) return;
+                if (ret.return_type === 'Sales Return') {
+                    // Stock came back, reduce COGS
+                    if (ret.items) {
+                        ret.items.forEach(item => {
+                            const name = (item.item_name || "").trim().toLowerCase();
+                            const qty = parseFloat(item.qty) || 0;
+                            const costData = costMap[name];
+                            const avgCost = (costData && costData.qty > 0) ? (costData.cost / costData.qty) : 0;
+                            const cogs = (qty * avgCost);
+
+                            if (d < fromDate) retainedCOGS -= cogs;
+                            else periodCOGS -= cogs;
+                        });
+                    }
+                }
+            });
+
+            // B. Expenses
+            let retainedExpenses = 0;
+            let periodExpenses = 0;
+
+            expenses.forEach(e => {
+                const d = e.expense_date || e.date;
+                if (d <= toDate) {
+                    const amt = (parseFloat(e.amount) || parseFloat(e.debit_amount) || 0);
+                    if (d < fromDate) retainedExpenses += amt;
+                    else periodExpenses += amt;
+                }
+            });
+
+            const retainedEarnings = retainedRevenue - retainedCOGS - retainedExpenses;
+            const netProfit = periodRevenue - periodCOGS - periodExpenses;
+
+            // 2. Sundry Debtors (Receivables)
+            // Sum of (Invoice Total - Paid) for invoices <= toDate
+            // Note: This assumes 'total_paid' in invoice object is updated. 
+            // If payment date is tracked separately, we should filter payments. 
+            // Assuming invoice.total_paid reflects payments made to date.
+            let sundryDebtors = 0;
+            invoices.forEach(inv => {
+                const d = inv.invoice_date || inv.date;
+                if (d <= toDate) {
+                    const total = parseFloat(inv.invoice_total || inv.total || 0);
+                    const paid = parseFloat(inv.total_paid || inv.paid_amount || inv.paid || 0);
+                    // Ideally check payment dates, but for simple structure:
+                    sundryDebtors += Math.max(0, total - paid);
+                }
+            });
+            // Adjust for Credit/Debit Notes (Customers)
+            creditNotes.forEach(n => {
+                if (n.date <= toDate && n.status !== 'CANCELLED') {
+                    const isCust = customers.some(c => c.name === n.customer_name);
+                    if (isCust) {
+                        const amt = parseFloat(n.total_amount) || 0;
+                        if (n.type === 'CREDIT') sundryDebtors -= amt;
+                        else if (n.type === 'DEBIT') sundryDebtors += amt;
+                    }
+                }
+            });
+            // Add Customer Opening Balances
+            customers.forEach(c => {
+                const opBal = parseFloat(c.openingBalance) || 0;
+                if (c.openingBalanceType === 'Dr') sundryDebtors += opBal;
+                else if (c.openingBalanceType === 'Cr') sundryDebtors -= opBal; // Unusual for customer but possible
+            });
+
+            // 3. Sundry Creditors (Payables)
+            let sundryCreditors = 0;
+            purchases.forEach(p => {
+                if (p.date <= toDate) {
+                    const taxable = (parseFloat(p.qty) || 0) * (parseFloat(p.price) || 0);
+                    const tax = taxable * ((parseFloat(p.gst) || 0) / 100);
+                    const total = taxable + tax;
+                    const paid = parseFloat(p.paid) || 0;
+                    sundryCreditors += Math.max(0, total - paid);
+                }
+            });
+            // Adjust for Credit/Debit Notes (Suppliers)
+            creditNotes.forEach(n => {
+                if (n.date <= toDate && n.status !== 'CANCELLED') {
+                    const isSupp = suppliers.some(s => s.name === n.customer_name);
+                    if (isSupp) {
+                        const amt = parseFloat(n.total_amount) || 0;
+                        if (n.type === 'DEBIT') sundryCreditors -= amt; // Purchase Return
+                        else if (n.type === 'CREDIT') sundryCreditors += amt;
+                    }
+                }
+            });
+            // Add Supplier Opening Balances (if any structure existed, currently assuming 0 or handled via dummy purchase)
+
+            // 4. Closing Stock Value
+            // (Total Purchased Qty - Total Sold Qty) * Avg Cost
+            let closingStockValue = 0;
+            const stockMap = {}; // Re-calc stock for specific date
+
+            // Purchases up to date
+            purchases.forEach(p => {
+                if (p.date > toDate) return;
+                const name = (p.itemName || "").trim().toLowerCase();
+                if (!stockMap[name]) stockMap[name] = { qty: 0 };
+                stockMap[name].qty += (parseFloat(p.qty) || 0);
+            });
+            // Sales up to date
+            invoices.forEach(inv => {
+                const d = inv.invoice_date || inv.date;
+                if (d > toDate) return;
+                if (inv.items) {
+                    inv.items.forEach(item => {
+                        const name = (item.item || "").trim().toLowerCase();
+                        if (stockMap[name]) stockMap[name].qty -= (parseFloat(item.qty) || 0);
+                    });
+                }
+            });
+            // Returns
+            returns.forEach(ret => {
+                const d = ret.return_date || ret.date;
+                if (d > toDate) return;
+                if (ret.items) {
+                    ret.items.forEach(item => {
+                        const name = (item.item_name || "").trim().toLowerCase();
+                        if (stockMap[name]) {
+                            const qty = parseFloat(item.qty) || 0;
+                            if (ret.return_type === 'Sales Return') stockMap[name].qty += qty;
+                            else if (ret.return_type === 'Purchase Return' || ret.return_type === 'Damage') stockMap[name].qty -= qty;
+                        }
+                    });
+                }
+            });
+            // Scraps
+            scraps.forEach(s => {
+                if (s.date > toDate) return;
+                const name = (s.itemName || "").trim().toLowerCase();
+                if (stockMap[name]) stockMap[name].qty -= (parseFloat(s.qty) || 0);
+            });
+            // Productions (Add FG, Deduct RM)
+            productions.forEach(prod => {
+                if (prod.date > toDate) return;
+
+                // Add Finished Good
+                const fgName = (prod.finishedGood || "").trim().toLowerCase();
+                if (fgName) {
+                    if (!stockMap[fgName]) stockMap[fgName] = { qty: 0 };
+                    stockMap[fgName].qty += (parseFloat(prod.fgQtyProduced) || 0);
+                }
+
+                // Deduct Raw Materials
+                if (prod.materialsConsumed && Array.isArray(prod.materialsConsumed)) {
+                    prod.materialsConsumed.forEach(rm => {
+                        const rmName = (rm.item || "").trim().toLowerCase();
+                        if (stockMap[rmName]) stockMap[rmName].qty -= (parseFloat(rm.qty) || 0);
+                    });
+                }
+            });
+            // Value
+            Object.keys(stockMap).forEach(name => {
+                const qty = Math.max(0, stockMap[name].qty);
+                const costData = costMap[name];
+                const avgCost = (costData && costData.qty > 0) ? (costData.cost / costData.qty) : 0;
+                closingStockValue += (qty * avgCost);
+            });
+
+            // 5. Cash / Bank (Derived)
+            // Inflows (Sales Paid) - Outflows (Purchases Paid + Expenses)
+            // + Opening Cash (Placeholder 0)
+            let cashInHand = 0;
+            let bankBalance = 0;
+            let derivedBankBalance = 0;
+
+            // Check if Banking Module data exists
+            const bankAccounts = JSON.parse(localStorage.getItem('bank_accounts')) || [];
+            const bankTransactions = JSON.parse(localStorage.getItem('bank_transactions')) || [];
+            const useBankingModule = bankAccounts.length > 0;
+
+            if (useBankingModule) {
+                bankAccounts.forEach(acc => {
+                    let bal = parseFloat(acc.openingBalance) || 0;
+                    // Filter transactions for this account up to asOfDate
+                    const accTrans = bankTransactions.filter(t => {
+                        const tDate = t.date;
+                        return tDate <= toDate && (t.accountId === acc.id || t.toAccountId === acc.id);
+                    });
+
+                    accTrans.forEach(t => {
+                        const amt = parseFloat(t.amount) || 0;
+                        if (t.accountId === acc.id) {
+                            if (t.type === 'Deposit') bal += amt;
+                            else if (t.type === 'Withdrawal') bal -= amt;
+                            else if (t.type === 'Transfer') bal -= amt;
+                        }
+                        if (t.toAccountId === acc.id && t.type === 'Transfer') {
+                            bal += amt;
+                        }
+                    });
+                    bankBalance += bal;
+                });
+            }
+
+            invoices.forEach(inv => {
+                const d = inv.invoice_date || inv.date; // Approx date of payment if not tracked
+                if (d <= toDate) {
+                    // Use split if available, else default to Cash for legacy
+                    if (inv.paid_cash !== undefined || inv.paid_bank !== undefined) {
+                        cashInHand += (parseFloat(inv.paid_cash) || 0);
+                        derivedBankBalance += (parseFloat(inv.paid_bank) || 0);
+                    } else {
+                        // Legacy fallback: Assume Cash
+                        cashInHand += (parseFloat(inv.total_paid || inv.paid_amount || inv.paid || 0));
+                    }
+                }
+            });
+
+            purchases.forEach(p => {
+                if (p.date <= toDate) {
+                    if (p.paid_cash !== undefined || p.paid_bank !== undefined) {
+                        cashInHand -= (parseFloat(p.paid_cash) || 0);
+                        derivedBankBalance -= (parseFloat(p.paid_bank) || 0);
+                    } else {
+                        cashInHand -= (parseFloat(p.paid) || 0);
+                    }
+                }
+            });
+
+            expenses.forEach(e => {
+                const d = e.expense_date || e.date;
+                if (d <= toDate) {
+                    const amt = parseFloat(e.amount) || parseFloat(e.debit_amount) || 0;
+                    if (e.payment_mode === 'Bank Transfer' || e.payment_mode === 'UPI' || e.payment_mode === 'Card') {
+                        derivedBankBalance -= amt;
+                    } else {
+                        cashInHand -= amt;
+                    }
+                }
+            });
+
+            // If no banking module data, use derived balance
+            if (!useBankingModule) {
+                bankBalance = derivedBankBalance;
+            }
+
+            // 6. Duties & Taxes (GST Payable)
+            // Output Tax (Sales) - Input Tax (Purchases)
+            let outputTax = 0;
+            invoices.forEach(inv => {
+                if ((inv.invoice_date || inv.date) <= toDate && inv.items) {
+                    inv.items.forEach(item => {
+                        const totalItem = parseFloat(item.total) || 0;
+                        const gstRate = parseFloat(item.gst) || 0;
+                        const taxable = totalItem / (1 + gstRate / 100);
+                        outputTax += (totalItem - taxable);
+                    });
+                }
+            });
+            let inputTax = 0;
+            purchases.forEach(p => {
+                if (p.date <= toDate) {
+                    const taxable = (parseFloat(p.qty) || 0) * (parseFloat(p.price) || 0);
+                    inputTax += taxable * ((parseFloat(p.gst) || 0) / 100);
+                }
+            });
+            const dutiesAndTaxes = outputTax - inputTax;
+
+            const fixedAssetsValue = fixedAssets.reduce((total, asset) => {
+                if (asset.status === 'Active' && new Date(asset.purchase_date) <= new Date(toDate)) {
+                    return total + (parseFloat(asset.current_wdv) || 0);
+                }
+                return total;
+            }, 0);
+
+            return {
+                liabilities: {
+                    capital: {
+                        opening: 0, // Placeholder
+                        retainedEarnings: retainedEarnings,
+                        retainedBreakdown: {
+                            revenue: retainedRevenue,
+                            cogs: retainedCOGS,
+                            expenses: retainedExpenses
+                        },
+                        netProfit: netProfit,
+                        drawings: 0
+                    },
+                    loans: 0,
+                    currentLiabilities: {
+                        sundryCreditors: sundryCreditors,
+                        dutiesTaxes: dutiesAndTaxes
+                    }
+                },
+                assets: {
+                    fixedAssets: fixedAssetsValue,
+                    currentAssets: {
+                        closingStock: closingStockValue,
+                        sundryDebtors: sundryDebtors,
+                        cashInHand: cashInHand,
+                        bankAccounts: bankBalance
+                    }
+                },
+                taxBreakdown: {
+                    output: outputTax,
+                    input: inputTax
+                }
+            };
+        }
+
+        function toggleComparison() {
+            const isChecked = document.getElementById('enableComparison').checked;
+            document.getElementById('comparisonControls').style.display = isChecked ? 'flex' : 'none';
+            if (isChecked) {
+                // Default to previous year same period or just previous month
+                const from = new Date(document.getElementById('fromDate').value);
+                const to = new Date(document.getElementById('toDate').value);
+                from.setFullYear(from.getFullYear() - 1);
+                to.setFullYear(to.getFullYear() - 1);
+                if (!document.getElementById('compareFromDate').value) document.getElementById('compareFromDate').valueAsDate = from;
+                if (!document.getElementById('compareToDate').value) document.getElementById('compareToDate').valueAsDate = to;
+            }
+            renderBalanceSheet();
+        }
+
+        function renderBalanceSheet() {
+            const fromDate = document.getElementById('fromDate').value;
+            const toDate = document.getElementById('toDate').value;
+            const data = getData(fromDate, toDate);
+
+            const isComparison = document.getElementById('enableComparison').checked;
+            let data2 = null;
+            if (isComparison) {
+                const fromDate2 = document.getElementById('compareFromDate').value;
+                const toDate2 = document.getElementById('compareToDate').value;
+                data2 = getData(fromDate2, toDate2);
+            }
+
+            const dateText = (fromDate && toDate) ? `${new Date(fromDate).toLocaleDateString('en-GB')} to ${new Date(toDate).toLocaleDateString('en-GB')}` : "All Time";
+            document.getElementById('dateDisplay').innerText = `Period: ${dateText}`;
+            const isDetailed = document.getElementById('detailedView').checked;
+
+            // --- Liabilities Render ---
+            const lBody = document.getElementById('liabilitiesBody');
+            let lHtml = '';
+
+            const getAmtHtml = (val1, val2, colorClass = "") => {
+                let h = `<div class="amount ${colorClass}">${formatCurrency(val1)}</div>`;
+                if (isComparison && val2 !== undefined) {
+                    h += `<div class="amount ${colorClass}" style="margin-left:10px; padding-left:10px; border-left:1px solid #ccc; min-width:90px; text-align:right;">${formatCurrency(val2)}</div>`;
+                }
+                return h;
+            };
+
+            if (isComparison) {
+                const headerRow = `
+                    <div class="row-item" style="background:#eee; font-size:12px; font-weight:bold;">
+                        <div>Particulars</div>
+                        <div style="text-align:right;">Current</div>
+                        <div style="text-align:right; margin-left:10px; padding-left:10px; border-left:1px solid #ccc; min-width:90px;">Previous</div>
+                    </div>`;
+                lHtml += headerRow;
+            }
+
+            // Capital Account
+            const capitalTotal = data.liabilities.capital.opening + data.liabilities.capital.retainedEarnings + data.liabilities.capital.netProfit - data.liabilities.capital.drawings;
+            const capitalTotal2 = isComparison ? (data2.liabilities.capital.opening + data2.liabilities.capital.retainedEarnings + data2.liabilities.capital.netProfit - data2.liabilities.capital.drawings) : 0;
+
+            lHtml += ` <div class="row-item sub-header clickable-row" onclick="openJvDrillDown('Capital Account')">Capital Account</div>
+                <div class="row-item">
+                    <div style="padding-left:15px;">Opening Balance</div>
+                    ${getAmtHtml(data.liabilities.capital.opening, isComparison ? data2.liabilities.capital.opening : 0)}
+                </div>
+                <div class="row-item clickable-row" onclick="showRetainedEarningsDrillDown()" title="Click to view breakdown">
+                    <div style="padding-left:15px;">Retained Earnings (Prev)</div>
+                    ${getAmtHtml(data.liabilities.capital.retainedEarnings, isComparison ? data2.liabilities.capital.retainedEarnings : 0)}
+                </div>
+                <div class="row-item clickable-row" onclick="openJvDrillDown('Profit & Loss')">
+                    <div style="padding-left:15px;">Add: Net Profit (Current)</div>
+                    ${getAmtHtml(data.liabilities.capital.netProfit, isComparison ? data2.liabilities.capital.netProfit : 0, 'text-success')}
+                </div>
+                <div class="row-item clickable-row" style="border-bottom:2px solid #eee;" onclick="openJvDrillDown('Drawings')">
+                    <div style="padding-left:15px;">Less: Drawings</div>
+                    ${getAmtHtml(data.liabilities.capital.drawings, isComparison ? data2.liabilities.capital.drawings : 0, 'text-danger')}
+                </div>
+                
+                <div class="row-item sub-header">Loans (Liability)</div>
+                <div class="row-item">
+                    <div style="padding-left:15px;">Bank / Other Loans</div>
+                    ${getAmtHtml(data.liabilities.loans, isComparison ? data2.liabilities.loans : 0)}
+                </div>
+
+                <div class="row-item sub-header">Current Liabilities</div>
+                <div class="row-item clickable-row" onclick="showDrillDown('creditors')" title="Click to view details">
+                    <div style="padding-left:15px;">Sundry Creditors</div>
+                    ${getAmtHtml(data.liabilities.currentLiabilities.sundryCreditors, isComparison ? data2.liabilities.currentLiabilities.sundryCreditors : 0)}
+                </div>
+            `;
+
+            let liabilityDuties = 0;
+            let liabilityDuties2 = 0;
+            if (isDetailed) {
+                liabilityDuties = data.taxBreakdown.output;
+                if (isComparison) liabilityDuties2 = data2.taxBreakdown.output;
+                lHtml += `<div class="row-item"><div style="padding-left:15px;">Output Tax (Duties & Taxes)</div>${getAmtHtml(liabilityDuties, liabilityDuties2)}</div>`;
+            } else {
+                liabilityDuties = Math.max(0, data.liabilities.currentLiabilities.dutiesTaxes);
+                if (isComparison) liabilityDuties2 = Math.max(0, data2.liabilities.currentLiabilities.dutiesTaxes);
+
+                if (liabilityDuties > 0 || (isComparison && liabilityDuties2 > 0)) {
+                    lHtml += `<div class="row-item"><div style="padding-left:15px;">Duties & Taxes (GST Payable)</div>${getAmtHtml(liabilityDuties, liabilityDuties2)}</div>`;
+                }
+            }
+            lBody.innerHTML = lHtml;
+
+            const totalLiabilities = capitalTotal + data.liabilities.loans + data.liabilities.currentLiabilities.sundryCreditors + liabilityDuties;
+            const totalLiabilities2 = isComparison ? (capitalTotal2 + data2.liabilities.loans + data2.liabilities.currentLiabilities.sundryCreditors + liabilityDuties2) : 0;
+
+            document.getElementById('totalLiabilities').innerHTML = getAmtHtml(totalLiabilities, isComparison ? totalLiabilities2 : undefined);
+
+
+            // --- Assets Render ---
+            const aBody = document.getElementById('assetsBody');
+            let aHtml = '';
+
+            if (isComparison) {
+                const headerRow = `
+                    <div class="row-item" style="background:#eee; font-size:12px; font-weight:bold;">
+                        <div>Particulars</div>
+                        <div style="text-align:right;">Current</div>
+                        <div style="text-align:right; margin-left:10px; padding-left:10px; border-left:1px solid #ccc; min-width:90px;">Previous</div>
+                    </div>`;
+                aHtml += headerRow;
+            }
+
+            // Fixed Assets
+            aHtml += `
+                <div class="row-item sub-header clickable-row" onclick="openJvDrillDown('Fixed Assets')">Fixed Assets</div>
+                <div class="row-item clickable-row" onclick="openJvDrillDown('Fixed Assets')">
+                    <div style="padding-left:15px;">Furniture / Equipment</div>
+                    ${getAmtHtml(data.assets.fixedAssets, isComparison ? data2.assets.fixedAssets : 0)}
+                </div>
+
+                <div class="row-item sub-header">Current Assets</div>
+                <div class="row-item">
+                    <div style="padding-left:15px;">Closing Stock</div>
+                    ${getAmtHtml(data.assets.currentAssets.closingStock, isComparison ? data2.assets.currentAssets.closingStock : 0)}
+                </div>
+                <div class="row-item clickable-row" onclick="showDrillDown('debtors')" title="Click to view details">
+                    <div style="padding-left:15px;">Sundry Debtors</div>
+                    ${getAmtHtml(data.assets.currentAssets.sundryDebtors, isComparison ? data2.assets.currentAssets.sundryDebtors : 0)}
+                </div>
+                <div class="row-item">
+                    <div style="padding-left:15px;">Cash-in-Hand</div>
+                    ${getAmtHtml(data.assets.currentAssets.cashInHand, isComparison ? data2.assets.currentAssets.cashInHand : 0)}
+                </div>
+                <div class="row-item clickable-row" onclick="openWindow('banking.html', 1100, 700)" title="Click to open Banking">
+                    <div style="padding-left:15px;">Bank Accounts</div>
+                    ${getAmtHtml(data.assets.currentAssets.bankAccounts, isComparison ? data2.assets.currentAssets.bankAccounts : 0)}
+                </div>
+            `;
+
+            let assetDuties = 0;
+            let assetDuties2 = 0;
+            if (isDetailed) {
+                assetDuties = data.taxBreakdown.input;
+                if (isComparison) assetDuties2 = data2.taxBreakdown.input;
+                aHtml += `<div class="row-item"><div style="padding-left:15px;">Input Tax (GST Credit)</div>${getAmtHtml(assetDuties, assetDuties2)}</div>`;
+            } else {
+                if (data.liabilities.currentLiabilities.dutiesTaxes < 0) assetDuties = Math.abs(data.liabilities.currentLiabilities.dutiesTaxes);
+                if (isComparison && data2.liabilities.currentLiabilities.dutiesTaxes < 0) assetDuties2 = Math.abs(data2.liabilities.currentLiabilities.dutiesTaxes);
+
+                if (assetDuties > 0 || (isComparison && assetDuties2 > 0)) {
+                    aHtml += `
+                    <div class="row-item">
+                        <div style="padding-left:15px;">GST Input Credit (Receivable)</div>
+                        ${getAmtHtml(assetDuties, assetDuties2)}
+                    </div>`;
+                }
+            }
+
+            aBody.innerHTML = aHtml;
+
+            let totalAssets = data.assets.fixedAssets + data.assets.currentAssets.closingStock + data.assets.currentAssets.sundryDebtors + data.assets.currentAssets.cashInHand + data.assets.currentAssets.bankAccounts + assetDuties;
+            let totalAssets2 = isComparison ? (data2.assets.fixedAssets + data2.assets.currentAssets.closingStock + data2.assets.currentAssets.sundryDebtors + data2.assets.currentAssets.cashInHand + data2.assets.currentAssets.bankAccounts + assetDuties2) : 0;
+
+            document.getElementById('totalAssets').innerHTML = getAmtHtml(totalAssets, isComparison ? totalAssets2 : undefined);
+            renderRatios(data, data2, isComparison);
+        }
+
+        function exportToExcel() {
+            const wb = XLSX.utils.book_new();
+            const isComparison = document.getElementById('enableComparison').checked;
+
+            const headerRow = ["Liabilities", "Amount (Current)"];
+            if (isComparison) headerRow.push("Amount (Previous)");
+            headerRow.push("", "Assets", "Amount (Current)");
+            if (isComparison) headerRow.push("Amount (Previous)");
+
+            const wsData = [
+                ["Balance Sheet", document.getElementById('brandName').innerText],
+                ["Period", document.getElementById('dateDisplay').innerText],
+                [],
+                headerRow,
+            ];
+
+            // Extract rows from DOM for simplicity or reconstruct from data
+            // Let's reconstruct simple summary
+            // Note: DOM extraction is messy with comparison divs. Re-calculating.
+
+            // Simple export logic: Just headers and totals for now as rows are dynamic
+            // A real implementation would iterate the data object
+            const fromDate = document.getElementById('fromDate').value;
+            const toDate = document.getElementById('toDate').value;
+            const data = getData(fromDate, toDate);
+
+            let data2 = null;
+            if (isComparison) {
+                const fromDate2 = document.getElementById('compareFromDate').value;
+                const toDate2 = document.getElementById('compareToDate').value;
+                data2 = getData(fromDate2, toDate2);
+            }
+
+            const cap = data.liabilities.capital;
+            const currL = data.liabilities.currentLiabilities;
+            const currA = data.assets.currentAssets;
+            const gstAsset = currL.dutiesTaxes < 0 ? Math.abs(currL.dutiesTaxes) : 0;
+            const gstLiab = currL.dutiesTaxes > 0 ? currL.dutiesTaxes : 0;
+
+            // Helper to create row
+            const createRow = (lLabel, lVal, aLabel, aVal) => {
+                const row = [lLabel, lVal];
+                if (isComparison) row.push(data2 ? 0 : 0); // Placeholder, need logic for data2 values
+                row.push("", aLabel, aVal);
+                if (isComparison) row.push(data2 ? 0 : 0);
+                return row;
+            };
+
+            // For simplicity in this update, I will just dump the current period data if comparison is complex to map row-by-row without a strict structure
+            // But let's try to map it.
+
+            const capTotal = cap.opening + cap.retainedEarnings + cap.netProfit - cap.drawings;
+            const capTotal2 = isComparison ? (data2.liabilities.capital.opening + data2.liabilities.capital.retainedEarnings + data2.liabilities.capital.netProfit - data2.liabilities.capital.drawings) : 0;
+
+            const row1 = ["Capital Account", capTotal];
+            if (isComparison) row1.push(capTotal2);
+            row1.push("", "Fixed Assets", data.assets.fixedAssets);
+            if (isComparison) row1.push(data2.assets.fixedAssets);
+            wsData.push(row1);
+
+            const row2 = ["Loans", data.liabilities.loans];
+            if (isComparison) row2.push(data2.liabilities.loans);
+            row2.push("", "Closing Stock", currA.closingStock);
+            if (isComparison) row2.push(data2.assets.currentAssets.closingStock);
+            wsData.push(row2);
+
+            const row3 = ["Sundry Creditors", currL.sundryCreditors];
+            if (isComparison) row3.push(data2.liabilities.currentLiabilities.sundryCreditors);
+            row3.push("", "Sundry Debtors", currA.sundryDebtors);
+            if (isComparison) row3.push(data2.assets.currentAssets.sundryDebtors);
+            wsData.push(row3);
+
+            const gstLiab2 = isComparison ? (data2.liabilities.currentLiabilities.dutiesTaxes > 0 ? data2.liabilities.currentLiabilities.dutiesTaxes : 0) : 0;
+            const row4 = ["Duties & Taxes", gstLiab];
+            if (isComparison) row4.push(gstLiab2);
+            row4.push("", "Cash-in-Hand", currA.cashInHand);
+            if (isComparison) row4.push(data2.assets.currentAssets.cashInHand);
+            wsData.push(row4);
+
+            const row5 = ["", ""];
+            if (isComparison) row5.push("");
+            row5.push("", "Bank Accounts", currA.bankAccounts);
+            if (isComparison) row5.push(data2.assets.currentAssets.bankAccounts);
+            wsData.push(row5);
+
+            const gstAsset2 = isComparison ? (data2.liabilities.currentLiabilities.dutiesTaxes < 0 ? Math.abs(data2.liabilities.currentLiabilities.dutiesTaxes) : 0) : 0;
+            if (gstAsset > 0 || gstAsset2 > 0) {
+                const row6 = ["", ""];
+                if (isComparison) row6.push("");
+                row6.push("", "GST Credit", gstAsset);
+                if (isComparison) row6.push(gstAsset2);
+                wsData.push(row6);
+            }
+
+            const ws = XLSX.utils.aoa_to_sheet(wsData);
+            XLSX.utils.book_append_sheet(wb, ws, "Balance Sheet");
+            XLSX.writeFile(wb, "Balance_Sheet.xlsx");
+        }
+
+        function exportToPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            const companyName = document.getElementById('brandName').innerText;
+            const dateText = document.getElementById('dateDisplay').innerText;
+            const fmt = (amt) => formatCurrency(amt).replace('₹', 'Rs.');
+
+            doc.setFontSize(18);
+            doc.text(companyName, 105, 15, { align: 'center' });
+            doc.setFontSize(12);
+            doc.text(`Balance Sheet (${dateText})`, 105, 22, { align: 'center' });
+
+            const fromDate = document.getElementById('fromDate').value;
+            const toDate = document.getElementById('toDate').value;
+            const data = getData(fromDate, toDate);
+
+            const isComparison = document.getElementById('enableComparison').checked;
+            let data2 = null;
+            if (isComparison) {
+                data2 = getData(document.getElementById('compareFromDate').value, document.getElementById('compareToDate').value);
+            }
+
+            const cap = data.liabilities.capital;
+            const currL = data.liabilities.currentLiabilities;
+            const currA = data.assets.currentAssets;
+            const gstAsset = currL.dutiesTaxes < 0 ? Math.abs(currL.dutiesTaxes) : 0;
+            const gstLiab = currL.dutiesTaxes > 0 ? currL.dutiesTaxes : 0;
+
+            const capitalTotal = cap.opening + cap.retainedEarnings + cap.netProfit - cap.drawings;
+            const totalLiabilities = capitalTotal + data.liabilities.loans + currL.sundryCreditors + gstLiab;
+            let totalAssets = data.assets.fixedAssets + currA.closingStock + currA.sundryDebtors + currA.cashInHand + currA.bankAccounts + gstAsset;
+
+            let head = [];
+            let body = [];
+            let colStyles = {};
+
+            if (isTFormat) {
+                if (!isComparison) {
+                    head = [['Liabilities', 'Amount', 'Assets', 'Amount']];
+                    body = [
+                        ["Capital Account", fmt(capitalTotal), "Fixed Assets", fmt(data.assets.fixedAssets)],
+                        ["Loans (Liability)", fmt(data.liabilities.loans), "Closing Stock", fmt(currA.closingStock)],
+                        ["Sundry Creditors", fmt(currL.sundryCreditors), "Sundry Debtors", fmt(currA.sundryDebtors)],
+                        ["Duties & Taxes", fmt(gstLiab), "Cash-in-Hand", fmt(currA.cashInHand)],
+                        ["", "", "Bank Accounts", fmt(currA.bankAccounts)]
+                    ];
+
+                    if (gstAsset > 0) {
+                        body.push(["", "", "GST Input Credit", fmt(gstAsset)]);
+                    }
+
+                    body.push([
+                        { content: "Total", styles: { fontStyle: 'bold', fillColor: [240, 240, 240] } },
+                        { content: fmt(totalLiabilities), styles: { fontStyle: 'bold', fillColor: [240, 240, 240] } },
+                        { content: "Total", styles: { fontStyle: 'bold', fillColor: [240, 240, 240] } },
+                        { content: fmt(totalAssets), styles: { fontStyle: 'bold', fillColor: [240, 240, 240] } }
+                    ]);
+                    colStyles = { 1: { halign: 'right' }, 3: { halign: 'right' } };
+                } else {
+                    head = [['Liabilities', 'Curr', 'Prev', 'Assets', 'Curr', 'Prev']];
+
+                    const cap2 = data2.liabilities.capital;
+                    const capTotal2 = cap2.opening + cap2.retainedEarnings + cap2.netProfit - cap2.drawings;
+                    const totalLiabilities2 = capTotal2 + data2.liabilities.loans + data2.liabilities.currentLiabilities.sundryCreditors + (data2.liabilities.currentLiabilities.dutiesTaxes > 0 ? data2.liabilities.currentLiabilities.dutiesTaxes : 0);
+                    const totalAssets2 = data2.assets.fixedAssets + data2.assets.currentAssets.closingStock + data2.assets.currentAssets.sundryDebtors + data2.assets.currentAssets.cashInHand + data2.assets.currentAssets.bankAccounts + (data2.liabilities.currentLiabilities.dutiesTaxes < 0 ? Math.abs(data2.liabilities.currentLiabilities.dutiesTaxes) : 0);
+
+                    body = [
+                        ["Capital", fmt(capitalTotal), fmt(capTotal2), "Fixed Assets", fmt(data.assets.fixedAssets), fmt(data2.assets.fixedAssets)],
+                        ["Loans", fmt(data.liabilities.loans), fmt(data2.liabilities.loans), "Closing Stock", fmt(currA.closingStock), fmt(data2.assets.currentAssets.closingStock)],
+                        ["Creditors", fmt(currL.sundryCreditors), fmt(data2.liabilities.currentLiabilities.sundryCreditors), "Debtors", fmt(currA.sundryDebtors), fmt(data2.assets.currentAssets.sundryDebtors)],
+                        ["Duties", fmt(gstLiab), fmt(data2.liabilities.currentLiabilities.dutiesTaxes > 0 ? data2.liabilities.currentLiabilities.dutiesTaxes : 0), "Cash", fmt(currA.cashInHand), fmt(data2.assets.currentAssets.cashInHand)],
+                        ["", "", "", "Bank", fmt(currA.bankAccounts), fmt(data2.assets.currentAssets.bankAccounts)]
+                    ];
+
+                    body.push([
+                        { content: "Total", styles: { fontStyle: 'bold', fillColor: [240, 240, 240] } },
+                        { content: fmt(totalLiabilities), styles: { fontStyle: 'bold', fillColor: [240, 240, 240] } },
+                        { content: fmt(totalLiabilities2), styles: { fontStyle: 'bold', fillColor: [240, 240, 240] } },
+                        { content: "Total", styles: { fontStyle: 'bold', fillColor: [240, 240, 240] } },
+                        { content: fmt(totalAssets), styles: { fontStyle: 'bold', fillColor: [240, 240, 240] } },
+                        { content: fmt(totalAssets2), styles: { fontStyle: 'bold', fillColor: [240, 240, 240] } }
+                    ]);
+
+                    colStyles = { 1: { halign: 'right' }, 2: { halign: 'right' }, 4: { halign: 'right' }, 5: { halign: 'right' } };
+                }
+            } else {
+                if (!isComparison) {
+                    head = [['Particulars', 'Amount']];
+                    body = [
+                        [{ content: 'LIABILITIES', colSpan: 2, styles: { fontStyle: 'bold', fillColor: [240, 240, 240] } }],
+                        ['Capital Account', fmt(capitalTotal)],
+                        ['Loans (Liability)', fmt(data.liabilities.loans)],
+                        ['Sundry Creditors', fmt(currL.sundryCreditors)],
+                        ['Duties & Taxes', fmt(gstLiab)],
+                        [{ content: 'Total Liabilities', styles: { fontStyle: 'bold' } }, { content: fmt(totalLiabilities), styles: { fontStyle: 'bold' } }],
+
+                        [{ content: 'ASSETS', colSpan: 2, styles: { fontStyle: 'bold', fillColor: [240, 240, 240] } }],
+                        ['Fixed Assets', fmt(data.assets.fixedAssets)],
+                        ['Closing Stock', fmt(currA.closingStock)],
+                        ['Sundry Debtors', fmt(currA.sundryDebtors)],
+                        ['Cash-in-Hand', fmt(currA.cashInHand)],
+                        ['Bank Accounts', fmt(currA.bankAccounts)],
+                    ];
+                    if (gstAsset > 0) body.push(['GST Input Credit', fmt(gstAsset)]);
+                    body.push([{ content: 'Total Assets', styles: { fontStyle: 'bold' } }, { content: fmt(totalAssets), styles: { fontStyle: 'bold' } }]);
+
+                    colStyles = { 1: { halign: 'right' } };
+                } else {
+                    head = [['Particulars', 'Current Amount', 'Previous Amount']];
+                    const cap2 = data2.liabilities.capital;
+                    const capTotal2 = cap2.opening + cap2.retainedEarnings + cap2.netProfit - cap2.drawings;
+                    const totalLiabilities2 = capTotal2 + data2.liabilities.loans + data2.liabilities.currentLiabilities.sundryCreditors + (data2.liabilities.currentLiabilities.dutiesTaxes > 0 ? data2.liabilities.currentLiabilities.dutiesTaxes : 0);
+                    const totalAssets2 = data2.assets.fixedAssets + data2.assets.currentAssets.closingStock + data2.assets.currentAssets.sundryDebtors + data2.assets.currentAssets.cashInHand + data2.assets.currentAssets.bankAccounts + (data2.liabilities.currentLiabilities.dutiesTaxes < 0 ? Math.abs(data2.liabilities.currentLiabilities.dutiesTaxes) : 0);
+
+                    body = [
+                        [{ content: 'LIABILITIES', colSpan: 3, styles: { fontStyle: 'bold', fillColor: [240, 240, 240] } }],
+                        ['Capital Account', fmt(capitalTotal), fmt(capTotal2)],
+                        ['Loans (Liability)', fmt(data.liabilities.loans), fmt(data2.liabilities.loans)],
+                        ['Sundry Creditors', fmt(currL.sundryCreditors), fmt(data2.liabilities.currentLiabilities.sundryCreditors)],
+                        ['Duties & Taxes', fmt(gstLiab), fmt(data2.liabilities.currentLiabilities.dutiesTaxes > 0 ? data2.liabilities.currentLiabilities.dutiesTaxes : 0)],
+                        [{ content: 'Total Liabilities', styles: { fontStyle: 'bold' } }, { content: fmt(totalLiabilities), styles: { fontStyle: 'bold' } }, { content: fmt(totalLiabilities2), styles: { fontStyle: 'bold' } }],
+
+                        [{ content: 'ASSETS', colSpan: 3, styles: { fontStyle: 'bold', fillColor: [240, 240, 240] } }],
+                        ['Fixed Assets', fmt(data.assets.fixedAssets), fmt(data2.assets.fixedAssets)],
+                        ['Closing Stock', fmt(currA.closingStock), fmt(data2.assets.currentAssets.closingStock)],
+                        ['Sundry Debtors', fmt(currA.sundryDebtors), fmt(data2.assets.currentAssets.sundryDebtors)],
+                        ['Cash-in-Hand', fmt(currA.cashInHand), fmt(data2.assets.currentAssets.cashInHand)],
+                        ['Bank Accounts', fmt(currA.bankAccounts), fmt(data2.assets.currentAssets.bankAccounts)]
+                    ];
+                    if (gstAsset > 0 || (data2.liabilities.currentLiabilities.dutiesTaxes < 0)) {
+                        body.push(['GST Input Credit', fmt(gstAsset), fmt(data2.liabilities.currentLiabilities.dutiesTaxes < 0 ? Math.abs(data2.liabilities.currentLiabilities.dutiesTaxes) : 0)]);
+                    }
+                    body.push([{ content: 'Total Assets', styles: { fontStyle: 'bold' } }, { content: fmt(totalAssets), styles: { fontStyle: 'bold' } }, { content: fmt(totalAssets2), styles: { fontStyle: 'bold' } }]);
+
+                    colStyles = { 1: { halign: 'right' }, 2: { halign: 'right' } };
+                }
+            }
+
+            doc.autoTable({
+                startY: 30,
+                head: head,
+                body: body,
+                theme: 'grid',
+                headStyles: { fillColor: [52, 58, 64], textColor: 255, halign: 'center' },
+                columnStyles: colStyles,
+                styles: { fontSize: isComparison ? 8 : 10, cellPadding: 3 },
+            });
+
+            doc.save("Balance_Sheet.pdf");
+        }
+
+        function calculateRatios(d) {
+            if (!d) return { currentRatio: 0, debtToEquity: 0 };
+
+            const currA = d.assets.currentAssets;
+            const currL = d.liabilities.currentLiabilities;
+
+            const currentAssets = currA.closingStock + currA.sundryDebtors + currA.cashInHand + currA.bankAccounts + (currA.dutiesTaxes || 0);
+            const currentLiabilities = currL.sundryCreditors + (currL.dutiesTaxes || 0);
+
+            const currentRatio = currentLiabilities > 0 ? (currentAssets / currentLiabilities) : (currentAssets > 0 ? Infinity : 0);
+
+            const totalDebt = d.liabilities.loans + currentLiabilities;
+            const cap = d.liabilities.capital;
+            const equity = cap.opening + cap.retainedEarnings + cap.netProfit - cap.drawings;
+
+            const debtToEquity = equity > 0 ? (totalDebt / equity) : 0;
+
+            return { currentRatio, debtToEquity };
+        }
+
+        function renderRatios(data, data2, isComparison) {
+            const r1 = calculateRatios(data);
+            const r2 = isComparison ? calculateRatios(data2) : null;
+
+            const getValHtml = (val1, val2) => {
+                let h = `<div class="amount">${val1 === Infinity ? '∞' : val1.toFixed(2)}</div>`;
+                if (isComparison && val2 !== null && val2 !== undefined) {
+                    h += `<div class="amount" style="margin-left:10px; padding-left:10px; border-left:1px solid #ccc; min-width:90px; text-align:right;">${val2 === Infinity ? '∞' : val2.toFixed(2)}</div>`;
+                }
+                return h;
+            };
+
+            let html = `<div class="row-item"><div style="padding-left:15px;">Current Ratio (Assets/Liab)</div>${getValHtml(r1.currentRatio, r2 ? r2.currentRatio : null)}</div>`;
+            html += `<div class="row-item"><div style="padding-left:15px;">Debt-to-Equity Ratio</div>${getValHtml(r1.debtToEquity, r2 ? r2.debtToEquity : null)}</div>`;
+
+            document.getElementById('ratioBody').innerHTML = html;
+        }
+
+        // --- Drill Down Logic ---
+        function showDrillDown(type) {
+            const titleEl = document.getElementById('drillDownTitle');
+            const bodyEl = document.getElementById('drillDownBody');
+            const modal = document.getElementById('drillDownModal');
+            const th = modal.querySelector('thead th:first-child');
+            if (th) th.innerText = "Party Name";
+
+            titleEl.innerText = type === 'debtors' ? "Sundry Debtors Breakdown" : "Sundry Creditors Breakdown";
+            bodyEl.innerHTML = '<tr><td colspan="2" style="text-align:center; padding:20px;">Loading...</td></tr>';
+            modal.style.display = 'flex';
+
+            // Use setTimeout to allow UI to update before heavy calculation
+            setTimeout(() => {
+                const data = getDrillDownData(type);
+                renderDrillDownTable(data, type);
+            }, 50);
+        }
+
+        function showRetainedEarningsDrillDown() {
+            const fromDate = document.getElementById('fromDate').value;
+            const toDate = document.getElementById('toDate').value;
+            const data = getData(fromDate, toDate);
+
+            const breakdown = data.liabilities.capital.retainedBreakdown;
+            const dateText = fromDate ? new Date(fromDate).toLocaleDateString('en-GB') : "Beginning";
+
+            const modal = document.getElementById('drillDownModal');
+            const title = document.getElementById('drillDownTitle');
+            const tbody = document.getElementById('drillDownBody');
+
+            // Update header for this context
+            const th = modal.querySelector('thead th:first-child');
+            if (th) th.innerText = "Particulars";
+
+            title.innerText = `Retained Earnings Breakdown (Prior to ${dateText})`;
+            tbody.innerHTML = '';
+
+            const rows = [
+                { name: "Total Revenue", amount: breakdown.revenue, type: 'Credit' },
+                { name: "Less: Cost of Goods Sold", amount: breakdown.cogs, type: 'Debit' },
+                { name: "Less: Indirect Expenses", amount: breakdown.expenses, type: 'Debit' }
+            ];
+
+            rows.forEach(row => {
+                const tr = document.createElement('tr');
+                const color = row.type === 'Credit' ? 'text-success' : 'text-danger';
+                const sign = row.type === 'Debit' ? '-' : '';
+                tr.innerHTML = `
+                    <td style="padding:10px; border-bottom:1px solid #eee;">${row.name}</td>
+                    <td style="padding:10px; text-align:right; border-bottom:1px solid #eee; font-family:'Consolas', monospace;" class="${color}">
+                        ${sign} ${formatCurrency(row.amount)}
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            // Total
+            const trTotal = document.createElement('tr');
+            trTotal.style.fontWeight = 'bold';
+            trTotal.style.backgroundColor = '#f8f9fa';
+            const net = data.liabilities.capital.retainedEarnings;
+            const netColor = net >= 0 ? 'text-success' : 'text-danger';
+
+            trTotal.innerHTML = `
+                <td style="padding:10px; text-align:right;">Net Retained Earnings</td>
+                <td style="padding:10px; text-align:right; font-family:'Consolas', monospace;" class="${netColor}">${formatCurrency(net)}</td>
+            `;
+            tbody.appendChild(trTotal);
+
+            modal.style.display = 'flex';
+        }
+
+        function closeDrillDown() {
+            document.getElementById('drillDownModal').style.display = 'none';
+        }
+
+        function getDrillDownData(type) {
+            const asOfDate = document.getElementById('toDate').value || new Date().toISOString().split('T')[0];
+            const invoices = JSON.parse(localStorage.getItem("invoices")) || [];
+            const purchases = JSON.parse(localStorage.getItem("purchases")) || [];
+            const customers = JSON.parse(localStorage.getItem("customers")) || [];
+            const suppliers = JSON.parse(localStorage.getItem("suppliers")) || [];
+            const creditNotes = JSON.parse(localStorage.getItem("credit_debit_notes")) || [];
+
+            const map = {}; // name -> amount
+
+            if (type === 'debtors') {
+                // Invoices
+                invoices.forEach(inv => {
+                    const d = inv.invoice_date || inv.date;
+                    if (d <= asOfDate) {
+                        const name = (inv.customer_name || (inv.customer && inv.customer.name) || "Unknown").trim();
+                        const total = parseFloat(inv.invoice_total || inv.total || 0);
+                        const paid = parseFloat(inv.total_paid || inv.paid_amount || inv.paid || 0);
+                        map[name] = (map[name] || 0) + (total - paid);
+                    }
+                });
+                // Credit Notes (Customer)
+                creditNotes.forEach(n => {
+                    if (n.date <= asOfDate && n.status !== 'CANCELLED') {
+                        const name = (n.customer_name || "").trim();
+                        // Check if it's a customer note
+                        if (customers.some(c => c.name === name)) {
+                            const amt = parseFloat(n.total_amount) || 0;
+                            if (!map[name]) map[name] = 0;
+                            if (n.type === 'CREDIT') map[name] -= amt;
+                            else if (n.type === 'DEBIT') map[name] += amt;
+                        }
+                    }
+                });
+                // Opening Balances
+                customers.forEach(c => {
+                    const opBal = parseFloat(c.openingBalance) || 0;
+                    if (opBal > 0) {
+                        const name = c.name.trim();
+                        if (!map[name]) map[name] = 0;
+                        if (c.openingBalanceType === 'Cr') map[name] -= opBal;
+                        else map[name] += opBal; // Default Dr
+                    }
+                });
+            } else {
+                // Creditors (Purchases)
+                purchases.forEach(p => {
+                    if (p.date <= asOfDate) {
+                        const name = (p.supplierName || "Unknown").trim();
+                        const taxable = (parseFloat(p.qty) || 0) * (parseFloat(p.price) || 0);
+                        const tax = taxable * ((parseFloat(p.gst) || 0) / 100);
+                        const total = taxable + tax;
+                        const paid = parseFloat(p.paid) || 0;
+                        map[name] = (map[name] || 0) + (total - paid);
+                    }
+                });
+                // Credit Notes (Supplier)
+                creditNotes.forEach(n => {
+                    if (n.date <= asOfDate && n.status !== 'CANCELLED') {
+                        const name = (n.customer_name || "").trim(); // Reused field
+                        if (suppliers.some(s => s.name === name)) {
+                            const amt = parseFloat(n.total_amount) || 0;
+                            if (!map[name]) map[name] = 0;
+                            if (n.type === 'DEBIT') map[name] -= amt; // Purchase Return
+                            else if (n.type === 'CREDIT') map[name] += amt;
+                        }
+                    }
+                });
+                // Opening Balances
+                suppliers.forEach(s => {
+                    const opBal = parseFloat(s.openingBalance) || 0;
+                    if (opBal > 0) {
+                        const name = s.name.trim();
+                        if (!map[name]) map[name] = 0;
+                        if (s.openingBalanceType === 'Dr') map[name] -= opBal;
+                        else map[name] += opBal; // Default Cr
+                    }
+                });
+            }
+
+            // Convert to array and filter zero balances
+            return Object.entries(map)
+                .map(([name, amount]) => ({ name, amount }))
+                .filter(item => Math.abs(item.amount) > 0.01)
+                .sort((a, b) => b.amount - a.amount);
+        }
+
+        function renderDrillDownTable(data, type) {
+            const tbody = document.getElementById('drillDownBody');
+            tbody.innerHTML = '';
+
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="2" style="text-align:center; padding:20px; color:#666;">No outstanding items found.</td></tr>';
+                return;
+            }
+
+            let total = 0;
+            data.forEach(row => {
+                total += row.amount;
+                const tr = document.createElement('tr');
+                tr.style.borderBottom = '1px solid #eee';
+
+                // Determine link type for ledger
+                const linkType = type === 'debtors' ? 'customer' : 'supplier';
+
+                tr.innerHTML = `
+                    <td style="padding:10px;">
+                        <a href="#" onclick="openLedger('${row.name.replace(/'/g, "\\'")}', '${linkType}'); return false;" style="color:#0d6efd; text-decoration:none; font-weight:500;">
+                            ${row.name}
+                        </a>
+                    </td>
+                    <td style="padding:10px; text-align:right; font-family:'Consolas', monospace;">${formatCurrency(row.amount)}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            // Total Row
+            const trTotal = document.createElement('tr');
+            trTotal.style.fontWeight = 'bold';
+            trTotal.style.backgroundColor = '#f8f9fa';
+            trTotal.innerHTML = `
+                <td style="padding:10px; text-align:right;">Total</td>
+                <td style="padding:10px; text-align:right; font-family:'Consolas', monospace;">${formatCurrency(total)}</td>
+            `;
+            tbody.appendChild(trTotal);
+        }
+
+        function openLedger(name, type) {
+            const url = `ledger.html?${type}=${encodeURIComponent(name)}`;
+            window.open(url, 'ledger_view', 'width=1100,height=800,resizable=yes,scrollbars=yes');
+        }
+
+        // Theme Logic
+        let currentTheme = localStorage.getItem("appThemeMode") || "system";
+        function changeTheme() {
+            currentTheme = document.getElementById("themeSelect").value;
+            localStorage.setItem("appThemeMode", currentTheme);
+            applyTheme();
+        }
+        function applyTheme() {
+            const isDark = currentTheme === "dark" || (currentTheme === "system" && window.matchMedia('(prefers-color-scheme: dark)').matches);
+            if (isDark) document.body.classList.add("dark-mode");
+            else document.body.classList.remove("dark-mode");
+            document.getElementById("themeSelect").value = currentTheme;
+        }
+
+        let isGreyButtons = localStorage.getItem("balanceSheetGreyButtons") === "true";
+
+        function toggleGreyButtons() {
+            isGreyButtons = document.getElementById("greyButtonsToggle").checked;
+            localStorage.setItem("balanceSheetGreyButtons", isGreyButtons);
+            applyGreyButtons();
+        }
+
+        function applyGreyButtons() {
+            if (isGreyButtons) document.body.classList.add("grey-mode");
+            else document.body.classList.remove("grey-mode");
+            const toggle = document.getElementById("greyButtonsToggle");
+            if (toggle) toggle.checked = isGreyButtons;
+        }
+
+        let isTFormat = localStorage.getItem("balanceSheetTFormat") === "true";
+
+        function toggleTFormat() {
+            isTFormat = document.getElementById("tFormatView").checked;
+            localStorage.setItem("balanceSheetTFormat", isTFormat);
+            applyTFormat();
+        }
+
+        function applyTFormat() {
+            const container = document.getElementById('mainSheetContainer');
+            if (isTFormat) container.classList.add('t-format');
+            else container.classList.remove('t-format');
+            const toggle = document.getElementById("tFormatView");
+            if (toggle) toggle.checked = isTFormat;
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            const today = new Date();
+            const firstDay = new Date(today.getFullYear(), 3, 1); // April 1st of current year (approx FY start)
+            if (today.getMonth() < 3) firstDay.setFullYear(today.getFullYear() - 1);
+            document.getElementById('fromDate').valueAsDate = firstDay;
+            document.getElementById('toDate').valueAsDate = today;
+
+            applyTheme();
+            applyGreyButtons();
+            applyTFormat();
+            renderBalanceSheet();
+        });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,1360 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Production Entry</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="apiClient.js"></script>
+    <script src="settings.js"></script>
+    <script>
+        function openWindow(url, width, height) {
+            const windowName = url.split('?')[0].split('/').pop().replace('.html', '').replace(/[^a-zA-Z0-9]/g, '_');
+            window.open(url, windowName, `width=${width},height=${height},resizable=yes,scrollbars=yes`).focus();
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            padding: 20px;
+            background: #f4f6f8;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h2,
+        h3 {
+            color: #2c3e50;
+        }
+
+        .card {
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #eee;
+            margin-bottom: 20px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            align-items: end;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        label {
+            font-weight: 600;
+            font-size: 13px;
+            margin-bottom: 5px;
+            color: #555;
+        }
+
+        input,
+        select {
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        input[readonly] {
+            background-color: #e9ecef;
+        }
+
+        button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            color: white;
+            transition: opacity 0.2s;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        .btn-primary {
+            background: #3498db;
+        }
+
+        .btn-success {
+            background: #27ae60;
+        }
+
+        .btn-danger {
+            background: #e74c3c;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            background: white;
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+            font-size: 14px;
+        }
+
+        th {
+            background: #2c3e50;
+            color: white;
+        }
+
+        /* Pagination Styles */
+        .pagination button {
+            padding: 4px 10px;
+            border: 1px solid #ccc;
+            background: #fff;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        .pagination button.active {
+            background: #3498db;
+            color: #fff;
+            border-color: #3498db;
+        }
+
+        .pagination button:disabled {
+            background: #eee;
+            cursor: not-allowed;
+        }
+
+        /* Action Dropdown Menu */
+        .action-dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .action-btn-main {
+            background-color: #607d8b;
+            color: white;
+            padding: 5px 10px;
+            font-size: 13px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .action-dropdown-content {
+            display: none;
+            position: fixed;
+            background-color: #fff;
+            min-width: 120px;
+            box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
+            z-index: 9999;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 4px 0;
+            text-align: left;
+        }
+
+        .action-dropdown-content button {
+            color: #333 !important;
+            background: none !important;
+            padding: 8px 16px !important;
+            text-decoration: none !important;
+            display: block !important;
+            width: 100% !important;
+            text-align: left !important;
+            border: none !important;
+            border-radius: 0 !important;
+            margin: 0 !important;
+            box-shadow: none !important;
+            font-weight: normal !important;
+            font-size: 13px !important;
+        }
+
+        .action-dropdown-content button:hover {
+            background-color: #f1f1f1 !important;
+            color: #000 !important;
+        }
+
+        .action-dropdown.active .action-dropdown-content {
+            display: block;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h2><i class="fas fa-industry"></i> Production Entry</h2>
+            <div>
+                <button class="btn-primary" onclick="openWindow('production_stock_report.html', 1200, 700)"
+                    style="margin-right: 10px; background-color: #17a2b8;"><i class="fas fa-boxes"></i> Production Stock
+                    Report</button>
+                <button class="btn-primary" onclick="refreshData()" style="margin-right: 10px;"><i
+                        class="fas fa-sync-alt"></i> Refresh</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; cursor: pointer; margin-bottom: 15px;"
+                onclick="toggleProductionForm()">
+                <h3 style="margin: 0;">Log Production</h3>
+                <button id="toggleFormBtn" type="button"
+                    style="background:none; border:none; font-size:1.2em; padding:0; margin:0; cursor:pointer; color:#2c3e50; box-shadow:none;">&#9650;</button>
+            </div>
+            <div id="productionFormContainer">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="prodNo">Production No</label>
+                        <input type="text" id="prodNo">
+                    </div>
+                    <div class="form-group">
+                        <label for="prodDate">Date</label>
+                        <input type="date" id="prodDate">
+                    </div>
+                    <div class="form-group">
+                        <label for="searchBomCode">Fetch by BOM Code</label>
+                        <div style="display: flex; gap: 5px;">
+                            <input type="text" id="searchBomCode" list="bomCodeList" placeholder="e.g. BOM-0001"
+                                onkeydown="if(event.key === 'Enter') { event.preventDefault(); fetchBomByCode(); }"
+                                onchange="fetchBomByCode()">
+                            <datalist id="bomCodeList"></datalist>
+                            <button type="button" class="btn-primary" onclick="fetchBomByCode()"
+                                style="padding: 0 15px;">Fetch</button>
+                        </div>
+                    </div>
+                    <div class="form-group" style="grid-column: span 2;">
+                        <label for="bomSelect">Select Finished Good (From BOM)</label>
+                        <select id="bomSelect" onchange="calculateMaterials()"></select>
+                    </div>
+                    <div class="form-group">
+                        <label for="produceQty">Quantity Produced</label>
+                        <input type="number" id="produceQty" value="1" min="1" step="any" oninput="calculateMaterials()"
+                            style="width: 100%;">
+                    </div>
+                    <div class="form-group">
+                        <label for="produceUom">UOM</label>
+                        <div style="display: flex; gap: 5px;">
+                            <select id="produceUom" style="flex: 1;" onchange="calculateMaterials()">
+                                <option value="">Select UOM</option>
+                            </select>
+                            <button type="button" class="btn-primary" onclick="addCustomUOM()" title="Add Custom UOM"
+                                style="padding: 0 10px; font-size: 16px; flex: 0;">+</button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="produceHsn">HSN/SAC</label>
+                        <input type="text" id="produceHsn" placeholder="HSN/SAC">
+                    </div>
+                    <div class="form-group">
+                        <label for="produceBatch">Batch / Lot No</label>
+                        <input type="text" id="produceBatch" placeholder="Batch/Lot No (Optional)">
+                    </div>
+                    <div class="form-group">
+                        <label for="prodStage">Current Stage / Status</label>
+                        <select id="prodStage">
+                            <option value="Planned" title="1 - Planned (No Stock Effect)">1 - Planned (No Stock Effect)
+                            </option>
+                            <option value="WIP" title="2 - Work In Progress (Materials Issued)">2 - WIP (Materials
+                                Issued)</option>
+                            <option value="Completed" title="3 - Completed (FG Added to Stock)" selected>3 - Completed
+                                (FG Added to Stock)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <h4>Raw Materials Consumed</h4>
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 50px; text-align: center;">Sl No</th>
+                            <th>Raw Material</th>
+                            <th>Item Code</th>
+                            <th style="width: 150px; text-align: right;">Consumed Qty</th>
+                            <th style="width: 150px; text-align: right;">Available Stock</th>
+                            <th style="width: 100px; text-align: center;">UOM</th>
+                        </tr>
+                    </thead>
+                    <tbody id="materialsTableBody">
+                        <tr>
+                            <td colspan="6" style="text-align: center; color: #888;">Select a Finished Good and Quantity
+                                to
+                                calculate consumed materials.</td>
+                        </tr>
+                    </tbody>
+                    <tfoot id="materialsTableFoot" style="display: none;">
+                        <tr>
+                            <td colspan="4" style="text-align: right; font-weight: bold;">Estimated Total Cost:</td>
+                            <td colspan="2" id="prodTotalCost"
+                                style="font-weight: bold; color: #27ae60; text-align: center;">0.00</td>
+                        </tr>
+                    </tfoot>
+                </table>
+
+                <h4 id="addOutHeading" style="display: none; margin-top: 20px;">Additional Outputs Produced</h4>
+                <table id="addOutTable" style="display: none; margin-bottom: 20px;">
+                    <thead>
+                        <tr>
+                            <th style="width: 50px; text-align: center;">Sl No</th>
+                            <th>Item Name</th>
+                            <th>Item Code</th>
+                            <th style="width: 150px; text-align: right;">Produced Qty</th>
+                            <th style="width: 100px; text-align: center;">UOM</th>
+                        </tr>
+                    </thead>
+                    <tbody id="addOutTableBody"></tbody>
+                </table>
+
+                <div
+                    style="margin-top: 20px; text-align: right; display:flex; align-items:center; justify-content:flex-end; gap:15px;">
+                    <label
+                        style="cursor:pointer; display:flex; align-items:center; gap:5px; font-weight:normal; color:#555;">
+                        <input type="checkbox" id="autoCreateJv" checked style="width:auto; margin:0;">
+                        Auto-create Journal Voucher
+                    </label>
+                    <button id="btnSaveProduction" class="btn-success" onclick="saveProduction()">💾 Save
+                        Production</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <h3 style="margin: 0;">Recent Production History</h3>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <label style="font-size: 14px; margin: 0;">From:</label>
+                    <input type="date" id="historyFromDate" onchange="currentHistoryPage=1; loadHistory()"
+                        style="padding: 6px; border: 1px solid #ccc; border-radius: 4px;">
+                    <label style="font-size: 14px; margin: 0;">To:</label>
+                    <input type="date" id="historyToDate" onchange="currentHistoryPage=1; loadHistory()"
+                        style="padding: 6px; border: 1px solid #ccc; border-radius: 4px;">
+                    <select id="historyStageFilter" onchange="currentHistoryPage=1; loadHistory()"
+                        style="padding: 6px; border: 1px solid #ccc; border-radius: 4px;">
+                        <option value="">All Stages</option>
+                        <option value="Planned">Planned</option>
+                        <option value="WIP">WIP</option>
+                        <option value="Completed">Completed</option>
+                    </select>
+                    <input type="text" id="searchHistory" placeholder="Search Production No, Item..."
+                        oninput="currentHistoryPage=1; loadHistory()"
+                        style="width: 250px; padding: 6px; border: 1px solid #ccc; border-radius: 4px;">
+                    <button class="btn-primary" onclick="toggleStageChart()" style="padding: 6px 12px;"><i
+                            class="fas fa-chart-pie"></i> Chart</button>
+                    <button class="btn-success" onclick="exportProductionHistory()"
+                        style="padding: 6px 12px; background: #27ae60;"><i class="fas fa-file-excel"></i>
+                        Export</button>
+                </div>
+            </div>
+
+            <div id="stageChartContainer"
+                style="display: none; margin-bottom: 20px; padding: 15px; background: #fff; border-radius: 8px; border: 1px solid #eee; height: 300px; position: relative;">
+                <canvas id="stageChart"></canvas>
+            </div>
+
+            <div style="max-height: 400px; overflow-y: auto;">
+                <table id="historyTable">
+                    <thead>
+                        <tr>
+                            <th style="width: 50px; text-align: center;">Sl No</th>
+                            <th>Date</th>
+                            <th>Production No</th>
+                            <th style="text-align: center; white-space: nowrap;">BOM & Recipe</th>
+                            <th>Finished Good</th>
+                            <th style="text-align: center;">Batch / Lot No</th>
+                            <th style="text-align: center;">Produced Qty</th>
+                            <th style="text-align: right;">Mat. Cost</th>
+                            <th style="text-align: right;">Est. Cost</th>
+                            <th style="text-align: center;">Stage</th>
+                            <th style="text-align: center;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historyTableBody"></tbody>
+                </table>
+            </div>
+
+            <!-- Pagination Controls -->
+            <div class="pagination-container"
+                style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px; padding-top: 10px; border-top: 1px solid #eee;">
+                <div style="display: flex; align-items: center; gap: 5px;">
+                    <span id="totalHistoryDisplay" style="font-weight: bold; color: #2c3e50; margin-right: 8px;"></span>
+                    <select id="historyRowsPerPage" onchange="changeHistoryRowsPerPage()"
+                        style="width: auto; padding: 4px; border: 1px solid #ccc; border-radius: 4px; margin: 0;">
+                        <option value="5">5 rows</option>
+                        <option value="10" selected>10 rows</option>
+                        <option value="20">20 rows</option>
+                        <option value="50">50 rows</option>
+                    </select>
+                </div>
+                <div id="historyPaginationInfo" style="color: #666; font-size: 14px;"></div>
+                <div class="pagination" id="historyPaginationControls" style="display: flex; gap: 5px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentHistoryPage = 1;
+        let historyRowsPerPage = 10;
+        let bomDataMap = {};
+        let isProductionFormVisible = localStorage.getItem("productionFormVisible") !== "false";
+        let stageChartInstance = null;
+        let isStageChartVisible = false;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('prodDate').valueAsDate = new Date();
+            document.getElementById('prodNo').value = generateProdNo();
+            loadBOMs();
+            loadHistory();
+            loadUOMList();
+            applyProductionFormVisibility();
+        });
+
+        function toggleProductionForm() {
+            isProductionFormVisible = !isProductionFormVisible;
+            localStorage.setItem("productionFormVisible", isProductionFormVisible);
+            applyProductionFormVisibility();
+        }
+
+        function applyProductionFormVisibility() {
+            const container = document.getElementById('productionFormContainer');
+            const btn = document.getElementById('toggleFormBtn');
+            if (container && btn) {
+                if (isProductionFormVisible) {
+                    container.style.display = 'block';
+                    btn.innerHTML = '&#9650;';
+                } else {
+                    container.style.display = 'none';
+                    btn.innerHTML = '&#9660;';
+                }
+            }
+        }
+
+        function refreshData() {
+            location.reload();
+        }
+
+        function loadUOMList() {
+            const uomSelect = document.getElementById('produceUom');
+            if (uomSelect && typeof UNIT_MASTER_LIST !== 'undefined') {
+                const currentVal = uomSelect.value;
+                uomSelect.innerHTML = '<option value="">Select UOM</option>';
+                const customUOMs = JSON.parse(localStorage.getItem('custom_uoms')) || [];
+                const allUOMs = [...new Set([...UNIT_MASTER_LIST, ...customUOMs])].sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
+                allUOMs.forEach(uom => {
+                    const opt = document.createElement('option');
+                    opt.value = uom;
+                    opt.textContent = uom;
+                    uomSelect.appendChild(opt);
+                });
+                if (currentVal) uomSelect.value = currentVal;
+            }
+        }
+
+        function addCustomUOM() {
+            const newUom = prompt("Enter new Unit of Measurement (e.g., Ltr, Pcs, Box):");
+            if (newUom && newUom.trim() !== "") {
+                const uomName = newUom.trim();
+                const lowerName = uomName.toLowerCase();
+                const customUOMs = JSON.parse(localStorage.getItem('custom_uoms')) || [];
+                const exists = customUOMs.some(u => u.toLowerCase() === lowerName) || (typeof UNIT_MASTER_LIST !== 'undefined' && UNIT_MASTER_LIST.some(u => u.toLowerCase() === lowerName));
+                if (!exists) {
+                    customUOMs.push(uomName);
+                    localStorage.setItem('custom_uoms', JSON.stringify(customUOMs));
+                    loadUOMList();
+                    const uomSelect = document.getElementById('produceUom');
+                    if (uomSelect) uomSelect.value = uomName;
+                    alert("UOM added successfully!");
+                } else {
+                    alert("UOM already exists!");
+                }
+            }
+        }
+
+        function generateJournalVoucherNo() {
+            const jvs = JSON.parse(localStorage.getItem("journal_vouchers")) || [];
+            let max = 0;
+            jvs.forEach(v => {
+                if (v.voucher_no) {
+                    const num = parseInt(String(v.voucher_no).replace(/\D/g, ''));
+                    if (!isNaN(num) && num > max) max = num;
+                }
+            });
+            return `JV-${String(max + 1).padStart(4, '0')}`;
+        }
+
+        function getStockForItem(itemName, itemCode = "") {
+            const purchases = JSON.parse(localStorage.getItem("purchases")) || [];
+            const invoices = JSON.parse(localStorage.getItem("invoices")) || [];
+            const returns = JSON.parse(localStorage.getItem("returns")) || [];
+            const scraps = JSON.parse(localStorage.getItem("scraps")) || [];
+            const productions = JSON.parse(localStorage.getItem("production")) || [];
+            const stockMap = {};
+
+            const targetName = (itemName || "").trim().toLowerCase();
+            const targetCode = (itemCode || "").trim().toLowerCase();
+
+            purchases.forEach(p => {
+                if ((p.itemName || "").trim().toLowerCase() === targetName && (!targetCode || (p.itemCode || "").trim().toLowerCase() === targetCode)) {
+                    const uom = (p.uom || "-").trim().toLowerCase();
+                    stockMap[uom] = (stockMap[uom] || 0) + (parseFloat(p.qty) || 0);
+                }
+            });
+
+            invoices.forEach(inv => {
+                if (inv.items && Array.isArray(inv.items)) {
+                    inv.items.forEach(item => {
+                        if ((item.item || "").trim().toLowerCase() === targetName && (!targetCode || (item.itemCode || "").trim().toLowerCase() === targetCode)) {
+                            const uom = (item.uom || "-").trim().toLowerCase();
+                            stockMap[uom] = (stockMap[uom] || 0) - (parseFloat(item.qty) || 0);
+                        }
+                    });
+                }
+            });
+
+            returns.forEach(ret => {
+                if (ret.items) ret.items.forEach(item => {
+                    if ((item.item_name || "").trim().toLowerCase() === targetName && (!targetCode || (item.itemCode || "").trim().toLowerCase() === targetCode)) {
+                        const uom = (item.uom || "-").trim().toLowerCase();
+                        const qty = parseFloat(item.qty) || 0;
+                        stockMap[uom] = (stockMap[uom] || 0) + (ret.return_type === 'Sales Return' ? qty : -qty);
+                    }
+                });
+            });
+
+            scraps.forEach(s => {
+                if ((s.itemName || "").trim().toLowerCase() === targetName && (!targetCode || (s.itemCode || "").trim().toLowerCase() === targetCode)) {
+                    const uom = (s.uom || "-").trim().toLowerCase();
+                    stockMap[uom] = (stockMap[uom] || 0) - (parseFloat(s.qty) || 0);
+                }
+            });
+
+            productions.forEach(prod => {
+                const stage = prod.stage || 'Completed';
+                if (stage === 'Completed') {
+                    if ((prod.finishedGood || "").trim().toLowerCase() === targetName && (!targetCode || (prod.fgCode || "").trim().toLowerCase() === targetCode)) {
+                        const uom = (prod.fgUom || "-").trim().toLowerCase();
+                        stockMap[uom] = (stockMap[uom] || 0) + (parseFloat(prod.fgQtyProduced) || 0);
+                    }
+                    if (prod.additionalOutputsProduced && Array.isArray(prod.additionalOutputsProduced)) {
+                        prod.additionalOutputsProduced.forEach(out => {
+                            if ((out.item || "").trim().toLowerCase() === targetName && (!targetCode || (out.code || "").trim().toLowerCase() === targetCode)) {
+                                const uom = (out.uom || "-").trim().toLowerCase();
+                                stockMap[uom] = (stockMap[uom] || 0) + (parseFloat(out.qty) || 0);
+                            }
+                        });
+                    }
+                }
+                if (stage === 'WIP' || stage === 'Completed') {
+                    if (prod.materialsConsumed && Array.isArray(prod.materialsConsumed)) {
+                        prod.materialsConsumed.forEach(rm => {
+                            if ((rm.item || "").trim().toLowerCase() === targetName && (!targetCode || (rm.code || "").trim().toLowerCase() === targetCode)) {
+                                const uom = (rm.uom || "-").trim().toLowerCase();
+                                stockMap[uom] = (stockMap[uom] || 0) - (parseFloat(rm.qty) || 0);
+                            }
+                        });
+                    }
+                }
+            });
+            return stockMap;
+        }
+
+        function generateProdNo() {
+            const prods = JSON.parse(localStorage.getItem("production")) || [];
+            let max = 0;
+            prods.forEach(p => {
+                if (p.productionNo) {
+                    const num = parseInt(p.productionNo.replace(/\D/g, ''));
+                    if (!isNaN(num) && num > max) max = num;
+                }
+            });
+            return `MFG-${String(max + 1).padStart(4, '0')}`;
+        }
+
+        function loadBOMs() {
+            const boms = JSON.parse(localStorage.getItem("boms")) || [];
+            const select = document.getElementById('bomSelect');
+            select.innerHTML = '<option value="">-- Select BOM / Finished Good --</option>';
+            bomDataMap = {};
+
+            const bomCodeList = document.getElementById('bomCodeList');
+            if (bomCodeList) bomCodeList.innerHTML = '';
+
+            boms.forEach(bom => {
+                bomDataMap[bom.id] = bom;
+                const opt = document.createElement('option');
+                opt.value = bom.id;
+                const estCost = bom.totalEstimatedCost ? ` | Est. Cost: ₹${parseFloat(bom.totalEstimatedCost).toFixed(2)}` : '';
+                const recipeName = bom.bomName ? ` | Recipe: ${bom.bomName}` : ' | Recipe: Standard';
+                const codeStr = bom.bomCode ? ` | Code: ${bom.bomCode}` : '';
+                opt.textContent = `${bom.finishedGoodName} ${bom.finishedGoodCode ? '[' + bom.finishedGoodCode + ']' : ''} (1 Batch = ${bom.outputQty || 1} ${bom.outputUom || ''}${estCost}${recipeName}${codeStr})`;
+                select.appendChild(opt);
+
+                if (bomCodeList && bom.bomCode) {
+                    const codeOpt = document.createElement('option');
+                    codeOpt.value = bom.bomCode;
+                    bomCodeList.appendChild(codeOpt);
+                }
+            });
+        }
+
+        function fetchBomByCode() {
+            const searchCode = document.getElementById('searchBomCode').value.trim().toLowerCase();
+            if (!searchCode) return;
+
+            const select = document.getElementById('bomSelect');
+            let found = false;
+
+            for (let i = 0; i < select.options.length; i++) {
+                const opt = select.options[i];
+                if (opt.value) {
+                    const bom = bomDataMap[opt.value];
+                    if (bom && bom.bomCode && bom.bomCode.toLowerCase() === searchCode) {
+                        select.selectedIndex = i;
+                        calculateMaterials();
+                        found = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!found) {
+                alert(`BOM with code "${document.getElementById('searchBomCode').value.trim()}" not found.`);
+            }
+        }
+
+        function calculateMaterials() {
+            const select = document.getElementById('bomSelect');
+            const qty = parseFloat(document.getElementById('produceQty').value) || 0;
+            const tbody = document.getElementById('materialsTableBody');
+            const tfoot = document.getElementById('materialsTableFoot');
+            const uomInput = document.getElementById('produceUom');
+            const hsnInput = document.getElementById('produceHsn');
+            tbody.innerHTML = '';
+
+            if (!select.value || qty <= 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #888;">Select a Finished Good and Quantity to calculate consumed materials.</td></tr>';
+                if (tfoot) tfoot.style.display = 'none';
+                if (uomInput) {
+                    uomInput.value = '';
+                    uomInput.dataset.lastBom = '';
+                }
+                if (hsnInput) {
+                    hsnInput.value = '';
+                    hsnInput.dataset.lastBom = '';
+                }
+                return;
+            }
+
+            const bom = bomDataMap[select.value];
+            if (!bom) return;
+
+            if (uomInput && uomInput.dataset.lastBom !== bom.id) {
+                uomInput.value = bom.outputUom || '';
+                uomInput.dataset.lastBom = bom.id;
+            }
+
+            if (hsnInput && hsnInput.dataset.lastBom !== bom.id) {
+                const items = JSON.parse(localStorage.getItem("items")) || [];
+                const fgItem = items.find(i => i.name === bom.finishedGoodName && (!bom.finishedGoodCode || i.itemCode === bom.finishedGoodCode));
+                hsnInput.value = fgItem ? (fgItem.hsn || '') : '';
+                hsnInput.dataset.lastBom = bom.id;
+            }
+
+            // Example: Producing 10 chairs from a BOM that outputs 2 chairs = Multiplier of 5.
+            const multiplier = qty / (parseFloat(bom.outputQty) || 1);
+
+            const addOutTbody = document.getElementById('addOutTableBody');
+            const addOutTable = document.getElementById('addOutTable');
+            const addOutHeading = document.getElementById('addOutHeading');
+            addOutTbody.innerHTML = '';
+            if (bom.additionalOutputs && bom.additionalOutputs.length > 0) {
+                addOutHeading.style.display = 'block';
+                addOutTable.style.display = 'table';
+                let slOut = 1;
+                bom.additionalOutputs.forEach(out => {
+                    const prodQty = parseFloat(out.qty) * multiplier;
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td style="text-align: center;">${slOut++}</td>
+                        <td>${out.itemName}</td>
+                        <td>${out.itemCode || '-'}</td>
+                        <td style="text-align: right; font-weight: bold; color: #27ae60;">${prodQty.toFixed(3)}</td>
+                        <td style="text-align: center;">${out.uom || '-'}</td>
+                    `;
+                    addOutTbody.appendChild(tr);
+                });
+            } else {
+                addOutHeading.style.display = 'none';
+                addOutTable.style.display = 'none';
+            }
+
+            let sl = 1;
+            (bom.rawMaterials || []).forEach(rm => {
+                const consumedQty = parseFloat(rm.qty) * multiplier;
+                const stockData = getStockForItem(rm.itemName, rm.itemCode);
+                const availableStock = stockData[(rm.uom || "-").trim().toLowerCase()] || 0;
+                const stockColor = consumedQty > availableStock ? '#e74c3c' : '#27ae60';
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td style="text-align: center;">${sl++}</td>
+                    <td>${rm.itemName}</td>
+                    <td>${rm.itemCode || '-'}</td>
+                    <td style="text-align: right; font-weight: bold; color: ${consumedQty > availableStock ? '#e74c3c' : '#555'};">${consumedQty.toFixed(3)}</td>
+                    <td style="text-align: right; font-weight: bold; color: ${stockColor};">${availableStock.toFixed(2)}</td>
+                    <td style="text-align: center;">${rm.uom || '-'}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            const totalCost = (parseFloat(bom.totalEstimatedCost) || 0) * multiplier;
+            if (tfoot) {
+                tfoot.style.display = 'table-footer-group';
+                document.getElementById('prodTotalCost').innerText = '₹ ' + totalCost.toFixed(2);
+            }
+        }
+
+        function saveProduction() {
+            const select = document.getElementById('bomSelect');
+            const btnSave = document.getElementById('btnSaveProduction');
+
+            if (!select.value) {
+                return alert("Please select a Finished Good.");
+            }
+
+            const qty = parseFloat(document.getElementById('produceQty').value) || 0;
+            if (qty <= 0) {
+                return alert("Please enter a valid quantity greater than zero.");
+            }
+
+            const date = document.getElementById('prodDate').value;
+            const prodNo = document.getElementById('prodNo').value.trim();
+            if (!prodNo) {
+                return alert("Production No cannot be empty.");
+            }
+            const prods = JSON.parse(localStorage.getItem("production")) || [];
+            const isDuplicate = prods.some(p => p.productionNo === prodNo);
+            if (isDuplicate) {
+                return alert(`Production No "${prodNo}" already exists. Please use a unique number.`);
+            }
+
+
+
+            // Disable button to prevent double submission
+            btnSave.disabled = true;
+            btnSave.innerText = "Saving...";
+
+            const bom = bomDataMap[select.value];
+            if (!bom) {
+                btnSave.disabled = false;
+                btnSave.innerText = "💾 Save Production";
+                return alert("Invalid BOM selected.");
+            }
+            const multiplier = qty / (parseFloat(bom.outputQty) || 1);
+
+            const materialsConsumed = (bom.rawMaterials || []).map(rm => ({
+                item: rm.itemName,
+                code: rm.itemCode || "",
+                qty: parseFloat(rm.qty) * multiplier,
+                uom: rm.uom || ""
+            }));
+
+            const additionalOutputsProduced = [];
+            if (bom.additionalOutputs && bom.additionalOutputs.length > 0) {
+                bom.additionalOutputs.forEach(out => {
+                    additionalOutputsProduced.push({
+                        item: out.itemName,
+                        code: out.itemCode || "",
+                        qty: parseFloat(out.qty) * multiplier,
+                        uom: out.uom || ""
+                    });
+                });
+            }
+
+            const prodStage = document.getElementById('prodStage').value;
+
+            // Final stock validation before saving
+            let insufficientStockItems = [];
+            if (prodStage === 'WIP' || prodStage === 'Completed') {
+                for (const rm of materialsConsumed) {
+                    const stockData = getStockForItem(rm.item, rm.code);
+                    const availableStock = stockData[(rm.uom || "-").trim().toLowerCase()] || 0;
+                    if (availableStock < rm.qty) {
+                        insufficientStockItems.push(`${rm.item} (Required: ${rm.qty.toFixed(2)} ${rm.uom}, Available: ${availableStock.toFixed(2)} ${rm.uom})`);
+                    }
+                }
+            }
+
+            if (insufficientStockItems.length > 0) {
+                btnSave.disabled = false;
+                btnSave.innerText = "💾 Save Production";
+                alert("Cannot save. Insufficient stock for:\n\n" + [...new Set(insufficientStockItems)].join("\n"));
+                return;
+            }
+
+            const fgUom = document.getElementById('produceUom').value || bom.outputUom || "Pcs";
+            const fgHsn = document.getElementById('produceHsn') ? document.getElementById('produceHsn').value : "";
+            const fgBatch = document.getElementById('produceBatch') ? document.getElementById('produceBatch').value.trim() : "";
+
+            const totalCost = (parseFloat(bom.totalEstimatedCost) || 0) * multiplier;
+            const materialCostForRun = (parseFloat(bom.materialCost) || 0) * multiplier;
+
+            const entry = {
+                id: 'prod_' + Date.now(),
+                productionNo: prodNo,
+                date: date,
+                stage: prodStage,
+                finishedGood: bom.finishedGoodName,
+                fgCode: bom.finishedGoodCode || "",
+                bomCode: bom.bomCode || "",
+                bomName: bom.bomName || "Standard",
+                fgQtyProduced: qty,
+                fgUom: fgUom,
+                fgHsn: fgHsn,
+                fgBatch: fgBatch,
+                additionalOutputsProduced: additionalOutputsProduced,
+                materialsConsumed: materialsConsumed,
+                materialCost: materialCostForRun,
+                totalCost: totalCost,
+                createdAt: new Date().toISOString()
+            };
+
+            prods.push(entry);
+            localStorage.setItem("production", JSON.stringify(prods));
+        if (typeof apiClient !== 'undefined' && apiClient.saveProduction) apiClient.saveProduction(entry).catch(console.warn);
+
+            // --- Auto Journal Voucher Creation ---
+
+            const shouldCreateJv = document.getElementById('autoCreateJv').checked && prodStage === 'Completed';
+            if (shouldCreateJv) {
+                const jvEntries = [];
+                const labourCostForRun = (bom.labourCost || 0) * multiplier;
+                const overheadCostForRun = (bom.overheadCost || 0) * multiplier;
+
+                // 1. Debit Finished Goods Inventory with the total cost
+                jvEntries.push({ type: 'Dr', account: 'Finished Goods Inventory', debit: totalCost, credit: 0 });
+
+                // 2. Credit Raw Materials Inventory
+                if (materialCostForRun > 0) jvEntries.push({ type: 'Cr', account: 'Raw Materials Inventory', debit: 0, credit: materialCostForRun });
+
+                // 3. Credit Manufacturing Wages/Labour
+                if (labourCostForRun > 0) jvEntries.push({ type: 'Cr', account: 'Manufacturing Wages', debit: 0, credit: labourCostForRun });
+
+                // 4. Credit Manufacturing Overheads
+                if (overheadCostForRun > 0) jvEntries.push({ type: 'Cr', account: 'Manufacturing Overheads', debit: 0, credit: overheadCostForRun });
+
+                const recipeName = bom.bomName || 'Standard';
+                const newVoucher = { id: 'jv_' + Date.now(), voucher_no: generateJournalVoucherNo(), voucher_type: 'Journal', date: date, narration: `Cost of Goods Manufactured for ${qty} x ${bom.finishedGoodName} (Prod No: ${prodNo} | Recipe: ${recipeName} | Est. Cost: ₹${totalCost.toFixed(2)})`, entries: jvEntries, total_amount: totalCost, created_at: new Date().toISOString(), createdBy: localStorage.getItem('currentUser') || 'System' };
+                const journalVouchers = JSON.parse(localStorage.getItem('journal_vouchers')) || [];
+                journalVouchers.push(newVoucher);
+                localStorage.setItem('journal_vouchers', JSON.stringify(journalVouchers));
+            if (typeof apiClient !== 'undefined' && apiClient.saveJournalVoucher) apiClient.saveJournalVoucher(newVoucher).catch(console.warn);
+                alert(`Production Entry ${prodNo} Saved Successfully!\nJournal Voucher ${newVoucher.voucher_no} also created.`);
+            } else {
+                alert(`Production Entry ${prodNo} Saved Successfully as [${prodStage}]!`);
+            }
+
+            // Reset Form
+            document.getElementById('searchBomCode').value = '';
+            document.getElementById('bomSelect').value = '';
+            document.getElementById('produceQty').value = '1';
+            document.getElementById('prodNo').value = generateProdNo();
+            document.getElementById('produceUom').value = '';
+            document.getElementById('produceUom').dataset.lastBom = '';
+            if (document.getElementById('produceHsn')) {
+                document.getElementById('produceHsn').value = '';
+                document.getElementById('produceHsn').dataset.lastBom = '';
+            }
+            if (document.getElementById('produceBatch')) {
+                document.getElementById('produceBatch').value = '';
+            }
+            calculateMaterials();
+            loadHistory();
+
+            // Re-enable button
+            btnSave.disabled = false;
+            btnSave.innerText = "💾 Save Production";
+        }
+
+        function toggleStageChart() {
+            isStageChartVisible = !isStageChartVisible;
+            const container = document.getElementById('stageChartContainer');
+            if (isStageChartVisible) {
+                container.style.display = 'block';
+                loadHistory();
+            } else {
+                container.style.display = 'none';
+            }
+        }
+
+        function renderStageChart(prods) {
+            const ctx = document.getElementById('stageChart').getContext('2d');
+            let planned = 0, wip = 0, completed = 0;
+
+            prods.forEach(p => {
+                if (p.stage === 'Planned') planned++;
+                else if (p.stage === 'WIP') wip++;
+                else completed++;
+            });
+
+            if (stageChartInstance) stageChartInstance.destroy();
+
+            stageChartInstance = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: ['Planned', 'WIP', 'Completed'],
+                    datasets: [{
+                        data: [planned, wip, completed],
+                        backgroundColor: ['#3498db', '#f39c12', '#27ae60'],
+                        borderWidth: 1
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' }, title: { display: true, text: 'Production Stages Summary' } } }
+            });
+        }
+
+        function loadHistory() {
+            const prods = JSON.parse(localStorage.getItem("production")) || [];
+            const tbody = document.getElementById('historyTableBody');
+            const searchInput = document.getElementById('searchHistory');
+            const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
+            const fromDate = document.getElementById('historyFromDate') ? document.getElementById('historyFromDate').value : '';
+            const toDate = document.getElementById('historyToDate') ? document.getElementById('historyToDate').value : '';
+            const stageFilter = document.getElementById('historyStageFilter') ? document.getElementById('historyStageFilter').value : '';
+            tbody.innerHTML = '';
+
+            let filteredProds = prods.filter(p => {
+                if (fromDate && p.date < fromDate) return false;
+                if (toDate && p.date > toDate) return false;
+                if (stageFilter && p.stage !== stageFilter) return false;
+                if (searchTerm && !(
+                    (p.productionNo || '').toLowerCase().includes(searchTerm) ||
+                    (p.bomCode || '').toLowerCase().includes(searchTerm) ||
+                    (p.finishedGood || '').toLowerCase().includes(searchTerm) ||
+                    (p.fgCode || '').toLowerCase().includes(searchTerm) ||
+                    (p.fgBatch || '').toLowerCase().includes(searchTerm)
+                )) return false;
+                return true;
+            });
+
+            if (isStageChartVisible) {
+                renderStageChart(filteredProds);
+            }
+
+            if (filteredProds.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: #888;">No production history found.</td></tr>';
+                renderHistoryPagination(0, 0, 0, 1);
+                return;
+            }
+
+            // Sort by Date descending
+            const sortedProds = filteredProds.sort((a, b) => new Date(b.createdAt || b.date) - new Date(a.createdAt || a.date));
+
+            const totalItems = sortedProds.length;
+            const totalPages = Math.ceil(totalItems / historyRowsPerPage) || 1;
+
+            if (currentHistoryPage > totalPages) currentHistoryPage = totalPages;
+            if (currentHistoryPage < 1) currentHistoryPage = 1;
+
+            const startIndex = (currentHistoryPage - 1) * historyRowsPerPage;
+            const endIndex = Math.min(startIndex + historyRowsPerPage, totalItems);
+            const paginatedProds = sortedProds.slice(startIndex, endIndex);
+
+            let sl = startIndex + 1;
+            paginatedProds.forEach(prod => {
+                const tr = document.createElement('tr');
+                const costStr = prod.totalCost ? `₹ ${parseFloat(prod.totalCost).toFixed(2)}` : '-';
+                const matCostStr = prod.materialCost ? `₹ ${parseFloat(prod.materialCost).toFixed(2)}` : '-';
+
+                let extraOutText = '';
+                if (prod.additionalOutputsProduced && prod.additionalOutputsProduced.length > 0) {
+                    const outNames = prod.additionalOutputsProduced.map(out => `${escapeHtml(out.item)} (${out.qty} ${escapeHtml(out.uom || '')})`).join(', ');
+                    extraOutText = ` <br><small style="color:#8e44ad;"><b>By-products:</b> ${outNames}</small>`;
+                }
+
+                let progress = 0;
+                let progressColor = '#ccc';
+                if (prod.stage === 'Planned') { progress = 25; progressColor = '#3498db'; }
+                else if (prod.stage === 'WIP') { progress = 60; progressColor = '#f39c12'; }
+                else if (!prod.stage || prod.stage === 'Completed') { progress = 100; progressColor = '#27ae60'; }
+
+                tr.innerHTML = `
+                    <td style="text-align: center;">${sl++}</td>
+                    <td>${new Date(prod.date).toLocaleDateString('en-GB')}</td>
+                    <td style="font-weight: bold; color: #2980b9;">${prod.productionNo}</td>
+                    <td style="text-align: center; white-space: nowrap;">
+                        <span style="color: #8e44ad; font-weight: bold;">${prod.bomCode || '-'}</span><br>
+                        <small style="color: #666; font-weight: normal;">${escapeHtml(prod.bomName || 'Standard')}</small>
+                    </td>
+                    <td>${prod.finishedGood} ${prod.fgCode ? '[' + prod.fgCode + ']' : ''}${extraOutText}</td>
+                    <td style="text-align: center;">${prod.fgBatch || '-'}</td>
+                    <td style="text-align: center; font-weight: bold; color: #27ae60;">${prod.fgQtyProduced} ${prod.fgUom}</td>
+                    <td style="text-align: right; color: #d35400; font-weight: 500;">${matCostStr}</td>
+                    <td style="text-align: right; font-weight: bold;">${costStr}</td>
+                    <td style="text-align: center; width: 130px;">
+                        <select onchange="updateProductionStage('${prod.id}', this.value, this)" style="padding:4px; border-radius:4px; font-weight:bold; outline:none; background:transparent; cursor:pointer; width: 100%;">
+                            <option value="Planned" title="1 - Planned (No Stock Effect)" ${prod.stage === 'Planned' ? 'selected' : ''}>Planned</option>
+                            <option value="WIP" title="2 - WIP (Materials Issued)" ${prod.stage === 'WIP' ? 'selected' : ''}>WIP</option>
+                            <option value="Completed" title="3 - Completed (FG Added to Stock)" ${(!prod.stage || prod.stage === 'Completed') ? 'selected' : ''}>Completed</option>
+                        </select>
+                        <div style="width: 100%; background-color: #e9ecef; border-radius: 4px; height: 6px; margin-top: 5px; overflow: hidden;" title="${progress}% Completed">
+                            <div style="height: 100%; width: ${progress}%; background-color: ${progressColor}; transition: width 0.4s ease;"></div>
+                        </div>
+                    </td>
+                    <td style="text-align: center;">
+                        <div class="action-dropdown" id="actionDropdown-${prod.id}">
+                            <button class="action-btn-main" onclick="toggleActionMenu(this)">Actions ▼</button>
+                            <div class="action-dropdown-content">
+                                <button onclick="printProductionSlip('${prod.id}')">🖨️ Print Slip</button>
+                                <button onclick="deleteProduction('${prod.id}')" style="color: #dc3545 !important;">🗑️ Delete</button>
+                            </div>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            renderHistoryPagination(totalItems, startIndex + 1, endIndex, totalPages);
+        }
+
+        function updateProductionStage(id, newStage, selectElement) {
+            let prods = JSON.parse(localStorage.getItem("production")) || [];
+            const prodIdx = prods.findIndex(p => p.id === id);
+            if (prodIdx > -1) {
+                const oldStage = prods[prodIdx].stage || 'Completed';
+                if (confirm(`Change production stage from ${oldStage} to ${newStage}? Stock levels will be recalculated automatically.`)) {
+                    prods[prodIdx].stage = newStage;
+
+                    // If changing to Completed and they want to create a JV
+                    if (newStage === 'Completed' && oldStage !== 'Completed') {
+                        if (confirm(`Do you want to automatically create a Journal Voucher for this completed production?`)) {
+                            const jvEntries = [];
+                            const totalCost = parseFloat(prods[prodIdx].totalCost) || 0;
+                            jvEntries.push({ type: 'Dr', account: 'Finished Goods Inventory', debit: totalCost, credit: 0 });
+                            jvEntries.push({ type: 'Cr', account: 'Raw Materials Inventory', debit: 0, credit: totalCost });
+
+                            const newVoucher = {
+                                id: 'jv_' + Date.now(),
+                                voucher_no: generateJournalVoucherNo(),
+                                voucher_type: 'Journal',
+                                date: new Date().toISOString().split('T')[0],
+                                narration: `Cost of Goods Manufactured for ${prods[prodIdx].fgQtyProduced} x ${prods[prodIdx].finishedGood} (Prod No: ${prods[prodIdx].productionNo})`,
+                                entries: jvEntries,
+                                total_amount: totalCost,
+                                created_at: new Date().toISOString(),
+                                createdBy: localStorage.getItem('currentUser') || 'System'
+                            };
+                            const journalVouchers = JSON.parse(localStorage.getItem('journal_vouchers')) || [];
+                            journalVouchers.push(newVoucher);
+                            localStorage.setItem('journal_vouchers', JSON.stringify(journalVouchers));
+                    if (typeof apiClient !== 'undefined' && apiClient.saveJournalVoucher) apiClient.saveJournalVoucher(newVoucher).catch(console.warn);
+                        }
+                    }
+
+                    localStorage.setItem("production", JSON.stringify(prods));
+            if (typeof apiClient !== 'undefined' && apiClient.saveProduction) apiClient.saveProduction(prods[prodIdx]).catch(console.warn);
+                    loadHistory();
+                } else {
+                    selectElement.value = oldStage; // Revert
+                }
+            }
+        }
+
+        function changeHistoryPage(page) {
+            currentHistoryPage = page;
+            loadHistory();
+        }
+
+        function changeHistoryRowsPerPage() {
+            historyRowsPerPage = parseInt(document.getElementById('historyRowsPerPage').value);
+            currentHistoryPage = 1;
+            loadHistory();
+        }
+
+        function renderHistoryPagination(totalItems, start, end, totalPages) {
+            const info = document.getElementById("historyPaginationInfo");
+            const controls = document.getElementById("historyPaginationControls");
+            const totalDisplay = document.getElementById("totalHistoryDisplay");
+            if (totalDisplay) totalDisplay.innerText = `Total: ${totalItems}`;
+            if (totalItems === 0) {
+                if (info) info.innerText = "No records found";
+                if (controls) controls.innerHTML = "";
+                return;
+            }
+            if (info) info.innerText = `Showing ${start} to ${end} of ${totalItems} entries`;
+            let html = `<button onclick="changeHistoryPage(${currentHistoryPage - 1})" ${currentHistoryPage === 1 ? 'disabled' : ''}>Prev</button>`;
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === 1 || i === totalPages || (i >= currentHistoryPage - 2 && i <= currentHistoryPage + 2)) {
+                    const activeStyle = i === currentHistoryPage ? 'class="active"' : '';
+                    html += `<button ${activeStyle} onclick="changeHistoryPage(${i})">${i}</button>`;
+                } else if (i === currentHistoryPage - 3 || i === currentHistoryPage + 3) {
+                    html += `<span style="padding: 0 5px;">...</span>`;
+                }
+            }
+            html += `<button onclick="changeHistoryPage(${currentHistoryPage + 1})" ${currentHistoryPage === totalPages ? 'disabled' : ''}>Next</button>`;
+            if (controls) controls.innerHTML = html;
+        }
+
+        function exportProductionHistory() {
+            if (typeof XLSX === 'undefined') {
+                alert("Excel library is still loading. Please try again in a moment.");
+                return;
+            }
+            const prods = JSON.parse(localStorage.getItem("production")) || [];
+            const searchInput = document.getElementById('searchHistory');
+            const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
+            const fromDate = document.getElementById('historyFromDate') ? document.getElementById('historyFromDate').value : '';
+            const toDate = document.getElementById('historyToDate') ? document.getElementById('historyToDate').value : '';
+            const stageFilter = document.getElementById('historyStageFilter') ? document.getElementById('historyStageFilter').value : '';
+
+            let filteredProds = prods.filter(p => {
+                if (fromDate && p.date < fromDate) return false;
+                if (toDate && p.date > toDate) return false;
+                if (stageFilter && p.stage !== stageFilter) return false;
+                if (searchTerm && !(
+                    (p.productionNo || '').toLowerCase().includes(searchTerm) ||
+                    (p.bomCode || '').toLowerCase().includes(searchTerm) ||
+                    (p.finishedGood || '').toLowerCase().includes(searchTerm) ||
+                    (p.fgCode || '').toLowerCase().includes(searchTerm) ||
+                    (p.fgBatch || '').toLowerCase().includes(searchTerm)
+                )) return false;
+                return true;
+            });
+
+            if (filteredProds.length === 0) {
+                alert("No data available to export based on your current filters.");
+                return;
+            }
+
+            // Sort by Date descending to match the history table
+            filteredProds.sort((a, b) => new Date(b.createdAt || b.date) - new Date(a.createdAt || a.date));
+
+            const exportData = filteredProds.map((p, i) => ({
+                "Sl No": i + 1,
+                "Date": new Date(p.date).toLocaleDateString('en-GB'),
+                "Production No": p.productionNo,
+                "BOM Code": p.bomCode || '-',
+                "Recipe Name": p.bomName || 'Standard',
+                "Finished Good": p.finishedGood + (p.additionalOutputsProduced && p.additionalOutputsProduced.length > 0 ? '\nBy-products: ' + p.additionalOutputsProduced.map(out => `${out.item} (${out.qty} ${out.uom || ''})`).join(', ') : ''),
+                "FG Code": p.fgCode || '-',
+                "Batch / Lot No": p.fgBatch || '-',
+                "Produced Qty": parseFloat(p.fgQtyProduced || 0),
+                "UOM": p.fgUom || '-',
+                "Material Cost (Rs)": parseFloat(p.materialCost || 0),
+                "Estimated Cost (Rs)": parseFloat(p.totalCost || 0),
+                "Stage": p.stage || 'Completed'
+            }));
+
+            const ws = XLSX.utils.json_to_sheet(exportData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Production_History");
+            XLSX.writeFile(wb, "Production_History.xlsx");
+        }
+
+        function escapeHtml(text) {
+            if (text == null) return "";
+            return String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+
+        function printProductionSlip(id) {
+            const prods = JSON.parse(localStorage.getItem("production")) || [];
+            const prod = prods.find(p => p.id === id);
+            if (!prod) {
+                alert("Production record not found.");
+                return;
+            }
+
+            let companyName = "Company Name";
+            if (typeof APP_SETTINGS !== 'undefined' && APP_SETTINGS.COMPANY_NAME) {
+                companyName = APP_SETTINGS.COMPANY_NAME;
+            } else if (localStorage.getItem("companyName")) {
+                companyName = localStorage.getItem("companyName");
+            }
+
+            let materialsHtml = `
+                <table style="width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px;">
+                    <thead>
+                        <tr style="background: #2c3e50; color: white;">
+                            <th style="border: 1px solid #ddd; padding: 10px; text-align: center; width: 50px;">Sl No</th>
+                            <th style="border: 1px solid #ddd; padding: 10px; text-align: left;">Raw Material</th>
+                            <th style="border: 1px solid #ddd; padding: 10px; text-align: center; width: 120px;">Item Code</th>
+                            <th style="border: 1px solid #ddd; padding: 10px; text-align: right; width: 120px;">Consumed Qty</th>
+                            <th style="border: 1px solid #ddd; padding: 10px; text-align: center; width: 80px;">UOM</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            let sl1 = 1;
+            if (prod.materialsConsumed && Array.isArray(prod.materialsConsumed)) {
+                prod.materialsConsumed.forEach(rm => {
+                    materialsHtml += `
+                        <tr style="border-bottom: 1px solid #eee;">
+                            <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${sl1++}</td>
+                            <td style="border: 1px solid #ddd; padding: 8px;">${escapeHtml(rm.item)}</td>
+                            <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${escapeHtml(rm.code || '-')}</td>
+                            <td style="border: 1px solid #ddd; padding: 8px; text-align: right; font-weight: 500;">${parseFloat(rm.qty).toFixed(3)}</td>
+                            <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${escapeHtml(rm.uom || '-')}</td>
+                        </tr>
+                    `;
+                });
+            }
+            materialsHtml += `</tbody></table>`;
+
+            let addOutHtml = '';
+            if (prod.additionalOutputsProduced && prod.additionalOutputsProduced.length > 0) {
+                addOutHtml = `
+                    <h4 style="margin: 25px 0 5px 0; color: #2c3e50; font-size: 15px; border-bottom: 1px solid #eee; padding-bottom: 5px;">Additional Outputs (By-Products)</h4>
+                    <table style="width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px;">
+                        <thead>
+                            <tr style="background: #f4f6f8; color: #333;">
+                                <th style="border: 1px solid #ddd; padding: 10px; text-align: center; width: 50px;">Sl No</th>
+                                <th style="border: 1px solid #ddd; padding: 10px; text-align: left;">Item</th>
+                                <th style="border: 1px solid #ddd; padding: 10px; text-align: center; width: 120px;">Code</th>
+                                <th style="border: 1px solid #ddd; padding: 10px; text-align: right; width: 120px;">Produced Qty</th>
+                                <th style="border: 1px solid #ddd; padding: 10px; text-align: center; width: 80px;">UOM</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+                let sl2 = 1;
+                prod.additionalOutputsProduced.forEach(out => {
+                    addOutHtml += `
+                        <tr style="border-bottom: 1px solid #eee;">
+                            <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${sl2++}</td>
+                            <td style="border: 1px solid #ddd; padding: 8px;">${escapeHtml(out.item)}</td>
+                            <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${escapeHtml(out.code || '-')}</td>
+                            <td style="border: 1px solid #ddd; padding: 8px; text-align: right; font-weight: 500; color: #27ae60;">${parseFloat(out.qty).toFixed(3)}</td>
+                            <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${escapeHtml(out.uom || '-')}</td>
+                        </tr>
+                    `;
+                });
+                addOutHtml += `</tbody></table>`;
+            }
+
+            const printWindow = window.open('', '', 'height=700,width=900');
+            printWindow.document.write('<html><head><title>Production Slip - ' + prod.productionNo + '</title>');
+            printWindow.document.write('<style>@media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } } body { font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 20px; color: #333; background: #fff; } .slip-container { max-width: 800px; margin: 0 auto; border: 1px solid #ddd; padding: 30px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); } h2, h3, h4 { margin: 0; } p { margin: 0; } .grid-2 { display: flex; justify-content: space-between; } .meta-box { background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 6px; padding: 15px; margin-bottom: 25px; } .meta-item { margin-bottom: 8px; font-size: 13px; } .meta-label { color: #6c757d; display: inline-block; width: 110px; } .status-badge { display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: bold; color: white; margin-top: 5px; } .status-Completed { background-color: #27ae60; } .status-WIP { background-color: #f39c12; } .status-Planned { background-color: #3498db; } .footer-sigs { margin-top: 60px; display: flex; justify-content: space-between; } .sig-line { border-top: 1px solid #333; width: 200px; text-align: center; padding-top: 8px; font-size: 14px; font-weight: 500; color: #555; }</style>');
+            printWindow.document.write('</head><body>');
+
+            let stageClass = 'status-' + (prod.stage || 'Completed');
+
+            printWindow.document.write(`
+                <div class="slip-container">
+                    <!-- Header -->
+                    <div class="grid-2" style="border-bottom: 2px solid #2c3e50; padding-bottom: 15px; margin-bottom: 20px; align-items: flex-end;">
+                        <div>
+                            <h2 style="color: #2c3e50; font-size: 24px; margin-bottom: 4px;">${escapeHtml(companyName)}</h2>
+                            <p style="color: #6c757d; font-size: 14px; font-weight: 500; letter-spacing: 1px;">PRODUCTION SLIP</p>
+                        </div>
+                        <div style="text-align: right;">
+                            <h3 style="color: #3498db; font-size: 20px; margin-bottom: 4px;">${escapeHtml(prod.productionNo)}</h3>
+                            <p style="color: #555; font-size: 13px; font-weight: 500;">Date: ${new Date(prod.date).toLocaleDateString('en-GB')}</p>
+                            <span class="status-badge ${stageClass}">${escapeHtml(prod.stage || 'Completed')}</span>
+                        </div>
+                    </div>
+
+                    <!-- Meta Info Box -->
+                    <div class="grid-2 meta-box">
+                        <div style="flex: 1;">
+                            <div class="meta-item"><span class="meta-label">Finished Good:</span> <strong style="font-size: 14px; color: #2c3e50;">${escapeHtml(prod.finishedGood)} ${prod.fgCode ? '[' + escapeHtml(prod.fgCode) + ']' : ''}</strong></div>
+                                <div class="meta-item"><span class="meta-label">BOM Code:</span> <strong>${escapeHtml(prod.bomCode || 'N/A')}</strong> <span style="color: #888; font-weight: normal; font-size: 12px; margin-left: 5px;">(Recipe: ${escapeHtml(prod.bomName || 'Standard')})</span></div>
+                            <div class="meta-item" style="margin-bottom: 0;"><span class="meta-label">Batch/Lot No:</span> <strong>${escapeHtml(prod.fgBatch || 'N/A')}</strong></div>
+                        </div>
+                        <div style="flex: 1; text-align: right;">
+                            <div class="meta-item"><span class="meta-label" style="text-align: left;">Quantity Produced:</span> <strong style="font-size: 18px; color: #27ae60;">${parseFloat(prod.fgQtyProduced)} ${escapeHtml(prod.fgUom || '')}</strong></div>
+                            <div class="meta-item"><span class="meta-label" style="text-align: left;">Material Cost:</span> <strong>₹${prod.materialCost ? parseFloat(prod.materialCost).toFixed(2) : '0.00'}</strong></div>
+                            <div class="meta-item" style="margin-bottom: 0;"><span class="meta-label" style="text-align: left;">Total Est. Cost:</span> <strong>₹${prod.totalCost ? parseFloat(prod.totalCost).toFixed(2) : '0.00'}</strong></div>
+                        </div>
+                    </div>
+
+                    <!-- Materials Table -->
+                    <h4 style="margin: 0 0 5px 0; color: #2c3e50; font-size: 15px; border-bottom: 1px solid #eee; padding-bottom: 5px;">Raw Materials Consumed</h4>
+                    ${materialsHtml}
+                    
+                    <!-- Additional Outputs -->
+                    ${addOutHtml}
+
+                    <!-- Signatures -->
+                    <div class="footer-sigs">
+                        <div class="sig-line">Prepared By</div>
+                        <div class="sig-line">Authorized Signatory</div>
+                    </div>
+                </div>
+                `);
+
+            printWindow.document.write('</body></html>');
+            printWindow.document.close();
+            printWindow.focus();
+
+            setTimeout(() => {
+                printWindow.print();
+                printWindow.close();
+            }, 500);
+        }
+
+        function deleteProduction(id) {
+            if (!confirm("Are you sure you want to delete this Production Entry? This will revert the stock changes.")) return;
+            let prods = JSON.parse(localStorage.getItem("production")) || [];
+            const prodToDelete = prods.find(p => p.id === id);
+            prods = prods.filter(p => p.id !== id);
+            localStorage.setItem("production", JSON.stringify(prods));
+        if (typeof apiClient !== 'undefined' && apiClient.deleteProduction) apiClient.deleteProduction(id).catch(console.warn);
+
+            // Also delete associated auto-generated Journal Voucher to maintain accounting integrity
+            if (prodToDelete && prodToDelete.productionNo) {
+                let jvs = JSON.parse(localStorage.getItem("journal_vouchers")) || [];
+                const initialLen = jvs.length;
+                // Remove the JV that contains the specific Production Number in its narration
+                jvs = jvs.filter(v => !(v.narration && v.narration.includes(`(Prod No: ${prodToDelete.productionNo})`)));
+                if (jvs.length < initialLen) {
+                    localStorage.setItem("journal_vouchers", JSON.stringify(jvs));
+                }
+            }
+
+            loadHistory();
+        }
+
+        // --- Action Dropdown Logic ---
+        function toggleActionMenu(btn) {
+            document.querySelectorAll('.action-dropdown.active').forEach(d => {
+                if (d !== btn.parentElement) d.classList.remove('active');
+            });
+
+            const dropdown = btn.parentElement;
+            dropdown.classList.toggle('active');
+
+            if (dropdown.classList.contains('active')) {
+                const content = dropdown.querySelector('.action-dropdown-content');
+                content.style.display = 'block';
+                const rect = btn.getBoundingClientRect();
+                let top = rect.bottom;
+                let left = rect.right - content.offsetWidth;
+                if (top + content.offsetHeight > window.innerHeight) { top = rect.top - content.offsetHeight; }
+                content.style.top = top + 'px';
+                content.style.left = left + 'px';
+                content.style.display = '';
+            }
+        }
+        document.addEventListener('click', function (e) { if (!e.target.matches('.action-btn-main')) { document.querySelectorAll('.action-dropdown.active').forEach(d => d.classList.remove('active')); } });
+        window.addEventListener('scroll', function () { document.querySelectorAll('.action-dropdown.active').forEach(d => d.classList.remove('active')); }, true);
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,557 @@
+<!-- l:\Other computers\My computer\Final-14.4.6-Final Backup\scrap_inventory.html -->
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Scrap Inventory</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="settings.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="brand.service.js"></script>
+    <script src="brandLoader.js"></script>
+    <script src="apiClient.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            padding: 20px;
+            background: #f4f6f8;
+            color: #333;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        h2 {
+            color: #2c3e50;
+            margin: 0;
+        }
+
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+            margin-bottom: 20px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        label {
+            font-weight: 600;
+            font-size: 13px;
+            color: #555;
+        }
+
+        input,
+        select,
+        textarea {
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        input:focus,
+        select:focus {
+            border-color: #3498db;
+            outline: none;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            color: white;
+            transition: opacity 0.2s;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+        }
+
+        .btn-danger {
+            background: #e74c3c;
+        }
+
+        .btn-secondary {
+            background: #7f8c8d;
+        }
+
+        .btn-warning {
+            background: #f39c12;
+        }
+
+        .btn-info {
+            background: #17a2b8;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            background: white;
+        }
+
+        th,
+        td {
+            border: 1px solid #eee;
+            padding: 10px;
+            text-align: center;
+            font-size: 14px;
+        }
+
+        th {
+            background: #2c3e50;
+            color: white;
+        }
+
+        /* Dark Mode */
+        body.dark-mode {
+            background: #121212;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .card,
+        body.dark-mode table {
+            background: #2c2c2c;
+            border: 1px solid #444;
+        }
+
+        body.dark-mode input,
+        body.dark-mode select,
+        body.dark-mode textarea {
+            background: #3a3a3a;
+            color: white;
+            border-color: #555;
+        }
+
+        body.dark-mode th {
+            background: #1f1f1f;
+        }
+
+        body.dark-mode td {
+            border-color: #444;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="header">
+        <h2>🗑️ Scrap Inventory [Please Check before Entry] - <span data-brand="name"></span></h2>
+        <div>
+            <button class="btn btn-secondary"
+                onclick="window.open('scrap_report.html', 'scrap_report', 'width=1000,height=700')">📊 View
+                Report</button>
+            <button class="btn btn-success" onclick="exportHistoryExcel()">📊 Export Excel</button>
+            <button class="btn btn-secondary" onclick="location.reload()" style="background:#17a2b8;">🔄
+                Refresh</button>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="form-grid">
+            <div class="form-group">
+                <label>Date</label>
+                <input type="date" id="scrapDate">
+            </div>
+            <div class="form-group">
+                <label>Select Item</label>
+                <input list="itemList" id="itemInput" placeholder="Search Item..." onchange="loadItemDetails()">
+                <datalist id="itemList"></datalist>
+            </div>
+            <div class="form-group">
+                <label>UOM</label>
+                <input type="text" id="uomInput" readonly style="background:#eee;">
+            </div>
+            <div class="form-group">
+                <label>Current Stock</label>
+                <input type="text" id="currentStock" readonly style="background:#eee; font-weight:bold;">
+            </div>
+        </div>
+
+        <div class="form-grid">
+            <div class="form-group">
+                <label>Scrap Quantity</label>
+                <input type="number" id="scrapQty" placeholder="0.00">
+            </div>
+            <div class="form-group">
+                <label>Reason</label>
+                <select id="scrapReason">
+                    <option value="Damaged">Damaged</option>
+                    <option value="Expired">Expired</option>
+                    <option value="Lost/Stolen">Lost / Stolen</option>
+                    <option value="Obsolete">Obsolete</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+            <div class="form-group" style="grid-column: span 2;">
+                <label>Remarks</label>
+                <input type="text" id="remarks" placeholder="Optional details...">
+            </div>
+        </div>
+
+        <div style="text-align: right;">
+            <button class="btn btn-warning" onclick="saveScrap()">⚠️ Write Off Inventory</button>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>Recent Scrap History</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 50px;">Sl No</th>
+                    <th>Date</th>
+                    <th>Item</th>
+                    <th>Qty</th>
+                    <th>Reason</th>
+                    <th>Remarks</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="scrapTableBody"></tbody>
+        </table>
+
+        <!-- Pagination Controls -->
+        <div class="pagination-container"
+            style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px; padding-top: 10px; border-top: 1px solid #eee;">
+            <div style="display: flex; align-items: center; gap: 5px;">
+                <span id="totalItemsDisplay" style="font-weight: bold; color: #2c3e50; margin-right: 8px;"></span>
+                <select id="rowsPerPageSelect" onchange="changeRowsPerPage()"
+                    style="width: auto; padding: 4px; border: 1px solid #ccc; border-radius: 4px; margin: 0;">
+                    <option value="5">5 rows</option>
+                    <option value="10" selected>10 rows</option>
+                    <option value="20">20 rows</option>
+                    <option value="50">50 rows</option>
+                </select>
+            </div>
+            <div id="paginationInfo" style="color: #666; font-size: 14px;"></div>
+            <div class="pagination" id="paginationControls" style="display: flex; gap: 5px;"></div>
+        </div>
+    </div>
+
+    <script>
+        let items = [];
+        let scraps = [];
+        let stockMap = {};
+        let currentPage = 1;
+        let rowsPerPage = 10;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            document.getElementById('scrapDate').valueAsDate = new Date();
+            if (localStorage.getItem('appThemeMode') === 'dark') document.body.classList.add('dark-mode');
+            await loadData();
+        });
+
+        async function loadData() {
+            document.getElementById('scrapTableBody').innerHTML = '<tr><td colspan="7" style="text-align:center;">Loading data...</td></tr>';
+
+            // Fetch all data concurrently from the API
+            const [itemsData, scrapsData, purchases, invoices, returns, productions] = await Promise.all([
+                apiClient.getItems(),
+                apiClient.getScraps(),
+                apiClient.getPurchases(),
+                apiClient.getInvoices(),
+                apiClient.getCreditDebitNotes(), // Assuming returns are credit notes
+                apiClient.getProductions()
+            ]);
+
+            items = itemsData;
+            scraps = scrapsData;
+
+            // Populate Datalist
+            const list = document.getElementById('itemList');
+            list.innerHTML = '';
+            items.forEach(i => {
+                const opt = document.createElement('option');
+                opt.value = i.name;
+                let details = [];
+                if (i.itemCode) details.push(`Code: ${i.itemCode}`);
+                if (i.category) details.push(`Cat: ${i.category}`);
+                if (i.itemType) details.push(`Type: ${i.itemType}`);
+                opt.textContent = details.length > 0 ? `${i.name} [${details.join(' | ')}]` : i.name;
+                list.appendChild(opt);
+            });
+
+            // Calculate Stock (Simplified version of stock_report.html logic)
+            stockMap = {};
+
+            // 1. Purchases
+            purchases.forEach(p => {
+                const key = (p.itemName || "").trim().toLowerCase();
+                if (!stockMap[key]) stockMap[key] = { qty: 0, uom: p.uom || "" };
+                stockMap[key].qty += parseFloat(p.qty) || 0;
+                if (p.uom) stockMap[key].uom = p.uom;
+            });
+
+            // 2. Sales
+            invoices.forEach(inv => {
+                if (inv.items) {
+                    inv.items.forEach(it => {
+                        const key = (it.item || "").trim().toLowerCase();
+                        if (stockMap[key]) stockMap[key].qty -= parseFloat(it.qty) || 0;
+                    });
+                }
+            });
+
+            // 3. Returns (Damage/Purchase Return reduces stock, Sales Return increases)
+            returns.forEach(ret => {
+                if (ret.items) {
+                    ret.items.forEach(it => {
+                        const key = (it.item_name || "").trim().toLowerCase();
+                        if (stockMap[key]) {
+                            if (ret.return_type === 'Sales Return') stockMap[key].qty += parseFloat(it.qty) || 0;
+                            else stockMap[key].qty -= parseFloat(it.qty) || 0;
+                        }
+                    });
+                }
+            });
+
+            // 4. Existing Scraps
+            scraps.forEach(s => {
+                const key = (s.itemName || "").trim().toLowerCase();
+                if (stockMap[key]) stockMap[key].qty -= parseFloat(s.qty) || 0;
+            });
+
+            // 5. Productions (Add FG, Deduct RM)
+            productions.forEach(prod => {
+                const stage = prod.stage || 'Completed';
+                if (stage === 'Completed') {
+                    const fgKey = (prod.finishedGood || "").trim().toLowerCase();
+                    if (fgKey) {
+                        if (!stockMap[fgKey]) stockMap[fgKey] = { qty: 0, uom: prod.fgUom || "" };
+                        stockMap[fgKey].qty += parseFloat(prod.fgQtyProduced) || 0;
+                    }
+
+                    if (prod.additionalOutputsProduced && Array.isArray(prod.additionalOutputsProduced)) {
+                        prod.additionalOutputsProduced.forEach(out => {
+                            const outKey = (out.item || "").trim().toLowerCase();
+                            if (outKey) {
+                                if (!stockMap[outKey]) stockMap[outKey] = { qty: 0, uom: out.uom || "" };
+                                stockMap[outKey].qty += parseFloat(out.qty) || 0;
+                            }
+                        });
+                    }
+                }
+                if (stage === 'WIP' || stage === 'Completed') {
+                    if (prod.materialsConsumed && Array.isArray(prod.materialsConsumed)) {
+                        prod.materialsConsumed.forEach(rm => {
+                            const rmKey = (rm.item || "").trim().toLowerCase();
+                            if (rmKey) {
+                                if (!stockMap[rmKey]) stockMap[rmKey] = { qty: 0, uom: rm.uom || "" };
+                                stockMap[rmKey].qty -= parseFloat(rm.qty) || 0;
+                            }
+                        });
+                    }
+                }
+            });
+
+            // Now that data is loaded, render the table
+            renderScrapTable();
+        }
+
+        function loadItemDetails() {
+            const name = document.getElementById('itemInput').value.trim();
+            const key = name.toLowerCase();
+
+            if (stockMap[key]) {
+                document.getElementById('uomInput').value = stockMap[key].uom;
+                document.getElementById('currentStock').value = stockMap[key].qty.toFixed(2);
+            } else {
+                document.getElementById('uomInput').value = '';
+                document.getElementById('currentStock').value = '0.00';
+            }
+        }
+
+        async function saveScrap() {
+            const name = document.getElementById('itemInput').value.trim();
+            const qty = parseFloat(document.getElementById('scrapQty').value);
+            const current = parseFloat(document.getElementById('currentStock').value) || 0;
+
+            if (!name) return alert("Please select an item.");
+            if (!qty || qty <= 0) return alert("Please enter a valid quantity.");
+            if (qty > current) return alert("Cannot scrap more than current stock!");
+
+            if (!confirm("Are you sure you want to write off this inventory? This cannot be undone.")) return;
+
+            const scrapData = {
+                id: Date.now().toString(),
+                date: document.getElementById('scrapDate').value,
+                itemName: name,
+                uom: document.getElementById('uomInput').value,
+                qty: qty,
+                reason: document.getElementById('scrapReason').value,
+                remarks: document.getElementById('remarks').value,
+                createdAt: new Date().toISOString()
+            };
+
+            const result = await apiClient.saveScrap(scrapData);
+
+            if (result.success) {
+                alert("Inventory Scrapped Successfully.");
+            } else {
+                alert("Error: " + (result.message || "Could not save scrap entry."));
+            }
+
+            // Clear form and reload
+            document.getElementById('itemInput').value = '';
+            document.getElementById('scrapQty').value = '';
+            document.getElementById('remarks').value = '';
+            document.getElementById('uomInput').value = '';
+            document.getElementById('currentStock').value = '';
+
+            await loadData(); // Recalculate stock and re-render table
+        }
+
+        function renderScrapTable() {
+            const tbody = document.getElementById('scrapTableBody');
+            tbody.innerHTML = '';
+
+            if (scraps.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:#666;">No recent scrap history.</td></tr>';
+                renderPagination(0, 0, 0, 1);
+                return;
+            }
+
+            const totalItems = scraps.length;
+            const totalPages = Math.ceil(totalItems / rowsPerPage) || 1;
+
+            if (currentPage > totalPages) currentPage = totalPages;
+            if (currentPage < 1) currentPage = 1;
+
+            const startIndex = (currentPage - 1) * rowsPerPage;
+            const endIndex = Math.min(startIndex + rowsPerPage, totalItems);
+            const paginatedScraps = scraps.slice(startIndex, endIndex);
+
+            let sl = startIndex + 1;
+            paginatedScraps.forEach(s => {
+                const itemObj = items.find(i => (i.name || "").toLowerCase() === (s.itemName || "").toLowerCase()) || {};
+                let details = [];
+                if (itemObj.itemCode) details.push(`Code: ${itemObj.itemCode}`);
+                if (itemObj.category) details.push(`Cat: ${itemObj.category}`);
+                if (itemObj.itemType) details.push(`Type: ${itemObj.itemType}`);
+                const detailText = details.length > 0 ? `<br><small style="color:#666;">[${details.join(' | ')}]</small>` : '';
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td style="text-align: center;">${sl++}</td>
+                    <td>${new Date(s.date).toLocaleDateString('en-GB')}</td>
+                    <td>${s.itemName}${detailText}</td>
+                    <td>${s.qty} ${s.uom}</td>
+                    <td>${s.reason}</td>
+                    <td>${s.remarks}</td>
+                    <td><button class="btn btn-danger" style="padding:2px 6px; font-size:12px;" onclick="deleteScrap('${s.id}')">Delete</button></td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            renderPagination(totalItems, startIndex + 1, endIndex, totalPages);
+        }
+
+        function changeRowsPerPage() {
+            rowsPerPage = parseInt(document.getElementById('rowsPerPageSelect').value);
+            currentPage = 1;
+            renderScrapTable();
+        }
+
+        function changePage(page) {
+            currentPage = page;
+            renderScrapTable();
+        }
+
+        function renderPagination(totalItems, start, end, totalPages) {
+            const info = document.getElementById("paginationInfo");
+            const controls = document.getElementById("paginationControls");
+            const totalDisplay = document.getElementById("totalItemsDisplay");
+
+            if (totalDisplay) totalDisplay.innerText = `Total Records: ${totalItems}`;
+
+            if (totalItems === 0) {
+                if (info) info.innerText = "No records found";
+                if (controls) controls.innerHTML = "";
+                return;
+            }
+
+            if (info) info.innerText = `Showing ${start} to ${end} of ${totalItems} entries`;
+
+            let html = `<button class="btn btn-secondary" onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''} style="padding: 4px 8px; margin: 0 2px;">Prev</button>`;
+
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
+                    const activeStyle = i === currentPage ? 'background: #3498db; color: #fff;' : 'background: #fff; color: #333;';
+                    html += `<button class="btn btn-secondary" onclick="changePage(${i})" style="padding: 4px 8px; margin: 0 2px; ${activeStyle}">${i}</button>`;
+                } else if (i === currentPage - 3 || i === currentPage + 3) {
+                    html += `<span style="padding: 4px 8px;">...</span>`;
+                }
+            }
+
+            html += `<button class="btn btn-secondary" onclick="changePage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''} style="padding: 4px 8px; margin: 0 2px;">Next</button>`;
+            if (controls) controls.innerHTML = html;
+        }
+
+        async function deleteScrap(id) {
+            if (!confirm("Delete this scrap entry? Stock will be restored.")) return;
+            const result = await apiClient.deleteScrap(id);
+            if (result.success) {
+                alert("Entry deleted.");
+                await loadData();
+            } else {
+                alert("Error deleting entry: " + (result.message || "Unknown error."));
+            }
+        }
+
+        // Export History Excel
+        function exportHistoryExcel() {
+            if (scraps.length === 0) {
+                alert("No history to export!");
+                return;
+            }
+
+            const exportData = [["Sl No", "Date", "Item Name", "Item Code", "Category", "Item Type", "Qty", "UOM", "Reason", "Remarks"]];
+
+            let sl = 1;
+            scraps.forEach(s => {
+                const itemObj = items.find(i => (i.name || "").toLowerCase() === (s.itemName || "").toLowerCase()) || {};
+                exportData.push([
+                    sl++,
+                    new Date(s.date).toLocaleDateString('en-GB'),
+                    s.itemName,
+                    itemObj.itemCode || '-',
+                    itemObj.category || '-',
+                    itemObj.itemType || '-',
+                    s.qty,
+                    s.uom || '-',
+                    s.reason || '-',
+                    s.remarks || '-'
+                ]);
+            });
+
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.aoa_to_sheet(exportData);
+            XLSX.utils.book_append_sheet(wb, ws, "Scrap History");
+            XLSX.writeFile(wb, "Scrap_History.xlsx");
+        }
+    </script>
+</body>
+
+</html>
