@@ -1301,23 +1301,39 @@
         // 6. Fetch data from API (falls back to localStorage)
         // ─────────────────────────────────────────────────────────
         async function fetchData() {
-            document.getElementById('tableBody').innerHTML =
-                `<tr><td colspan="100%">${skeletonRows(5, moduleFields.length + 2)}</td></tr>`;
+            document.getElementById('tableBody').innerHTML = skeletonRows(5, moduleFields.length + 2);
 
             try {
+                let fetchedData = null;
                 if (typeof apiClient !== 'undefined' && apiClient.getCustomRecords) {
-                    moduleData = await apiClient.getCustomRecords(moduleName);
+                    const res = await apiClient.getCustomRecords(moduleName);
+                    if (res && res.success === false) throw new Error(res.message || 'API fetch failed');
+                    fetchedData = Array.isArray(res) ? res : (res?.data || []);
                 } else {
                     const res = await fetch(`${typeof API_BASE_URL !== 'undefined' ? API_BASE_URL : 'http://localhost:5000/api'}/custom-records/${moduleName}`);
                     if (!res.ok) throw new Error('HTTP error ' + res.status);
                     const result = await res.json();
-                    if (result.success) moduleData = result.data;
+                    if (result.success) fetchedData = result.data;
                     else throw new Error(result.message || 'API fetch failed');
                 }
+
+                moduleData = Array.isArray(fetchedData) ? fetchedData : [];
+
+                // Preserve unsynced offline records from being overwritten
+                let localData = JSON.parse(localStorage.getItem(`CUSTOM_RECORDS_${moduleName}`));
+                if (!Array.isArray(localData)) localData = [];
+                const fetchedIds = new Set(moduleData.map(r => r._id));
+                localData.forEach(localRecord => {
+                    if (localRecord && localRecord._id && !fetchedIds.has(localRecord._id)) {
+                        moduleData.push(localRecord);
+                    }
+                });
+
                 localStorage.setItem(`CUSTOM_RECORDS_${moduleName}`, JSON.stringify(moduleData));
             } catch (e) {
                 console.warn('API unavailable or failed — using local dataset', e);
-                moduleData = JSON.parse(localStorage.getItem(`CUSTOM_RECORDS_${moduleName}`)) || [];
+                const localData = JSON.parse(localStorage.getItem(`CUSTOM_RECORDS_${moduleName}`));
+                moduleData = Array.isArray(localData) ? localData : [];
             }
 
             applyFilters();
@@ -1613,7 +1629,8 @@
             }
 
             // Local offline storage fallback to secure cloud backups sync
-            const localData = JSON.parse(localStorage.getItem(`CUSTOM_RECORDS_${moduleName}`)) || [];
+            let localData = JSON.parse(localStorage.getItem(`CUSTOM_RECORDS_${moduleName}`));
+            if (!Array.isArray(localData)) localData = [];
             const idx = localData.findIndex(r => r._id === payload._id);
             if (idx > -1) localData[idx] = payload;
             else localData.push(payload);
@@ -1685,7 +1702,8 @@
                 showToast('Deleted locally.', 'info');
             }
 
-            let localData = JSON.parse(localStorage.getItem(`CUSTOM_RECORDS_${moduleName}`)) || [];
+            let localData = JSON.parse(localStorage.getItem(`CUSTOM_RECORDS_${moduleName}`));
+            if (!Array.isArray(localData)) localData = [];
             localData = localData.filter(r => r._id !== id);
             localStorage.setItem(`CUSTOM_RECORDS_${moduleName}`, JSON.stringify(localData));
 

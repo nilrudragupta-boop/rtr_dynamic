@@ -5135,6 +5135,37 @@
         }
 
         // --- Backup / Restore ---
+        async function fetchLatestDataForBackup() {
+            try {
+                const endpoints = [
+                    { url: 'api/customers', key: 'customers' }, { url: 'api/suppliers', key: 'suppliers' },
+                    { url: 'api/items', key: 'items' }, { url: 'api/invoices', key: 'invoices' },
+                    { url: 'api/purchases', key: 'purchases' }, { url: 'api/expenses', key: 'expenses' },
+                    { url: 'api/credit-debit-notes', key: 'credit_debit_notes' }, { url: 'api/bank-accounts', key: 'bank_accounts' },
+                    { url: 'api/bank-transactions', key: 'bank_transactions' }, { url: 'api/journal-vouchers', key: 'journal_vouchers' },
+                    { url: 'api/scraps', key: 'scraps' }, { url: 'api/production', key: 'production' },
+                    { url: 'api/employees', key: 'employees' }, { url: 'api/custom-fields', key: 'CUSTOM_FIELDS' }
+                ];
+                for (const ep of endpoints) {
+                    try {
+                        const res = await fetch(ep.url);
+                        if (res.ok) { const data = await res.json(); if (data.success) localStorage.setItem(ep.key, JSON.stringify(data.data)); }
+                    } catch (e) {}
+                }
+                const cfData = JSON.parse(localStorage.getItem('CUSTOM_FIELDS') || '[]');
+                const modules = [...new Set(cfData.map(f => f.moduleName))];
+                const standardModules = ['Customer', 'Invoice', 'Item', 'Supplier', 'Purchase', 'Scrap', 'Production', 'Expense', 'Employee'];
+                for (const mod of modules) {
+                    if (!standardModules.includes(mod)) {
+                        try {
+                            const res = await fetch(`api/custom-records/${mod}`);
+                            if (res.ok) { const data = await res.json(); if (data.success) localStorage.setItem(`CUSTOM_RECORDS_${mod}`, JSON.stringify(data.data)); }
+                        } catch (e) {}
+                    }
+                }
+            } catch (e) { console.warn("Could not sync all remote data before backup", e); }
+        }
+
         async function backupData() {
             const adminPass = localStorage.getItem("appPassword");
             const specificPass = localStorage.getItem('pass_backup');
@@ -5146,7 +5177,12 @@
                 }
             }
             if (!confirm("This will export all application data to a JSON file. Proceed?")) return;
+            
+            const overlay = document.getElementById('loadingOverlay');
+            if (overlay) { overlay.style.display = 'flex'; overlay.querySelector('p').innerText = "Fetching latest data & Preparing Backup..."; }
             try {
+                await fetchLatestDataForBackup();
+
                 const backupData = {};
                 for (let i = 0; i < localStorage.length; i++) {
                     const key = localStorage.key(i);
@@ -5198,6 +5234,7 @@
                     if (dbBackupMsg) alert(dbBackupMsg.trim());
                 }
             } catch (error) { console.error(error); alert("Backup failed."); }
+            finally { if (overlay) overlay.style.display = 'none'; }
         }
 
         async function performSilentLocalBackup() {
@@ -5306,6 +5343,8 @@
             if (overlay) { overlay.style.display = 'flex'; overlay.querySelector('p').innerText = "Uploading to Cloud..."; }
 
             try {
+                await fetchLatestDataForBackup();
+
                 const backupData = { method: "drive" };
                 for (let i = 0; i < localStorage.length; i++) {
                     const key = localStorage.key(i);
