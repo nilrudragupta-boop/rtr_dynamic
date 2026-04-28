@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <title>Settings</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="apiClient.js"></script>
     <script src="settings.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/otpauth/9.1.4/otpauth.umd.min.js"></script>
     <style>
@@ -1644,9 +1645,12 @@
 
                                 <!-- Custom CSS -->
                                 <div class="cfm-field-group">
-                                    <label class="cfm-label"><i class="fas fa-paint-brush" style="color:#7c3aed;font-size:10px"></i> Custom CSS (Optional)</label>
-                                    <input type="text" id="cfCss" class="cfm-input" placeholder="e.g., background-color: #fef08a; font-weight: bold; color: red;">
-                                    <div class="cfm-hint">Apply inline CSS to highlight this specific field visually in the form.</div>
+                                    <label class="cfm-label"><i class="fas fa-paint-brush"
+                                            style="color:#7c3aed;font-size:10px"></i> Custom CSS (Optional)</label>
+                                    <input type="text" id="cfCss" class="cfm-input"
+                                        placeholder="e.g., background-color: #fef08a; font-weight: bold; color: red;">
+                                    <div class="cfm-hint">Apply inline CSS to highlight this specific field visually in
+                                        the form.</div>
                                 </div>
 
                                 <!-- Action buttons -->
@@ -1788,7 +1792,7 @@
                         // 1. Load General Settings
                         let settings = {};
                         try {
-                            const res = await fetch('http://localhost:5000/api/settings');
+                            const res = await fetch(`${API_BASE_URL}/settings`);
                             const apiData = await res.json();
                             if (apiData.success && apiData.data) settings = apiData.data;
                         } catch (e) {
@@ -1881,7 +1885,7 @@
 
                     // Save to MongoDB via API
                     try {
-                        await fetch('http://localhost:5000/api/settings', {
+                        await fetch(`${API_BASE_URL}/settings`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify(data)
@@ -2323,7 +2327,7 @@
                     const url = document.getElementById('cloudBackupUrl').value.trim();
 
                     try {
-                        await fetch('http://localhost:5000/api/settings', {
+                        await fetch(`${API_BASE_URL}/settings`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ cloudBackupUrl: url })
@@ -2404,7 +2408,7 @@
                     }
 
                     try {
-                        await fetch('http://localhost:5000/api/settings', {
+                        await fetch(`${API_BASE_URL}/settings`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ updateServerUrl: updateUrl })
@@ -2853,7 +2857,7 @@ function createResponse(obj) {
                 // ── Fetch & render ──
                 async function fetchCustomFields() {
                     try {
-                        const res = await fetch('http://localhost:5000/api/custom-fields');
+                        const res = await fetch(`${API_BASE_URL}/custom-fields`);
                         const result = await res.json();
                         if (result.success) {
                             customFieldsCache = result.data;
@@ -3029,7 +3033,7 @@ function createResponse(obj) {
                         calculationFormula: document.getElementById('cfFormula').value.trim(),
                         prefix: document.getElementById('cfPrefix').value.trim(),
                         suffix: document.getElementById('cfSuffix').value.trim(),
-                        customCss:           document.getElementById('cfCss') ? document.getElementById('cfCss').value.trim() : '',
+                        customCss: document.getElementById('cfCss') ? document.getElementById('cfCss').value.trim() : '',
                         order: parseInt(document.getElementById('cfOrder').value) || 0,
                         gridWidth: document.getElementById('cfGridWidth').value,
                     };
@@ -3070,7 +3074,7 @@ function createResponse(obj) {
                     if (errs.length) { cfmToast(errs[0], 'error'); return; }
 
                     try {
-                        const res = await fetch('http://localhost:5000/api/custom-fields', {
+                        const res = await fetch(`${API_BASE_URL}/custom-fields`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify(payload)
@@ -3158,12 +3162,13 @@ function createResponse(obj) {
 
                 // ── Delete ──
                 async function deleteCustomField(id) {
-                    if (!confirm('Delete this field? Existing data in records will remain but this field will disappear from forms.')) return;
+                    if (!confirm('Are you sure you want to delete this custom field? Existing data in documents will remain.')) return;
                     try {
-                        await fetch(`http://localhost:5000/api/custom-fields/${id}`, { method: 'DELETE' });
-                        cfmToast('Field deleted.', 'success');
-                        fetchCustomFields();
+                        const res = await fetch(`${API_BASE_URL}/custom-fields/${id}`, { method: 'DELETE' });
+                        const result = await res.json();
+                        if (result.success) fetchCustomFields();
                     } catch (e) {
+                        // Offline fallback
                         customFieldsCache = customFieldsCache.filter(f => f._id !== id);
                         localStorage.setItem('CUSTOM_FIELDS', JSON.stringify(customFieldsCache));
                         cfmToast('Deleted locally.', 'info');
@@ -3181,7 +3186,7 @@ function createResponse(obj) {
                     const toDelete = customFieldsCache.filter(f => f.moduleName === mod);
                     try {
                         for (const f of toDelete)
-                            await fetch(`http://localhost:5000/api/custom-fields/${f._id}`, { method: 'DELETE' });
+                            await fetch(`${API_BASE_URL}/custom-fields/${field._id}`, { method: 'DELETE' });
                         cfmToast(`Module "${mod}" deleted.`, 'success');
                         fetchCustomFields();
                     } catch (e) {
@@ -3206,7 +3211,7 @@ function createResponse(obj) {
                     if (el('cfRequired')) el('cfRequired').checked = false;
                     if (el('cfActive')) el('cfActive').checked = true;
                     if (el('cfShowTotal')) el('cfShowTotal').checked = false;
-                    if (el('cfCss'))              el('cfCss').value             = '';
+                    if (el('cfCss')) el('cfCss').value = '';
                     if (el('cfCurrencyDecimals')) el('cfCurrencyDecimals').value = '2';
                     if (el('cfPhoneFormat')) el('cfPhoneFormat').value = 'IN';
                     if (el('cfDateTimeFormat')) el('cfDateTimeFormat').value = 'datetime-local';
@@ -3260,11 +3265,10 @@ function createResponse(obj) {
                 }
 
                 async function saveFieldOrder() {
-                    const payload = customFieldsCache.map((f, i) => ({ _id: f._id, order: i }));
+                    const orderPayload = customFieldsCache.map((field, index) => ({ _id: field._id, order: index }));
                     try {
-                        const res = await fetch('http://localhost:5000/api/custom-fields/reorder', {
-                            method: 'POST', headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(payload)
+                        const res = await fetch(`${API_BASE_URL}/custom-fields/reorder`, {
+                            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(orderPayload)
                         });
                         const result = await res.json();
                         if (result.success) localStorage.setItem('CUSTOM_FIELDS', JSON.stringify(customFieldsCache));

@@ -1303,7 +1303,7 @@
                 if (typeof apiClient !== 'undefined' && apiClient.getCustomRecords) {
                     moduleData = await apiClient.getCustomRecords(moduleName);
                 } else {
-                    const res = await fetch(`http://localhost:5000/api/custom-records/${moduleName}`);
+                    const res = await fetch(`${typeof API_BASE_URL !== 'undefined' ? API_BASE_URL : 'http://localhost:5000/api'}/custom-records/${moduleName}`);
                     const result = await res.json();
                     if (result.success) moduleData = result.data;
                 }
@@ -1564,7 +1564,7 @@
                 if (typeof apiClient !== 'undefined' && apiClient.saveCustomRecord) {
                     result = await apiClient.saveCustomRecord(payload);
                 } else {
-                    const res = await fetch('http://localhost:5000/api/custom-records', {
+                    const res = await fetch(`${typeof API_BASE_URL !== 'undefined' ? API_BASE_URL : 'http://localhost:5000/api'}/custom-records`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(payload)
@@ -1636,7 +1636,7 @@
                 if (typeof apiClient !== 'undefined' && apiClient.deleteCustomRecord) {
                     await apiClient.deleteCustomRecord(id);
                 } else {
-                    await fetch(`http://localhost:5000/api/custom-records/${id}`, { method: 'DELETE' });
+                    await fetch(`${typeof API_BASE_URL !== 'undefined' ? API_BASE_URL : 'http://localhost:5000/api'}/custom-records/${id}`, { method: 'DELETE' });
                 }
                 showToast('Record deleted.', 'success');
             } catch (e) {
@@ -1746,7 +1746,7 @@
                     if (typeof apiClient !== 'undefined' && apiClient.reorderCustomFields) {
                         await apiClient.reorderCustomFields(orderPayload);
                     } else {
-                        await fetch('http://localhost:5000/api/custom-fields/reorder', {
+                        await fetch(`${typeof API_BASE_URL !== 'undefined' ? API_BASE_URL : 'http://localhost:5000/api'}/custom-fields/reorder`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify(orderPayload)
