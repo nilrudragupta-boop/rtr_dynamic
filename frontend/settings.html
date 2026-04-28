@@ -570,13 +570,17 @@
                             <input type="hidden" id="cfId">
                             
                             <label style="font-weight:bold; font-size:13px; display:block; margin-top:10px;">Target Module / New Page Name *</label>
-                            <input type="text" id="cfModule" list="cfModuleList" placeholder="e.g., Customer, Vehicle, Project" style="width:100%; padding:8px; margin-bottom:10px; border: 1px solid #ddd; border-radius: 4px;">
+                            <input type="text" id="cfModule" list="cfModuleList" placeholder="e.g., Customer, Vehicle, Project" style="width:100%; padding:8px; margin-bottom:10px; border: 1px solid #ddd; border-radius: 4px;" oninput="populateInsertFields()">
                             <datalist id="cfModuleList">
                                 <option value="Customer">
                                 <option value="Invoice">
                                 <option value="Item">
                                 <option value="Supplier">
                             </datalist>
+
+                            <label style="font-weight:bold; font-size:13px; display:block;">Section Heading (Optional)</label>
+                            <input type="text" id="cfSection" list="cfSectionList" placeholder="e.g., Personal Info" style="width:100%; padding:8px; margin-bottom:10px; border: 1px solid #ddd; border-radius: 4px;">
+                            <datalist id="cfSectionList"></datalist>
 
                             <label style="font-weight:bold; font-size:13px; display:block;">Field Label (UI Name) *</label>
                             <input type="text" id="cfLabel" placeholder="e.g., Blood Group" style="width:100%; padding:8px; margin-bottom:10px; border: 1px solid #ddd; border-radius: 4px;" oninput="generateFieldKey()">
@@ -591,6 +595,7 @@
                                 <option value="date">Date</option>
                                 <option value="boolean">Checkbox (Yes/No)</option>
                                 <option value="select">Dropdown (Select)</option>
+                                <option value="calculated">Calculated (Formula)</option>
                             </select>
 
                             <div id="cfOptionsWrapper" style="display:none;">
@@ -598,9 +603,63 @@
                                 <input type="text" id="cfOptions" placeholder="e.g., A+, O+, B-, AB+" style="width:100%; padding:8px; margin-bottom:10px; border: 1px solid #ddd; border-radius: 4px;">
                             </div>
 
+                            <div id="cfCalcWrapper" style="display:none;">
+                                <label style="font-weight:bold; font-size:13px; display:block;">Calculation Formula *</label>
+                                <input type="text" id="cfFormula" placeholder="e.g., cf_price * cf_qty" style="width:100%; padding:8px; margin-bottom:5px; border: 1px solid #ddd; border-radius: 4px;">
+                                <div style="display:flex; gap:5px; margin-bottom:10px; align-items:center;">
+                                    <select id="cfFieldInsertSelect" style="flex:1; padding:6px; border: 1px solid #ddd; border-radius: 4px; font-size:13px;"><option value="">-- Select Field to Insert --</option></select>
+                                    <button type="button" onclick="insertIntoFormula()" style="padding:6px 12px; background:#6c757d; color:white; border:none; border-radius:4px; cursor:pointer; font-size:13px;" title="Insert field at cursor">➕ Insert</button>
+                                </div>
+                                <small style="color:#777; display:block; margin-top:-5px; margin-bottom:10px; line-height:1.4;">
+                                    Use internal field keys. Supports standard JS math (+, -, *, /).<br>
+                                    <b>Examples:</b><br>
+                                    • Multiply two fields: <code style="background:#eee; padding:1px 4px; border-radius:3px; color:#c0392b;">cf_price * cf_qty</code><br>
+                                    • Add fields & apply discount: <code style="background:#eee; padding:1px 4px; border-radius:3px; color:#c0392b;">(cf_basic + cf_tax) * 0.9</code><br>
+                                    • Concatenate text: <code style="background:#eee; padding:1px 4px; border-radius:3px; color:#c0392b;">cf_first_name + ' ' + cf_last_name</code>
+                                </small>
+                            </div>
+
                             <div style="display:flex; gap:15px; margin-bottom:15px; margin-top:5px;">
                                 <label style="cursor:pointer; font-size:14px; display: flex; align-items: center; gap: 5px; font-weight: normal;"><input type="checkbox" id="cfRequired" style="width: auto;"> Is Required?</label>
                                 <label style="cursor:pointer; font-size:14px; display: flex; align-items: center; gap: 5px; font-weight: normal;"><input type="checkbox" id="cfActive" checked style="width: auto;"> Is Active?</label>
+                            </div>
+
+                            <label style="font-weight:bold; font-size:13px; display:block; margin-top:10px;">Visibility Condition (Optional)</label>
+                            <input type="text" id="cfCondition" placeholder="e.g., cf_type === 'Export' || cf_is_active" style="width:100%; padding:8px; margin-bottom:5px; border: 1px solid #ddd; border-radius: 4px;">
+                            <div style="display:flex; gap:5px; margin-bottom:10px; align-items:center;">
+                                <select id="cfVisibilityInsertSelect" style="flex:1; padding:6px; border: 1px solid #ddd; border-radius: 4px; font-size:13px;"><option value="">-- Select Field to Insert --</option></select>
+                                <button type="button" onclick="insertIntoVisibility()" style="padding:6px 12px; background:#6c757d; color:white; border:none; border-radius:4px; cursor:pointer; font-size:13px;" title="Insert field at cursor">➕ Insert</button>
+                            </div>
+                            <small style="color:#777; display:block; margin-top:-5px; margin-bottom:10px; line-height:1.4;">
+                                Use internal field keys to write a JS condition to show this field.<br>
+                                <b>Examples:</b><br>
+                                • Show if Checkbox is checked: <code style="background:#eee; padding:1px 4px; border-radius:3px; color:#c0392b;">cf_is_active === true</code><br>
+                                • Show if Dropdown equals Export: <code style="background:#eee; padding:1px 4px; border-radius:3px; color:#c0392b;">cf_type === 'Export'</code><br>
+                                • Show if Number &gt; 100: <code style="background:#eee; padding:1px 4px; border-radius:3px; color:#c0392b;">cf_amount &gt; 100</code>
+                            </small>
+
+                            <div style="display:flex; gap:15px; margin-bottom:10px;">
+                                <div style="flex:1;">
+                                    <label style="font-weight:bold; font-size:13px; display:block;">Prefix (Optional)</label>
+                                    <input type="text" id="cfPrefix" list="cfPrefixList" placeholder="e.g., ₹, $" style="width:100%; padding:8px; border: 1px solid #ddd; border-radius: 4px;">
+                                    <datalist id="cfPrefixList">
+                                        <option value="₹">
+                                        <option value="$">
+                                        <option value="€">
+                                        <option value="£">
+                                    </datalist>
+                                </div>
+                                <div style="flex:1;">
+                                    <label style="font-weight:bold; font-size:13px; display:block;">Suffix (Optional)</label>
+                                    <input type="text" id="cfSuffix" list="cfSuffixList" placeholder="e.g., %, Days" style="width:100%; padding:8px; border: 1px solid #ddd; border-radius: 4px;">
+                                    <datalist id="cfSuffixList">
+                                        <option value="%">
+                                        <option value="Days">
+                                        <option value="Months">
+                                        <option value="Years">
+                                        <option value="Hrs">
+                                    </datalist>
+                                </div>
                             </div>
 
                             <label style="font-weight:bold; font-size:13px; display:block;">Display Order</label>
@@ -612,8 +671,12 @@
 
                         <!-- Table Section -->
                         <div style="flex:2; display: flex; flex-direction: column; border: 1px solid #ddd; border-radius: 6px; overflow: hidden;">
-                            <div style="padding: 10px; background: #f8f9fa; border-bottom: 1px solid #ddd;">
-                                <input type="text" id="cfSearch" placeholder="🔍 Search fields by module, label, or internal name..." oninput="renderCustomFieldsTable()" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
+                            <div style="padding: 10px; background: #f8f9fa; border-bottom: 1px solid #ddd; display: flex; gap: 10px;">
+                                <select id="cfModuleFilter" onchange="renderCustomFieldsTable()" style="padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 140px;">
+                                    <option value="">All Modules</option>
+                                </select>
+                                <input type="text" id="cfSearch" placeholder="🔍 Search fields..." oninput="renderCustomFieldsTable()" style="flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
+                                <button onclick="deleteEntireModule()" class="btn-danger" style="width: auto; padding: 8px 12px; border-radius: 4px;" title="Delete selected module">🗑️ Del Module</button>
                             </div>
                             <div style="flex: 1; overflow-y:auto;">
                                 <table style="width:100%; border-collapse:collapse; font-size:13px;">
@@ -1638,9 +1701,78 @@ function createResponse(obj) {
                     document.getElementById('cfName').value = "cf_" + key;
                 }
 
+                function populateInsertFields() {
+                    const moduleName = document.getElementById('cfModule').value.trim();
+                    const selectCalc = document.getElementById('cfFieldInsertSelect');
+                    const selectVis = document.getElementById('cfVisibilityInsertSelect');
+                    
+                    if (selectCalc) selectCalc.innerHTML = '<option value="">-- Select Field to Insert --</option>';
+                    if (selectVis) selectVis.innerHTML = '<option value="">-- Select Field to Insert --</option>';
+                    
+                    if (!moduleName) return;
+
+                    const fields = customFieldsCache.filter(f => f.moduleName === moduleName);
+                    fields.forEach(f => {
+                        const optText = `${f.fieldLabel} (${f.fieldName})`;
+                        
+                        if (selectCalc) {
+                            const opt = document.createElement('option');
+                            opt.value = f.fieldName;
+                            opt.textContent = optText;
+                            selectCalc.appendChild(opt);
+                        }
+                        
+                        if (selectVis) {
+                            const optVis = document.createElement('option');
+                            optVis.value = f.fieldName;
+                            optVis.textContent = optText;
+                            selectVis.appendChild(optVis);
+                        }
+                    });
+                }
+
+                function insertIntoVisibility() {
+                    const select = document.getElementById('cfVisibilityInsertSelect');
+                    if (!select || !select.value) return;
+                    const input = document.getElementById('cfCondition');
+                    
+                    const startPos = input.selectionStart;
+                    const endPos = input.selectionEnd;
+                    const valToInsert = select.value;
+                    
+                    if (startPos !== undefined && endPos !== undefined) {
+                        input.value = input.value.substring(0, startPos) + valToInsert + input.value.substring(endPos);
+                        input.selectionStart = input.selectionEnd = startPos + valToInsert.length;
+                    } else {
+                        input.value += valToInsert;
+                    }
+                    input.focus();
+                }
+
+                function insertIntoFormula() {
+                    const select = document.getElementById('cfFieldInsertSelect');
+                    if (!select || !select.value) return;
+                    const input = document.getElementById('cfFormula');
+                    
+                    const startPos = input.selectionStart;
+                    const endPos = input.selectionEnd;
+                    const valToInsert = select.value;
+                    
+                    if (startPos !== undefined && endPos !== undefined) {
+                        input.value = input.value.substring(0, startPos) + valToInsert + input.value.substring(endPos);
+                        // Move cursor right after the inserted text so you can keep typing math symbols
+                        input.selectionStart = input.selectionEnd = startPos + valToInsert.length;
+                    } else {
+                        input.value += valToInsert;
+                    }
+                    input.focus();
+                }
+
                 function toggleCfOptions() {
                     const type = document.getElementById('cfType').value;
                     document.getElementById('cfOptionsWrapper').style.display = type === 'select' ? 'block' : 'none';
+                    document.getElementById('cfCalcWrapper').style.display = type === 'calculated' ? 'block' : 'none';
+                    populateInsertFields();
                 }
 
                 async function fetchCustomFields() {
@@ -1651,12 +1783,14 @@ function createResponse(obj) {
                             customFieldsCache = result.data;
                             localStorage.setItem('CUSTOM_FIELDS', JSON.stringify(customFieldsCache));
                             populateCfModuleFilter();
+                            populateCfModuleDatalist();
                             renderCustomFieldsTable();
                         }
                     } catch (e) {
                         console.warn('Failed to fetch custom fields via API, using local cache', e);
                         customFieldsCache = JSON.parse(localStorage.getItem('CUSTOM_FIELDS')) || [];
                         populateCfModuleFilter();
+                        populateCfModuleDatalist();
                         renderCustomFieldsTable();
                     }
                 }
@@ -1671,6 +1805,23 @@ function createResponse(obj) {
                         filter.innerHTML += `<option value="${m}">${m}</option>`;
                     });
                     if (modules.includes(currentVal)) filter.value = currentVal;
+                }
+
+                function populateCfModuleDatalist() {
+                    const datalist = document.getElementById('cfModuleList');
+                    if (!datalist) return;
+                    
+                    const defaultModules = ['Customer', 'Invoice', 'Item', 'Supplier'];
+                    const customModules = [...new Set(customFieldsCache.map(f => f.moduleName))].filter(Boolean);
+                    const allModules = [...new Set([...defaultModules, ...customModules])].sort();
+                    
+                    datalist.innerHTML = allModules.map(m => `<option value="${m}">`).join('');
+
+                    const sectionList = document.getElementById('cfSectionList');
+                    if (sectionList) {
+                        const customSections = [...new Set(customFieldsCache.map(f => f.section))].filter(Boolean);
+                        sectionList.innerHTML = customSections.map(s => `<option value="${s}">`).join('');
+                    }
                 }
 
                 function renderCustomFieldsTable() {
@@ -1695,7 +1846,7 @@ function createResponse(obj) {
                     }
 
                     if (fieldsToRender.length === 0) {
-                        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px;">No custom fields found.</td></tr>';
+                        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:30px; color: #64748b;">No custom fields found.</td></tr>';
                         return;
                     }
 
@@ -1708,17 +1859,28 @@ function createResponse(obj) {
                             tr.draggable = true;
                             tr.dataset.fieldId = field._id;
                         }
+                        const dragIcon = !searchTerm ? '<i class="fas fa-grip-vertical" style="color: #94a3b8; cursor: grab;"></i>' : '';
+
                         tr.innerHTML = `
-                            <td style="padding:8px; border-bottom:1px solid #ddd; font-weight:bold;">${field.moduleName}</td>
-                            <td style="padding:8px; border-bottom:1px solid #ddd;">${field.fieldLabel}<br><small style="color:#7f8c8d;">${field.fieldName}</small></td>
-                            <td style="padding:8px; border-bottom:1px solid #ddd;">${field.fieldType.toUpperCase()}</td>
-                            <td style="padding:8px; border-bottom:1px solid #ddd; text-align:center;">
-                                <span style="color:${field.isRequired ? '#e74c3c' : '#ccc'}">REQ</span> / 
-                                <span style="color:${field.isActive ? '#27ae60' : '#ccc'}">ACT</span>
+                            <td style="text-align: center;">${dragIcon}</td>
+                            <td>
+                                <div style="font-weight: 600; color: #334155;">${field.moduleName}</div>
+                                ${field.section ? '<div style="font-size: 11px; color: #3b82f6; margin-top: 2px;"><i class="fas fa-folder-open"></i> ' + field.section + '</div>' : '<div style="font-size: 11px; color: #94a3b8; margin-top: 2px;">General</div>'}
                             </td>
-                            <td style="padding:8px; border-bottom:1px solid #ddd; text-align:center;">
-                                <button onclick="editCustomField('${field._id}')" style="background:#f39c12; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer;">✏️</button>
-                                <button onclick="deleteCustomField('${field._id}')" style="background:#e74c3c; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer;">🗑️</button>
+                            <td>
+                                <div style="font-weight: 600; color: #1e293b;">${field.fieldLabel}</div>
+                                <div style="font-size: 11px; color: #64748b; font-family: monospace; margin-top: 2px;">${field.fieldName}</div>
+                            </td>
+                            <td>
+                                <span style="background: #f1f5f9; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; color: #475569; border: 1px solid #e2e8f0;">${field.fieldType.toUpperCase()}</span>
+                            </td>
+                            <td style="text-align:center;">
+                                ${field.isRequired ? '<span title="Required" style="color: #e74c3c; margin-right: 5px;"><i class="fas fa-asterisk"></i></span>' : ''}
+                                ${field.isActive ? '<span title="Active" style="color: #27ae60;"><i class="fas fa-check-circle"></i></span>' : '<span title="Inactive" style="color: #94a3b8;"><i class="fas fa-times-circle"></i></span>'}
+                            </td>
+                            <td style="text-align:center;">
+                                <button class="cf-action-btn" style="background:#eff6ff; color:#3b82f6; margin-right: 4px;" onclick="editCustomField('${field._id}')" title="Edit"><i class="fas fa-edit"></i></button>
+                                <button class="cf-action-btn" style="background:#fef2f2; color:#ef4444;" onclick="deleteCustomField('${field._id}')" title="Delete"><i class="fas fa-trash-alt"></i></button>
                             </td>
                         `;
                         tbody.appendChild(tr);
@@ -1733,11 +1895,16 @@ function createResponse(obj) {
                     const id = document.getElementById('cfId').value;
                     const payload = {
                         moduleName: document.getElementById('cfModule').value,
+                        section: document.getElementById('cfSection').value.trim(),
                         fieldLabel: document.getElementById('cfLabel').value,
                         fieldName: document.getElementById('cfName').value,
                         fieldType: document.getElementById('cfType').value,
                         isRequired: document.getElementById('cfRequired').checked,
                         isActive: document.getElementById('cfActive').checked,
+                        visibilityCondition: document.getElementById('cfCondition').value.trim(),
+                        calculationFormula: document.getElementById('cfFormula').value.trim(),
+                        prefix: document.getElementById('cfPrefix').value.trim(),
+                        suffix: document.getElementById('cfSuffix').value.trim(),
                         order: parseInt(document.getElementById('cfOrder').value) || 0
                     };
 
@@ -1747,6 +1914,10 @@ function createResponse(obj) {
                         const optionsStr = document.getElementById('cfOptions').value;
                         payload.options = optionsStr.split(',').map(s => s.trim()).filter(s => s !== '');
                         if (payload.options.length === 0) return alert('Please provide dropdown options.');
+                    }
+
+                    if (payload.fieldType === 'calculated' && !payload.calculationFormula) {
+                        return alert('Please provide a calculation formula.');
                     }
 
                     if (!payload.fieldLabel || !payload.fieldName) return alert('Label and Internal Name are required.');
@@ -1775,6 +1946,8 @@ function createResponse(obj) {
                         }
                         localStorage.setItem('CUSTOM_FIELDS', JSON.stringify(customFieldsCache));
                         clearCustomFieldForm();
+                        populateCfModuleFilter();
+                        populateCfModuleDatalist();
                         renderCustomFieldsTable();
                     }
                 }
@@ -1785,11 +1958,16 @@ function createResponse(obj) {
 
                     document.getElementById('cfId').value = field._id;
                     document.getElementById('cfModule').value = field.moduleName;
+                    document.getElementById('cfSection').value = field.section || '';
                     document.getElementById('cfLabel').value = field.fieldLabel;
                     document.getElementById('cfName').value = field.fieldName;
                     document.getElementById('cfType').value = field.fieldType;
                     document.getElementById('cfRequired').checked = field.isRequired;
                     document.getElementById('cfActive').checked = field.isActive;
+                    document.getElementById('cfCondition').value = field.visibilityCondition || '';
+                    document.getElementById('cfFormula').value = field.calculationFormula || '';
+                    document.getElementById('cfPrefix').value = field.prefix || '';
+                    document.getElementById('cfSuffix').value = field.suffix || '';
                     document.getElementById('cfOrder').value = field.order || 0;
 
                     if (field.fieldType === 'select') {
@@ -1808,6 +1986,36 @@ function createResponse(obj) {
                         console.warn('API error, deleting from local cache', e);
                         customFieldsCache = customFieldsCache.filter(f => f._id !== id);
                         localStorage.setItem('CUSTOM_FIELDS', JSON.stringify(customFieldsCache));
+                        populateCfModuleFilter();
+                        populateCfModuleDatalist();
+                        renderCustomFieldsTable();
+                    }
+                }
+
+                async function deleteEntireModule() {
+                    const moduleFilter = document.getElementById('cfModuleFilter');
+                    const selectedModule = moduleFilter ? moduleFilter.value : '';
+
+                    if (!selectedModule) {
+                        alert('Please select a specific Custom Module from the dropdown on the left to delete it.');
+                        return;
+                    }
+
+                    if (!confirm(`Are you sure you want to delete the entire '${selectedModule}' module and ALL its fields?`)) return;
+
+                    const fieldsToDelete = customFieldsCache.filter(f => f.moduleName === selectedModule);
+
+                    try {
+                        for (const field of fieldsToDelete) {
+                            await fetch(`http://localhost:5000/api/custom-fields/${field._id}`, { method: 'DELETE' });
+                        }
+                        fetchCustomFields();
+                    } catch (e) {
+                        console.warn('API error, deleting from local cache', e);
+                        customFieldsCache = customFieldsCache.filter(f => f.moduleName !== selectedModule);
+                        localStorage.setItem('CUSTOM_FIELDS', JSON.stringify(customFieldsCache));
+                        populateCfModuleFilter();
+                        populateCfModuleDatalist();
                         renderCustomFieldsTable();
                     }
                 }
@@ -1818,8 +2026,13 @@ function createResponse(obj) {
                     document.getElementById('cfName').value = '';
                     document.getElementById('cfType').value = 'text';
                     document.getElementById('cfOptions').value = '';
+                    document.getElementById('cfSection').value = '';
                     document.getElementById('cfRequired').checked = false;
                     document.getElementById('cfActive').checked = true;
+                    document.getElementById('cfCondition').value = '';
+                    document.getElementById('cfFormula').value = '';
+                    document.getElementById('cfPrefix').value = '';
+                    document.getElementById('cfSuffix').value = '';
                     document.getElementById('cfOrder').value = '0';
                     toggleCfOptions();
                 }
