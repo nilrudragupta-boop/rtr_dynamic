@@ -288,6 +288,10 @@
             width: 100%;
             border-collapse: collapse;
             font-size: 13px;
+            /* FIX: table-layout:fixed stops columns from resizing based on content.
+               Without this, long cell values push neighbouring columns out of place. */
+            table-layout: fixed;
+            min-width: 600px;
         }
 
         .data-table thead th {
@@ -304,6 +308,9 @@
             top: 58px;
             cursor: pointer;
             user-select: none;
+            /* FIX: clip header text so it never forces column to expand */
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .data-table thead th:hover {
@@ -369,6 +376,19 @@
             padding: 10px 14px;
             vertical-align: middle;
             color: var(--neutral-800);
+            /* FIX: clip content so it never bleeds into the next column */
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            /* required for text-overflow to work inside table-layout:fixed */
+            max-width: 0;
+        }
+
+        /* FIX: action column must stay visible (holds the dropdown) */
+        .data-table td.action-td {
+            overflow: visible;
+            white-space: nowrap;
+            width: 56px;
         }
 
         .data-table td .cell-empty {
@@ -796,8 +816,8 @@
                 </div>
             </div>
 
-            <div style="overflow-x:auto;">
-                <table class="data-table">
+            <div style="overflow-x:auto; -webkit-overflow-scrolling:touch; min-width:0;">
+                <table class="data-table" id="mainTable">
                     <thead>
                         <tr id="tableHeaders"></tr>
                     </thead>
@@ -1158,14 +1178,39 @@
         // ─────────────────────────────────────────────────────────
         function renderTableHeaders() {
             const tr = document.getElementById('tableHeaders');
-            tr.innerHTML = '<th onclick="sortBy(\'__sl\')">#<span class="sort-icon fas fa-sort"></span></th>';
 
+            // FIX: build headers with DOM elements so widths are set correctly
+            // before innerHTML causes layout thrash.
+            tr.innerHTML = '';
+
+            // Sl No — fixed narrow column
+            const slTh = document.createElement('th');
+            slTh.style.width = '48px';
+            slTh.style.minWidth = '48px';
+            slTh.innerHTML = '#<span class="sort-icon fas fa-sort"></span>';
+            slTh.onclick = () => sortBy('__sl');
+            tr.appendChild(slTh);
+
+            // Data columns — distribute remaining space; let saved widths override below
             moduleFields.forEach(f => {
-                tr.innerHTML += `<th onclick="sortBy('${f.fieldName}')">${f.fieldLabel}
-        <span class="sort-icon fas fa-sort"></span></th>`;
+                const th = document.createElement('th');
+                th.dataset.field = f.fieldName;
+                // Default width; resizer + loadColumnWidths will refine it
+                th.style.width = '160px';
+                th.style.minWidth = '80px';
+                th.innerHTML = `${f.fieldLabel}<span class="sort-icon fas fa-sort"></span>`;
+                th.onclick = () => sortBy(f.fieldName);
+                tr.appendChild(th);
             });
 
-            tr.innerHTML += '<th style="text-align:center;">Actions</th>';
+            // Actions — fixed width, no sort
+            const actTh = document.createElement('th');
+            actTh.style.width = '56px';
+            actTh.style.minWidth = '56px';
+            actTh.style.textAlign = 'center';
+            actTh.style.cursor = 'default';
+            actTh.textContent = '';
+            tr.appendChild(actTh);
 
             setTimeout(() => {
                 enableColumnResizing();
@@ -1186,7 +1231,12 @@
             let css = '';
             moduleFields.forEach((f, i) => {
                 if (columnVisibility[f.fieldName] === false) {
-                    css += `.data-table th:nth-child(${i + 2}), .data-table td:nth-child(${i + 2}) { display: none !important; }\n`;
+                    // FIX: column index is i+2 because:
+                    //   child 1 = '#' (serial number)
+                    //   child 2..N = data columns
+                    //   last child = Actions
+                    const colIndex = i + 2;
+                    css += `.data-table th:nth-child(${colIndex}), .data-table td:nth-child(${colIndex}) { display: none !important; }\n`;
                 }
             });
             style.textContent = css;
@@ -1283,25 +1333,25 @@
         }
 
         function saveColumnWidths() {
-            const widths = [];
-            const headers = document.querySelectorAll('.data-table th');
-            headers.forEach(th => {
-                widths.push(th.style.width);
+            // FIX: key widths by fieldName, not array index.
+            // Keying by index means hiding a column shifts all saved widths by one.
+            const widthMap = {};
+            document.querySelectorAll('.data-table thead th[data-field]').forEach(th => {
+                if (th.style.width) widthMap[th.dataset.field] = th.style.width;
             });
-            localStorage.setItem(`moduleColumnWidths_${moduleName}`, JSON.stringify(widths));
+            localStorage.setItem(`moduleColumnWidths_${moduleName}`, JSON.stringify(widthMap));
         }
 
         function loadColumnWidths() {
-            const savedWidths = JSON.parse(localStorage.getItem(`moduleColumnWidths_${moduleName}`));
-            if (savedWidths && Array.isArray(savedWidths)) {
-                const headers = document.querySelectorAll('.data-table th');
-                headers.forEach((th, index) => {
-                    if (savedWidths[index]) {
-                        th.style.width = savedWidths[index];
-                        th.style.minWidth = savedWidths[index];
-                    }
-                });
-            }
+            const saved = JSON.parse(localStorage.getItem(`moduleColumnWidths_${moduleName}`));
+            if (!saved || typeof saved !== 'object') return;
+            document.querySelectorAll('.data-table thead th[data-field]').forEach(th => {
+                const w = saved[th.dataset.field];
+                if (w) {
+                    th.style.width = w;
+                    th.style.minWidth = w;
+                }
+            });
         }
 
         // ─────────────────────────────────────────────────────────
@@ -1445,7 +1495,8 @@
                             ? '<span class="badge-yes"><i class="fas fa-check fa-xs me-1"></i>Yes</span>'
                             : '<span class="badge-no"><i class="fas fa-xmark fa-xs me-1"></i>No</span>'}</td>`;
                     } else if (field.fieldType === 'multiselect' && Array.isArray(val)) {
-                        html += `<td>${val.join(', ')}</td>`;
+                        const display = val.join(', ');
+                        html += `<td title="${display}">${display}</td>`;
                     } else if (field.fieldType === 'file') {
                         if (val) {
                             try {
@@ -1460,14 +1511,16 @@
                             html += `<td><span class="cell-empty">—</span></td>`;
                         }
                     } else {
-                        let display = val;
+                        let display = String(val);
                         if (field.prefix || field.currencySymbol) display = `${field.prefix || field.currencySymbol} ${display}`;
                         if (field.suffix) display = `${display} ${field.suffix}`;
-                        html += `<td>${display}</td>`;
+                        // FIX: title attribute shows full text on hover when cell is clipped
+                        html += `<td title="${display}">${display}</td>`;
                     }
                 });
 
-                html += `<td>
+                // FIX: action-td class keeps overflow:visible so the dropdown is never clipped
+                html += `<td class="action-td">
         <div class="action-cell dropdown">
           <button class="btn btn-outline-custom btn-sm" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="padding: 4px 10px; border-color: var(--neutral-200);">
             <i class="fas fa-ellipsis-v"></i>
@@ -1507,9 +1560,13 @@
             if (!hasTotals) return;
 
             const tr = document.createElement('tr');
-            tr.innerHTML = `<td style="color:var(--primary);text-align:right;">Total:</td>`;
+            // FIX: first cell spans the '#' serial column, second cell is the "Total:" label
+            // so that totals land under the correct data columns.
+            tr.innerHTML = `<td></td><td style="color:var(--primary);font-weight:700;">Total</td>`;
 
-            moduleFields.forEach(field => {
+            // Skip first field (already used for "Total" label above)
+            moduleFields.forEach((field, idx) => {
+                if (idx === 0) return; // label cell consumed this slot
                 if (totals[field.fieldName] !== undefined) {
                     let display = Number(totals[field.fieldName].toFixed(2));
                     if (field.prefix || field.currencySymbol) display = `${field.prefix || field.currencySymbol} ${display}`;
@@ -1519,7 +1576,7 @@
                     tr.innerHTML += `<td></td>`;
                 }
             });
-            tr.innerHTML += `<td></td>`; // Action Column alignment
+            tr.innerHTML += `<td></td>`; // Actions column
             tfoot.appendChild(tr);
         }
 
