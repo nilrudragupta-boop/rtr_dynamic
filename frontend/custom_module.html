@@ -912,9 +912,16 @@
         // ─────────────────────────────────────────────────────────
         async function init() {
             const allFields = JSON.parse(localStorage.getItem('CUSTOM_FIELDS')) || [];
-            moduleFields = allFields
+
+            // Remove duplicates by fieldName to prevent data overlapping in the form payload
+            const uniqueFieldsMap = new Map();
+            allFields
                 .filter(f => f.moduleName === moduleName && f.isActive)
-                .sort((a, b) => (a.order ?? 999) - (b.order ?? 999));
+                .sort((a, b) => (a.order ?? 999) - (b.order ?? 999))
+                .forEach(f => {
+                    if (!uniqueFieldsMap.has(f.fieldName)) uniqueFieldsMap.set(f.fieldName, f);
+                });
+            moduleFields = Array.from(uniqueFieldsMap.values());
 
             if (moduleFields.length === 0) {
                 document.getElementById('dynamicFormContainer').innerHTML =
@@ -1322,10 +1329,24 @@
                 // Preserve unsynced offline records from being overwritten
                 let localData = JSON.parse(localStorage.getItem(`CUSTOM_RECORDS_${moduleName}`));
                 if (!Array.isArray(localData)) localData = [];
-                const fetchedIds = new Set(moduleData.map(r => r._id));
+
+                // Map API data for quick access
+                const fetchedMap = new Map(moduleData.map(r => [r._id, r]));
+
                 localData.forEach(localRecord => {
-                    if (localRecord && localRecord._id && !fetchedIds.has(localRecord._id)) {
-                        moduleData.push(localRecord);
+                    if (localRecord && localRecord._id) {
+                        if (!fetchedMap.has(localRecord._id)) {
+                            moduleData.push(localRecord);
+                        } else {
+                            // Compare timestamps to prevent data overlap / loss of offline edits
+                            const apiRecord = fetchedMap.get(localRecord._id);
+                            const localTime = new Date(localRecord.updatedAt || 0).getTime();
+                            const apiTime = new Date(apiRecord.updatedAt || 0).getTime();
+                            if (localTime > apiTime) {
+                                const idx = moduleData.findIndex(r => r._id === localRecord._id);
+                                if (idx > -1) moduleData[idx] = localRecord;
+                            }
+                        }
                     }
                 });
 
@@ -1447,16 +1468,16 @@
                 });
 
                 html += `<td>
-        <div class="action-cell">
-          <button class="btn btn-info-custom btn-sm" onclick="printRecord('${row._id}')" title="Print">
-            <i class="fas fa-print"></i>
+        <div class="action-cell dropdown">
+          <button class="btn btn-outline-custom btn-sm" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="padding: 4px 10px; border-color: var(--neutral-200);">
+            <i class="fas fa-ellipsis-v"></i>
           </button>
-          <button class="btn btn-warning-custom btn-sm" onclick="editRecord('${row._id}')" title="Edit">
-            <i class="fas fa-pen"></i>
-          </button>
-          <button class="btn btn-danger-custom btn-sm" onclick="deleteRecord('${row._id}')" title="Delete">
-            <i class="fas fa-trash"></i>
-          </button>
+          <ul class="dropdown-menu dropdown-menu-end shadow-sm" style="font-size: 13px; min-width: 130px; border: 1px solid var(--neutral-200);">
+            <li><a class="dropdown-item" href="javascript:void(0)" onclick="printRecord('${row._id}')"><i class="fas fa-print fa-fw" style="color: var(--accent); margin-right: 6px;"></i> Print</a></li>
+            <li><a class="dropdown-item" href="javascript:void(0)" onclick="editRecord('${row._id}')"><i class="fas fa-pen fa-fw text-warning" style="margin-right: 6px;"></i> Edit</a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item text-danger" href="javascript:void(0)" onclick="deleteRecord('${row._id}')"><i class="fas fa-trash fa-fw" style="margin-right: 6px;"></i> Delete</a></li>
+          </ul>
         </div>
       </td>`;
 
@@ -1564,10 +1585,13 @@
         // 8. Save / Edit / Delete / Clear
         // ─────────────────────────────────────────────────────────
         async function saveRecord() {
+            const saveBtn = document.querySelector('.btn-success-custom');
+            if (saveBtn) saveBtn.disabled = true;
+
             const payload = { moduleName };
             const id = document.getElementById('recordId').value;
             if (id) payload._id = id;
-            else payload._id = 'cr_' + Date.now();
+            else payload._id = 'cr_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
 
             let valid = true;
             document.querySelectorAll('.dynamic-input').forEach(input => {
@@ -1594,9 +1618,11 @@
 
             if (!valid) {
                 showToast('Please fill in all required fields.', 'error');
+                if (saveBtn) saveBtn.disabled = false;
                 return;
             }
 
+            payload.updatedAt = new Date().toISOString();
             showSaving(true);
 
             try {
@@ -1640,6 +1666,7 @@
             await fetchData();
 
             showSaving(false);
+            if (saveBtn) saveBtn.disabled = false;
         }
 
         function editRecord(id) {
