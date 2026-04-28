@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <title>Custom Module</title>
@@ -9,28 +10,115 @@
     <script src="brand.service.js"></script>
     <script src="brandLoader.js"></script>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; padding: 20px; background: #f8f9fa; color: #333; }
-        h2 { margin-bottom: 20px; color: #2c3e50; }
-        .card { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 20px; }
-        
-        .form-grid { display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 15px; }
-        .form-group { flex: 1; min-width: 250px; display: flex; flex-direction: column; gap: 5px; }
-        label { font-weight: 600; font-size: 13px; color: #555; }
-        input, select { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; width: 100%; box-sizing: border-box; }
-        
-        button { padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; color: white; transition: 0.2s; }
-        button:hover { opacity: 0.9; }
-        .btn-primary { background: #0d6efd; }
-        .btn-danger { background: #dc3545; }
-        .btn-secondary { background: #6c757d; }
-        .btn-warning { background: #f39c12; color: #000; }
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            padding: 20px;
+            background: #f8f9fa;
+            color: #333;
+        }
 
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
-        th, td { border: 1px solid #eee; padding: 10px; text-align: left; }
-        th { background: #2c3e50; color: white; position: sticky; top: 0; }
-        tr:nth-child(even) { background: #f9f9f9; }
+        h2 {
+            margin-bottom: 20px;
+            color: #2c3e50;
+        }
+
+        .card {
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+            margin-bottom: 20px;
+        }
+
+        .form-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .form-group {
+            flex: 1;
+            min-width: 250px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        label {
+            font-weight: 600;
+            font-size: 13px;
+            color: #555;
+        }
+
+        input,
+        select {
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 14px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            color: white;
+            transition: 0.2s;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        .btn-primary {
+            background: #0d6efd;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+        }
+
+        .btn-warning {
+            background: #f39c12;
+            color: #000;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+
+        th,
+        td {
+            border: 1px solid #eee;
+            padding: 10px;
+            text-align: left;
+        }
+
+        th {
+            background: #2c3e50;
+            color: white;
+            position: sticky;
+            top: 0;
+        }
+
+        tr:nth-child(even) {
+            background: #f9f9f9;
+        }
     </style>
 </head>
+
 <body>
 
     <h2 id="pageTitle">Custom Module</h2>
@@ -41,7 +129,7 @@
             <button class="btn-primary" onclick="location.reload()" style="background:#17a2b8;">🔄 Refresh</button>
         </div>
         <input type="hidden" id="recordId">
-        
+
         <div class="form-grid" id="dynamicFormContainer">
             <!-- Form inputs injected here based on custom fields -->
         </div>
@@ -60,7 +148,9 @@
                 </tr>
             </thead>
             <tbody id="tableBody">
-                <tr><td colspan="100%" style="text-align:center;">Loading...</td></tr>
+                <tr>
+                    <td colspan="100%" style="text-align:center;">Loading...</td>
+                </tr>
             </tbody>
         </table>
     </div>
@@ -94,13 +184,40 @@
             const container = document.getElementById('dynamicFormContainer');
             container.innerHTML = '';
 
+            let currentSection = null;
+            let currentSectionContainer = container;
+
             moduleFields.forEach(field => {
+                const secName = field.section || 'General Details';
+
+                if (secName !== currentSection) {
+                    currentSection = secName;
+
+                    const sectionWrapper = document.createElement('div');
+                    sectionWrapper.style.cssText = 'flex-basis: 100%; width: 100%; background: #fff; padding: 15px; border-radius: 8px; border: 1px solid #e9ecef; margin-bottom: 10px; margin-top: 5px; box-sizing: border-box; box-shadow: 0 1px 3px rgba(0,0,0,0.02);';
+
+                    const sectionHeading = document.createElement('h4');
+                    sectionHeading.style.cssText = 'margin-top: 0; margin-bottom: 15px; color: #2c3e50; font-size: 15px; border-bottom: 2px solid #e9ecef; padding-bottom: 8px;';
+                    sectionHeading.innerText = secName;
+
+                    const innerGrid = document.createElement('div');
+                    innerGrid.className = 'form-grid';
+                    innerGrid.style.marginBottom = '0';
+
+                    sectionWrapper.appendChild(sectionHeading);
+                    sectionWrapper.appendChild(innerGrid);
+                    container.appendChild(sectionWrapper);
+
+                    currentSectionContainer = innerGrid;
+                }
+
                 const wrapper = document.createElement('div');
                 wrapper.className = 'form-group';
+                wrapper.id = 'wrapper_' + field.fieldName;
 
                 const label = document.createElement('label');
                 label.innerText = field.fieldLabel + (field.isRequired ? ' *' : '');
-                
+
                 let input;
                 if (field.fieldType === 'select') {
                     input = document.createElement('select');
@@ -122,11 +239,72 @@
                 input.id = 'input_' + field.fieldName;
                 input.className = 'dynamic-input';
                 input.dataset.fieldName = field.fieldName;
-                if(field.isRequired) input.required = true;
+                if (field.isRequired) input.required = true;
+
+                input.addEventListener('change', applyVisibilityRules);
+                input.addEventListener('input', applyVisibilityRules);
 
                 wrapper.appendChild(label);
-                wrapper.appendChild(input);
-                container.appendChild(wrapper);
+
+                if (field.fieldType !== 'boolean' && (field.prefix || field.suffix)) {
+                    const inputGrp = document.createElement('div');
+                    inputGrp.style.cssText = 'display: flex; align-items: stretch; width: 100%;';
+
+                    if (field.prefix) {
+                        const pre = document.createElement('span');
+                        pre.innerText = field.prefix;
+                        pre.style.cssText = 'padding: 8px 12px; background: #e9ecef; border: 1px solid #ccc; border-right: none; border-radius: 4px 0 0 4px; color: #495057; font-weight: bold; font-size: 14px; display: flex; align-items: center;';
+                        inputGrp.appendChild(pre);
+                        input.style.borderTopLeftRadius = '0';
+                        input.style.borderBottomLeftRadius = '0';
+                    }
+
+                    input.style.flex = '1';
+                    inputGrp.appendChild(input);
+
+                    if (field.suffix) {
+                        const suf = document.createElement('span');
+                        suf.innerText = field.suffix;
+                        suf.style.cssText = 'padding: 8px 12px; background: #e9ecef; border: 1px solid #ccc; border-left: none; border-radius: 0 4px 4px 0; color: #495057; font-weight: bold; font-size: 14px; display: flex; align-items: center;';
+                        inputGrp.appendChild(suf);
+                        input.style.borderTopRightRadius = '0';
+                        input.style.borderBottomRightRadius = '0';
+                    }
+
+                    wrapper.appendChild(inputGrp);
+                } else {
+                    wrapper.appendChild(input);
+                }
+
+                currentSectionContainer.appendChild(wrapper);
+            });
+
+            applyVisibilityRules();
+        }
+
+        function applyVisibilityRules() {
+            const currentState = {};
+            document.querySelectorAll('.dynamic-input').forEach(input => {
+                const key = input.dataset.fieldName;
+                currentState[key] = input.type === 'checkbox' ? input.checked : input.value;
+            });
+
+            moduleFields.forEach(field => {
+                if (field.visibilityCondition) {
+                    const wrapper = document.getElementById('wrapper_' + field.fieldName);
+                    if (wrapper) {
+                        try {
+                            const keys = Object.keys(currentState);
+                            const values = Object.values(currentState);
+                            const func = new Function(...keys, `return ${field.visibilityCondition};`);
+                            const isVisible = func(...values);
+
+                            wrapper.style.display = isVisible ? 'flex' : 'none';
+                        } catch (e) {
+                            console.warn(`Failed to evaluate condition for ${field.fieldName}:`, e);
+                        }
+                    }
+                }
             });
         }
 
@@ -164,8 +342,14 @@
                 let tdHtml = `<td>${i + 1}</td>`;
                 moduleFields.forEach(field => {
                     let val = row[field.fieldName];
-                    if (val === undefined || val === null) val = '-';
-                    if (field.fieldType === 'boolean') val = val ? '✅ Yes' : '❌ No';
+                    if (val === undefined || val === null || val === '') {
+                        val = '-';
+                    } else if (field.fieldType === 'boolean') {
+                        val = val ? '✅ Yes' : '❌ No';
+                    } else {
+                        if (field.prefix) val = field.prefix + ' ' + val;
+                        if (field.suffix) val = val + ' ' + field.suffix;
+                    }
                     tdHtml += `<td>${val}</td>`;
                 });
                 tdHtml += `
@@ -174,7 +358,7 @@
                         <button class="btn-warning" style="padding:4px 8px; font-size:12px; margin-right:3px;" onclick="editRecord('${row._id}')" title="Edit"><i class="fas fa-edit"></i></button>
                         <button class="btn-danger" style="padding:4px 8px; font-size:12px;" onclick="deleteRecord('${row._id}')" title="Delete"><i class="fas fa-trash"></i></button>
                     </td>`;
-                
+
                 const tr = document.createElement('tr');
                 tr.innerHTML = tdHtml;
                 tbody.appendChild(tr);
@@ -200,7 +384,7 @@
                     clearForm();
                     fetchData();
                 }
-            } catch(e) { console.error(e); }
+            } catch (e) { console.error(e); }
         }
 
         function editRecord(id) {
@@ -212,11 +396,12 @@
                 if (input.type === 'checkbox') input.checked = record[key] === true;
                 else input.value = record[key] || '';
             });
-            window.scrollTo(0,0);
+            applyVisibilityRules();
+            window.scrollTo(0, 0);
         }
 
         async function deleteRecord(id) {
-            if(!confirm("Delete this record?")) return;
+            if (!confirm("Delete this record?")) return;
             await fetch(`http://localhost:5000/api/custom-records/${id}`, { method: 'DELETE' });
             fetchData();
         }
@@ -224,8 +409,9 @@
         function clearForm() {
             document.getElementById('recordId').value = '';
             document.querySelectorAll('.dynamic-input').forEach(input => {
-                if(input.type==='checkbox') input.checked = false; else input.value = '';
+                if (input.type === 'checkbox') input.checked = false; else input.value = '';
             });
+            applyVisibilityRules();
         }
 
         function printRecord(id) {
@@ -235,7 +421,7 @@
             let companyName = "Your Company Name";
             let companyAddress = "";
             let logoHtml = "";
-            
+
             if (typeof getBrandSettings === 'function') {
                 const brand = getBrandSettings() || {};
                 companyName = brand.companyName || companyName;
@@ -245,7 +431,7 @@
                 if (brand.contactNumber) addr.push("Ph: " + brand.contactNumber);
                 if (brand.companyGstin) addr.push("GSTIN: " + brand.companyGstin);
                 companyAddress = addr.join(" | ");
-                
+
                 if (brand.logoPath) {
                     logoHtml = `<img src="${brand.logoPath}" style="max-height: 60px; max-width: 150px; display: block; margin: 0 auto 10px auto;">`;
                 }
@@ -284,8 +470,14 @@
 
             moduleFields.forEach(field => {
                 let val = record[field.fieldName];
-                if (val === undefined || val === null || val === '') val = '-';
-                if (field.fieldType === 'boolean') val = val ? '✅ Yes' : '❌ No';
+                if (val === undefined || val === null || val === '') {
+                    val = '-';
+                } else if (field.fieldType === 'boolean') {
+                    val = val ? '✅ Yes' : '❌ No';
+                } else {
+                    if (field.prefix) val = field.prefix + ' ' + val;
+                    if (field.suffix) val = val + ' ' + field.suffix;
+                }
                 printContent += `<tr><th>${field.fieldLabel}</th><td>${val}</td></tr>`;
             });
 
@@ -300,4 +492,5 @@
         init();
     </script>
 </body>
+
 </html>
