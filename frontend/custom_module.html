@@ -1309,12 +1309,14 @@
                     moduleData = await apiClient.getCustomRecords(moduleName);
                 } else {
                     const res = await fetch(`${typeof API_BASE_URL !== 'undefined' ? API_BASE_URL : 'http://localhost:5000/api'}/custom-records/${moduleName}`);
+                    if (!res.ok) throw new Error('HTTP error ' + res.status);
                     const result = await res.json();
                     if (result.success) moduleData = result.data;
+                    else throw new Error(result.message || 'API fetch failed');
                 }
                 localStorage.setItem(`CUSTOM_RECORDS_${moduleName}`, JSON.stringify(moduleData));
             } catch (e) {
-                console.warn('API unavailable — using empty dataset', e);
+                console.warn('API unavailable or failed — using local dataset', e);
                 moduleData = JSON.parse(localStorage.getItem(`CUSTOM_RECORDS_${moduleName}`)) || [];
             }
 
@@ -1407,19 +1409,19 @@
                             : '<span class="badge-no"><i class="fas fa-xmark fa-xs me-1"></i>No</span>'}</td>`;
                     } else if (field.fieldType === 'multiselect' && Array.isArray(val)) {
                         html += `<td>${val.join(', ')}</td>`;
-                } else if (field.fieldType === 'file') {
-                    if (val) {
-                        try {
-                            const f = JSON.parse(val);
-                            if (f.type && f.type.startsWith('image/')) {
-                                html += `<td><img src="${f.data}" style="height:32px; width:32px; object-fit:cover; border-radius:4px; cursor:pointer; border:1px solid #ccc;" onclick="window.open('${f.data}')" title="${f.name}"></td>`;
-                            } else {
-                                html += `<td><a href="${f.data}" download="${f.name}" class="btn btn-sm btn-outline-custom p-1" style="font-size:11px;" title="Download File"><i class="fas fa-download"></i> File</a></td>`;
-                            }
-                        } catch(e) { html += `<td><span class="cell-empty">Invalid Format</span></td>`; }
-                    } else {
-                        html += `<td><span class="cell-empty">—</span></td>`;
-                    }
+                    } else if (field.fieldType === 'file') {
+                        if (val) {
+                            try {
+                                const f = JSON.parse(val);
+                                if (f.type && f.type.startsWith('image/')) {
+                                    html += `<td><img src="${f.data}" style="height:32px; width:32px; object-fit:cover; border-radius:4px; cursor:pointer; border:1px solid #ccc;" onclick="window.open('${f.data}')" title="${f.name}"></td>`;
+                                } else {
+                                    html += `<td><a href="${f.data}" download="${f.name}" class="btn btn-sm btn-outline-custom p-1" style="font-size:11px;" title="Download File"><i class="fas fa-download"></i> File</a></td>`;
+                                }
+                            } catch (e) { html += `<td><span class="cell-empty">Invalid Format</span></td>`; }
+                        } else {
+                            html += `<td><span class="cell-empty">—</span></td>`;
+                        }
                     } else {
                         let display = val;
                         if (field.prefix || field.currencySymbol) display = `${field.prefix || field.currencySymbol} ${display}`;
@@ -1564,13 +1566,13 @@
 
                 if (input.hasAttribute('required') && !input.value) {
                     input.classList.add('is-invalid');
-                const fileInput = document.getElementById(input.id + '_file');
-                if (fileInput) fileInput.classList.add('is-invalid');
+                    const fileInput = document.getElementById(input.id + '_file');
+                    if (fileInput) fileInput.classList.add('is-invalid');
                     valid = false;
                 } else {
                     input.classList.remove('is-invalid');
-                const fileInput = document.getElementById(input.id + '_file');
-                if (fileInput) fileInput.classList.remove('is-invalid');
+                    const fileInput = document.getElementById(input.id + '_file');
+                    if (fileInput) fileInput.classList.remove('is-invalid');
                 }
             });
 
@@ -1603,10 +1605,10 @@
                     showToast(id ? 'Record updated.' : 'Record saved.', 'success');
                     if (result.data && result.data._id) payload._id = result.data._id;
                 } else {
-                    showToast(result.message || 'Failed to save.', 'error');
+                    showToast('Saved locally. API Error: ' + (result.message || 'Failed to save.'), 'warning');
                 }
             } catch (e) {
-                showToast('API unavailable — record not saved.', 'error');
+                showToast('API unavailable — saved locally.', 'warning');
                 console.error(e);
             }
 
@@ -1641,24 +1643,24 @@
                     Array.from(input.options).forEach(opt => opt.selected = vals.includes(opt.value));
                 } else {
                     input.value = record[key] ?? '';
-                if (input.type === 'hidden' && input.id.startsWith('field_')) {
-                    const previewDiv = document.getElementById(input.id + '_preview');
-                    const fileInput = document.getElementById(input.id + '_file');
-                    if (fileInput) fileInput.value = '';
-                    if (previewDiv) {
-                        const val = record[key];
-                        if (val) {
-                            try {
-                                const fileObj = JSON.parse(val);
-                                if (fileObj.type && fileObj.type.startsWith('image/')) {
-                                    previewDiv.innerHTML = `<img src="${fileObj.data}" style="max-height: 60px; border-radius: 4px; border: 1px solid var(--neutral-200);"> <button type="button" class="btn btn-sm btn-link text-danger p-0 ms-2" onclick="clearFile('${input.id}')">Remove</button>`;
-                                } else {
-                                    previewDiv.innerHTML = `<span class="badge bg-light text-dark border"><i class="fas fa-file me-1"></i> ${fileObj.name}</span> <button type="button" class="btn btn-sm btn-link text-danger p-0 ms-2" onclick="clearFile('${input.id}')">Remove</button>`;
-                                }
-                            } catch(e) { previewDiv.innerHTML = ''; }
-                        } else { previewDiv.innerHTML = ''; }
+                    if (input.type === 'hidden' && input.id.startsWith('field_')) {
+                        const previewDiv = document.getElementById(input.id + '_preview');
+                        const fileInput = document.getElementById(input.id + '_file');
+                        if (fileInput) fileInput.value = '';
+                        if (previewDiv) {
+                            const val = record[key];
+                            if (val) {
+                                try {
+                                    const fileObj = JSON.parse(val);
+                                    if (fileObj.type && fileObj.type.startsWith('image/')) {
+                                        previewDiv.innerHTML = `<img src="${fileObj.data}" style="max-height: 60px; border-radius: 4px; border: 1px solid var(--neutral-200);"> <button type="button" class="btn btn-sm btn-link text-danger p-0 ms-2" onclick="clearFile('${input.id}')">Remove</button>`;
+                                    } else {
+                                        previewDiv.innerHTML = `<span class="badge bg-light text-dark border"><i class="fas fa-file me-1"></i> ${fileObj.name}</span> <button type="button" class="btn btn-sm btn-link text-danger p-0 ms-2" onclick="clearFile('${input.id}')">Remove</button>`;
+                                    }
+                                } catch (e) { previewDiv.innerHTML = ''; }
+                            } else { previewDiv.innerHTML = ''; }
+                        }
                     }
-                }
                 }
             });
 
@@ -1703,10 +1705,10 @@
                 else input.value = '';
                 input.classList.remove('is-invalid');
 
-            const fileInput = document.getElementById(input.id + '_file');
-            if (fileInput) { fileInput.value = ''; fileInput.classList.remove('is-invalid'); }
-            const previewDiv = document.getElementById(input.id + '_preview');
-            if (previewDiv) previewDiv.innerHTML = '';
+                const fileInput = document.getElementById(input.id + '_file');
+                if (fileInput) { fileInput.value = ''; fileInput.classList.remove('is-invalid'); }
+                const previewDiv = document.getElementById(input.id + '_preview');
+                if (previewDiv) previewDiv.innerHTML = '';
             });
 
             applyVisibilityRules();
@@ -1826,12 +1828,12 @@
                 moduleFields.map(f => {
                     let v = row[f.fieldName] ?? '';
                     if (f.fieldType === 'boolean') v = v ? 'Yes' : 'No';
-                else if (f.fieldType === 'file' && v) {
-                    try {
-                        const fileObj = JSON.parse(v);
-                        v = fileObj.name || 'Attachment';
-                    } catch(e) { v = 'Attachment'; }
-                }
+                    else if (f.fieldType === 'file' && v) {
+                        try {
+                            const fileObj = JSON.parse(v);
+                            v = fileObj.name || 'Attachment';
+                        } catch (e) { v = 'Attachment'; }
+                    }
                     return `"${String(v).replace(/"/g, '""')}"`;
                 }).join(',')
             );
@@ -1880,15 +1882,15 @@
                     if (val === undefined || val === null || val === '') val = '—';
                     else if (field.fieldType === 'boolean') val = val ? 'Yes' : 'No';
                     else if (field.fieldType === 'multiselect' && Array.isArray(val)) val = val.join(', ');
-                else if (field.fieldType === 'file') {
-                    if (val) {
-                        try {
-                            const f = JSON.parse(val);
-                            if (f.type && f.type.startsWith('image/')) val = `<img src="${f.data}" style="height:30px; border-radius:4px;">`;
-                            else val = f.name || 'Attachment';
-                        } catch(e) { val = 'Attachment'; }
-                    } else val = '—';
-                }
+                    else if (field.fieldType === 'file') {
+                        if (val) {
+                            try {
+                                const f = JSON.parse(val);
+                                if (f.type && f.type.startsWith('image/')) val = `<img src="${f.data}" style="height:30px; border-radius:4px;">`;
+                                else val = f.name || 'Attachment';
+                            } catch (e) { val = 'Attachment'; }
+                        } else val = '—';
+                    }
                     else {
                         if (field.prefix || field.currencySymbol) val = `${field.prefix || field.currencySymbol} ${val}`;
                         if (field.suffix) val = `${val} ${field.suffix}`;
@@ -1978,16 +1980,16 @@
                 let val = record[field.fieldName];
                 if (val === undefined || val === null || val === '') val = '—';
                 else if (field.fieldType === 'boolean') val = val ? '✅ Yes' : '❌ No';
-            else if (field.fieldType === 'file') {
-                if (val) {
-                    try {
-                        const f = JSON.parse(val);
-                        if (f.type && f.type.startsWith('image/')) {
-                            val = `<img src="${f.data}" style="max-height:100px; max-width:200px; border-radius:4px; margin-top:5px; border: 1px solid #ddd;">`;
-                        } else val = f.name || 'Attachment';
-                    } catch(e) { val = 'Attachment'; }
-                } else val = '—';
-            }
+                else if (field.fieldType === 'file') {
+                    if (val) {
+                        try {
+                            const f = JSON.parse(val);
+                            if (f.type && f.type.startsWith('image/')) {
+                                val = `<img src="${f.data}" style="max-height:100px; max-width:200px; border-radius:4px; margin-top:5px; border: 1px solid #ddd;">`;
+                            } else val = f.name || 'Attachment';
+                        } catch (e) { val = 'Attachment'; }
+                    } else val = '—';
+                }
                 else {
                     if (field.prefix) val = field.prefix + ' ' + val;
                     if (field.suffix) val += ' ' + field.suffix;
