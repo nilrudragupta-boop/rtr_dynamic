@@ -173,9 +173,18 @@
             margin-top: 5px;
         }
 
-        #customFieldsTableBody tr[draggable="true"] { cursor: grab; }
-        #customFieldsTableBody tr.dragging { opacity: 0.5; background: #e9ecef; }
-        #customFieldsTableBody tr.drag-over { border-top: 2px solid #8e44ad; }
+        #customFieldsTableBody tr[draggable="true"] {
+            cursor: grab;
+        }
+
+        #customFieldsTableBody tr.dragging {
+            opacity: 0.5;
+            background: #e9ecef;
+        }
+
+        #customFieldsTableBody tr.drag-over {
+            border-top: 2px solid #8e44ad;
+        }
     </style>
 </head>
 
@@ -435,9 +444,14 @@
                     <!-- Custom Fields Management -->
                     <div data-permission-id="perm_custom_fields">
                         <div class="section-title" style="margin-top: 40px;">⚙️ Dynamic Schema (Custom Fields)</div>
-                        <div style="background: white; border: 1px solid #ddd; border-radius: 8px; padding: 20px; margin-bottom: 30px;">
-                            <p class="info-text" style="margin-top: 0; margin-bottom: 15px; font-size: 14px;">Create and manage dynamic custom fields for various modules (Customer, Invoice, etc.) or create entirely new pages. These fields will automatically appear in their respective forms.</p>
-                            <button class="btn-save" style="background:#8e44ad; color:white; width: auto;" onclick="openCustomFieldModal()">
+                        <div
+                            style="background: white; border: 1px solid #ddd; border-radius: 8px; padding: 20px; margin-bottom: 30px;">
+                            <p class="info-text" style="margin-top: 0; margin-bottom: 15px; font-size: 14px;">Create and
+                                manage dynamic custom fields for various modules (Customer, Invoice, etc.) or create
+                                entirely new pages. These fields will automatically appear in their respective forms.
+                            </p>
+                            <button class="btn-save" style="background:#8e44ad; color:white; width: auto;"
+                                onclick="openCustomFieldModal()">
                                 <i class="fas fa-sliders-h"></i> Open Custom Field Settings
                             </button>
                         </div>
@@ -560,276 +574,758 @@
                  ══════════════════════════════════════════════════════════════ -->
             <style>
                 /* ── Modal shell ── */
-                #customFieldModal { font-family: 'Segoe UI', system-ui, sans-serif; }
-                .cfm-overlay { position:fixed; inset:0; background:rgba(15,23,42,.55);
-                    backdrop-filter:blur(3px); z-index:2000;
-                    display:none; align-items:center; justify-content:center; }
+                #customFieldModal {
+                    font-family: 'Segoe UI', system-ui, sans-serif;
+                }
+
+                .cfm-overlay {
+                    position: fixed;
+                    inset: 0;
+                    background: rgba(15, 23, 42, .55);
+                    backdrop-filter: blur(3px);
+                    z-index: 2000;
+                    display: none;
+                    align-items: center;
+                    justify-content: center;
+                }
+
                 .cfm-shell {
-                    background:#fff; width:96%; max-width:1180px;
-                    border-radius:16px; box-shadow:0 25px 60px rgba(0,0,0,.18);
-                    display:flex; flex-direction:column;
-                    max-height:94vh; overflow:hidden;
+                    background: #fff;
+                    width: 96%;
+                    max-width: 1180px;
+                    border-radius: 16px;
+                    box-shadow: 0 25px 60px rgba(0, 0, 0, .18);
+                    display: flex;
+                    flex-direction: column;
+                    max-height: 94vh;
+                    overflow: hidden;
                 }
 
                 /* ── Header ── */
                 .cfm-header {
-                    background:linear-gradient(135deg,#6d28d9 0%,#7c3aed 50%,#8b5cf6 100%);
-                    color:#fff; padding:18px 24px;
-                    display:flex; align-items:center; justify-content:space-between;
-                    flex-shrink:0;
+                    background: linear-gradient(135deg, #6d28d9 0%, #7c3aed 50%, #8b5cf6 100%);
+                    color: #fff;
+                    padding: 18px 24px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    flex-shrink: 0;
                 }
-                .cfm-header-left { display:flex; align-items:center; gap:12px; }
+
+                .cfm-header-left {
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                }
+
                 .cfm-header-icon {
-                    width:40px; height:40px; background:rgba(255,255,255,.2);
-                    border-radius:10px; display:flex; align-items:center; justify-content:center;
-                    font-size:18px;
+                    width: 40px;
+                    height: 40px;
+                    background: rgba(255, 255, 255, .2);
+                    border-radius: 10px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 18px;
                 }
-                .cfm-header h3 { margin:0; font-size:17px; font-weight:700; }
-                .cfm-header p  { margin:2px 0 0; font-size:12px; opacity:.8; }
+
+                .cfm-header h3 {
+                    margin: 0;
+                    font-size: 17px;
+                    font-weight: 700;
+                }
+
+                .cfm-header p {
+                    margin: 2px 0 0;
+                    font-size: 12px;
+                    opacity: .8;
+                }
+
                 .cfm-close-btn {
-                    background:rgba(255,255,255,.15); border:none; color:#fff;
-                    width:32px; height:32px; border-radius:8px; cursor:pointer;
-                    font-size:16px; display:flex; align-items:center; justify-content:center;
-                    transition:background .15s;
+                    background: rgba(255, 255, 255, .15);
+                    border: none;
+                    color: #fff;
+                    width: 32px;
+                    height: 32px;
+                    border-radius: 8px;
+                    cursor: pointer;
+                    font-size: 16px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    transition: background .15s;
                 }
-                .cfm-close-btn:hover { background:rgba(255,255,255,.3); }
+
+                .cfm-close-btn:hover {
+                    background: rgba(255, 255, 255, .3);
+                }
 
                 /* ── Body (two-panel) ── */
-                .cfm-body { display:flex; flex:1; overflow:hidden; }
+                .cfm-body {
+                    display: flex;
+                    flex: 1;
+                    overflow: hidden;
+                }
 
                 /* ── LEFT PANEL (form) ── */
                 .cfm-left {
-                    width:360px; flex-shrink:0;
-                    background:#f8fafc; border-right:1px solid #e2e8f0;
-                    display:flex; flex-direction:column; overflow:hidden;
+                    width: 360px;
+                    flex-shrink: 0;
+                    background: #f8fafc;
+                    border-right: 1px solid #e2e8f0;
+                    display: flex;
+                    flex-direction: column;
+                    overflow: hidden;
                 }
+
                 .cfm-left-header {
-                    padding:14px 18px; border-bottom:1px solid #e2e8f0;
-                    display:flex; align-items:center; justify-content:space-between;
-                    background:#fff; flex-shrink:0;
+                    padding: 14px 18px;
+                    border-bottom: 1px solid #e2e8f0;
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    background: #fff;
+                    flex-shrink: 0;
                 }
-                .cfm-left-title { font-weight:700; font-size:13.5px; color:#1e293b;
-                    display:flex; align-items:center; gap:7px; }
+
+                .cfm-left-title {
+                    font-weight: 700;
+                    font-size: 13.5px;
+                    color: #1e293b;
+                    display: flex;
+                    align-items: center;
+                    gap: 7px;
+                }
+
                 .cfm-editing-badge {
-                    background:#fef3c7; color:#92400e; font-size:10px; font-weight:700;
-                    padding:2px 7px; border-radius:20px; border:1px solid #fde68a;
+                    background: #fef3c7;
+                    color: #92400e;
+                    font-size: 10px;
+                    font-weight: 700;
+                    padding: 2px 7px;
+                    border-radius: 20px;
+                    border: 1px solid #fde68a;
                 }
-                .cfm-form-scroll { flex:1; overflow-y:auto; padding:16px 18px; }
+
+                .cfm-form-scroll {
+                    flex: 1;
+                    overflow-y: auto;
+                    padding: 16px 18px;
+                }
 
                 /* ── Form fields in left panel ── */
-                .cfm-field-group { margin-bottom:14px; }
+                .cfm-field-group {
+                    margin-bottom: 14px;
+                }
+
                 .cfm-label {
-                    font-weight:600; font-size:11.5px; color:#475569;
-                    text-transform:uppercase; letter-spacing:.05em;
-                    display:flex; align-items:center; gap:5px; margin-bottom:5px;
+                    font-weight: 600;
+                    font-size: 11.5px;
+                    color: #475569;
+                    text-transform: uppercase;
+                    letter-spacing: .05em;
+                    display: flex;
+                    align-items: center;
+                    gap: 5px;
+                    margin-bottom: 5px;
                 }
-                .cfm-label .req-star { color:#ef4444; }
-                .cfm-input, .cfm-select {
-                    width:100%; padding:8px 11px; border:1px solid #cbd5e1;
-                    border-radius:8px; font-size:13.5px; color:#1e293b;
-                    background:#fff; transition:border-color .15s, box-shadow .15s;
-                    box-sizing:border-box;
+
+                .cfm-label .req-star {
+                    color: #ef4444;
                 }
-                .cfm-input:focus, .cfm-select:focus {
-                    border-color:#7c3aed; box-shadow:0 0 0 3px rgba(124,58,237,.12);
-                    outline:none;
+
+                .cfm-input,
+                .cfm-select {
+                    width: 100%;
+                    padding: 8px 11px;
+                    border: 1px solid #cbd5e1;
+                    border-radius: 8px;
+                    font-size: 13.5px;
+                    color: #1e293b;
+                    background: #fff;
+                    transition: border-color .15s, box-shadow .15s;
+                    box-sizing: border-box;
                 }
+
+                .cfm-input:focus,
+                .cfm-select:focus {
+                    border-color: #7c3aed;
+                    box-shadow: 0 0 0 3px rgba(124, 58, 237, .12);
+                    outline: none;
+                }
+
                 .cfm-input.readonly-key {
-                    background:#f1f5f9; color:#64748b;
-                    font-family:'Courier New',monospace; font-size:12.5px;
+                    background: #f1f5f9;
+                    color: #64748b;
+                    font-family: 'Courier New', monospace;
+                    font-size: 12.5px;
                 }
-                .cfm-input.invalid { border-color:#ef4444; box-shadow:0 0 0 3px rgba(239,68,68,.1); }
-                .cfm-hint { font-size:11px; color:#94a3b8; margin-top:4px; line-height:1.5; }
+
+                .cfm-input.invalid {
+                    border-color: #ef4444;
+                    box-shadow: 0 0 0 3px rgba(239, 68, 68, .1);
+                }
+
+                .cfm-hint {
+                    font-size: 11px;
+                    color: #94a3b8;
+                    margin-top: 4px;
+                    line-height: 1.5;
+                }
 
                 /* Field-type cards */
                 .cfm-type-grid {
-                    display:grid; grid-template-columns:1fr 1fr;
-                    gap:6px; margin-top:4px;
+                    display: grid;
+                    grid-template-columns: 1fr 1fr;
+                    gap: 6px;
+                    margin-top: 4px;
                 }
+
                 .cfm-type-card {
-                    border:2px solid #e2e8f0; border-radius:8px;
-                    padding:8px 10px; cursor:pointer; transition:all .15s;
-                    display:flex; align-items:center; gap:8px; background:#fff;
+                    border: 2px solid #e2e8f0;
+                    border-radius: 8px;
+                    padding: 8px 10px;
+                    cursor: pointer;
+                    transition: all .15s;
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    background: #fff;
                 }
-                .cfm-type-card:hover { border-color:#7c3aed; background:#faf5ff; }
-                .cfm-type-card.selected { border-color:#7c3aed; background:#ede9fe; }
+
+                .cfm-type-card:hover {
+                    border-color: #7c3aed;
+                    background: #faf5ff;
+                }
+
+                .cfm-type-card.selected {
+                    border-color: #7c3aed;
+                    background: #ede9fe;
+                }
+
                 .cfm-type-card .tc-icon {
-                    width:28px; height:28px; border-radius:6px;
-                    display:flex; align-items:center; justify-content:center;
-                    font-size:13px; flex-shrink:0;
+                    width: 28px;
+                    height: 28px;
+                    border-radius: 6px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 13px;
+                    flex-shrink: 0;
                 }
-                .cfm-type-card .tc-text { font-size:11.5px; font-weight:600; color:#334155; line-height:1.3; }
-                .cfm-type-card .tc-sub  { font-size:10px; color:#94a3b8; font-weight:400; }
+
+                .cfm-type-card .tc-text {
+                    font-size: 11.5px;
+                    font-weight: 600;
+                    color: #334155;
+                    line-height: 1.3;
+                }
+
+                .cfm-type-card .tc-sub {
+                    font-size: 10px;
+                    color: #94a3b8;
+                    font-weight: 400;
+                }
 
                 /* Section divider */
                 .cfm-section-div {
-                    font-size:10.5px; font-weight:700; text-transform:uppercase;
-                    letter-spacing:.08em; color:#7c3aed; background:#ede9fe;
-                    padding:4px 10px; border-radius:4px; margin:14px 0 10px;
-                    display:flex; align-items:center; gap:6px;
+                    font-size: 10.5px;
+                    font-weight: 700;
+                    text-transform: uppercase;
+                    letter-spacing: .08em;
+                    color: #7c3aed;
+                    background: #ede9fe;
+                    padding: 4px 10px;
+                    border-radius: 4px;
+                    margin: 14px 0 10px;
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
                 }
 
                 /* Checkboxes */
-                .cfm-checks { display:flex; gap:16px; flex-wrap:wrap; }
-                .cfm-check-label {
-                    display:flex; align-items:center; gap:6px;
-                    font-size:13px; color:#374151; cursor:pointer; font-weight:500;
+                .cfm-checks {
+                    display: flex;
+                    gap: 16px;
+                    flex-wrap: wrap;
                 }
+
+                .cfm-check-label {
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                    font-size: 13px;
+                    color: #374151;
+                    cursor: pointer;
+                    font-weight: 500;
+                }
+
                 .cfm-check-label input[type=checkbox] {
-                    width:15px; height:15px; accent-color:#7c3aed;
-                    cursor:pointer;
+                    width: 15px;
+                    height: 15px;
+                    accent-color: #7c3aed;
+                    cursor: pointer;
                 }
 
                 /* Code examples */
                 .cfm-code-box {
-                    background:#1e293b; border-radius:8px; padding:10px 12px;
-                    margin-top:6px; font-size:11px; color:#94a3b8; line-height:1.8;
+                    background: #1e293b;
+                    border-radius: 8px;
+                    padding: 10px 12px;
+                    margin-top: 6px;
+                    font-size: 11px;
+                    color: #94a3b8;
+                    line-height: 1.8;
                 }
-                .cfm-code-box code { color:#7dd3fc; font-family:'Courier New',monospace; }
-                .cfm-code-box b   { color:#e2e8f0; }
+
+                .cfm-code-box code {
+                    color: #7dd3fc;
+                    font-family: 'Courier New', monospace;
+                }
+
+                .cfm-code-box b {
+                    color: #e2e8f0;
+                }
 
                 /* Insert-field row */
-                .cfm-insert-row { display:flex; gap:6px; align-items:center; margin-top:5px; }
-                .cfm-insert-row select { flex:1; }
-                .cfm-insert-btn {
-                    padding:6px 12px; background:#7c3aed; color:#fff; border:none;
-                    border-radius:6px; cursor:pointer; font-size:12px; white-space:nowrap;
-                    transition:background .15s;
+                .cfm-insert-row {
+                    display: flex;
+                    gap: 6px;
+                    align-items: center;
+                    margin-top: 5px;
                 }
-                .cfm-insert-btn:hover { background:#6d28d9; }
+
+                .cfm-insert-row select {
+                    flex: 1;
+                }
+
+                .cfm-insert-btn {
+                    padding: 6px 12px;
+                    background: #7c3aed;
+                    color: #fff;
+                    border: none;
+                    border-radius: 6px;
+                    cursor: pointer;
+                    font-size: 12px;
+                    white-space: nowrap;
+                    transition: background .15s;
+                }
+
+                .cfm-insert-btn:hover {
+                    background: #6d28d9;
+                }
 
                 /* Prefix / Suffix row */
-                .cfm-2col { display:flex; gap:10px; }
-                .cfm-2col > div { flex:1; }
+                .cfm-2col {
+                    display: flex;
+                    gap: 10px;
+                }
+
+                .cfm-2col>div {
+                    flex: 1;
+                }
 
                 /* Save / Clear buttons */
                 .cfm-btn-save {
-                    width:100%; padding:10px; background:linear-gradient(135deg,#7c3aed,#6d28d9);
-                    color:#fff; border:none; border-radius:8px; font-size:14px;
-                    font-weight:700; cursor:pointer; transition:opacity .15s;
-                    display:flex; align-items:center; justify-content:center; gap:7px;
+                    width: 100%;
+                    padding: 10px;
+                    background: linear-gradient(135deg, #7c3aed, #6d28d9);
+                    color: #fff;
+                    border: none;
+                    border-radius: 8px;
+                    font-size: 14px;
+                    font-weight: 700;
+                    cursor: pointer;
+                    transition: opacity .15s;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 7px;
                 }
-                .cfm-btn-save:hover { opacity:.88; }
+
+                .cfm-btn-save:hover {
+                    opacity: .88;
+                }
+
                 .cfm-btn-clear {
-                    width:100%; padding:8px; background:#fff; color:#64748b;
-                    border:1px solid #e2e8f0; border-radius:8px; font-size:13px;
-                    font-weight:600; cursor:pointer; margin-top:6px;
-                    transition:background .15s;
+                    width: 100%;
+                    padding: 8px;
+                    background: #fff;
+                    color: #64748b;
+                    border: 1px solid #e2e8f0;
+                    border-radius: 8px;
+                    font-size: 13px;
+                    font-weight: 600;
+                    cursor: pointer;
+                    margin-top: 6px;
+                    transition: background .15s;
                 }
-                .cfm-btn-clear:hover { background:#f1f5f9; }
+
+                .cfm-btn-clear:hover {
+                    background: #f1f5f9;
+                }
 
                 /* ── RIGHT PANEL (table) ── */
                 .cfm-right {
-                    flex:1; display:flex; flex-direction:column; overflow:hidden; min-width:0;
+                    flex: 1;
+                    display: flex;
+                    flex-direction: column;
+                    overflow: hidden;
+                    min-width: 0;
                 }
 
                 /* Table toolbar */
                 .cfm-table-toolbar {
-                    padding:14px 18px; background:#fff; border-bottom:1px solid #e2e8f0;
-                    display:flex; gap:10px; align-items:center; flex-shrink:0; flex-wrap:wrap;
+                    padding: 14px 18px;
+                    background: #fff;
+                    border-bottom: 1px solid #e2e8f0;
+                    display: flex;
+                    gap: 10px;
+                    align-items: center;
+                    flex-shrink: 0;
+                    flex-wrap: wrap;
                 }
-                .cfm-search-wrap { position:relative; flex:1; min-width:160px; }
-                .cfm-search-wrap i { position:absolute; left:10px; top:50%; transform:translateY(-50%);
-                    color:#94a3b8; font-size:12px; pointer-events:none; }
-                .cfm-search-wrap input { padding-left:30px; }
-                .cfm-mod-select { padding:8px 10px; border:1px solid #cbd5e1; border-radius:8px;
-                    font-size:13px; color:#334155; background:#fff; min-width:130px; }
+
+                .cfm-search-wrap {
+                    position: relative;
+                    flex: 1;
+                    min-width: 160px;
+                }
+
+                .cfm-search-wrap i {
+                    position: absolute;
+                    left: 10px;
+                    top: 50%;
+                    transform: translateY(-50%);
+                    color: #94a3b8;
+                    font-size: 12px;
+                    pointer-events: none;
+                }
+
+                .cfm-search-wrap input {
+                    padding-left: 30px;
+                }
+
+                .cfm-mod-select {
+                    padding: 8px 10px;
+                    border: 1px solid #cbd5e1;
+                    border-radius: 8px;
+                    font-size: 13px;
+                    color: #334155;
+                    background: #fff;
+                    min-width: 130px;
+                }
+
                 .cfm-del-mod-btn {
-                    padding:8px 12px; background:#fff; color:#ef4444; border:1px solid #fecaca;
-                    border-radius:8px; cursor:pointer; font-size:12.5px; font-weight:600;
-                    white-space:nowrap; transition:background .15s;
+                    padding: 8px 12px;
+                    background: #fff;
+                    color: #ef4444;
+                    border: 1px solid #fecaca;
+                    border-radius: 8px;
+                    cursor: pointer;
+                    font-size: 12.5px;
+                    font-weight: 600;
+                    white-space: nowrap;
+                    transition: background .15s;
                 }
-                .cfm-del-mod-btn:hover { background:#fef2f2; }
+
+                .cfm-del-mod-btn:hover {
+                    background: #fef2f2;
+                }
 
                 /* Stats row */
                 .cfm-stats-row {
-                    padding:8px 18px; background:#f8fafc; border-bottom:1px solid #e2e8f0;
-                    display:flex; gap:16px; font-size:12px; color:#64748b; flex-shrink:0;
+                    padding: 8px 18px;
+                    background: #f8fafc;
+                    border-bottom: 1px solid #e2e8f0;
+                    display: flex;
+                    gap: 16px;
+                    font-size: 12px;
+                    color: #64748b;
+                    flex-shrink: 0;
                 }
-                .cfm-stat { display:flex; align-items:center; gap:4px; }
-                .cfm-stat strong { color:#7c3aed; font-size:14px; font-weight:700; }
+
+                .cfm-stat {
+                    display: flex;
+                    align-items: center;
+                    gap: 4px;
+                }
+
+                .cfm-stat strong {
+                    color: #7c3aed;
+                    font-size: 14px;
+                    font-weight: 700;
+                }
 
                 /* Table */
-                .cfm-table-wrap { flex:1; overflow-y:auto; }
-                .cfm-table { width:100%; border-collapse:collapse; font-size:12.5px; }
-                .cfm-table thead th {
-                    background:#f8fafc; padding:10px 14px; text-align:left;
-                    font-weight:700; font-size:10.5px; text-transform:uppercase;
-                    letter-spacing:.06em; color:#64748b; border-bottom:2px solid #e2e8f0;
-                    position:sticky; top:0; z-index:5; white-space:nowrap;
+                .cfm-table-wrap {
+                    flex: 1;
+                    overflow-y: auto;
                 }
-                .cfm-table tbody tr { border-bottom:1px solid #f1f5f9; transition:background .1s; }
-                .cfm-table tbody tr:hover { background:#faf5ff; }
-                .cfm-table td { padding:10px 14px; vertical-align:middle; }
+
+                .cfm-table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    font-size: 12.5px;
+                }
+
+                .cfm-table thead th {
+                    background: #f8fafc;
+                    padding: 10px 14px;
+                    text-align: left;
+                    font-weight: 700;
+                    font-size: 10.5px;
+                    text-transform: uppercase;
+                    letter-spacing: .06em;
+                    color: #64748b;
+                    border-bottom: 2px solid #e2e8f0;
+                    position: sticky;
+                    top: 0;
+                    z-index: 5;
+                    white-space: nowrap;
+                }
+
+                .cfm-table tbody tr {
+                    border-bottom: 1px solid #f1f5f9;
+                    transition: background .1s;
+                }
+
+                .cfm-table tbody tr:hover {
+                    background: #faf5ff;
+                }
+
+                .cfm-table td {
+                    padding: 10px 14px;
+                    vertical-align: middle;
+                }
 
                 /* Type badge colours */
                 .cfm-type-badge {
-                    display:inline-flex; align-items:center; gap:4px;
-                    padding:3px 8px; border-radius:5px; font-size:10.5px; font-weight:700;
-                    border:1px solid transparent; white-space:nowrap;
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 4px;
+                    padding: 3px 8px;
+                    border-radius: 5px;
+                    font-size: 10.5px;
+                    font-weight: 700;
+                    border: 1px solid transparent;
+                    white-space: nowrap;
                 }
-                .tb-text       { background:#f0fdf4; color:#15803d; border-color:#bbf7d0; }
-                .tb-number     { background:#eff6ff; color:#1d4ed8; border-color:#bfdbfe; }
-                .tb-date       { background:#fff7ed; color:#c2410c; border-color:#fed7aa; }
-                .tb-datetime   { background:#fef3c7; color:#92400e; border-color:#fde68a; }
-                .tb-boolean    { background:#f0fdf4; color:#166534; border-color:#86efac; }
-                .tb-select     { background:#faf5ff; color:#6d28d9; border-color:#ddd6fe; }
-                .tb-multiselect{ background:#fdf4ff; color:#86198f; border-color:#f0abfc; }
-                .tb-calculated { background:#fff1f2; color:#be123c; border-color:#fecdd3; }
-                .tb-phone      { background:#ecfeff; color:#0e7490; border-color:#a5f3fc; }
-                .tb-email      { background:#eff6ff; color:#1e40af; border-color:#bfdbfe; }
-                .tb-currency   { background:#f0fdf4; color:#166534; border-color:#86efac; }
-                .tb-url        { background:#faf5ff; color:#7c3aed; border-color:#c4b5fd; }
-                .tb-lookup     { background:#fff7ed; color:#9a3412; border-color:#fed7aa; }
+
+                .tb-text {
+                    background: #f0fdf4;
+                    color: #15803d;
+                    border-color: #bbf7d0;
+                }
+
+                .tb-number {
+                    background: #eff6ff;
+                    color: #1d4ed8;
+                    border-color: #bfdbfe;
+                }
+
+                .tb-date {
+                    background: #fff7ed;
+                    color: #c2410c;
+                    border-color: #fed7aa;
+                }
+
+                .tb-datetime {
+                    background: #fef3c7;
+                    color: #92400e;
+                    border-color: #fde68a;
+                }
+
+                .tb-boolean {
+                    background: #f0fdf4;
+                    color: #166534;
+                    border-color: #86efac;
+                }
+
+                .tb-select {
+                    background: #faf5ff;
+                    color: #6d28d9;
+                    border-color: #ddd6fe;
+                }
+
+                .tb-multiselect {
+                    background: #fdf4ff;
+                    color: #86198f;
+                    border-color: #f0abfc;
+                }
+
+                .tb-calculated {
+                    background: #fff1f2;
+                    color: #be123c;
+                    border-color: #fecdd3;
+                }
+
+                .tb-phone {
+                    background: #ecfeff;
+                    color: #0e7490;
+                    border-color: #a5f3fc;
+                }
+
+                .tb-email {
+                    background: #eff6ff;
+                    color: #1e40af;
+                    border-color: #bfdbfe;
+                }
+
+                .tb-currency {
+                    background: #f0fdf4;
+                    color: #166534;
+                    border-color: #86efac;
+                }
+
+                .tb-url {
+                    background: #faf5ff;
+                    color: #7c3aed;
+                    border-color: #c4b5fd;
+                }
+
+                .tb-lookup {
+                    background: #fff7ed;
+                    color: #9a3412;
+                    border-color: #fed7aa;
+                }
 
                 /* Row actions */
                 .cfm-act-btn {
-                    width:28px; height:28px; border:none; border-radius:6px;
-                    cursor:pointer; font-size:12px; transition:all .12s;
-                    display:inline-flex; align-items:center; justify-content:center;
+                    width: 28px;
+                    height: 28px;
+                    border: none;
+                    border-radius: 6px;
+                    cursor: pointer;
+                    font-size: 12px;
+                    transition: all .12s;
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
                 }
-                .cfm-act-edit { background:#eff6ff; color:#3b82f6; }
-                .cfm-act-edit:hover { background:#dbeafe; }
-                .cfm-act-del  { background:#fef2f2; color:#ef4444; }
-                .cfm-act-del:hover { background:#fee2e2; }
+
+                .cfm-act-edit {
+                    background: #eff6ff;
+                    color: #3b82f6;
+                }
+
+                .cfm-act-edit:hover {
+                    background: #dbeafe;
+                }
+
+                .cfm-act-del {
+                    background: #fef2f2;
+                    color: #ef4444;
+                }
+
+                .cfm-act-del:hover {
+                    background: #fee2e2;
+                }
 
                 /* Drag grip */
-                .cfm-grip { color:#cbd5e1; cursor:grab; font-size:13px; }
-                .cfm-grip:hover { color:#7c3aed; }
+                .cfm-grip {
+                    color: #cbd5e1;
+                    cursor: grab;
+                    font-size: 13px;
+                }
+
+                .cfm-grip:hover {
+                    color: #7c3aed;
+                }
 
                 /* Active / Req badges */
-                .cfm-badge-active { color:#16a34a; }
-                .cfm-badge-inactive { color:#94a3b8; }
-                .cfm-badge-req { color:#ef4444; }
+                .cfm-badge-active {
+                    color: #16a34a;
+                }
+
+                .cfm-badge-inactive {
+                    color: #94a3b8;
+                }
+
+                .cfm-badge-req {
+                    color: #ef4444;
+                }
 
                 /* Empty state */
                 .cfm-empty {
-                    text-align:center; padding:48px 20px; color:#94a3b8;
+                    text-align: center;
+                    padding: 48px 20px;
+                    color: #94a3b8;
                 }
-                .cfm-empty i { font-size:40px; opacity:.4; margin-bottom:12px; display:block; }
-                .cfm-empty p { font-size:13.5px; }
+
+                .cfm-empty i {
+                    font-size: 40px;
+                    opacity: .4;
+                    margin-bottom: 12px;
+                    display: block;
+                }
+
+                .cfm-empty p {
+                    font-size: 13.5px;
+                }
 
                 /* Toast */
                 #cfm-toast-wrap {
-                    position:fixed; bottom:20px; right:20px; z-index:9999;
-                    display:flex; flex-direction:column; gap:6px;
+                    position: fixed;
+                    bottom: 20px;
+                    right: 20px;
+                    z-index: 9999;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 6px;
                 }
+
                 .cfm-toast {
-                    display:flex; align-items:center; gap:9px;
-                    padding:11px 16px; border-radius:10px; color:#fff;
-                    font-size:13px; font-weight:500; min-width:240px;
-                    box-shadow:0 8px 24px rgba(0,0,0,.15);
-                    animation:cfm-slide .22s ease;
+                    display: flex;
+                    align-items: center;
+                    gap: 9px;
+                    padding: 11px 16px;
+                    border-radius: 10px;
+                    color: #fff;
+                    font-size: 13px;
+                    font-weight: 500;
+                    min-width: 240px;
+                    box-shadow: 0 8px 24px rgba(0, 0, 0, .15);
+                    animation: cfm-slide .22s ease;
                 }
-                @keyframes cfm-slide { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
-                .cfm-toast.success { background:#16a34a; }
-                .cfm-toast.error   { background:#dc2626; }
-                .cfm-toast.info    { background:#7c3aed; }
+
+                @keyframes cfm-slide {
+                    from {
+                        opacity: 0;
+                        transform: translateY(10px)
+                    }
+
+                    to {
+                        opacity: 1;
+                        transform: translateY(0)
+                    }
+                }
+
+                .cfm-toast.success {
+                    background: #16a34a;
+                }
+
+                .cfm-toast.error {
+                    background: #dc2626;
+                }
+
+                .cfm-toast.info {
+                    background: #7c3aed;
+                }
 
                 /* Drag-over in table */
-                #customFieldsTableBody tr[draggable="true"] { cursor:grab; }
-                #customFieldsTableBody tr.dragging  { opacity:.4; background:#ede9fe !important; }
-                #customFieldsTableBody tr.drag-over { border-top:2px solid #7c3aed; }
+                #customFieldsTableBody tr[draggable="true"] {
+                    cursor: grab;
+                }
+
+                #customFieldsTableBody tr.dragging {
+                    opacity: .4;
+                    background: #ede9fe !important;
+                }
+
+                #customFieldsTableBody tr.drag-over {
+                    border-top: 2px solid #7c3aed;
+                }
             </style>
 
             <div id="customFieldModal" class="cfm-overlay">
@@ -859,7 +1355,8 @@
                                     <i class="fas fa-pen-to-square" style="color:#7c3aed"></i>
                                     <span id="cfm-form-title">Add New Field</span>
                                 </div>
-                                <span id="cfm-editing-badge" class="cfm-editing-badge" style="display:none">Editing</span>
+                                <span id="cfm-editing-badge" class="cfm-editing-badge"
+                                    style="display:none">Editing</span>
                             </div>
 
                             <div class="cfm-form-scroll">
@@ -867,18 +1364,22 @@
 
                                 <!-- Module & Section -->
                                 <div class="cfm-field-group">
-                                    <label class="cfm-label"><i class="fas fa-cubes" style="color:#7c3aed;font-size:10px"></i> Target Module <span class="req-star">*</span></label>
+                                    <label class="cfm-label"><i class="fas fa-cubes"
+                                            style="color:#7c3aed;font-size:10px"></i> Target Module <span
+                                            class="req-star">*</span></label>
                                     <input type="text" id="cfModule" class="cfm-input" list="cfModuleList"
-                                        placeholder="e.g., Customer, Invoice, Vehicle"
-                                        oninput="populateInsertFields()">
+                                        placeholder="e.g., Customer, Invoice, Vehicle" oninput="populateInsertFields()">
                                     <datalist id="cfModuleList">
-                                        <option value="Customer"><option value="Invoice">
-                                        <option value="Item"><option value="Supplier">
+                                        <option value="Customer">
+                                        <option value="Invoice">
+                                        <option value="Item">
+                                        <option value="Supplier">
                                     </datalist>
                                 </div>
 
                                 <div class="cfm-field-group">
-                                    <label class="cfm-label"><i class="fas fa-folder-open" style="color:#7c3aed;font-size:10px"></i> Section Heading</label>
+                                    <label class="cfm-label"><i class="fas fa-folder-open"
+                                            style="color:#7c3aed;font-size:10px"></i> Section Heading</label>
                                     <input type="text" id="cfSection" class="cfm-input" list="cfSectionList"
                                         placeholder="e.g., Personal Info, Address Details">
                                     <datalist id="cfSectionList"></datalist>
@@ -886,14 +1387,17 @@
 
                                 <!-- Label + Key -->
                                 <div class="cfm-field-group">
-                                    <label class="cfm-label"><i class="fas fa-tag" style="color:#7c3aed;font-size:10px"></i> Field Label (UI Name) <span class="req-star">*</span></label>
+                                    <label class="cfm-label"><i class="fas fa-tag"
+                                            style="color:#7c3aed;font-size:10px"></i> Field Label (UI Name) <span
+                                            class="req-star">*</span></label>
                                     <input type="text" id="cfLabel" class="cfm-input"
-                                        placeholder="e.g., Date of Birth, Mobile No."
-                                        oninput="generateFieldKey()">
+                                        placeholder="e.g., Date of Birth, Mobile No." oninput="generateFieldKey()">
                                 </div>
 
                                 <div class="cfm-field-group">
-                                    <label class="cfm-label"><i class="fas fa-key" style="color:#7c3aed;font-size:10px"></i> Internal Key (DB Name) <span class="req-star">*</span></label>
+                                    <label class="cfm-label"><i class="fas fa-key"
+                                            style="color:#7c3aed;font-size:10px"></i> Internal Key (DB Name) <span
+                                            class="req-star">*</span></label>
                                     <input type="text" id="cfName" class="cfm-input readonly-key" readonly
                                         placeholder="Auto-generated from label">
                                     <div class="cfm-hint">Auto-generated. Used in formulas and conditions.</div>
@@ -909,7 +1413,8 @@
 
                                 <!-- Grid Width -->
                                 <div class="cfm-field-group" style="margin-top:14px">
-                                    <label class="cfm-label"><i class="fas fa-border-all" style="color:#7c3aed;font-size:10px"></i> Grid Width</label>
+                                    <label class="cfm-label"><i class="fas fa-border-all"
+                                            style="color:#7c3aed;font-size:10px"></i> Grid Width</label>
                                     <select id="cfGridWidth" class="cfm-select">
                                         <option value="col-md-3">25% — 4 columns per row</option>
                                         <option value="col-md-4">33% — 3 columns per row</option>
@@ -924,7 +1429,8 @@
                                 <div id="cfOptionsWrapper" style="display:none">
                                     <div class="cfm-section-div"><i class="fas fa-list-ul"></i> Dropdown Options</div>
                                     <div class="cfm-field-group">
-                                        <label class="cfm-label">Options (comma separated) <span class="req-star">*</span></label>
+                                        <label class="cfm-label">Options (comma separated) <span
+                                                class="req-star">*</span></label>
                                         <input type="text" id="cfOptions" class="cfm-input"
                                             placeholder="e.g., A+, O+, B-, AB+">
                                         <div class="cfm-hint">Each option separated by a comma.</div>
@@ -933,9 +1439,11 @@
 
                                 <!-- Multi-Select Options -->
                                 <div id="cfMultiSelectWrapper" style="display:none">
-                                    <div class="cfm-section-div"><i class="fas fa-check-double"></i> Multi-Select Options</div>
+                                    <div class="cfm-section-div"><i class="fas fa-check-double"></i> Multi-Select
+                                        Options</div>
                                     <div class="cfm-field-group">
-                                        <label class="cfm-label">Options (comma separated) <span class="req-star">*</span></label>
+                                        <label class="cfm-label">Options (comma separated) <span
+                                                class="req-star">*</span></label>
                                         <input type="text" id="cfMultiOptions" class="cfm-input"
                                             placeholder="e.g., Red, Green, Blue, Yellow">
                                         <div class="cfm-hint">Users can select multiple values from this list.</div>
@@ -951,9 +1459,12 @@
                                             <input type="text" id="cfCurrencySymbol" class="cfm-input"
                                                 list="cfCurrencyList" placeholder="₹">
                                             <datalist id="cfCurrencyList">
-                                                <option value="₹"><option value="$">
-                                                <option value="€"><option value="£">
-                                                <option value="¥"><option value="₽">
+                                                <option value="₹">
+                                                <option value="$">
+                                                <option value="€">
+                                                <option value="£">
+                                                <option value="¥">
+                                                <option value="₽">
                                             </datalist>
                                         </div>
                                         <div class="cfm-field-group">
@@ -1002,7 +1513,8 @@
                                         <label class="cfm-label">Link Label (Optional)</label>
                                         <input type="text" id="cfUrlLabel" class="cfm-input"
                                             placeholder="e.g., Visit Website, View Profile">
-                                        <div class="cfm-hint">Custom text shown as the clickable link. If empty, the URL is shown.</div>
+                                        <div class="cfm-hint">Custom text shown as the clickable link. If empty, the URL
+                                            is shown.</div>
                                     </div>
                                 </div>
 
@@ -1011,9 +1523,10 @@
                                     <div class="cfm-section-div"><i class="fas fa-search"></i> Lookup Settings</div>
                                     <div class="cfm-field-group">
                                         <label class="cfm-label">Source Module <span class="req-star">*</span></label>
-                                        <input type="text" id="cfLookupModule" class="cfm-input"
-                                            list="cfModuleList" placeholder="e.g., Customer, Supplier">
-                                        <div class="cfm-hint">Which module's records will appear in the popup list.</div>
+                                        <input type="text" id="cfLookupModule" class="cfm-input" list="cfModuleList"
+                                            placeholder="e.g., Customer, Supplier">
+                                        <div class="cfm-hint">Which module's records will appear in the popup list.
+                                        </div>
                                     </div>
                                     <div class="cfm-field-group">
                                         <label class="cfm-label">Display Field</label>
@@ -1025,7 +1538,8 @@
 
                                 <!-- Calculation formula -->
                                 <div id="cfCalcWrapper" style="display:none">
-                                    <div class="cfm-section-div"><i class="fas fa-calculator"></i> Calculation Formula</div>
+                                    <div class="cfm-section-div"><i class="fas fa-calculator"></i> Calculation Formula
+                                    </div>
                                     <div class="cfm-field-group">
                                         <label class="cfm-label">Formula <span class="req-star">*</span></label>
                                         <input type="text" id="cfFormula" class="cfm-input"
@@ -1037,9 +1551,10 @@
                                             <button type="button" class="cfm-insert-btn" onclick="insertIntoFormula()">
                                                 <i class="fas fa-plus"></i> Insert
                                             </button>
-                                        <button type="button" class="cfm-insert-btn" onclick="testFormula()" style="background:#10b981;">
-                                            <i class="fas fa-vial"></i> Test
-                                        </button>
+                                            <button type="button" class="cfm-insert-btn" onclick="testFormula()"
+                                                style="background:#10b981;">
+                                                <i class="fas fa-vial"></i> Test
+                                            </button>
                                         </div>
                                         <div class="cfm-code-box" style="margin-top:8px">
                                             <b>Examples:</b><br>
@@ -1061,12 +1576,16 @@
                                         <label class="cfm-check-label">
                                             <input type="checkbox" id="cfActive" checked> Active
                                         </label>
+                                        <label class="cfm-check-label" id="cfShowTotalWrapper" style="display:none">
+                                            <input type="checkbox" id="cfShowTotal"> Show Grand Total
+                                        </label>
                                     </div>
                                 </div>
 
                                 <!-- Visibility condition -->
                                 <div class="cfm-field-group">
-                                    <label class="cfm-label"><i class="fas fa-eye" style="color:#7c3aed;font-size:10px"></i> Visibility Condition</label>
+                                    <label class="cfm-label"><i class="fas fa-eye"
+                                            style="color:#7c3aed;font-size:10px"></i> Visibility Condition</label>
                                     <input type="text" id="cfCondition" class="cfm-input"
                                         placeholder="e.g., cf_type === 'Export'">
                                     <div class="cfm-insert-row">
@@ -1076,7 +1595,8 @@
                                         <button type="button" class="cfm-insert-btn" onclick="insertIntoVisibility()">
                                             <i class="fas fa-plus"></i> Insert
                                         </button>
-                                        <button type="button" class="cfm-insert-btn" onclick="testCondition()" style="background:#10b981;">
+                                        <button type="button" class="cfm-insert-btn" onclick="testCondition()"
+                                            style="background:#10b981;">
                                             <i class="fas fa-vial"></i> Test
                                         </button>
                                     </div>
@@ -1092,20 +1612,24 @@
                                     <div class="cfm-2col">
                                         <div>
                                             <label class="cfm-label">Prefix</label>
-                                            <input type="text" id="cfPrefix" class="cfm-input"
-                                                list="cfPrefixList" placeholder="₹ $">
+                                            <input type="text" id="cfPrefix" class="cfm-input" list="cfPrefixList"
+                                                placeholder="₹ $">
                                             <datalist id="cfPrefixList">
-                                                <option value="₹"><option value="$">
-                                                <option value="€"><option value="£">
+                                                <option value="₹">
+                                                <option value="$">
+                                                <option value="€">
+                                                <option value="£">
                                             </datalist>
                                         </div>
                                         <div>
                                             <label class="cfm-label">Suffix</label>
-                                            <input type="text" id="cfSuffix" class="cfm-input"
-                                                list="cfSuffixList" placeholder="% Days">
+                                            <input type="text" id="cfSuffix" class="cfm-input" list="cfSuffixList"
+                                                placeholder="% Days">
                                             <datalist id="cfSuffixList">
-                                                <option value="%"><option value="Days">
-                                                <option value="Months"><option value="Hrs">
+                                                <option value="%">
+                                                <option value="Days">
+                                                <option value="Months">
+                                                <option value="Hrs">
                                             </datalist>
                                         </div>
                                     </div>
@@ -1113,8 +1637,16 @@
 
                                 <!-- Display Order -->
                                 <div class="cfm-field-group">
-                                    <label class="cfm-label"><i class="fas fa-sort-numeric-down" style="color:#7c3aed;font-size:10px"></i> Display Order</label>
+                                    <label class="cfm-label"><i class="fas fa-sort-numeric-down"
+                                            style="color:#7c3aed;font-size:10px"></i> Display Order</label>
                                     <input type="number" id="cfOrder" value="0" class="cfm-input" min="0">
+                                </div>
+
+                                <!-- Custom CSS -->
+                                <div class="cfm-field-group">
+                                    <label class="cfm-label"><i class="fas fa-paint-brush" style="color:#7c3aed;font-size:10px"></i> Custom CSS (Optional)</label>
+                                    <input type="text" id="cfCss" class="cfm-input" placeholder="e.g., background-color: #fef08a; font-weight: bold; color: red;">
+                                    <div class="cfm-hint">Apply inline CSS to highlight this specific field visually in the form.</div>
                                 </div>
 
                                 <!-- Action buttons -->
@@ -1132,15 +1664,14 @@
 
                             <!-- Toolbar -->
                             <div class="cfm-table-toolbar">
-                                <select id="cfModuleFilter" class="cfm-mod-select"
-                                    onchange="renderCustomFieldsTable()">
+                                <select id="cfModuleFilter" class="cfm-mod-select" onchange="renderCustomFieldsTable()">
                                     <option value="">All Modules</option>
                                 </select>
                                 <div class="cfm-search-wrap">
                                     <i class="fas fa-search"></i>
                                     <input type="text" id="cfSearch" class="cfm-input"
-                                        placeholder="Search label, key, type…"
-                                        oninput="renderCustomFieldsTable()" style="margin:0">
+                                        placeholder="Search label, key, type…" oninput="renderCustomFieldsTable()"
+                                        style="margin:0">
                                 </div>
                                 <button onclick="deleteEntireModule()" class="cfm-del-mod-btn"
                                     title="Delete all fields of selected module">
@@ -1170,10 +1701,13 @@
                                         </tr>
                                     </thead>
                                     <tbody id="customFieldsTableBody">
-                                        <tr><td colspan="7" style="text-align:center;padding:30px;color:#94a3b8">
-                                            <i class="fas fa-circle-notch fa-spin" style="font-size:20px;margin-bottom:8px;display:block"></i>
-                                            Loading fields…
-                                        </td></tr>
+                                        <tr>
+                                            <td colspan="7" style="text-align:center;padding:30px;color:#94a3b8">
+                                                <i class="fas fa-circle-notch fa-spin"
+                                                    style="font-size:20px;margin-bottom:8px;display:block"></i>
+                                                Loading fields…
+                                            </td>
+                                        </tr>
                                     </tbody>
                                 </table>
                             </div>
@@ -1422,7 +1956,7 @@
                                     }
                                     renderUserList();
                                 }
-                            } catch(e) { console.error("Remote config sync failed", e); }
+                            } catch (e) { console.error("Remote config sync failed", e); }
 
                             // Fetch updated Expiry Date / License
                             try {
@@ -1435,7 +1969,7 @@
                                 if (dataLicense.success && dataLicense.expiry) {
                                     localStorage.setItem("licenseExpiry", new Date(dataLicense.expiry).toISOString());
                                 }
-                            } catch(e) { console.error("License sync failed", e); }
+                            } catch (e) { console.error("License sync failed", e); }
                         }
                     } catch (e) {
                         console.error("Cloud sync failed", e);
@@ -1488,7 +2022,7 @@
                         localStorage.setItem('adminEmail', data.adminEmail);
                         if (data.adminEmailPass) localStorage.setItem('adminEmailPass', data.adminEmailPass);
                         localStorage.setItem('ADMIN_USERS', JSON.stringify(data.adminUsers));
-                        
+
                         alert("Security credentials updated successfully!");
                         document.getElementById('devId').value = '';
                         document.getElementById('adminPass').value = '';
@@ -1551,7 +2085,7 @@
                                 headers: { 'Content-Type': 'text/plain' },
                                 body: JSON.stringify({ method: "register_user", username: user, password: pass, contactNumber: contactNumber })
                             }).catch(e => console.log("Silent cloud reg failed", e));
-                        } catch (e) {}
+                        } catch (e) { }
                     }
 
                     window.currentAdminUsers.push({ username: user, password: pass, role: role });
@@ -1743,7 +2277,7 @@
                         } else {
                             // Web Browser Fallback using GAS
                             let scriptUrl = document.getElementById('cloudBackupUrl').value || document.getElementById('updateServerUrl').value || (typeof GOOGLE_SCRIPT_URL !== 'undefined' ? GOOGLE_SCRIPT_URL : "");
-                            
+
                             if (scriptUrl && scriptUrl.startsWith("http")) {
                                 const response = await fetch(scriptUrl, {
                                     method: 'POST',
@@ -2176,27 +2710,27 @@ function createResponse(obj) {
 
                 // ── Field-type definitions ──
                 const CF_TYPES = [
-                    { value:'text',        label:'Text',          sub:'String',       icon:'fas fa-font',           color:'#16a34a', bg:'#f0fdf4' },
-                    { value:'number',      label:'Number',        sub:'Integer/Float', icon:'fas fa-hashtag',        color:'#1d4ed8', bg:'#eff6ff' },
-                    { value:'date',        label:'Date',          sub:'Calendar',      icon:'fas fa-calendar',       color:'#c2410c', bg:'#fff7ed' },
-                    { value:'datetime',    label:'Date & Time',   sub:'Date + clock',  icon:'fas fa-clock',          color:'#92400e', bg:'#fef3c7' },
-                    { value:'boolean',     label:'Checkbox',      sub:'Yes / No',      icon:'fas fa-toggle-on',      color:'#166534', bg:'#f0fdf4' },
-                    { value:'select',      label:'Dropdown',      sub:'Single pick',   icon:'fas fa-chevron-circle-down', color:'#6d28d9', bg:'#faf5ff' },
-                    { value:'multiselect', label:'Multi-Select',  sub:'Many picks',    icon:'fas fa-check-square',   color:'#86198f', bg:'#fdf4ff' },
-                    { value:'phone',       label:'Phone',         sub:'Auto-format',   icon:'fas fa-phone',          color:'#0e7490', bg:'#ecfeff' },
-                    { value:'email',       label:'Email',         sub:'Validated',     icon:'fas fa-envelope',       color:'#1e40af', bg:'#eff6ff' },
-                    { value:'currency',    label:'Currency',      sub:'₹ $ € …',       icon:'fas fa-coins',          color:'#166534', bg:'#f0fdf4' },
-                    { value:'url',         label:'URL',           sub:'Clickable link', icon:'fas fa-link',          color:'#7c3aed', bg:'#faf5ff' },
-                    { value:'lookup',      label:'Lookup',        sub:'Relation',      icon:'fas fa-search-plus',    color:'#9a3412', bg:'#fff7ed' },
-                    { value:'calculated',  label:'Calculated',    sub:'Formula',       icon:'fas fa-calculator',     color:'#be123c', bg:'#fff1f2' },
-                    { value:'textarea',    label:'Long Text',     sub:'Multi-line',    icon:'fas fa-align-left',     color:'#475569', bg:'#f8fafc' },
+                    { value: 'text', label: 'Text', sub: 'String', icon: 'fas fa-font', color: '#16a34a', bg: '#f0fdf4' },
+                    { value: 'number', label: 'Number', sub: 'Integer/Float', icon: 'fas fa-hashtag', color: '#1d4ed8', bg: '#eff6ff' },
+                    { value: 'date', label: 'Date', sub: 'Calendar', icon: 'fas fa-calendar', color: '#c2410c', bg: '#fff7ed' },
+                    { value: 'datetime', label: 'Date & Time', sub: 'Date + clock', icon: 'fas fa-clock', color: '#92400e', bg: '#fef3c7' },
+                    { value: 'boolean', label: 'Checkbox', sub: 'Yes / No', icon: 'fas fa-toggle-on', color: '#166534', bg: '#f0fdf4' },
+                    { value: 'select', label: 'Dropdown', sub: 'Single pick', icon: 'fas fa-chevron-circle-down', color: '#6d28d9', bg: '#faf5ff' },
+                    { value: 'multiselect', label: 'Multi-Select', sub: 'Many picks', icon: 'fas fa-check-square', color: '#86198f', bg: '#fdf4ff' },
+                    { value: 'phone', label: 'Phone', sub: 'Auto-format', icon: 'fas fa-phone', color: '#0e7490', bg: '#ecfeff' },
+                    { value: 'email', label: 'Email', sub: 'Validated', icon: 'fas fa-envelope', color: '#1e40af', bg: '#eff6ff' },
+                    { value: 'currency', label: 'Currency', sub: '₹ $ € …', icon: 'fas fa-coins', color: '#166534', bg: '#f0fdf4' },
+                    { value: 'url', label: 'URL', sub: 'Clickable link', icon: 'fas fa-link', color: '#7c3aed', bg: '#faf5ff' },
+                    { value: 'lookup', label: 'Lookup', sub: 'Relation', icon: 'fas fa-search-plus', color: '#9a3412', bg: '#fff7ed' },
+                    { value: 'calculated', label: 'Calculated', sub: 'Formula', icon: 'fas fa-calculator', color: '#be123c', bg: '#fff1f2' },
+                    { value: 'textarea', label: 'Long Text', sub: 'Multi-line', icon: 'fas fa-align-left', color: '#475569', bg: '#f8fafc' },
                 ];
 
                 const TYPE_BADGE_CLASS = {
-                    text:'tb-text', number:'tb-number', date:'tb-date', datetime:'tb-datetime',
-                    boolean:'tb-boolean', select:'tb-select', multiselect:'tb-multiselect',
-                    phone:'tb-phone', email:'tb-email', currency:'tb-currency',
-                    url:'tb-url', lookup:'tb-lookup', calculated:'tb-calculated', textarea:'tb-text'
+                    text: 'tb-text', number: 'tb-number', date: 'tb-date', datetime: 'tb-datetime',
+                    boolean: 'tb-boolean', select: 'tb-select', multiselect: 'tb-multiselect',
+                    phone: 'tb-phone', email: 'tb-email', currency: 'tb-currency',
+                    url: 'tb-url', lookup: 'tb-lookup', calculated: 'tb-calculated', textarea: 'tb-text'
                 };
 
                 // ── Build the type-card grid ──
@@ -2244,21 +2778,21 @@ function createResponse(obj) {
                 }
 
                 // Close on overlay click
-                document.getElementById('customFieldModal').addEventListener('click', function(e) {
+                document.getElementById('customFieldModal').addEventListener('click', function (e) {
                     if (e.target === this) closeCustomFieldModal();
                 });
 
                 // ── Auto-generate field key ──
                 function generateFieldKey() {
                     const label = document.getElementById('cfLabel').value;
-                    const key = label.toLowerCase().replace(/[^a-z0-9]/g,'_').replace(/_+/g,'_').replace(/^_|_$/g,'');
+                    const key = label.toLowerCase().replace(/[^a-z0-9]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '');
                     document.getElementById('cfName').value = 'cf_' + key;
                 }
 
                 // ── Populate insert-field selectors ──
                 function populateInsertFields() {
                     const moduleName = document.getElementById('cfModule').value.trim();
-                    ['cfFieldInsertSelect','cfVisibilityInsertSelect'].forEach(id => {
+                    ['cfFieldInsertSelect', 'cfVisibilityInsertSelect'].forEach(id => {
                         const sel = document.getElementById(id);
                         if (!sel) return;
                         sel.innerHTML = '<option value="">— Insert field —</option>';
@@ -2277,7 +2811,7 @@ function createResponse(obj) {
                     if (!sel || !sel.value) return;
                     const inp = document.getElementById('cfFormula');
                     const s = inp.selectionStart, e = inp.selectionEnd;
-                    inp.value = inp.value.substring(0,s) + sel.value + inp.value.substring(e);
+                    inp.value = inp.value.substring(0, s) + sel.value + inp.value.substring(e);
                     inp.selectionStart = inp.selectionEnd = s + sel.value.length;
                     inp.focus();
                 }
@@ -2287,7 +2821,7 @@ function createResponse(obj) {
                     if (!sel || !sel.value) return;
                     const inp = document.getElementById('cfCondition');
                     const s = inp.selectionStart, e = inp.selectionEnd;
-                    inp.value = inp.value.substring(0,s) + sel.value + inp.value.substring(e);
+                    inp.value = inp.value.substring(0, s) + sel.value + inp.value.substring(e);
                     inp.selectionStart = inp.selectionEnd = s + sel.value.length;
                     inp.focus();
                 }
@@ -2296,19 +2830,23 @@ function createResponse(obj) {
                 function toggleCfOptions() {
                     const type = document.getElementById('cfType').value;
                     const panels = {
-                        cfOptionsWrapper:    type === 'select',
-                        cfMultiSelectWrapper:type === 'multiselect',
-                        cfCurrencyWrapper:   type === 'currency',
-                        cfPhoneWrapper:      type === 'phone',
-                        cfDateTimeWrapper:   type === 'datetime',
-                        cfUrlWrapper:        type === 'url',
-                        cfLookupWrapper:     type === 'lookup',
-                        cfCalcWrapper:       type === 'calculated',
+                        cfOptionsWrapper: type === 'select',
+                        cfMultiSelectWrapper: type === 'multiselect',
+                        cfCurrencyWrapper: type === 'currency',
+                        cfPhoneWrapper: type === 'phone',
+                        cfDateTimeWrapper: type === 'datetime',
+                        cfUrlWrapper: type === 'url',
+                        cfLookupWrapper: type === 'lookup',
+                        cfCalcWrapper: type === 'calculated',
                     };
                     Object.entries(panels).forEach(([id, show]) => {
                         const el = document.getElementById(id);
                         if (el) el.style.display = show ? 'block' : 'none';
                     });
+
+                    const totalWrap = document.getElementById('cfShowTotalWrapper');
+                    if (totalWrap) totalWrap.style.display = ['number', 'currency', 'calculated'].includes(type) ? 'flex' : 'none';
+
                     populateInsertFields();
                 }
 
@@ -2321,7 +2859,7 @@ function createResponse(obj) {
                             customFieldsCache = result.data;
                             localStorage.setItem('CUSTOM_FIELDS', JSON.stringify(customFieldsCache));
                         }
-                    } catch(e) {
+                    } catch (e) {
                         customFieldsCache = JSON.parse(localStorage.getItem('CUSTOM_FIELDS') || '[]');
                     }
                     populateCfModuleFilter();
@@ -2334,7 +2872,7 @@ function createResponse(obj) {
                     if (!filter) return;
                     const cur = filter.value;
                     filter.innerHTML = '<option value="">All Modules</option>';
-                    [...new Set(customFieldsCache.map(f=>f.moduleName))].filter(Boolean).sort()
+                    [...new Set(customFieldsCache.map(f => f.moduleName))].filter(Boolean).sort()
                         .forEach(m => filter.innerHTML += `<option value="${m}">${m}</option>`);
                     if (cur) filter.value = cur;
                 }
@@ -2343,20 +2881,20 @@ function createResponse(obj) {
                     const dl = document.getElementById('cfModuleList');
                     if (!dl) return;
                     const all = [...new Set([
-                        'Customer','Invoice','Item','Supplier',
-                        ...customFieldsCache.map(f=>f.moduleName)
+                        'Customer', 'Invoice', 'Item', 'Supplier',
+                        ...customFieldsCache.map(f => f.moduleName)
                     ].filter(Boolean))].sort();
-                    dl.innerHTML = all.map(m=>`<option value="${m}">`).join('');
+                    dl.innerHTML = all.map(m => `<option value="${m}">`).join('');
 
                     const secDl = document.getElementById('cfSectionList');
                     if (secDl) {
-                        const secs = [...new Set(customFieldsCache.map(f=>f.section))].filter(Boolean);
-                        secDl.innerHTML = secs.map(s=>`<option value="${s}">`).join('');
+                        const secs = [...new Set(customFieldsCache.map(f => f.section))].filter(Boolean);
+                        secDl.innerHTML = secs.map(s => `<option value="${s}">`).join('');
                     }
                 }
 
                 function renderCustomFieldsTable() {
-                    const tbody  = document.getElementById('customFieldsTableBody');
+                    const tbody = document.getElementById('customFieldsTableBody');
                     if (!tbody) return;
                     const search = (document.getElementById('cfSearch')?.value || '').trim().toLowerCase();
                     const modFil = document.getElementById('cfModuleFilter')?.value || '';
@@ -2364,17 +2902,17 @@ function createResponse(obj) {
                     let fields = customFieldsCache;
                     if (modFil) fields = fields.filter(f => f.moduleName === modFil);
                     if (search) fields = fields.filter(f =>
-                        (f.fieldLabel||'').toLowerCase().includes(search) ||
-                        (f.fieldName||'').toLowerCase().includes(search)  ||
-                        (f.fieldType||'').toLowerCase().includes(search)
+                        (f.fieldLabel || '').toLowerCase().includes(search) ||
+                        (f.fieldName || '').toLowerCase().includes(search) ||
+                        (f.fieldType || '').toLowerCase().includes(search)
                     );
-                    fields.sort((a,b) => (a.order||0) - (b.order||0));
+                    fields.sort((a, b) => (a.order || 0) - (b.order || 0));
 
                     // Update stats
-                    document.getElementById('cfmStatTotal').textContent   = customFieldsCache.length;
-                    document.getElementById('cfmStatShowing').textContent  = fields.length;
-                    document.getElementById('cfmStatModules').textContent  =
-                        new Set(customFieldsCache.map(f=>f.moduleName)).size;
+                    document.getElementById('cfmStatTotal').textContent = customFieldsCache.length;
+                    document.getElementById('cfmStatShowing').textContent = fields.length;
+                    document.getElementById('cfmStatModules').textContent =
+                        new Set(customFieldsCache.map(f => f.moduleName)).size;
 
                     tbody.innerHTML = '';
                     if (!fields.length) {
@@ -2390,9 +2928,9 @@ function createResponse(obj) {
                         const tr = document.createElement('tr');
                         if (!search) { tr.draggable = true; tr.dataset.fieldId = field._id; }
 
-                        const typeDef = CF_TYPES.find(t => t.value === field.fieldType) || { icon:'fas fa-question', label: field.fieldType };
+                        const typeDef = CF_TYPES.find(t => t.value === field.fieldType) || { icon: 'fas fa-question', label: field.fieldType };
                         const badgeClass = TYPE_BADGE_CLASS[field.fieldType] || 'tb-text';
-                        const gridLabel = { 'col-md-3':'25%','col-md-4':'33%','col-md-6':'50%','col-md-12':'100%' }[field.gridWidth] || field.gridWidth || '25%';
+                        const gridLabel = { 'col-md-3': '25%', 'col-md-4': '33%', 'col-md-6': '50%', 'col-md-12': '100%' }[field.gridWidth] || field.gridWidth || '25%';
 
                         tr.innerHTML = `
                             <td style="text-align:center">
@@ -2400,10 +2938,10 @@ function createResponse(obj) {
                             </td>
                             <td>
                                 <div style="font-weight:700;color:#1e293b;font-size:12.5px">${field.moduleName}</div>
-                                <div style="font-size:11px;color:${field.section?'#7c3aed':'#94a3b8'};margin-top:2px">
+                                <div style="font-size:11px;color:${field.section ? '#7c3aed' : '#94a3b8'};margin-top:2px">
                                     ${field.section
-                                        ? `<i class="fas fa-folder-open" style="font-size:9px"></i> ${field.section}`
-                                        : '<i class="fas fa-layer-group" style="font-size:9px"></i> General'}
+                                ? `<i class="fas fa-folder-open" style="font-size:9px"></i> ${field.section}`
+                                : '<i class="fas fa-layer-group" style="font-size:9px"></i> General'}
                                 </div>
                             </td>
                             <td>
@@ -2420,8 +2958,8 @@ function createResponse(obj) {
                             <td style="text-align:center">
                                 ${field.isRequired ? `<span class="cfm-badge-req" title="Required"><i class="fas fa-asterisk" style="font-size:9px"></i></span> ` : ''}
                                 ${field.isActive
-                                    ? `<span class="cfm-badge-active" title="Active"><i class="fas fa-check-circle"></i></span>`
-                                    : `<span class="cfm-badge-inactive" title="Inactive"><i class="fas fa-times-circle"></i></span>`}
+                                ? `<span class="cfm-badge-active" title="Active"><i class="fas fa-check-circle"></i></span>`
+                                : `<span class="cfm-badge-inactive" title="Inactive"><i class="fas fa-times-circle"></i></span>`}
                             </td>
                             <td style="text-align:center">
                                 <button class="cfm-act-btn cfm-act-edit" onclick="editCustomField('${field._id}')" title="Edit">
@@ -2441,8 +2979,8 @@ function createResponse(obj) {
                 function cfmValidate(payload) {
                     const errs = [];
                     if (!payload.moduleName) errs.push('Target Module is required.');
-                    if (!payload.fieldLabel)  errs.push('Field Label is required.');
-                    if (!payload.fieldName)   errs.push('Internal Key is required.');
+                    if (!payload.fieldLabel) errs.push('Field Label is required.');
+                    if (!payload.fieldName) errs.push('Internal Key is required.');
 
                     switch (payload.fieldType) {
                         case 'select':
@@ -2479,19 +3017,21 @@ function createResponse(obj) {
                     const type = document.getElementById('cfType').value;
 
                     const payload = {
-                        moduleName:          document.getElementById('cfModule').value.trim(),
-                        section:             document.getElementById('cfSection').value.trim(),
-                        fieldLabel:          document.getElementById('cfLabel').value.trim(),
-                        fieldName:           document.getElementById('cfName').value.trim(),
-                        fieldType:           type,
-                        isRequired:          document.getElementById('cfRequired').checked,
-                        isActive:            document.getElementById('cfActive').checked,
+                        moduleName: document.getElementById('cfModule').value.trim(),
+                        section: document.getElementById('cfSection').value.trim(),
+                        fieldLabel: document.getElementById('cfLabel').value.trim(),
+                        fieldName: document.getElementById('cfName').value.trim(),
+                        fieldType: type,
+                        isRequired: document.getElementById('cfRequired').checked,
+                        isActive: document.getElementById('cfActive').checked,
+                        showGrandTotal: document.getElementById('cfShowTotal') ? document.getElementById('cfShowTotal').checked : false,
                         visibilityCondition: document.getElementById('cfCondition').value.trim(),
-                        calculationFormula:  document.getElementById('cfFormula').value.trim(),
-                        prefix:              document.getElementById('cfPrefix').value.trim(),
-                        suffix:              document.getElementById('cfSuffix').value.trim(),
-                        order:               parseInt(document.getElementById('cfOrder').value) || 0,
-                        gridWidth:           document.getElementById('cfGridWidth').value,
+                        calculationFormula: document.getElementById('cfFormula').value.trim(),
+                        prefix: document.getElementById('cfPrefix').value.trim(),
+                        suffix: document.getElementById('cfSuffix').value.trim(),
+                        customCss:           document.getElementById('cfCss') ? document.getElementById('cfCss').value.trim() : '',
+                        order: parseInt(document.getElementById('cfOrder').value) || 0,
+                        gridWidth: document.getElementById('cfGridWidth').value,
                     };
 
                     if (id) payload._id = id;
@@ -2499,14 +3039,14 @@ function createResponse(obj) {
                     // Type-specific payload enrichment
                     if (type === 'select') {
                         payload.options = document.getElementById('cfOptions').value
-                            .split(',').map(s=>s.trim()).filter(Boolean);
+                            .split(',').map(s => s.trim()).filter(Boolean);
                     }
                     if (type === 'multiselect') {
                         payload.options = document.getElementById('cfMultiOptions').value
-                            .split(',').map(s=>s.trim()).filter(Boolean);
+                            .split(',').map(s => s.trim()).filter(Boolean);
                     }
                     if (type === 'currency') {
-                        payload.currencySymbol   = document.getElementById('cfCurrencySymbol').value.trim() || '₹';
+                        payload.currencySymbol = document.getElementById('cfCurrencySymbol').value.trim() || '₹';
                         payload.currencyDecimals = parseInt(document.getElementById('cfCurrencyDecimals').value) || 2;
                         // Auto-set prefix to currency symbol if not already set
                         if (!payload.prefix) payload.prefix = payload.currencySymbol;
@@ -2521,7 +3061,7 @@ function createResponse(obj) {
                         payload.urlLabel = document.getElementById('cfUrlLabel').value.trim();
                     }
                     if (type === 'lookup') {
-                        payload.lookupModule  = document.getElementById('cfLookupModule').value.trim();
+                        payload.lookupModule = document.getElementById('cfLookupModule').value.trim();
                         payload.lookupDisplay = document.getElementById('cfLookupDisplay').value.trim();
                     }
 
@@ -2531,8 +3071,8 @@ function createResponse(obj) {
 
                     try {
                         const res = await fetch('http://localhost:5000/api/custom-fields', {
-                            method:'POST',
-                            headers:{'Content-Type':'application/json'},
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify(payload)
                         });
                         const result = await res.json();
@@ -2543,14 +3083,14 @@ function createResponse(obj) {
                         } else {
                             cfmToast(result.message || 'Save failed.', 'error');
                         }
-                    } catch(e) {
+                    } catch (e) {
                         // Offline fallback
                         if (!id) {
                             payload._id = 'cf_' + Date.now();
                             customFieldsCache.push(payload);
                         } else {
-                            const idx = customFieldsCache.findIndex(f=>f._id===id);
-                            if (idx>-1) customFieldsCache[idx] = payload;
+                            const idx = customFieldsCache.findIndex(f => f._id === id);
+                            if (idx > -1) customFieldsCache[idx] = payload;
                         }
                         localStorage.setItem('CUSTOM_FIELDS', JSON.stringify(customFieldsCache));
                         cfmToast('Saved locally (API unavailable).', 'info');
@@ -2566,30 +3106,34 @@ function createResponse(obj) {
                     const f = customFieldsCache.find(x => x._id === id);
                     if (!f) return;
 
-                    document.getElementById('cfId').value           = f._id;
-                    document.getElementById('cfModule').value       = f.moduleName;
-                    document.getElementById('cfSection').value      = f.section || '';
-                    document.getElementById('cfLabel').value        = f.fieldLabel;
-                    document.getElementById('cfName').value         = f.fieldName;
-                    document.getElementById('cfRequired').checked   = f.isRequired;
-                    document.getElementById('cfActive').checked     = f.isActive;
-                    document.getElementById('cfCondition').value    = f.visibilityCondition || '';
-                    document.getElementById('cfFormula').value      = f.calculationFormula  || '';
-                    document.getElementById('cfPrefix').value       = f.prefix || '';
-                    document.getElementById('cfSuffix').value       = f.suffix || '';
-                    document.getElementById('cfOrder').value        = f.order || 0;
-                    document.getElementById('cfGridWidth').value    = f.gridWidth || 'col-md-3';
+                    document.getElementById('cfId').value = f._id;
+                    document.getElementById('cfModule').value = f.moduleName;
+                    document.getElementById('cfSection').value = f.section || '';
+                    document.getElementById('cfLabel').value = f.fieldLabel;
+                    document.getElementById('cfName').value = f.fieldName;
+                    document.getElementById('cfRequired').checked = f.isRequired;
+                    document.getElementById('cfActive').checked = f.isActive;
+                    if (document.getElementById('cfShowTotal')) {
+                        document.getElementById('cfShowTotal').checked = f.showGrandTotal || false;
+                    }
+                    document.getElementById('cfCondition').value = f.visibilityCondition || '';
+                    document.getElementById('cfFormula').value = f.calculationFormula || '';
+                    document.getElementById('cfPrefix').value = f.prefix || '';
+                    document.getElementById('cfSuffix').value = f.suffix || '';
+                    if (document.getElementById('cfCss')) document.getElementById('cfCss').value = f.customCss || '';
+                    document.getElementById('cfOrder').value = f.order || 0;
+                    document.getElementById('cfGridWidth').value = f.gridWidth || 'col-md-3';
 
                     // Select the type card
                     selectType(f.fieldType);
 
                     // Type-specific fields
                     if (f.fieldType === 'select')
-                        document.getElementById('cfOptions').value = (f.options||[]).join(', ');
+                        document.getElementById('cfOptions').value = (f.options || []).join(', ');
                     if (f.fieldType === 'multiselect')
-                        document.getElementById('cfMultiOptions').value = (f.options||[]).join(', ');
+                        document.getElementById('cfMultiOptions').value = (f.options || []).join(', ');
                     if (f.fieldType === 'currency') {
-                        document.getElementById('cfCurrencySymbol').value   = f.currencySymbol || '₹';
+                        document.getElementById('cfCurrencySymbol').value = f.currencySymbol || '₹';
                         document.getElementById('cfCurrencyDecimals').value = f.currencyDecimals ?? 2;
                     }
                     if (f.fieldType === 'phone')
@@ -2599,7 +3143,7 @@ function createResponse(obj) {
                     if (f.fieldType === 'url')
                         document.getElementById('cfUrlLabel').value = f.urlLabel || '';
                     if (f.fieldType === 'lookup') {
-                        document.getElementById('cfLookupModule').value  = f.lookupModule  || '';
+                        document.getElementById('cfLookupModule').value = f.lookupModule || '';
                         document.getElementById('cfLookupDisplay').value = f.lookupDisplay || '';
                     }
 
@@ -2616,10 +3160,10 @@ function createResponse(obj) {
                 async function deleteCustomField(id) {
                     if (!confirm('Delete this field? Existing data in records will remain but this field will disappear from forms.')) return;
                     try {
-                        await fetch(`http://localhost:5000/api/custom-fields/${id}`, { method:'DELETE' });
+                        await fetch(`http://localhost:5000/api/custom-fields/${id}`, { method: 'DELETE' });
                         cfmToast('Field deleted.', 'success');
                         fetchCustomFields();
-                    } catch(e) {
+                    } catch (e) {
                         customFieldsCache = customFieldsCache.filter(f => f._id !== id);
                         localStorage.setItem('CUSTOM_FIELDS', JSON.stringify(customFieldsCache));
                         cfmToast('Deleted locally.', 'info');
@@ -2637,10 +3181,10 @@ function createResponse(obj) {
                     const toDelete = customFieldsCache.filter(f => f.moduleName === mod);
                     try {
                         for (const f of toDelete)
-                            await fetch(`http://localhost:5000/api/custom-fields/${f._id}`, {method:'DELETE'});
+                            await fetch(`http://localhost:5000/api/custom-fields/${f._id}`, { method: 'DELETE' });
                         cfmToast(`Module "${mod}" deleted.`, 'success');
                         fetchCustomFields();
-                    } catch(e) {
+                    } catch (e) {
                         customFieldsCache = customFieldsCache.filter(f => f.moduleName !== mod);
                         localStorage.setItem('CUSTOM_FIELDS', JSON.stringify(customFieldsCache));
                         cfmToast('Deleted locally.', 'info');
@@ -2650,20 +3194,22 @@ function createResponse(obj) {
 
                 // ── Clear form ──
                 function clearCustomFieldForm() {
-                    ['cfId','cfModule','cfSection','cfLabel','cfName','cfCondition','cfFormula',
-                     'cfPrefix','cfSuffix','cfOptions','cfMultiOptions','cfCurrencySymbol',
-                     'cfUrlLabel','cfLookupModule','cfLookupDisplay'].forEach(id => {
-                        const el = document.getElementById(id);
-                        if (el) el.value = '';
-                    });
+                    ['cfId', 'cfModule', 'cfSection', 'cfLabel', 'cfName', 'cfCondition', 'cfFormula',
+                        'cfPrefix', 'cfSuffix', 'cfOptions', 'cfMultiOptions', 'cfCurrencySymbol',
+                        'cfUrlLabel', 'cfLookupModule', 'cfLookupDisplay'].forEach(id => {
+                            const el = document.getElementById(id);
+                            if (el) el.value = '';
+                        });
                     const el = (id) => document.getElementById(id);
-                    if (el('cfOrder'))           el('cfOrder').value           = '0';
-                    if (el('cfGridWidth'))        el('cfGridWidth').value       = 'col-md-3';
-                    if (el('cfRequired'))         el('cfRequired').checked      = false;
-                    if (el('cfActive'))           el('cfActive').checked        = true;
-                    if (el('cfCurrencyDecimals')) el('cfCurrencyDecimals').value= '2';
-                    if (el('cfPhoneFormat'))      el('cfPhoneFormat').value     = 'IN';
-                    if (el('cfDateTimeFormat'))   el('cfDateTimeFormat').value  = 'datetime-local';
+                    if (el('cfOrder')) el('cfOrder').value = '0';
+                    if (el('cfGridWidth')) el('cfGridWidth').value = 'col-md-3';
+                    if (el('cfRequired')) el('cfRequired').checked = false;
+                    if (el('cfActive')) el('cfActive').checked = true;
+                    if (el('cfShowTotal')) el('cfShowTotal').checked = false;
+                    if (el('cfCss'))              el('cfCss').value             = '';
+                    if (el('cfCurrencyDecimals')) el('cfCurrencyDecimals').value = '2';
+                    if (el('cfPhoneFormat')) el('cfPhoneFormat').value = 'IN';
+                    if (el('cfDateTimeFormat')) el('cfDateTimeFormat').value = 'datetime-local';
 
                     document.getElementById('cfm-form-title').textContent = 'Add New Field';
                     document.getElementById('cfm-editing-badge').style.display = 'none';
@@ -2678,10 +3224,10 @@ function createResponse(obj) {
                     tbody.querySelectorAll('tr[draggable="true"]').forEach(row => {
                         row.addEventListener('dragstart', handleDragStart);
                         row.addEventListener('dragenter', handleDragEnter);
-                        row.addEventListener('dragover',  handleDragOver);
+                        row.addEventListener('dragover', handleDragOver);
                         row.addEventListener('dragleave', handleDragLeave);
-                        row.addEventListener('drop',      handleDrop);
-                        row.addEventListener('dragend',   handleDragEnd);
+                        row.addEventListener('drop', handleDrop);
+                        row.addEventListener('dragend', handleDragEnd);
                     });
                 }
 
@@ -2690,23 +3236,23 @@ function createResponse(obj) {
                     e.dataTransfer.effectAllowed = 'move';
                     setTimeout(() => this.classList.add('dragging'), 0);
                 }
-                function handleDragOver(e)  { e.preventDefault(); return false; }
-                function handleDragEnter()  { this.classList.add('drag-over'); }
-                function handleDragLeave()  { this.classList.remove('drag-over'); }
-                function handleDragEnd()    {
+                function handleDragOver(e) { e.preventDefault(); return false; }
+                function handleDragEnter() { this.classList.add('drag-over'); }
+                function handleDragLeave() { this.classList.remove('drag-over'); }
+                function handleDragEnd() {
                     this.classList.remove('dragging');
-                    document.querySelectorAll('#customFieldsTableBody tr').forEach(r=>r.classList.remove('drag-over'));
+                    document.querySelectorAll('#customFieldsTableBody tr').forEach(r => r.classList.remove('drag-over'));
                 }
                 function handleDrop(e) {
                     e.preventDefault();
                     if (draggedFieldItem !== this) {
                         const fromId = draggedFieldItem.dataset.fieldId;
-                        const toId   = this.dataset.fieldId;
-                        const fi = customFieldsCache.findIndex(f=>f._id===fromId);
-                        const ti = customFieldsCache.findIndex(f=>f._id===toId);
+                        const toId = this.dataset.fieldId;
+                        const fi = customFieldsCache.findIndex(f => f._id === fromId);
+                        const ti = customFieldsCache.findIndex(f => f._id === toId);
                         const [item] = customFieldsCache.splice(fi, 1);
                         customFieldsCache.splice(ti, 0, item);
-                        customFieldsCache.forEach((f,i) => f.order = i);
+                        customFieldsCache.forEach((f, i) => f.order = i);
                         renderCustomFieldsTable();
                         saveFieldOrder();
                     }
@@ -2714,26 +3260,26 @@ function createResponse(obj) {
                 }
 
                 async function saveFieldOrder() {
-                    const payload = customFieldsCache.map((f,i) => ({_id:f._id, order:i}));
+                    const payload = customFieldsCache.map((f, i) => ({ _id: f._id, order: i }));
                     try {
                         const res = await fetch('http://localhost:5000/api/custom-fields/reorder', {
-                            method:'POST', headers:{'Content-Type':'application/json'},
+                            method: 'POST', headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify(payload)
                         });
                         const result = await res.json();
                         if (result.success) localStorage.setItem('CUSTOM_FIELDS', JSON.stringify(customFieldsCache));
-                    } catch(e) {
+                    } catch (e) {
                         localStorage.setItem('CUSTOM_FIELDS', JSON.stringify(customFieldsCache));
                     }
                 }
 
                 // ── Toast ──
-                function cfmToast(msg, type='info') {
-                    const icons = { success:'fa-check-circle', error:'fa-times-circle', info:'fa-info-circle' };
-                    const wrap  = document.getElementById('cfm-toast-wrap');
-                    const t     = document.createElement('div');
+                function cfmToast(msg, type = 'info') {
+                    const icons = { success: 'fa-check-circle', error: 'fa-times-circle', info: 'fa-info-circle' };
+                    const wrap = document.getElementById('cfm-toast-wrap');
+                    const t = document.createElement('div');
                     t.className = `cfm-toast ${type}`;
-                    t.innerHTML = `<i class="fas ${icons[type]||'fa-info-circle'}"></i><span>${msg}</span>`;
+                    t.innerHTML = `<i class="fas ${icons[type] || 'fa-info-circle'}"></i><span>${msg}</span>`;
                     wrap.appendChild(t);
                     setTimeout(() => t.remove(), 3500);
                 }
@@ -2744,18 +3290,18 @@ function createResponse(obj) {
                     if (!formula) return alert('Enter a formula first.');
                     const vars = formula.match(/\bcf_[a-zA-Z0-9_]+\b/g) || [];
                     const uniqueVars = [...new Set(vars)];
-                    
+
                     let dummyCode = "";
                     for (let v of uniqueVars) {
                         let val = prompt(`Enter dummy value for variable '${v}':`, "10");
                         if (val === null) return; // User cancelled
                         dummyCode += `const ${v} = ${isNaN(val) || val === '' ? `"${val}"` : val};\n`;
                     }
-                    
+
                     try {
                         const fn = new Function(`${dummyCode} return ${formula};`);
                         alert("Valid! Result: " + fn());
-                    } catch(e) {
+                    } catch (e) {
                         alert("Error in Javascript syntax:\n" + e.message);
                     }
                 }
@@ -2765,18 +3311,18 @@ function createResponse(obj) {
                     if (!cond) return alert('Enter a condition first.');
                     const vars = cond.match(/\bcf_[a-zA-Z0-9_]+\b/g) || [];
                     const uniqueVars = [...new Set(vars)];
-                    
+
                     let dummyCode = "";
                     for (let v of uniqueVars) {
                         let val = prompt(`Enter dummy value for variable '${v}' (e.g. true, false, 100, "Text"):`, "true");
                         if (val === null) return;
                         dummyCode += `const ${v} = ${val === 'true' || val === 'false' || !isNaN(val) ? val : `"${val}"`};\n`;
                     }
-                    
+
                     try {
                         const fn = new Function(`${dummyCode} return ${cond};`);
                         alert("Valid! Result: " + fn());
-                    } catch(e) {
+                    } catch (e) {
                         alert("Error in Javascript syntax:\n" + e.message);
                     }
                 }

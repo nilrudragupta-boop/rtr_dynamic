@@ -706,6 +706,9 @@
             <button class="btn btn-outline-custom" onclick="exportCSV()" title="Export data">
                 <i class="fas fa-download"></i> Export
             </button>
+            <button class="btn btn-outline-custom" onclick="printTableReport()" title="Print table report">
+                <i class="fas fa-print"></i> Print Report
+            </button>
             <button class="btn btn-outline-custom" onclick="fetchData()" title="Refresh">
                 <i class="fas fa-arrows-rotate"></i> Refresh
             </button>
@@ -995,38 +998,39 @@
             const data = `data-field-name="${field.fieldName}"`;
             const cls = 'form-control dynamic-input';
             const id = `field_${field.fieldName}`;
+            const css = field.customCss ? `style="${field.customCss}"` : '';
 
             let inputHTML = '';
 
             switch (field.fieldType) {
                 case 'select':
                     const opts = (field.options || []).map(o => `<option value="${o}">${o}</option>`).join('');
-                    inputHTML = `<select id="${id}" class="form-select dynamic-input" ${data} ${reqAttr}>
+                    inputHTML = `<select id="${id}" class="form-select dynamic-input" ${data} ${reqAttr} ${css}>
                        <option value="">— Select —</option>${opts}
                      </select>`;
                     break;
                 case 'multiselect':
                     const mOpts = (field.options || []).map(o => `<option value="${o}">${o}</option>`).join('');
                     // Note: Using standard multiple select
-                    inputHTML = `<select id="${id}" class="form-select dynamic-input" ${data} ${reqAttr} multiple size="3">
+                    inputHTML = `<select id="${id}" class="form-select dynamic-input" ${data} ${reqAttr} multiple size="3" ${css}>
                        ${mOpts}
                      </select>`;
                     break;
                 case 'boolean':
                     inputHTML = `<div class="form-check mt-2">
-                       <input type="checkbox" id="${id}" class="form-check-input dynamic-input" ${data}>
+                       <input type="checkbox" id="${id}" class="form-check-input dynamic-input" ${data} ${css}>
                        <label class="form-check-label" for="${id}">Yes</label>
                      </div>`;
                     break;
                 case 'textarea':
-                    inputHTML = `<textarea id="${id}" class="${cls}" rows="3" ${data} ${reqAttr} placeholder="${field.fieldLabel}…"></textarea>`;
+                    inputHTML = `<textarea id="${id}" class="${cls}" rows="3" ${data} ${reqAttr} placeholder="${field.fieldLabel}…" ${css}></textarea>`;
                     break;
                 case 'date':
-                    inputHTML = `<input type="date" id="${id}" class="${cls}" ${data} ${reqAttr}>`;
+                    inputHTML = `<input type="date" id="${id}" class="${cls}" ${data} ${reqAttr} ${css}>`;
                     break;
                 case 'datetime':
                     const dtFormat = field.dateTimeFormat || 'datetime-local';
-                    inputHTML = `<input type="${dtFormat}" id="${id}" class="${cls}" ${data} ${reqAttr}>`;
+                    inputHTML = `<input type="${dtFormat}" id="${id}" class="${cls}" ${data} ${reqAttr} ${css}>`;
                     break;
                 case 'number':
                 case 'currency':
@@ -1035,24 +1039,25 @@
                     const step = field.fieldType === 'currency' ? '0.01' : 'any';
                     inputHTML = `<div class="input-group input-group-sm">
                        ${pfx ? `<span class="input-group-text">${pfx}</span>` : ''}
-                       <input type="number" step="${step}" id="${id}" class="${cls}" ${data} ${reqAttr} placeholder="0">
+                       <input type="number" step="${step}" id="${id}" class="${cls}" ${data} ${reqAttr} placeholder="0" ${css}>
                        ${sfx ? `<span class="input-group-text">${sfx}</span>` : ''}
                      </div>`;
                     break;
                 case 'calculated':
-                    inputHTML = `<input type="text" id="${id}" class="${cls} bg-light text-muted" ${data} readonly placeholder="Auto-calculated" style="font-family:var(--font-mono);font-size:12px;">`;
+                    const calcCss = field.customCss ? `style="font-family:var(--font-mono);font-size:12px;${field.customCss}"` : `style="font-family:var(--font-mono);font-size:12px;"`;
+                    inputHTML = `<input type="text" id="${id}" class="${cls} bg-light text-muted" ${data} readonly placeholder="Auto-calculated" ${calcCss}>`;
                     break;
                 case 'email':
-                    inputHTML = `<input type="email" id="${id}" class="${cls}" ${data} ${reqAttr} placeholder="Email address">`;
+                    inputHTML = `<input type="email" id="${id}" class="${cls}" ${data} ${reqAttr} placeholder="Email address" ${css}>`;
                     break;
                 case 'url':
-                    inputHTML = `<input type="url" id="${id}" class="${cls}" ${data} ${reqAttr} placeholder="https://...">`;
+                    inputHTML = `<input type="url" id="${id}" class="${cls}" ${data} ${reqAttr} placeholder="https://..." ${css}>`;
                     break;
                 case 'phone':
-                    inputHTML = `<input type="tel" id="${id}" class="${cls}" ${data} ${reqAttr} placeholder="Phone number">`;
+                    inputHTML = `<input type="tel" id="${id}" class="${cls}" ${data} ${reqAttr} placeholder="Phone number" ${css}>`;
                     break;
                 default:
-                    inputHTML = `<input type="text" id="${id}" class="${cls}" ${data} ${reqAttr} placeholder="${field.fieldLabel}…">`;
+                    inputHTML = `<input type="text" id="${id}" class="${cls}" ${data} ${reqAttr} placeholder="${field.fieldLabel}…" ${css}>`;
             }
 
             return `<label class="form-label" for="${id}">${field.fieldLabel} ${req}</label>${inputHTML}`;
@@ -1436,7 +1441,7 @@
             const totals = {};
 
             moduleFields.forEach(f => {
-                if (['number', 'currency', 'calculated'].includes(f.fieldType)) {
+                if (['number', 'currency', 'calculated'].includes(f.fieldType) && f.showGrandTotal) {
                     hasTotals = true;
                     totals[f.fieldName] = filteredData.reduce((sum, row) => sum + (parseFloat(row[f.fieldName]) || 0), 0);
                 }
@@ -1564,7 +1569,12 @@
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(payload)
                     });
-                    result = await res.json();
+                    const contentType = res.headers.get("content-type");
+                    if (contentType && contentType.includes("application/json")) {
+                        result = await res.json();
+                    } else {
+                        result = { success: false, message: `API Error: Server returned HTML/Text (Status: ${res.status}). Ensure Backend is running.` };
+                    }
                 }
 
                 if (result.success) {
@@ -1784,6 +1794,102 @@
             a.click();
             URL.revokeObjectURL(url);
             showToast(`Exported ${filteredData.length} records.`, 'success');
+        }
+
+        // ─────────────────────────────────────────────────────────
+        // 12. Print Table Report (All Rows & Grand Totals)
+        // ─────────────────────────────────────────────────────────
+        function printTableReport() {
+            if (filteredData.length === 0) { showToast('No data to print.', 'info'); return; }
+
+            let companyName = 'Your Company', companyAddress = '', logoHtml = '';
+            if (typeof getBrandSettings === 'function') {
+                const brand = getBrandSettings() || {};
+                companyName = brand.companyName || companyName;
+                const parts = [];
+                if (brand.addressLine1) parts.push(brand.addressLine1);
+                if (brand.addressLine2) parts.push(brand.addressLine2);
+                if (brand.contactNumber) parts.push('Ph: ' + brand.contactNumber);
+                if (brand.companyGstin) parts.push('GSTIN: ' + brand.companyGstin);
+                companyAddress = parts.join(' | ');
+                if (brand.logoPath) logoHtml = `<img src="${brand.logoPath}" style="max-height:60px;max-width:150px;display:block;margin:0 auto 10px;">`;
+            }
+
+            // Identify visible columns based on user settings
+            const visibleFields = moduleFields.filter(f => columnVisibility[f.fieldName] !== false);
+
+            let tableHTML = '<table><thead><tr><th>#</th>';
+            visibleFields.forEach(f => tableHTML += `<th>${f.fieldLabel}</th>`);
+            tableHTML += '</tr></thead><tbody>';
+
+            filteredData.forEach((row, idx) => {
+                tableHTML += `<tr><td>${idx + 1}</td>`;
+                visibleFields.forEach(field => {
+                    let val = row[field.fieldName];
+                    if (val === undefined || val === null || val === '') val = '—';
+                    else if (field.fieldType === 'boolean') val = val ? 'Yes' : 'No';
+                    else if (field.fieldType === 'multiselect' && Array.isArray(val)) val = val.join(', ');
+                    else {
+                        if (field.prefix || field.currencySymbol) val = `${field.prefix || field.currencySymbol} ${val}`;
+                        if (field.suffix) val = `${val} ${field.suffix}`;
+                    }
+                    tableHTML += `<td>${val}</td>`;
+                });
+                tableHTML += '</tr>';
+            });
+            tableHTML += '</tbody>';
+
+            let hasTotals = false;
+            const totals = {};
+            visibleFields.forEach(f => {
+                if (['number', 'currency', 'calculated'].includes(f.fieldType) && f.showGrandTotal) {
+                    hasTotals = true;
+                    totals[f.fieldName] = filteredData.reduce((sum, r) => sum + (parseFloat(r[f.fieldName]) || 0), 0);
+                }
+            });
+
+            if (hasTotals) {
+                tableHTML += '<tfoot><tr><td style="text-align:right;font-weight:bold;">Total:</td>';
+                visibleFields.forEach(f => {
+                    if (totals[f.fieldName] !== undefined) {
+                        let display = Number(totals[f.fieldName].toFixed(2));
+                        if (f.prefix || f.currencySymbol) display = `${f.prefix || f.currencySymbol} ${display}`;
+                        if (f.suffix) display = `${display} ${f.suffix}`;
+                        tableHTML += `<td style="font-weight:bold;color:#1d4ed8;">${display}</td>`;
+                    } else {
+                        tableHTML += `<td></td>`;
+                    }
+                });
+                tableHTML += '</tr></tfoot>';
+            }
+            tableHTML += '</table>';
+
+            const html = `<!DOCTYPE html><html><head><title>Print Report — ${moduleName}</title>
+            <style>
+              body { font-family: 'Segoe UI', sans-serif; padding: 20px; color: #333; }
+              .brand-header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #333; padding-bottom: 15px; }
+              .brand-header h1 { margin: 0 0 5px; font-size: 24px; color: #1e293b; }
+              .brand-header p { margin: 0; color: #555; font-size: 13px; }
+              h2 { text-align: center; text-transform: uppercase; color: #1e293b; font-size: 18px; margin-top: 10px; }
+              table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 12px; }
+              th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+              th { background: #f8fafc; color: #475569; font-weight: 600; }
+              tfoot td { background: #f8fafc; border-top: 2px solid #ccc; }
+              @media print { .no-print { display: none !important; } }
+            </style></head><body>
+            <div class="brand-header">${logoHtml}<h1>${companyName}</h1><p>${companyAddress}</p></div>
+            <h2>${moduleName} Report</h2>
+            ${tableHTML}
+            <div style="text-align:center;margin-top:30px;" class="no-print">
+              <button onclick="window.print()" style="padding:10px 24px;background:#2563eb;color:#fff;border:none;border-radius:6px;font-size:14px;font-weight:600;cursor:pointer;">
+                🖨️ Print
+              </button>
+            </div></body></html>`;
+
+            const win = window.open('', '', 'width=1000,height=800');
+            win.document.write(html);
+            win.document.close();
+            win.focus();
         }
 
         // ─────────────────────────────────────────────────────────

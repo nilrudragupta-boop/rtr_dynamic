@@ -95,8 +95,12 @@ const apiClient = {
     _getCollection: async (collectionName) => {
         try {
             const response = await fetch(`${API_BASE_URL}/${collectionName}`);
-            const result = await response.json();
-            return result.success ? result.data : [];
+            const contentType = response.headers.get("content-type");
+            if (contentType && contentType.includes("application/json")) {
+                const result = await response.json();
+                return result.success ? result.data : [];
+            }
+            return [];
         } catch (error) {
             console.error(`Error fetching ${collectionName}:`, error);
             return [];
@@ -109,7 +113,12 @@ const apiClient = {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data)
             });
-            return await response.json();
+            const contentType = response.headers.get("content-type");
+            if (contentType && contentType.includes("application/json")) {
+                return await response.json();
+            } else {
+                return { success: false, message: `API Error: Server returned ${response.status}. Expected JSON, got ${contentType}` };
+            }
         } catch (error) {
             console.error(`Error saving ${collectionName}:`, error);
             return { success: false, message: error.message };
@@ -118,7 +127,12 @@ const apiClient = {
     _deleteCollection: async (collectionName, id) => {
         try {
             const response = await fetch(`${API_BASE_URL}/${collectionName}/${id}`, { method: 'DELETE' });
-            return await response.json();
+            const contentType = response.headers.get("content-type");
+            if (contentType && contentType.includes("application/json")) {
+                return await response.json();
+            } else {
+                return { success: false, message: `API Error: Server returned ${response.status}. Expected JSON, got ${contentType}` };
+            }
         } catch (error) {
             console.error(`Error deleting from ${collectionName}:`, error);
             return { success: false, message: error.message };
@@ -174,7 +188,11 @@ const apiClient = {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data)
             });
-            return await response.json();
+            const contentType = response.headers.get("content-type");
+            if (contentType && contentType.includes("application/json")) {
+                return await response.json();
+            }
+            return { success: false, message: "API Error: Invalid response format" };
         } catch (error) {
             console.error('Error reordering custom fields:', error);
             return { success: false, message: error.message };
@@ -183,8 +201,12 @@ const apiClient = {
     getCustomRecords: async (moduleName) => {
         try {
             const response = await fetch(`${API_BASE_URL}/custom-records/${moduleName}`);
-            const result = await response.json();
-            return result.success ? result.data : [];
+            const contentType = response.headers.get("content-type");
+            if (contentType && contentType.includes("application/json")) {
+                const result = await response.json();
+                return result.success ? result.data : [];
+            }
+            return [];
         } catch (error) {
             console.error(`Error fetching custom records for ${moduleName}:`, error);
             return [];
