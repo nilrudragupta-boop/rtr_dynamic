@@ -2248,11 +2248,6 @@ function createResponse(obj) {
                     clearCustomFieldForm();
                 }
 
-                // Close on overlay click
-                document.getElementById('customFieldModal').addEventListener('click', function(e) {
-                    if (e.target === this) closeCustomFieldModal();
-                });
-
                 // ── Auto-generate field key ──
                 function generateFieldKey() {
                     const label = document.getElementById('cfLabel').value;

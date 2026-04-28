@@ -185,6 +185,7 @@ const customFieldSchema = new mongoose.Schema({
 
 // --- Generic Custom Record Schema (For entirely new UI Pages) ---
 const customRecordSchema = new mongoose.Schema({
+    _id: { type: String },
     moduleName: { type: String, required: true, index: true }
 }, { timestamps: true, strict: false });
 

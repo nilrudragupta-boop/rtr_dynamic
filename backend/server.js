@@ -603,7 +603,7 @@ app.post('/api/custom-records', async (req, res) => {
     try {
         const payload = req.body;
         if (payload._id) {
-            const updated = await CustomRecord.findByIdAndUpdate(payload._id, payload, { new: true });
+            const updated = await CustomRecord.findByIdAndUpdate(payload._id, payload, { new: true, upsert: true });
             res.status(200).json({ success: true, data: updated });
         } else {
             const newRecord = new CustomRecord(payload);
