@@ -28,6 +28,7 @@
   <script src="settings.js" defer></script>
   <script src="brand.service.js" defer></script>
   <script src="brandLoader.js" defer></script>
+  <script src="apiClient.js"></script>
 
   <style>
     :root {
@@ -290,6 +291,26 @@
       transition: background .1s;
     }
 
+    /* ─── Resizable Columns ───────────────────── */
+    .data-table th {
+      position: relative;
+    }
+    .resizer {
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 5px;
+      height: 100%;
+      cursor: col-resize;
+      user-select: none;
+      touch-action: none;
+      z-index: 10;
+    }
+    .resizer:hover, .resizing {
+      background-color: var(--primary);
+      opacity: 0.5;
+    }
+
     .data-table tbody tr:hover { background: var(--primary-light); }
     .data-table tbody tr.selected-row { background: #dbeafe; }
 
@@ -515,6 +536,9 @@
         <div class="spinner-border text-secondary" role="status"></div>
         <span>Saving…</span>
       </div>
+      <button class="btn btn-outline-custom" onclick="openTableSettingsModal()" title="Table Settings">
+        <i class="fas fa-cog"></i> Settings
+      </button>
       <button class="btn btn-outline-custom" onclick="openFieldOrderModal()" title="Reorder fields">
         <i class="fas fa-sort"></i> Field Order
       </button>
@@ -651,6 +675,36 @@
     </div>
   </div>
 
+  <!-- ══ TABLE SETTINGS MODAL ══════════════════════════════ -->
+  <div class="modal fade" id="tableSettingsModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:400px;">
+      <div class="modal-content" style="border-radius:var(--radius-lg);border:1px solid var(--neutral-200);">
+        <div class="modal-header" style="border-bottom:1px solid var(--neutral-200);">
+          <h5 class="modal-title" style="font-size:15px;font-weight:600;display:flex;align-items:center;gap:8px;">
+            <i class="fas fa-cog" style="color:var(--primary)"></i>
+            Table Settings
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body" style="padding:20px;">
+          <p style="font-size:13px; color:var(--neutral-600);">Select fields to display as columns:</p>
+          <div class="mb-3 d-flex gap-2">
+            <button class="btn btn-sm btn-outline-custom" onclick="toggleAllColumns(true)">Select All</button>
+            <button class="btn btn-sm btn-outline-custom" onclick="toggleAllColumns(false)">Deselect All</button>
+          </div>
+          <div id="columnToggles" style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; max-height:250px; overflow-y:auto;">
+          </div>
+        </div>
+        <div class="modal-footer" style="border-top:1px solid var(--neutral-200);">
+          <button class="btn btn-outline-custom" data-bs-dismiss="modal">Close</button>
+          <button class="btn btn-primary-custom" onclick="saveColumnSettings()">
+            <i class="fas fa-save"></i> Apply
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- ══ TOAST CONTAINER ═══════════════════════════════════ -->
   <div id="toast-container"></div>
 
@@ -691,6 +745,7 @@
   let sortCol       = null;
   let sortAsc       = true;
   let formVisible   = true;
+  let columnVisibility = {};
 
   // ─────────────────────────────────────────────────────────
   // 2. Init
@@ -711,6 +766,9 @@
       document.getElementById('statsBar').style.display = 'none';
       return;
     }
+
+    columnVisibility = JSON.parse(localStorage.getItem(`moduleColumnVisibility_${moduleName}`)) || {};
+    updateColumnStyles();
 
     document.getElementById('statFields').textContent = moduleFields.length;
     document.getElementById('statsBar').style.display = 'flex';
@@ -748,10 +806,12 @@
 
       fields.forEach(field => {
         const col = document.createElement('div');
-        // Full-width for textarea/calculated; 3-col (of 12) = 4 per row otherwise
-        col.className = (field.fieldType === 'textarea' || field.fieldType === 'calculated')
-          ? 'col-12'
-          : 'col-12 col-sm-6 col-md-3';
+        
+        // Map grid width or fallback to defaults
+        const defaultWidth = (field.fieldType === 'textarea' || field.fieldType === 'calculated') ? 'col-md-12' : 'col-md-3';
+        const widthClass = field.gridWidth || defaultWidth;
+        
+        col.className = `col-12 col-sm-6 ${widthClass}`;
         col.id = `wrapper_${field.fieldName}`;
 
         col.innerHTML = buildFieldHTML(field);
@@ -853,6 +913,142 @@
     });
 
     tr.innerHTML += '<th style="text-align:center;">Actions</th>';
+      
+      setTimeout(() => {
+          enableColumnResizing();
+          loadColumnWidths();
+      }, 0);
+  }
+
+  // ─────────────────────────────────────────────────────────
+  // 5a. Settings and Resizing Logic
+  // ─────────────────────────────────────────────────────────
+  function updateColumnStyles() {
+    let style = document.getElementById('dynamicColumnStyles');
+    if (!style) {
+      style = document.createElement('style');
+      style.id = 'dynamicColumnStyles';
+      document.head.appendChild(style);
+    }
+    let css = '';
+    moduleFields.forEach((f, i) => {
+      if (columnVisibility[f.fieldName] === false) {
+        css += `.data-table th:nth-child(${i + 2}), .data-table td:nth-child(${i + 2}) { display: none !important; }\n`;
+      }
+    });
+    style.textContent = css;
+  }
+
+  function openTableSettingsModal() {
+    const container = document.getElementById('columnToggles');
+    container.innerHTML = '';
+    
+    moduleFields.forEach(f => {
+      const isChecked = columnVisibility[f.fieldName] !== false; // true by default
+      
+      const label = document.createElement('label');
+      label.style.display = 'flex';
+      label.style.alignItems = 'center';
+      label.style.gap = '8px';
+      label.style.cursor = 'pointer';
+      label.style.fontSize = '13px';
+      
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.id = `col_${f.fieldName}`;
+      cb.checked = isChecked;
+      
+      label.appendChild(cb);
+      label.appendChild(document.createTextNode(f.fieldLabel));
+      container.appendChild(label);
+    });
+    
+    const modal = new bootstrap.Modal(document.getElementById('tableSettingsModal'));
+    modal.show();
+  }
+
+  function toggleAllColumns(state) {
+    moduleFields.forEach(f => {
+      const cb = document.getElementById(`col_${f.fieldName}`);
+      if (cb) cb.checked = state;
+    });
+  }
+
+  function saveColumnSettings() {
+    moduleFields.forEach(f => {
+      const cb = document.getElementById(`col_${f.fieldName}`);
+      if (cb) columnVisibility[f.fieldName] = cb.checked;
+    });
+    localStorage.setItem(`moduleColumnVisibility_${moduleName}`, JSON.stringify(columnVisibility));
+    updateColumnStyles();
+    
+    const modalInstance = bootstrap.Modal.getInstance(document.getElementById('tableSettingsModal'));
+    if (modalInstance) modalInstance.hide();
+  }
+
+  function enableColumnResizing() {
+    const table = document.querySelector('.data-table');
+    if (!table) return;
+    const headers = table.querySelectorAll('th');
+    
+    headers.forEach((th, index) => {
+      if (th.querySelector('.resizer')) return;
+      
+      const resizer = document.createElement('div');
+      resizer.classList.add('resizer');
+      th.appendChild(resizer);
+      
+      resizer.addEventListener('click', e => e.stopPropagation());
+      
+      let startX, startWidth;
+      resizer.addEventListener('mousedown', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        startX = e.pageX;
+        startWidth = th.offsetWidth;
+        resizer.classList.add('resizing');
+        
+        function onMouseMove(moveEvent) {
+          const newWidth = startWidth + (moveEvent.pageX - startX);
+          if (newWidth > 30) {
+            th.style.width = newWidth + 'px';
+            th.style.minWidth = newWidth + 'px';
+          }
+        }
+        
+        function onMouseUp() {
+          resizer.classList.remove('resizing');
+          document.removeEventListener('mousemove', onMouseMove);
+          document.removeEventListener('mouseup', onMouseUp);
+          saveColumnWidths();
+        }
+        
+        document.addEventListener('mousemove', onMouseMove);
+        document.addEventListener('mouseup', onMouseUp);
+      });
+    });
+  }
+
+  function saveColumnWidths() {
+    const widths = [];
+    const headers = document.querySelectorAll('.data-table th');
+    headers.forEach(th => {
+      widths.push(th.style.width);
+    });
+    localStorage.setItem(`moduleColumnWidths_${moduleName}`, JSON.stringify(widths));
+  }
+
+  function loadColumnWidths() {
+    const savedWidths = JSON.parse(localStorage.getItem(`moduleColumnWidths_${moduleName}`));
+    if (savedWidths && Array.isArray(savedWidths)) {
+      const headers = document.querySelectorAll('.data-table th');
+      headers.forEach((th, index) => {
+        if (savedWidths[index]) {
+          th.style.width = savedWidths[index];
+          th.style.minWidth = savedWidths[index];
+        }
+      });
+    }
   }
 
   // ─────────────────────────────────────────────────────────

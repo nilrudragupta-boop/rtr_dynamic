@@ -598,6 +598,14 @@
                                 <option value="calculated">Calculated (Formula)</option>
                             </select>
 
+                            <label style="font-weight:bold; font-size:13px; display:block; margin-top:10px;">Grid Width (Form Layout)</label>
+                            <select id="cfGridWidth" style="width:100%; padding:8px; margin-bottom:10px; border: 1px solid #ddd; border-radius: 4px;">
+                                <option value="col-md-3">25% (One Fourth) - Default</option>
+                                <option value="col-md-4">33% (One Third)</option>
+                                <option value="col-md-6">50% (Half Width)</option>
+                                <option value="col-md-12">100% (Full Width)</option>
+                            </select>
+
                             <div id="cfOptionsWrapper" style="display:none;">
                                 <label style="font-weight:bold; font-size:13px; display:block;">Dropdown Options (Comma separated) *</label>
                                 <input type="text" id="cfOptions" placeholder="e.g., A+, O+, B-, AB+" style="width:100%; padding:8px; margin-bottom:10px; border: 1px solid #ddd; border-radius: 4px;">
@@ -1905,7 +1913,8 @@ function createResponse(obj) {
                         calculationFormula: document.getElementById('cfFormula').value.trim(),
                         prefix: document.getElementById('cfPrefix').value.trim(),
                         suffix: document.getElementById('cfSuffix').value.trim(),
-                        order: parseInt(document.getElementById('cfOrder').value) || 0
+                        order: parseInt(document.getElementById('cfOrder').value) || 0,
+                        gridWidth: document.getElementById('cfGridWidth').value
                     };
 
                     if (id) payload._id = id;
@@ -1969,6 +1978,7 @@ function createResponse(obj) {
                     document.getElementById('cfPrefix').value = field.prefix || '';
                     document.getElementById('cfSuffix').value = field.suffix || '';
                     document.getElementById('cfOrder').value = field.order || 0;
+                    document.getElementById('cfGridWidth').value = field.gridWidth || 'col-md-3';
 
                     if (field.fieldType === 'select') {
                         document.getElementById('cfOptions').value = (field.options || []).join(', ');
@@ -2034,6 +2044,7 @@ function createResponse(obj) {
                     document.getElementById('cfPrefix').value = '';
                     document.getElementById('cfSuffix').value = '';
                     document.getElementById('cfOrder').value = '0';
+                    document.getElementById('cfGridWidth').value = 'col-md-3';
                     toggleCfOptions();
                 }
 

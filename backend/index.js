@@ -176,7 +176,7 @@ const customFieldSchema = new mongoose.Schema({
     isRequired: { type: Boolean, default: false },
     isActive: { type: Boolean, default: true },
     order: { type: Number, default: 0 }
-}, { timestamps: true });
+}, { timestamps: true, strict: false });
 
 // --- Generic Custom Record Schema (For entirely new UI Pages) ---
 const customRecordSchema = new mongoose.Schema({
