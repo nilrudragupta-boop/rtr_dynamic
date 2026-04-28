@@ -95,12 +95,8 @@ const apiClient = {
     _getCollection: async (collectionName) => {
         try {
             const response = await fetch(`${API_BASE_URL}/${collectionName}`);
-            const contentType = response.headers.get("content-type");
-            if (contentType && contentType.includes("application/json")) {
-                const result = await response.json();
-                return result.success ? result.data : [];
-            }
-            return [];
+            const result = await response.json();
+            return result.success ? result.data : [];
         } catch (error) {
             console.error(`Error fetching ${collectionName}:`, error);
             return [];
@@ -113,12 +109,7 @@ const apiClient = {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data)
             });
-            const contentType = response.headers.get("content-type");
-            if (contentType && contentType.includes("application/json")) {
-                return await response.json();
-            } else {
-                return { success: false, message: `API Error: Server returned ${response.status}. Expected JSON, got ${contentType}` };
-            }
+            return await response.json();
         } catch (error) {
             console.error(`Error saving ${collectionName}:`, error);
             return { success: false, message: error.message };
@@ -127,12 +118,7 @@ const apiClient = {
     _deleteCollection: async (collectionName, id) => {
         try {
             const response = await fetch(`${API_BASE_URL}/${collectionName}/${id}`, { method: 'DELETE' });
-            const contentType = response.headers.get("content-type");
-            if (contentType && contentType.includes("application/json")) {
-                return await response.json();
-            } else {
-                return { success: false, message: `API Error: Server returned ${response.status}. Expected JSON, got ${contentType}` };
-            }
+            return await response.json();
         } catch (error) {
             console.error(`Error deleting from ${collectionName}:`, error);
             return { success: false, message: error.message };
@@ -176,6 +162,8 @@ const apiClient = {
     deleteScrap: (id) => apiClient._deleteCollection('scraps', id),
 
     getProductions: () => apiClient._getCollection('production'),
+    saveProduction: (data) => apiClient._saveCollection('production', data),
+    deleteProduction: (id) => apiClient._deleteCollection('production', id),
 
     // --- Custom Fields & Dynamic Schema Records ---
     getCustomFields: () => apiClient._getCollection('custom-fields'),
@@ -188,11 +176,7 @@ const apiClient = {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data)
             });
-            const contentType = response.headers.get("content-type");
-            if (contentType && contentType.includes("application/json")) {
-                return await response.json();
-            }
-            return { success: false, message: "API Error: Invalid response format" };
+            return await response.json();
         } catch (error) {
             console.error('Error reordering custom fields:', error);
             return { success: false, message: error.message };
@@ -201,12 +185,8 @@ const apiClient = {
     getCustomRecords: async (moduleName) => {
         try {
             const response = await fetch(`${API_BASE_URL}/custom-records/${moduleName}`);
-            const contentType = response.headers.get("content-type");
-            if (contentType && contentType.includes("application/json")) {
-                const result = await response.json();
-                return result.success ? result.data : [];
-            }
-            return [];
+            const result = await response.json();
+            return result.success ? result.data : [];
         } catch (error) {
             console.error(`Error fetching custom records for ${moduleName}:`, error);
             return [];

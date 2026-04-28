@@ -89,6 +89,15 @@ app.post('/api/admin-creds', async (req, res) => {
     }
 });
 
+// --- General App Settings Routes ---
+app.get('/api/settings', (req, res) => {
+    res.json({ success: true, data: {} });
+});
+
+app.post('/api/settings', (req, res) => {
+    res.json({ success: true, data: req.body });
+});
+
 // --- Customer Routes ---
 // Fetch all customers
 app.get('/api/customers', async (req, res) => {
@@ -436,6 +445,25 @@ app.get('/api/production', async (req, res) => {
     try {
         const productions = await Production.find().sort({ date: -1 });
         res.json({ success: true, data: productions });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+app.post('/api/production', async (req, res) => {
+    try {
+        const payload = req.body;
+        const updated = await Production.findOneAndUpdate({ id: payload.id }, payload, { new: true, upsert: true });
+        res.status(200).json({ success: true, data: updated });
+    } catch (err) {
+        res.status(400).json({ success: false, message: err.message });
+    }
+});
+
+app.delete('/api/production/:id', async (req, res) => {
+    try {
+        await Production.findOneAndDelete({ id: req.params.id });
+        res.json({ success: true });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
     }
