@@ -1037,6 +1037,9 @@
                                             <button type="button" class="cfm-insert-btn" onclick="insertIntoFormula()">
                                                 <i class="fas fa-plus"></i> Insert
                                             </button>
+                                        <button type="button" class="cfm-insert-btn" onclick="testFormula()" style="background:#10b981;">
+                                            <i class="fas fa-vial"></i> Test
+                                        </button>
                                         </div>
                                         <div class="cfm-code-box" style="margin-top:8px">
                                             <b>Examples:</b><br>
@@ -1072,6 +1075,9 @@
                                         </select>
                                         <button type="button" class="cfm-insert-btn" onclick="insertIntoVisibility()">
                                             <i class="fas fa-plus"></i> Insert
+                                        </button>
+                                        <button type="button" class="cfm-insert-btn" onclick="testCondition()" style="background:#10b981;">
+                                            <i class="fas fa-vial"></i> Test
                                         </button>
                                     </div>
                                     <div class="cfm-code-box" style="margin-top:6px">
@@ -2730,6 +2736,49 @@ function createResponse(obj) {
                     t.innerHTML = `<i class="fas ${icons[type]||'fa-info-circle'}"></i><span>${msg}</span>`;
                     wrap.appendChild(t);
                     setTimeout(() => t.remove(), 3500);
+                }
+
+                // ── Test Logic Helpers ──
+                function testFormula() {
+                    const formula = document.getElementById('cfFormula').value;
+                    if (!formula) return alert('Enter a formula first.');
+                    const vars = formula.match(/\bcf_[a-zA-Z0-9_]+\b/g) || [];
+                    const uniqueVars = [...new Set(vars)];
+                    
+                    let dummyCode = "";
+                    for (let v of uniqueVars) {
+                        let val = prompt(`Enter dummy value for variable '${v}':`, "10");
+                        if (val === null) return; // User cancelled
+                        dummyCode += `const ${v} = ${isNaN(val) || val === '' ? `"${val}"` : val};\n`;
+                    }
+                    
+                    try {
+                        const fn = new Function(`${dummyCode} return ${formula};`);
+                        alert("Valid! Result: " + fn());
+                    } catch(e) {
+                        alert("Error in Javascript syntax:\n" + e.message);
+                    }
+                }
+
+                function testCondition() {
+                    const cond = document.getElementById('cfCondition').value;
+                    if (!cond) return alert('Enter a condition first.');
+                    const vars = cond.match(/\bcf_[a-zA-Z0-9_]+\b/g) || [];
+                    const uniqueVars = [...new Set(vars)];
+                    
+                    let dummyCode = "";
+                    for (let v of uniqueVars) {
+                        let val = prompt(`Enter dummy value for variable '${v}' (e.g. true, false, 100, "Text"):`, "true");
+                        if (val === null) return;
+                        dummyCode += `const ${v} = ${val === 'true' || val === 'false' || !isNaN(val) ? val : `"${val}"`};\n`;
+                    }
+                    
+                    try {
+                        const fn = new Function(`${dummyCode} return ${cond};`);
+                        alert("Valid! Result: " + fn());
+                    } catch(e) {
+                        alert("Error in Javascript syntax:\n" + e.message);
+                    }
                 }
 
 

@@ -163,6 +163,36 @@ const apiClient = {
 
     getProductions: () => apiClient._getCollection('production'),
 
+    // --- Custom Fields & Dynamic Schema Records ---
+    getCustomFields: () => apiClient._getCollection('custom-fields'),
+    saveCustomField: (data) => apiClient._saveCollection('custom-fields', data),
+    deleteCustomField: (id) => apiClient._deleteCollection('custom-fields', id),
+    reorderCustomFields: async (data) => {
+        try {
+            const response = await fetch(`${API_BASE_URL}/custom-fields/reorder`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            return await response.json();
+        } catch (error) {
+            console.error('Error reordering custom fields:', error);
+            return { success: false, message: error.message };
+        }
+    },
+    getCustomRecords: async (moduleName) => {
+        try {
+            const response = await fetch(`${API_BASE_URL}/custom-records/${moduleName}`);
+            const result = await response.json();
+            return result.success ? result.data : [];
+        } catch (error) {
+            console.error(`Error fetching custom records for ${moduleName}:`, error);
+            return [];
+        }
+    },
+    saveCustomRecord: (data) => apiClient._saveCollection('custom-records', data),
+    deleteCustomRecord: (id) => apiClient._deleteCollection('custom-records', id),
+
     // --- Replaced Electron IPC Calls ---
     sendEmail: async (payload) => {
         try {

@@ -171,12 +171,17 @@ const customFieldSchema = new mongoose.Schema({
     moduleName: { type: String, required: true }, // e.g., 'Customer', 'Invoice', 'Item'
     fieldName: { type: String, required: true },  // internal key (e.g., 'blood_group')
     fieldLabel: { type: String, required: true }, // UI Label (e.g., 'Blood Group')
-    fieldType: { type: String, enum: ['text', 'number', 'date', 'select', 'boolean'], default: 'text' },
+    fieldType: { type: String, enum: ['text', 'number', 'date', 'select', 'boolean', 'calculated'], default: 'text' },
     options: [String], // for 'select' type (e.g., ['A+', 'O+', 'B-'])
     isRequired: { type: Boolean, default: false },
     isActive: { type: Boolean, default: true },
+    visibilityCondition: { type: String },
+    calculationFormula: { type: String },
+    prefix: { type: String },
+    suffix: { type: String },
+    showTotal: { type: Boolean, default: false },
     order: { type: Number, default: 0 }
-}, { timestamps: true, strict: false });
+}, { timestamps: true });
 
 // --- Generic Custom Record Schema (For entirely new UI Pages) ---
 const customRecordSchema = new mongoose.Schema({

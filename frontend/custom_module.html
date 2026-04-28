@@ -2,1169 +2,1410 @@
 <html lang="en">
 
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Custom Module</title>
-
-  <!-- Bootstrap 5 -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" />
-  <!-- Font Awesome -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
-  <!-- Google Fonts -->
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
-
-  <!-- Firebase App (compat) -->
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-
-  <!-- SortableJS -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
-
-  <!-- Bootstrap JS -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js" defer></script>
-
-  <!-- Your existing scripts -->
-  <script src="apiClient.js" defer></script>
-  <script src="settings.js" defer></script>
-  <script src="brand.service.js" defer></script>
-  <script src="brandLoader.js" defer></script>
-  <script src="apiClient.js"></script>
-
-  <style>
-    :root {
-      --primary:       #2563eb;
-      --primary-light: #eff6ff;
-      --primary-dark:  #1d4ed8;
-      --accent:        #0ea5e9;
-      --success:       #16a34a;
-      --warning:       #d97706;
-      --danger:        #dc2626;
-      --neutral-50:    #f8fafc;
-      --neutral-100:   #f1f5f9;
-      --neutral-200:   #e2e8f0;
-      --neutral-400:   #94a3b8;
-      --neutral-600:   #475569;
-      --neutral-800:   #1e293b;
-      --radius-sm:     6px;
-      --radius-md:     10px;
-      --radius-lg:     16px;
-      --shadow-sm:     0 1px 3px rgba(0,0,0,.07), 0 1px 2px rgba(0,0,0,.04);
-      --shadow-md:     0 4px 12px rgba(0,0,0,.08), 0 2px 4px rgba(0,0,0,.04);
-      --shadow-lg:     0 10px 30px rgba(0,0,0,.1);
-      --font:          'DM Sans', system-ui, sans-serif;
-      --font-mono:     'DM Mono', monospace;
-    }
-
-    *, *::before, *::after { box-sizing: border-box; }
-
-    body {
-      font-family: var(--font);
-      background: var(--neutral-100);
-      color: var(--neutral-800);
-      min-height: 100vh;
-      font-size: 14px;
-      line-height: 1.6;
-    }
-
-    /* ─── Top bar ─────────────────────────────── */
-    .topbar {
-      background: #fff;
-      border-bottom: 1px solid var(--neutral-200);
-      padding: 0 24px;
-      height: 58px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      position: sticky;
-      top: 0;
-      z-index: 100;
-      box-shadow: var(--shadow-sm);
-    }
-
-    .topbar-brand {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-weight: 700;
-      font-size: 16px;
-      color: var(--neutral-800);
-    }
-
-    .topbar-brand .icon-wrap {
-      width: 32px;
-      height: 32px;
-      border-radius: var(--radius-sm);
-      background: var(--primary);
-      color: #fff;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 14px;
-    }
-
-    .topbar-actions { display: flex; align-items: center; gap: 8px; }
-
-    /* ─── Page layout ─────────────────────────── */
-    .page-wrapper { padding: 24px; max-width: 1600px; margin: 0 auto; }
-
-    /* ─── Section heading ─────────────────────── */
-    .section-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 16px;
-    }
-
-    .section-title {
-      font-size: 13px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: .06em;
-      color: var(--neutral-600);
-    }
-
-    /* ─── Card ────────────────────────────────── */
-    .card-panel {
-      background: #fff;
-      border-radius: var(--radius-lg);
-      border: 1px solid var(--neutral-200);
-      box-shadow: var(--shadow-sm);
-      margin-bottom: 20px;
-      overflow: hidden;
-    }
-
-    .card-panel-header {
-      padding: 16px 20px;
-      border-bottom: 1px solid var(--neutral-200);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      background: var(--neutral-50);
-    }
-
-    .card-panel-title {
-      font-weight: 600;
-      font-size: 14px;
-      color: var(--neutral-800);
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .card-panel-body { padding: 20px; }
-
-    /* ─── Section group in form ───────────────── */
-    .form-section {
-      margin-bottom: 24px;
-    }
-
-    .form-section-label {
-      font-size: 11px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: .08em;
-      color: var(--primary);
-      padding: 4px 10px;
-      background: var(--primary-light);
-      border-radius: 4px;
-      display: inline-block;
-      margin-bottom: 14px;
-    }
-
-    /* ─── Bootstrap form overrides ────────────── */
-    .form-label {
-      font-weight: 500;
-      font-size: 12px;
-      color: var(--neutral-600);
-      margin-bottom: 5px;
-      display: flex;
-      align-items: center;
-      gap: 4px;
-    }
-
-    .required-star { color: var(--danger); font-size: 11px; }
-
-    .form-control, .form-select {
-      border: 1px solid var(--neutral-200);
-      border-radius: var(--radius-sm);
-      font-size: 13.5px;
-      font-family: var(--font);
-      padding: 8px 11px;
-      color: var(--neutral-800);
-      transition: border-color .15s, box-shadow .15s;
-      background-color: #fff;
-    }
-
-    .form-control:focus, .form-select:focus {
-      border-color: var(--primary);
-      box-shadow: 0 0 0 3px rgba(37,99,235,.12);
-      outline: none;
-    }
-
-    /* ─── Buttons ─────────────────────────────── */
-    .btn {
-      font-family: var(--font);
-      font-weight: 500;
-      border-radius: var(--radius-sm);
-      transition: all .15s;
-      font-size: 13px;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .btn-primary-custom {
-      background: var(--primary);
-      color: #fff;
-      border: none;
-      padding: 8px 16px;
-    }
-    .btn-primary-custom:hover { background: var(--primary-dark); color: #fff; }
-
-    .btn-outline-custom {
-      background: transparent;
-      color: var(--neutral-600);
-      border: 1px solid var(--neutral-200);
-      padding: 7px 14px;
-    }
-    .btn-outline-custom:hover {
-      background: var(--neutral-100);
-      color: var(--neutral-800);
-      border-color: var(--neutral-400);
-    }
-
-    .btn-danger-custom {
-      background: var(--danger);
-      color: #fff;
-      border: none;
-      padding: 5px 10px;
-    }
-    .btn-warning-custom {
-      background: var(--warning);
-      color: #fff;
-      border: none;
-      padding: 5px 10px;
-    }
-    .btn-info-custom {
-      background: var(--accent);
-      color: #fff;
-      border: none;
-      padding: 5px 10px;
-    }
-    .btn-success-custom {
-      background: var(--success);
-      color: #fff;
-      border: none;
-      padding: 8px 16px;
-    }
-
-    /* ─── Table ───────────────────────────────── */
-    .data-table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 13px;
-    }
-
-    .data-table thead th {
-      background: var(--neutral-50);
-      border-bottom: 2px solid var(--neutral-200);
-      padding: 10px 14px;
-      font-weight: 600;
-      font-size: 11.5px;
-      text-transform: uppercase;
-      letter-spacing: .05em;
-      color: var(--neutral-600);
-      white-space: nowrap;
-      position: sticky;
-      top: 58px;
-      cursor: pointer;
-      user-select: none;
-    }
-
-    .data-table thead th:hover { color: var(--primary); }
-
-    .data-table thead th .sort-icon { font-size: 10px; margin-left: 4px; opacity: .5; }
-    .data-table thead th.sorted .sort-icon { opacity: 1; color: var(--primary); }
-
-    .data-table tbody tr {
-      border-bottom: 1px solid var(--neutral-100);
-      transition: background .1s;
-    }
-
-    /* ─── Resizable Columns ───────────────────── */
-    .data-table th {
-      position: relative;
-    }
-    .resizer {
-      position: absolute;
-      top: 0;
-      right: 0;
-      width: 5px;
-      height: 100%;
-      cursor: col-resize;
-      user-select: none;
-      touch-action: none;
-      z-index: 10;
-    }
-    .resizer:hover, .resizing {
-      background-color: var(--primary);
-      opacity: 0.5;
-    }
-
-    .data-table tbody tr:hover { background: var(--primary-light); }
-    .data-table tbody tr.selected-row { background: #dbeafe; }
-
-    .data-table td {
-      padding: 10px 14px;
-      vertical-align: middle;
-      color: var(--neutral-800);
-    }
-
-    .data-table td .cell-empty { color: var(--neutral-400); font-style: italic; font-size: 12px; }
-
-    /* ─── Badges ──────────────────────────────── */
-    .badge-yes { background: #dcfce7; color: #15803d; font-size: 11px; padding: 2px 8px; border-radius: 20px; font-weight: 600; }
-    .badge-no  { background: #fee2e2; color: #dc2626; font-size: 11px; padding: 2px 8px; border-radius: 20px; font-weight: 600; }
-
-    /* ─── Toast ───────────────────────────────── */
-    #toast-container {
-      position: fixed;
-      bottom: 24px;
-      right: 24px;
-      z-index: 9999;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .toast-item {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 12px 18px;
-      border-radius: var(--radius-md);
-      background: var(--neutral-800);
-      color: #fff;
-      font-size: 13px;
-      font-weight: 500;
-      box-shadow: var(--shadow-lg);
-      animation: slideUp .25s ease;
-      min-width: 260px;
-    }
-
-    .toast-item.success { background: var(--success); }
-    .toast-item.error   { background: var(--danger); }
-    .toast-item.info    { background: var(--primary); }
-
-    @keyframes slideUp {
-      from { opacity: 0; transform: translateY(12px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-
-    /* ─── Search & Toolbar ────────────────────── */
-    .toolbar {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      flex-wrap: wrap;
-      margin-bottom: 14px;
-    }
-
-    .search-wrap {
-      position: relative;
-      flex: 1;
-      min-width: 200px;
-      max-width: 320px;
-    }
-
-    .search-wrap .fa-magnifying-glass {
-      position: absolute;
-      left: 10px;
-      top: 50%;
-      transform: translateY(-50%);
-      color: var(--neutral-400);
-      font-size: 12px;
-    }
-
-    .search-wrap input {
-      padding-left: 30px;
-      height: 36px;
-      font-size: 13px;
-    }
-
-    /* ─── Drag handle (SortableJS) ────────────── */
-    .drag-handle {
-      cursor: grab;
-      color: var(--neutral-400);
-      font-size: 13px;
-      padding: 4px 8px;
-      border-radius: 4px;
-      transition: background .1s, color .1s;
-    }
-    .drag-handle:hover { background: var(--neutral-100); color: var(--primary); }
-    .drag-handle:active { cursor: grabbing; }
-
-    .sortable-ghost { opacity: .4; background: #dbeafe !important; }
-    .sortable-chosen { box-shadow: 0 4px 20px rgba(37,99,235,.2); }
-    .sortable-drag   { opacity: 1; }
-
-    /* ─── Field order panel ───────────────────── */
-    #fieldOrderList {
-      list-style: none;
-      padding: 0;
-      margin: 0;
-    }
-
-    #fieldOrderList li {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 8px 12px;
-      border: 1px solid var(--neutral-200);
-      border-radius: var(--radius-sm);
-      margin-bottom: 6px;
-      background: #fff;
-      font-size: 13px;
-      font-weight: 500;
-      transition: background .1s;
-    }
-
-    #fieldOrderList li:hover { background: var(--primary-light); border-color: var(--primary); }
-
-    /* ─── Stats bar ───────────────────────────── */
-    .stats-bar {
-      display: flex;
-      gap: 12px;
-      flex-wrap: wrap;
-      margin-bottom: 20px;
-    }
-
-    .stat-chip {
-      background: #fff;
-      border: 1px solid var(--neutral-200);
-      border-radius: var(--radius-md);
-      padding: 10px 16px;
-      min-width: 110px;
-      box-shadow: var(--shadow-sm);
-    }
-
-    .stat-chip .stat-value { font-size: 22px; font-weight: 700; color: var(--primary); line-height: 1; }
-    .stat-chip .stat-label { font-size: 11px; font-weight: 500; color: var(--neutral-400); margin-top: 2px; text-transform: uppercase; letter-spacing: .05em; }
-
-    /* ─── Pagination ──────────────────────────── */
-    .pagination-bar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 10px 16px;
-      border-top: 1px solid var(--neutral-100);
-      font-size: 12.5px;
-      color: var(--neutral-600);
-    }
-
-    .page-btn {
-      border: 1px solid var(--neutral-200);
-      background: #fff;
-      border-radius: 6px;
-      padding: 4px 10px;
-      cursor: pointer;
-      font-size: 12px;
-      margin: 0 2px;
-      transition: all .1s;
-    }
-
-    .page-btn:hover, .page-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
-    .page-btn:disabled { opacity: .4; cursor: not-allowed; }
-
-    /* ─── Empty state ─────────────────────────── */
-    .empty-state {
-      text-align: center;
-      padding: 48px 20px;
-      color: var(--neutral-400);
-    }
-    .empty-state i { font-size: 40px; margin-bottom: 12px; opacity: .5; }
-    .empty-state p { font-size: 14px; }
-
-    /* ─── Responsive helpers ──────────────────── */
-    @media (max-width: 768px) {
-      .page-wrapper { padding: 12px; }
-      .topbar { padding: 0 12px; }
-    }
-
-    /* ─── Skeleton loader ─────────────────────── */
-    .skeleton {
-      background: linear-gradient(90deg, var(--neutral-100) 25%, var(--neutral-200) 50%, var(--neutral-100) 75%);
-      background-size: 200% 100%;
-      animation: shimmer 1.2s infinite;
-      border-radius: 4px;
-    }
-    @keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
-
-    /* ─── Saving indicator ────────────────────── */
-    .saving-indicator {
-      display: none;
-      align-items: center;
-      gap: 6px;
-      font-size: 12px;
-      color: var(--neutral-400);
-    }
-    .saving-indicator.show { display: flex; }
-    .saving-indicator .spinner-border { width: 12px; height: 12px; border-width: 2px; }
-
-    /* ─── Action cell ─────────────────────────── */
-    .action-cell { white-space: nowrap; display: flex; gap: 5px; justify-content: center; }
-
-    /* ─── Record counter ──────────────────────── */
-    .record-meta {
-      font-size: 11.5px;
-      color: var(--neutral-400);
-      font-family: var(--font-mono);
-    }
-  </style>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Custom Module</title>
+
+    <!-- Bootstrap 5 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" />
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <!-- Google Fonts -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap"
+        rel="stylesheet" />
+
+    <!-- SortableJS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js" defer></script>
+
+    <!-- Your existing scripts -->
+    <script src="apiClient.js" defer></script>
+    <script src="settings.js" defer></script>
+    <script src="brand.service.js" defer></script>
+    <script src="brandLoader.js" defer></script>
+    <script src="apiClient.js"></script>
+
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-light: #eff6ff;
+            --primary-dark: #1d4ed8;
+            --accent: #0ea5e9;
+            --success: #16a34a;
+            --warning: #d97706;
+            --danger: #dc2626;
+            --neutral-50: #f8fafc;
+            --neutral-100: #f1f5f9;
+            --neutral-200: #e2e8f0;
+            --neutral-400: #94a3b8;
+            --neutral-600: #475569;
+            --neutral-800: #1e293b;
+            --radius-sm: 6px;
+            --radius-md: 10px;
+            --radius-lg: 16px;
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, .07), 0 1px 2px rgba(0, 0, 0, .04);
+            --shadow-md: 0 4px 12px rgba(0, 0, 0, .08), 0 2px 4px rgba(0, 0, 0, .04);
+            --shadow-lg: 0 10px 30px rgba(0, 0, 0, .1);
+            --font: 'DM Sans', system-ui, sans-serif;
+            --font-mono: 'DM Mono', monospace;
+        }
+
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font);
+            background: var(--neutral-100);
+            color: var(--neutral-800);
+            min-height: 100vh;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        /* ─── Top bar ─────────────────────────────── */
+        .topbar {
+            background: #fff;
+            border-bottom: 1px solid var(--neutral-200);
+            padding: 0 24px;
+            height: 58px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .topbar-brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 700;
+            font-size: 16px;
+            color: var(--neutral-800);
+        }
+
+        .topbar-brand .icon-wrap {
+            width: 32px;
+            height: 32px;
+            border-radius: var(--radius-sm);
+            background: var(--primary);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+
+        .topbar-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* ─── Page layout ─────────────────────────── */
+        .page-wrapper {
+            padding: 24px;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        /* ─── Section heading ─────────────────────── */
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+
+        .section-title {
+            font-size: 13px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: .06em;
+            color: var(--neutral-600);
+        }
+
+        /* ─── Card ────────────────────────────────── */
+        .card-panel {
+            background: #fff;
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--neutral-200);
+            box-shadow: var(--shadow-sm);
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        .card-panel-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--neutral-200);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--neutral-50);
+        }
+
+        .card-panel-title {
+            font-weight: 600;
+            font-size: 14px;
+            color: var(--neutral-800);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card-panel-body {
+            padding: 20px;
+        }
+
+        /* ─── Section group in form ───────────────── */
+        .form-section {
+            margin-bottom: 24px;
+        }
+
+        .form-section-label {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .08em;
+            color: var(--primary);
+            padding: 4px 10px;
+            background: var(--primary-light);
+            border-radius: 4px;
+            display: inline-block;
+            margin-bottom: 14px;
+        }
+
+        /* ─── Bootstrap form overrides ────────────── */
+        .form-label {
+            font-weight: 500;
+            font-size: 12px;
+            color: var(--neutral-600);
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .required-star {
+            color: var(--danger);
+            font-size: 11px;
+        }
+
+        .form-control,
+        .form-select {
+            border: 1px solid var(--neutral-200);
+            border-radius: var(--radius-sm);
+            font-size: 13.5px;
+            font-family: var(--font);
+            padding: 8px 11px;
+            color: var(--neutral-800);
+            transition: border-color .15s, box-shadow .15s;
+            background-color: #fff;
+        }
+
+        .form-control:focus,
+        .form-select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, .12);
+            outline: none;
+        }
+
+        /* ─── Buttons ─────────────────────────────── */
+        .btn {
+            font-family: var(--font);
+            font-weight: 500;
+            border-radius: var(--radius-sm);
+            transition: all .15s;
+            font-size: 13px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-primary-custom {
+            background: var(--primary);
+            color: #fff;
+            border: none;
+            padding: 8px 16px;
+        }
+
+        .btn-primary-custom:hover {
+            background: var(--primary-dark);
+            color: #fff;
+        }
+
+        .btn-outline-custom {
+            background: transparent;
+            color: var(--neutral-600);
+            border: 1px solid var(--neutral-200);
+            padding: 7px 14px;
+        }
+
+        .btn-outline-custom:hover {
+            background: var(--neutral-100);
+            color: var(--neutral-800);
+            border-color: var(--neutral-400);
+        }
+
+        .btn-danger-custom {
+            background: var(--danger);
+            color: #fff;
+            border: none;
+            padding: 5px 10px;
+        }
+
+        .btn-warning-custom {
+            background: var(--warning);
+            color: #fff;
+            border: none;
+            padding: 5px 10px;
+        }
+
+        .btn-info-custom {
+            background: var(--accent);
+            color: #fff;
+            border: none;
+            padding: 5px 10px;
+        }
+
+        .btn-success-custom {
+            background: var(--success);
+            color: #fff;
+            border: none;
+            padding: 8px 16px;
+        }
+
+        /* ─── Table ───────────────────────────────── */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        .data-table thead th {
+            background: var(--neutral-50);
+            border-bottom: 2px solid var(--neutral-200);
+            padding: 10px 14px;
+            font-weight: 600;
+            font-size: 11.5px;
+            text-transform: uppercase;
+            letter-spacing: .05em;
+            color: var(--neutral-600);
+            white-space: nowrap;
+            position: sticky;
+            top: 58px;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .data-table thead th:hover {
+            color: var(--primary);
+        }
+
+        .data-table thead th .sort-icon {
+            font-size: 10px;
+            margin-left: 4px;
+            opacity: .5;
+        }
+
+        .data-table thead th.sorted .sort-icon {
+            opacity: 1;
+            color: var(--primary);
+        }
+
+        .data-table tbody tr {
+            border-bottom: 1px solid var(--neutral-100);
+            transition: background .1s;
+        }
+
+        .data-table tfoot {
+            background: var(--neutral-50);
+            border-top: 2px solid var(--neutral-200);
+            font-weight: 700;
+            position: sticky;
+            bottom: 0;
+        }
+
+        /* ─── Resizable Columns ───────────────────── */
+        .data-table th {
+            position: relative;
+        }
+
+        .resizer {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 5px;
+            height: 100%;
+            cursor: col-resize;
+            user-select: none;
+            touch-action: none;
+            z-index: 10;
+        }
+
+        .resizer:hover,
+        .resizing {
+            background-color: var(--primary);
+            opacity: 0.5;
+        }
+
+        .data-table tbody tr:hover {
+            background: var(--primary-light);
+        }
+
+        .data-table tbody tr.selected-row {
+            background: #dbeafe;
+        }
+
+        .data-table td {
+            padding: 10px 14px;
+            vertical-align: middle;
+            color: var(--neutral-800);
+        }
+
+        .data-table td .cell-empty {
+            color: var(--neutral-400);
+            font-style: italic;
+            font-size: 12px;
+        }
+
+        /* ─── Badges ──────────────────────────────── */
+        .badge-yes {
+            background: #dcfce7;
+            color: #15803d;
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+
+        .badge-no {
+            background: #fee2e2;
+            color: #dc2626;
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+
+        /* ─── Toast ───────────────────────────────── */
+        #toast-container {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .toast-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 18px;
+            border-radius: var(--radius-md);
+            background: var(--neutral-800);
+            color: #fff;
+            font-size: 13px;
+            font-weight: 500;
+            box-shadow: var(--shadow-lg);
+            animation: slideUp .25s ease;
+            min-width: 260px;
+        }
+
+        .toast-item.success {
+            background: var(--success);
+        }
+
+        .toast-item.error {
+            background: var(--danger);
+        }
+
+        .toast-item.info {
+            background: var(--primary);
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(12px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* ─── Search & Toolbar ────────────────────── */
+        .toolbar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 14px;
+        }
+
+        .search-wrap {
+            position: relative;
+            flex: 1;
+            min-width: 200px;
+            max-width: 320px;
+        }
+
+        .search-wrap .fa-magnifying-glass {
+            position: absolute;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--neutral-400);
+            font-size: 12px;
+        }
+
+        .search-wrap input {
+            padding-left: 30px;
+            height: 36px;
+            font-size: 13px;
+        }
+
+        /* ─── Drag handle (SortableJS) ────────────── */
+        .drag-handle {
+            cursor: grab;
+            color: var(--neutral-400);
+            font-size: 13px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            transition: background .1s, color .1s;
+        }
+
+        .drag-handle:hover {
+            background: var(--neutral-100);
+            color: var(--primary);
+        }
+
+        .drag-handle:active {
+            cursor: grabbing;
+        }
+
+        .sortable-ghost {
+            opacity: .4;
+            background: #dbeafe !important;
+        }
+
+        .sortable-chosen {
+            box-shadow: 0 4px 20px rgba(37, 99, 235, .2);
+        }
+
+        .sortable-drag {
+            opacity: 1;
+        }
+
+        /* ─── Field order panel ───────────────────── */
+        #fieldOrderList {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        #fieldOrderList li {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 12px;
+            border: 1px solid var(--neutral-200);
+            border-radius: var(--radius-sm);
+            margin-bottom: 6px;
+            background: #fff;
+            font-size: 13px;
+            font-weight: 500;
+            transition: background .1s;
+        }
+
+        #fieldOrderList li:hover {
+            background: var(--primary-light);
+            border-color: var(--primary);
+        }
+
+        /* ─── Stats bar ───────────────────────────── */
+        .stats-bar {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        .stat-chip {
+            background: #fff;
+            border: 1px solid var(--neutral-200);
+            border-radius: var(--radius-md);
+            padding: 10px 16px;
+            min-width: 110px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .stat-chip .stat-value {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--primary);
+            line-height: 1;
+        }
+
+        .stat-chip .stat-label {
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--neutral-400);
+            margin-top: 2px;
+            text-transform: uppercase;
+            letter-spacing: .05em;
+        }
+
+        /* ─── Pagination ──────────────────────────── */
+        .pagination-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 16px;
+            border-top: 1px solid var(--neutral-100);
+            font-size: 12.5px;
+            color: var(--neutral-600);
+        }
+
+        .page-btn {
+            border: 1px solid var(--neutral-200);
+            background: #fff;
+            border-radius: 6px;
+            padding: 4px 10px;
+            cursor: pointer;
+            font-size: 12px;
+            margin: 0 2px;
+            transition: all .1s;
+        }
+
+        .page-btn:hover,
+        .page-btn.active {
+            background: var(--primary);
+            color: #fff;
+            border-color: var(--primary);
+        }
+
+        .page-btn:disabled {
+            opacity: .4;
+            cursor: not-allowed;
+        }
+
+        /* ─── Empty state ─────────────────────────── */
+        .empty-state {
+            text-align: center;
+            padding: 48px 20px;
+            color: var(--neutral-400);
+        }
+
+        .empty-state i {
+            font-size: 40px;
+            margin-bottom: 12px;
+            opacity: .5;
+        }
+
+        .empty-state p {
+            font-size: 14px;
+        }
+
+        /* ─── Responsive helpers ──────────────────── */
+        @media (max-width: 768px) {
+            .page-wrapper {
+                padding: 12px;
+            }
+
+            .topbar {
+                padding: 0 12px;
+            }
+        }
+
+        /* ─── Skeleton loader ─────────────────────── */
+        .skeleton {
+            background: linear-gradient(90deg, var(--neutral-100) 25%, var(--neutral-200) 50%, var(--neutral-100) 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.2s infinite;
+            border-radius: 4px;
+        }
+
+        @keyframes shimmer {
+            from {
+                background-position: 200% 0;
+            }
+
+            to {
+                background-position: -200% 0;
+            }
+        }
+
+        /* ─── Saving indicator ────────────────────── */
+        .saving-indicator {
+            display: none;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            color: var(--neutral-400);
+        }
+
+        .saving-indicator.show {
+            display: flex;
+        }
+
+        .saving-indicator .spinner-border {
+            width: 12px;
+            height: 12px;
+            border-width: 2px;
+        }
+
+        /* ─── Action cell ─────────────────────────── */
+        .action-cell {
+            white-space: nowrap;
+            display: flex;
+            gap: 5px;
+            justify-content: center;
+        }
+
+        /* ─── Record counter ──────────────────────── */
+        .record-meta {
+            font-size: 11.5px;
+            color: var(--neutral-400);
+            font-family: var(--font-mono);
+        }
+    </style>
 </head>
 
 <body>
 
-  <!-- ══ TOP BAR ══════════════════════════════════════════ -->
-  <div class="topbar">
-    <div class="topbar-brand">
-      <div class="icon-wrap"><i class="fas fa-cube"></i></div>
-      <span id="pageTitle">Custom Module</span>
-    </div>
-    <div class="topbar-actions">
-      <div class="saving-indicator" id="savingIndicator">
-        <div class="spinner-border text-secondary" role="status"></div>
-        <span>Saving…</span>
-      </div>
-      <button class="btn btn-outline-custom" onclick="openTableSettingsModal()" title="Table Settings">
-        <i class="fas fa-cog"></i> Settings
-      </button>
-      <button class="btn btn-outline-custom" onclick="openFieldOrderModal()" title="Reorder fields">
-        <i class="fas fa-sort"></i> Field Order
-      </button>
-      <button class="btn btn-outline-custom" onclick="exportCSV()" title="Export data">
-        <i class="fas fa-download"></i> Export
-      </button>
-      <button class="btn btn-outline-custom" onclick="fetchData()" title="Refresh">
-        <i class="fas fa-arrows-rotate"></i> Refresh
-      </button>
-    </div>
-  </div>
-
-  <!-- ══ PAGE WRAPPER ══════════════════════════════════════ -->
-  <div class="page-wrapper">
-
-    <!-- Stats bar -->
-    <div class="stats-bar" id="statsBar" style="display:none;">
-      <div class="stat-chip">
-        <div class="stat-value" id="statTotal">0</div>
-        <div class="stat-label">Total Records</div>
-      </div>
-      <div class="stat-chip">
-        <div class="stat-value" id="statFiltered">0</div>
-        <div class="stat-label">Showing</div>
-      </div>
-      <div class="stat-chip">
-        <div class="stat-value" id="statFields">0</div>
-        <div class="stat-label">Fields</div>
-      </div>
+    <!-- ══ TOP BAR ══════════════════════════════════════════ -->
+    <div class="topbar">
+        <div class="topbar-brand">
+            <div class="icon-wrap"><i class="fas fa-cube"></i></div>
+            <span id="pageTitle">Custom Module</span>
+        </div>
+        <div class="topbar-actions">
+            <div class="saving-indicator" id="savingIndicator">
+                <div class="spinner-border text-secondary" role="status"></div>
+                <span>Saving…</span>
+            </div>
+            <button class="btn btn-outline-custom" onclick="openTableSettingsModal()" title="Table Settings">
+                <i class="fas fa-cog"></i> Settings
+            </button>
+            <button class="btn btn-outline-custom" onclick="openFieldOrderModal()" title="Reorder fields">
+                <i class="fas fa-sort"></i> Field Order
+            </button>
+            <button class="btn btn-outline-custom" onclick="exportCSV()" title="Export data">
+                <i class="fas fa-download"></i> Export
+            </button>
+            <button class="btn btn-outline-custom" onclick="fetchData()" title="Refresh">
+                <i class="fas fa-arrows-rotate"></i> Refresh
+            </button>
+        </div>
     </div>
 
-    <!-- ── FORM CARD ───────────────────────────────────── -->
-    <div class="card-panel" id="formCard">
-      <div class="card-panel-header">
-        <div class="card-panel-title">
-          <i class="fas fa-pen-to-square" style="color:var(--primary)"></i>
-          <span id="formCardTitle">Add New Record</span>
-        </div>
-        <div class="d-flex gap-2 align-items-center">
-          <span class="record-meta" id="editingIdLabel"></span>
-          <button class="btn btn-outline-custom" id="toggleFormBtn" onclick="toggleForm()">
-            <i class="fas fa-chevron-up" id="toggleFormIcon"></i>
-          </button>
-        </div>
-      </div>
+    <!-- ══ PAGE WRAPPER ══════════════════════════════════════ -->
+    <div class="page-wrapper">
 
-      <div id="formBody" class="card-panel-body">
-        <input type="hidden" id="recordId" />
-
-        <!-- Dynamic form sections injected here -->
-        <div id="dynamicFormContainer"></div>
-
-        <div class="d-flex justify-content-end gap-2 pt-2 border-top border-light mt-3">
-          <button class="btn btn-outline-custom" onclick="clearForm()">
-            <i class="fas fa-xmark"></i> Clear
-          </button>
-          <button class="btn btn-success-custom" onclick="saveRecord()">
-            <i class="fas fa-floppy-disk"></i> <span id="saveLabel">Save Record</span>
-          </button>
+        <!-- Stats bar -->
+        <div class="stats-bar" id="statsBar" style="display:none;">
+            <div class="stat-chip">
+                <div class="stat-value" id="statTotal">0</div>
+                <div class="stat-label">Total Records</div>
+            </div>
+            <div class="stat-chip">
+                <div class="stat-value" id="statFiltered">0</div>
+                <div class="stat-label">Showing</div>
+            </div>
+            <div class="stat-chip">
+                <div class="stat-value" id="statFields">0</div>
+                <div class="stat-label">Fields</div>
+            </div>
         </div>
-      </div>
+
+        <!-- ── FORM CARD ───────────────────────────────────── -->
+        <div class="card-panel" id="formCard">
+            <div class="card-panel-header">
+                <div class="card-panel-title">
+                    <i class="fas fa-pen-to-square" style="color:var(--primary)"></i>
+                    <span id="formCardTitle">Add New Record</span>
+                </div>
+                <div class="d-flex gap-2 align-items-center">
+                    <span class="record-meta" id="editingIdLabel"></span>
+                    <button class="btn btn-outline-custom" id="toggleFormBtn" onclick="toggleForm()">
+                        <i class="fas fa-chevron-up" id="toggleFormIcon"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div id="formBody" class="card-panel-body">
+                <input type="hidden" id="recordId" />
+
+                <!-- Dynamic form sections injected here -->
+                <div id="dynamicFormContainer"></div>
+
+                <div class="d-flex justify-content-end gap-2 pt-2 border-top border-light mt-3">
+                    <button class="btn btn-outline-custom" onclick="clearForm()">
+                        <i class="fas fa-xmark"></i> Clear
+                    </button>
+                    <button class="btn btn-success-custom" onclick="saveRecord()">
+                        <i class="fas fa-floppy-disk"></i> <span id="saveLabel">Save Record</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── DATA TABLE CARD ─────────────────────────────── -->
+        <div class="card-panel">
+            <div class="card-panel-header">
+                <div class="card-panel-title">
+                    <i class="fas fa-table" style="color:var(--primary)"></i>
+                    Records
+                </div>
+            </div>
+
+            <div class="card-panel-body pb-0">
+                <div class="toolbar">
+                    <div class="search-wrap">
+                        <i class="fas fa-magnifying-glass"></i>
+                        <input type="text" id="searchInput" class="form-control" placeholder="Search records…"
+                            oninput="applyFilters()" />
+                    </div>
+                    <select id="pageSizeSelect" class="form-select" style="width:auto;height:36px;font-size:13px;"
+                        onchange="applyFilters()">
+                        <option value="10">10 / page</option>
+                        <option value="25" selected>25 / page</option>
+                        <option value="50">50 / page</option>
+                        <option value="100">100 / page</option>
+                    </select>
+                    <select id="filterField" class="form-select" style="width:auto;height:36px;font-size:13px;"
+                        onchange="applyFilters()">
+                        <option value="">All Fields</option>
+                    </select>
+                </div>
+            </div>
+
+            <div style="overflow-x:auto;">
+                <table class="data-table">
+                    <thead>
+                        <tr id="tableHeaders"></tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        <tr>
+                            <td colspan="100%" class="text-center py-4 text-muted">Loading…</td>
+                        </tr>
+                    </tbody>
+                    <tfoot id="tableFooter"></tfoot>
+                </table>
+            </div>
+
+            <div class="pagination-bar" id="paginationBar">
+                <span id="pageInfo">—</span>
+                <div id="pageButtons"></div>
+            </div>
+        </div>
+
+    </div><!-- /page-wrapper -->
+
+    <!-- ══ FIELD ORDER MODAL ══════════════════════════════════ -->
+    <div class="modal fade" id="fieldOrderModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered" style="max-width:480px;">
+            <div class="modal-content" style="border-radius:var(--radius-lg);border:1px solid var(--neutral-200);">
+                <div class="modal-header" style="border-bottom:1px solid var(--neutral-200);">
+                    <h5 class="modal-title"
+                        style="font-size:15px;font-weight:600;display:flex;align-items:center;gap:8px;">
+                        <i class="fas fa-sort" style="color:var(--primary)"></i>
+                        Drag to Reorder Fields
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" style="padding:20px;">
+                    <p style="font-size:12.5px;color:var(--neutral-400);margin-bottom:14px;">
+                        Drag the handles to rearrange the display order. Order is saved to Firestore automatically.
+                    </p>
+                    <ul id="fieldOrderList"></ul>
+                </div>
+                <div class="modal-footer" style="border-top:1px solid var(--neutral-200);">
+                    <button class="btn btn-outline-custom" data-bs-dismiss="modal">Close</button>
+                    <button class="btn btn-primary-custom" onclick="saveFieldOrder()">
+                        <i class="fas fa-cloud-arrow-up"></i> Save Order
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <!-- ── DATA TABLE CARD ─────────────────────────────── -->
-    <div class="card-panel">
-      <div class="card-panel-header">
-        <div class="card-panel-title">
-          <i class="fas fa-table" style="color:var(--primary)"></i>
-          Records
+    <!-- ══ TABLE SETTINGS MODAL ══════════════════════════════ -->
+    <div class="modal fade" id="tableSettingsModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered" style="max-width:400px;">
+            <div class="modal-content" style="border-radius:var(--radius-lg);border:1px solid var(--neutral-200);">
+                <div class="modal-header" style="border-bottom:1px solid var(--neutral-200);">
+                    <h5 class="modal-title"
+                        style="font-size:15px;font-weight:600;display:flex;align-items:center;gap:8px;">
+                        <i class="fas fa-cog" style="color:var(--primary)"></i>
+                        Table Settings
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" style="padding:20px;">
+                    <p style="font-size:13px; color:var(--neutral-600);">Select fields to display as columns:</p>
+                    <div class="mb-3 d-flex gap-2">
+                        <button class="btn btn-sm btn-outline-custom" onclick="toggleAllColumns(true)">Select
+                            All</button>
+                        <button class="btn btn-sm btn-outline-custom" onclick="toggleAllColumns(false)">Deselect
+                            All</button>
+                    </div>
+                    <div id="columnToggles"
+                        style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; max-height:250px; overflow-y:auto;">
+                    </div>
+                </div>
+                <div class="modal-footer" style="border-top:1px solid var(--neutral-200);">
+                    <button class="btn btn-outline-custom" data-bs-dismiss="modal">Close</button>
+                    <button class="btn btn-primary-custom" onclick="saveColumnSettings()">
+                        <i class="fas fa-save"></i> Apply
+                    </button>
+                </div>
+            </div>
         </div>
-      </div>
-
-      <div class="card-panel-body pb-0">
-        <div class="toolbar">
-          <div class="search-wrap">
-            <i class="fas fa-magnifying-glass"></i>
-            <input type="text" id="searchInput" class="form-control" placeholder="Search records…" oninput="applyFilters()" />
-          </div>
-          <select id="pageSizeSelect" class="form-select" style="width:auto;height:36px;font-size:13px;" onchange="applyFilters()">
-            <option value="10">10 / page</option>
-            <option value="25" selected>25 / page</option>
-            <option value="50">50 / page</option>
-            <option value="100">100 / page</option>
-          </select>
-          <select id="filterField" class="form-select" style="width:auto;height:36px;font-size:13px;" onchange="applyFilters()">
-            <option value="">All Fields</option>
-          </select>
-        </div>
-      </div>
-
-      <div style="overflow-x:auto;">
-        <table class="data-table">
-          <thead>
-            <tr id="tableHeaders"></tr>
-          </thead>
-          <tbody id="tableBody">
-            <tr><td colspan="100%" class="text-center py-4 text-muted">Loading…</td></tr>
-          </tbody>
-        </table>
-      </div>
-
-      <div class="pagination-bar" id="paginationBar">
-        <span id="pageInfo">—</span>
-        <div id="pageButtons"></div>
-      </div>
     </div>
 
-  </div><!-- /page-wrapper -->
+    <!-- ══ TOAST CONTAINER ═══════════════════════════════════ -->
+    <div id="toast-container"></div>
 
-  <!-- ══ FIELD ORDER MODAL ══════════════════════════════════ -->
-  <div class="modal fade" id="fieldOrderModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered" style="max-width:480px;">
-      <div class="modal-content" style="border-radius:var(--radius-lg);border:1px solid var(--neutral-200);">
-        <div class="modal-header" style="border-bottom:1px solid var(--neutral-200);">
-          <h5 class="modal-title" style="font-size:15px;font-weight:600;display:flex;align-items:center;gap:8px;">
-            <i class="fas fa-sort" style="color:var(--primary)"></i>
-            Drag to Reorder Fields
-          </h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-        </div>
-        <div class="modal-body" style="padding:20px;">
-          <p style="font-size:12.5px;color:var(--neutral-400);margin-bottom:14px;">
-            Drag the handles to rearrange the display order. Order is saved to Firestore automatically.
-          </p>
-          <ul id="fieldOrderList"></ul>
-        </div>
-        <div class="modal-footer" style="border-top:1px solid var(--neutral-200);">
-          <button class="btn btn-outline-custom" data-bs-dismiss="modal">Close</button>
-          <button class="btn btn-primary-custom" onclick="saveFieldOrderToFirestore()">
-            <i class="fas fa-cloud-arrow-up"></i> Save Order
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
+    <!-- ══ PRINT FRAME (hidden) ══════════════════════════════ -->
+    <div id="printFrame" style="display:none;"></div>
 
-  <!-- ══ TABLE SETTINGS MODAL ══════════════════════════════ -->
-  <div class="modal fade" id="tableSettingsModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered" style="max-width:400px;">
-      <div class="modal-content" style="border-radius:var(--radius-lg);border:1px solid var(--neutral-200);">
-        <div class="modal-header" style="border-bottom:1px solid var(--neutral-200);">
-          <h5 class="modal-title" style="font-size:15px;font-weight:600;display:flex;align-items:center;gap:8px;">
-            <i class="fas fa-cog" style="color:var(--primary)"></i>
-            Table Settings
-          </h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-        </div>
-        <div class="modal-body" style="padding:20px;">
-          <p style="font-size:13px; color:var(--neutral-600);">Select fields to display as columns:</p>
-          <div class="mb-3 d-flex gap-2">
-            <button class="btn btn-sm btn-outline-custom" onclick="toggleAllColumns(true)">Select All</button>
-            <button class="btn btn-sm btn-outline-custom" onclick="toggleAllColumns(false)">Deselect All</button>
-          </div>
-          <div id="columnToggles" style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; max-height:250px; overflow-y:auto;">
-          </div>
-        </div>
-        <div class="modal-footer" style="border-top:1px solid var(--neutral-200);">
-          <button class="btn btn-outline-custom" data-bs-dismiss="modal">Close</button>
-          <button class="btn btn-primary-custom" onclick="saveColumnSettings()">
-            <i class="fas fa-save"></i> Apply
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
+    <!-- ══════════════════════════════════════════════════════ -->
+    <script>
 
-  <!-- ══ TOAST CONTAINER ═══════════════════════════════════ -->
-  <div id="toast-container"></div>
+        // ─────────────────────────────────────────────────────────
+        // 1. Module setup
+        // ─────────────────────────────────────────────────────────
+        const urlParams = new URLSearchParams(window.location.search);
+        const moduleName = urlParams.get('module') || 'Custom';
 
-  <!-- ══ PRINT FRAME (hidden) ══════════════════════════════ -->
-  <div id="printFrame" style="display:none;"></div>
+        document.getElementById('pageTitle').textContent = `${moduleName}`;
+        document.title = `${moduleName} — Module`;
 
-  <!-- ══════════════════════════════════════════════════════ -->
-  <script>
-  // ─────────────────────────────────────────────────────────
-  // 0. Firebase config — replace with your project's config
-  // ─────────────────────────────────────────────────────────
-  const firebaseConfig = {
-    apiKey:            "YOUR_API_KEY",
-    authDomain:        "YOUR_PROJECT.firebaseapp.com",
-    projectId:         "YOUR_PROJECT_ID",
-    storageBucket:     "YOUR_PROJECT.appspot.com",
-    messagingSenderId: "YOUR_SENDER_ID",
-    appId:             "YOUR_APP_ID"
-  };
+        let moduleFields = [];
+        let moduleData = [];       // raw full dataset from API
+        let filteredData = [];       // after search/filter
+        let currentPage = 1;
+        let sortCol = null;
+        let sortAsc = true;
+        let formVisible = true;
+        let columnVisibility = {};
 
-  // Initialise Firebase (guard against double-init)
-  if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-  const db = firebase.firestore();
+        // ─────────────────────────────────────────────────────────
+        // 2. Init
+        // ─────────────────────────────────────────────────────────
+        async function init() {
+            const allFields = JSON.parse(localStorage.getItem('CUSTOM_FIELDS')) || [];
+            moduleFields = allFields
+                .filter(f => f.moduleName === moduleName && f.isActive)
+                .sort((a, b) => (a.order ?? 999) - (b.order ?? 999));
 
-  // ─────────────────────────────────────────────────────────
-  // 1. Module setup
-  // ─────────────────────────────────────────────────────────
-  const urlParams   = new URLSearchParams(window.location.search);
-  const moduleName  = urlParams.get('module') || 'Custom';
-
-  document.getElementById('pageTitle').textContent = `${moduleName}`;
-  document.title = `${moduleName} — Module`;
-
-  let moduleFields  = [];
-  let moduleData    = [];       // raw full dataset from API
-  let filteredData  = [];       // after search/filter
-  let currentPage   = 1;
-  let sortCol       = null;
-  let sortAsc       = true;
-  let formVisible   = true;
-  let columnVisibility = {};
-
-  // ─────────────────────────────────────────────────────────
-  // 2. Init
-  // ─────────────────────────────────────────────────────────
-  async function init() {
-    const allFields = JSON.parse(localStorage.getItem('CUSTOM_FIELDS')) || [];
-    moduleFields = allFields
-      .filter(f => f.moduleName === moduleName && f.isActive)
-      .sort((a, b) => (a.order ?? 999) - (b.order ?? 999));
-
-    if (moduleFields.length === 0) {
-      document.getElementById('dynamicFormContainer').innerHTML =
-        `<div class="alert alert-warning d-flex align-items-center gap-2">
+            if (moduleFields.length === 0) {
+                document.getElementById('dynamicFormContainer').innerHTML =
+                    `<div class="alert alert-warning d-flex align-items-center gap-2">
            <i class="fas fa-triangle-exclamation"></i>
            No active fields found for module <strong>${moduleName}</strong>.
            Please configure them in Settings → Custom Fields.
          </div>`;
-      document.getElementById('statsBar').style.display = 'none';
-      return;
-    }
+                document.getElementById('statsBar').style.display = 'none';
+                return;
+            }
 
-    columnVisibility = JSON.parse(localStorage.getItem(`moduleColumnVisibility_${moduleName}`)) || {};
-    updateColumnStyles();
+            columnVisibility = JSON.parse(localStorage.getItem(`moduleColumnVisibility_${moduleName}`)) || {};
+            updateColumnStyles();
 
-    document.getElementById('statFields').textContent = moduleFields.length;
-    document.getElementById('statsBar').style.display = 'flex';
+            document.getElementById('statFields').textContent = moduleFields.length;
+            document.getElementById('statsBar').style.display = 'flex';
 
-    populateFilterField();
-    renderForm();
-    renderTableHeaders();
-    await fetchData();
-  }
+            populateFilterField();
+            renderForm();
+            renderTableHeaders();
+            await fetchData();
+        }
 
-  // ─────────────────────────────────────────────────────────
-  // 3. Form rendering — Bootstrap 12-col grid (4 per row)
-  // ─────────────────────────────────────────────────────────
-  function renderForm() {
-    const container = document.getElementById('dynamicFormContainer');
-    container.innerHTML = '';
+        // ─────────────────────────────────────────────────────────
+        // 3. Form rendering — Bootstrap 12-col grid (4 per row)
+        // ─────────────────────────────────────────────────────────
+        function renderForm() {
+            const container = document.getElementById('dynamicFormContainer');
+            container.innerHTML = '';
 
-    // Group by section
-    const sections = {};
-    moduleFields.forEach(f => {
-      const sec = f.section || 'General Details';
-      if (!sections[sec]) sections[sec] = [];
-      sections[sec].push(f);
-    });
+            // Group by section
+            const sections = {};
+            moduleFields.forEach(f => {
+                const sec = f.section || 'General Details';
+                if (!sections[sec]) sections[sec] = [];
+                sections[sec].push(f);
+            });
 
-    Object.entries(sections).forEach(([secName, fields]) => {
-      const secDiv = document.createElement('div');
-      secDiv.className = 'form-section';
+            Object.entries(sections).forEach(([secName, fields]) => {
+                const secDiv = document.createElement('div');
+                secDiv.className = 'form-section';
 
-      secDiv.innerHTML = `<div class="form-section-label"><i class="fas fa-layer-group fa-xs me-1"></i>${secName}</div>`;
+                secDiv.innerHTML = `<div class="form-section-label"><i class="fas fa-layer-group fa-xs me-1"></i>${secName}</div>`;
 
-      // Bootstrap row — 4 columns (col-12 col-sm-6 col-md-3)
-      const row = document.createElement('div');
-      row.className = 'row g-3';
+                // Bootstrap row — 4 columns (col-12 col-sm-6 col-md-3)
+                const row = document.createElement('div');
+                row.className = 'row g-3';
 
-      fields.forEach(field => {
-        const col = document.createElement('div');
-        
-        // Map grid width or fallback to defaults
-        const defaultWidth = (field.fieldType === 'textarea' || field.fieldType === 'calculated') ? 'col-md-12' : 'col-md-3';
-        const widthClass = field.gridWidth || defaultWidth;
-        
-        col.className = `col-12 col-sm-6 ${widthClass}`;
-        col.id = `wrapper_${field.fieldName}`;
+                fields.forEach(field => {
+                    const col = document.createElement('div');
 
-        col.innerHTML = buildFieldHTML(field);
-        row.appendChild(col);
-      });
+                    // Map grid width or fallback to defaults
+                    const defaultWidth = (field.fieldType === 'textarea' || field.fieldType === 'calculated') ? 'col-md-12' : 'col-md-3';
+                    const widthClass = field.gridWidth || defaultWidth;
 
-      secDiv.appendChild(row);
-      container.appendChild(secDiv);
-    });
+                    col.className = `col-12 col-sm-6 ${widthClass}`;
+                    col.id = `wrapper_${field.fieldName}`;
 
-    // Attach listeners
-    document.querySelectorAll('.dynamic-input').forEach(el => {
-      el.addEventListener('change', () => applyVisibilityRules());
-      el.addEventListener('input',  () => applyVisibilityRules());
-    });
+                    col.innerHTML = buildFieldHTML(field);
+                    row.appendChild(col);
+                });
 
-    applyVisibilityRules();
-  }
+                secDiv.appendChild(row);
+                container.appendChild(secDiv);
+            });
 
-  function buildFieldHTML(field) {
-    const req    = field.isRequired ? '<span class="required-star">*</span>' : '';
-    const reqAttr = field.isRequired ? 'required' : '';
-    const data   = `data-field-name="${field.fieldName}"`;
-    const cls    = 'form-control dynamic-input';
-    const id     = `field_${field.fieldName}`;
+            // Attach listeners
+            document.querySelectorAll('.dynamic-input').forEach(el => {
+                el.addEventListener('change', () => { applyCalculations(); applyVisibilityRules(); });
+                el.addEventListener('input', () => { applyCalculations(); applyVisibilityRules(); });
+            });
 
-    let inputHTML = '';
+            applyCalculations();
+            applyVisibilityRules();
+        }
 
-    switch (field.fieldType) {
-      case 'select':
-        const opts = (field.options || []).map(o => `<option value="${o}">${o}</option>`).join('');
-        inputHTML = `<select id="${id}" class="form-select dynamic-input" ${data} ${reqAttr}>
+        function buildFieldHTML(field) {
+            const req = field.isRequired ? '<span class="required-star">*</span>' : '';
+            const reqAttr = field.isRequired ? 'required' : '';
+            const data = `data-field-name="${field.fieldName}"`;
+            const cls = 'form-control dynamic-input';
+            const id = `field_${field.fieldName}`;
+
+            let inputHTML = '';
+
+            switch (field.fieldType) {
+                case 'select':
+                    const opts = (field.options || []).map(o => `<option value="${o}">${o}</option>`).join('');
+                    inputHTML = `<select id="${id}" class="form-select dynamic-input" ${data} ${reqAttr}>
                        <option value="">— Select —</option>${opts}
                      </select>`;
-        break;
-      case 'boolean':
-        inputHTML = `<div class="form-check mt-2">
+                    break;
+                case 'multiselect':
+                    const mOpts = (field.options || []).map(o => `<option value="${o}">${o}</option>`).join('');
+                    // Note: Using standard multiple select
+                    inputHTML = `<select id="${id}" class="form-select dynamic-input" ${data} ${reqAttr} multiple size="3">
+                       ${mOpts}
+                     </select>`;
+                    break;
+                case 'boolean':
+                    inputHTML = `<div class="form-check mt-2">
                        <input type="checkbox" id="${id}" class="form-check-input dynamic-input" ${data}>
                        <label class="form-check-label" for="${id}">Yes</label>
                      </div>`;
-        break;
-      case 'textarea':
-        inputHTML = `<textarea id="${id}" class="${cls}" rows="3" ${data} ${reqAttr} placeholder="${field.fieldLabel}…"></textarea>`;
-        break;
-      case 'date':
-        inputHTML = `<input type="date" id="${id}" class="${cls}" ${data} ${reqAttr}>`;
-        break;
-      case 'number':
-        inputHTML = `<div class="input-group input-group-sm">
-                       ${field.prefix ? `<span class="input-group-text">${field.prefix}</span>` : ''}
-                       <input type="number" id="${id}" class="${cls}" ${data} ${reqAttr} placeholder="0">
-                       ${field.suffix ? `<span class="input-group-text">${field.suffix}</span>` : ''}
+                    break;
+                case 'textarea':
+                    inputHTML = `<textarea id="${id}" class="${cls}" rows="3" ${data} ${reqAttr} placeholder="${field.fieldLabel}…"></textarea>`;
+                    break;
+                case 'date':
+                    inputHTML = `<input type="date" id="${id}" class="${cls}" ${data} ${reqAttr}>`;
+                    break;
+                case 'datetime':
+                    const dtFormat = field.dateTimeFormat || 'datetime-local';
+                    inputHTML = `<input type="${dtFormat}" id="${id}" class="${cls}" ${data} ${reqAttr}>`;
+                    break;
+                case 'number':
+                case 'currency':
+                    const pfx = field.fieldType === 'currency' ? (field.currencySymbol || field.prefix || '') : (field.prefix || '');
+                    const sfx = field.suffix || '';
+                    const step = field.fieldType === 'currency' ? '0.01' : 'any';
+                    inputHTML = `<div class="input-group input-group-sm">
+                       ${pfx ? `<span class="input-group-text">${pfx}</span>` : ''}
+                       <input type="number" step="${step}" id="${id}" class="${cls}" ${data} ${reqAttr} placeholder="0">
+                       ${sfx ? `<span class="input-group-text">${sfx}</span>` : ''}
                      </div>`;
-        break;
-      case 'calculated':
-        inputHTML = `<input type="text" id="${id}" class="${cls} bg-light text-muted" ${data} readonly placeholder="Auto-calculated" style="font-family:var(--font-mono);font-size:12px;">`;
-        break;
-      default:
-        inputHTML = `<input type="text" id="${id}" class="${cls}" ${data} ${reqAttr} placeholder="${field.fieldLabel}…">`;
-    }
+                    break;
+                case 'calculated':
+                    inputHTML = `<input type="text" id="${id}" class="${cls} bg-light text-muted" ${data} readonly placeholder="Auto-calculated" style="font-family:var(--font-mono);font-size:12px;">`;
+                    break;
+                case 'email':
+                    inputHTML = `<input type="email" id="${id}" class="${cls}" ${data} ${reqAttr} placeholder="Email address">`;
+                    break;
+                case 'url':
+                    inputHTML = `<input type="url" id="${id}" class="${cls}" ${data} ${reqAttr} placeholder="https://...">`;
+                    break;
+                case 'phone':
+                    inputHTML = `<input type="tel" id="${id}" class="${cls}" ${data} ${reqAttr} placeholder="Phone number">`;
+                    break;
+                default:
+                    inputHTML = `<input type="text" id="${id}" class="${cls}" ${data} ${reqAttr} placeholder="${field.fieldLabel}…">`;
+            }
 
-    return `<label class="form-label" for="${id}">${field.fieldLabel} ${req}</label>${inputHTML}`;
-  }
+            return `<label class="form-label" for="${id}">${field.fieldLabel} ${req}</label>${inputHTML}`;
+        }
 
-  // ─────────────────────────────────────────────────────────
-  // 4. Visibility rules
-  // ─────────────────────────────────────────────────────────
-  function applyVisibilityRules() {
-    const currentState = {};
-    document.querySelectorAll('.dynamic-input').forEach(el => {
-      currentState[el.dataset.fieldName] = el.type === 'checkbox' ? el.checked : el.value;
-    });
+        // ─────────────────────────────────────────────────────────
+        // 3b. Runtime Calculations Formula Engine
+        // ─────────────────────────────────────────────────────────
+        function applyCalculations() {
+            const currentState = {};
+            document.querySelectorAll('.dynamic-input').forEach(el => {
+                if (el.type === 'checkbox') {
+                    currentState[el.dataset.fieldName] = el.checked;
+                } else if (el.multiple) {
+                    currentState[el.dataset.fieldName] = Array.from(el.selectedOptions).map(o => o.value);
+                } else {
+                    const num = parseFloat(el.value);
+                    currentState[el.dataset.fieldName] = (!isNaN(num) && el.value.trim() !== '') ? num : el.value;
+                }
+            });
 
-    moduleFields.forEach(field => {
-      if (!field.visibilityCondition) return;
-      const wrapper = document.getElementById(`wrapper_${field.fieldName}`);
-      if (!wrapper) return;
-      try {
-        const keys   = Object.keys(currentState);
-        const vals   = Object.values(currentState);
-        const fn     = new Function(...keys, `return ${field.visibilityCondition};`);
-        wrapper.style.display = fn(...vals) ? '' : 'none';
-      } catch (e) {
-        console.warn(`Visibility condition error for ${field.fieldName}:`, e);
-      }
-    });
-  }
+            let valuesChanged = false;
+            moduleFields.forEach(field => {
+                if (field.fieldType === 'calculated' && field.calculationFormula) {
+                    try {
+                        const keys = Object.keys(currentState);
+                        const vals = Object.values(currentState);
+                        const fn = new Function(...keys, `return ${field.calculationFormula};`);
+                        let result = fn(...vals);
 
-  // ─────────────────────────────────────────────────────────
-  // 5. Table headers (sortable)
-  // ─────────────────────────────────────────────────────────
-  function renderTableHeaders() {
-    const tr = document.getElementById('tableHeaders');
-    tr.innerHTML = '<th onclick="sortBy(\'__sl\')">#<span class="sort-icon fas fa-sort"></span></th>';
+                        if (typeof result === 'number' && !isNaN(result)) {
+                            result = Number(result.toFixed(4));
+                        } else if (result === undefined || isNaN(result)) {
+                            result = '';
+                        }
 
-    moduleFields.forEach(f => {
-      tr.innerHTML += `<th onclick="sortBy('${f.fieldName}')">${f.fieldLabel}
+                        const input = document.getElementById(`field_${field.fieldName}`);
+                        if (input && input.value !== String(result)) {
+                            input.value = result;
+                            currentState[field.fieldName] = result;
+                            valuesChanged = true;
+                        }
+                    } catch (e) {
+                        // Fail silently while typing incomplete formulae
+                    }
+                }
+            });
+
+            // If a calculation changes a value, re-verify visibility rules 
+            if (valuesChanged) applyVisibilityRules();
+        }
+
+        // ─────────────────────────────────────────────────────────
+        // 4. Visibility rules
+        // ─────────────────────────────────────────────────────────
+        function applyVisibilityRules() {
+            const currentState = {};
+            document.querySelectorAll('.dynamic-input').forEach(el => {
+                currentState[el.dataset.fieldName] = el.type === 'checkbox' ? el.checked : el.value;
+            });
+
+            moduleFields.forEach(field => {
+                if (!field.visibilityCondition) return;
+                const wrapper = document.getElementById(`wrapper_${field.fieldName}`);
+                if (!wrapper) return;
+                try {
+                    const keys = Object.keys(currentState);
+                    const vals = Object.values(currentState);
+
+                    // Handle safely checking undefined items
+                    let condition = field.visibilityCondition;
+                    if (!condition.includes('return')) {
+                        condition = `return ${condition};`;
+                    }
+
+                    const fn = new Function(...keys, condition);
+                    wrapper.style.display = fn(...vals) ? '' : 'none';
+                } catch (e) {
+                    console.warn(`Visibility condition error for ${field.fieldName}:`, e);
+                }
+            });
+        }
+
+        // ─────────────────────────────────────────────────────────
+        // 5. Table headers (sortable)
+        // ─────────────────────────────────────────────────────────
+        function renderTableHeaders() {
+            const tr = document.getElementById('tableHeaders');
+            tr.innerHTML = '<th onclick="sortBy(\'__sl\')">#<span class="sort-icon fas fa-sort"></span></th>';
+
+            moduleFields.forEach(f => {
+                tr.innerHTML += `<th onclick="sortBy('${f.fieldName}')">${f.fieldLabel}
         <span class="sort-icon fas fa-sort"></span></th>`;
-    });
+            });
 
-    tr.innerHTML += '<th style="text-align:center;">Actions</th>';
-      
-      setTimeout(() => {
-          enableColumnResizing();
-          loadColumnWidths();
-      }, 0);
-  }
+            tr.innerHTML += '<th style="text-align:center;">Actions</th>';
 
-  // ─────────────────────────────────────────────────────────
-  // 5a. Settings and Resizing Logic
-  // ─────────────────────────────────────────────────────────
-  function updateColumnStyles() {
-    let style = document.getElementById('dynamicColumnStyles');
-    if (!style) {
-      style = document.createElement('style');
-      style.id = 'dynamicColumnStyles';
-      document.head.appendChild(style);
-    }
-    let css = '';
-    moduleFields.forEach((f, i) => {
-      if (columnVisibility[f.fieldName] === false) {
-        css += `.data-table th:nth-child(${i + 2}), .data-table td:nth-child(${i + 2}) { display: none !important; }\n`;
-      }
-    });
-    style.textContent = css;
-  }
-
-  function openTableSettingsModal() {
-    const container = document.getElementById('columnToggles');
-    container.innerHTML = '';
-    
-    moduleFields.forEach(f => {
-      const isChecked = columnVisibility[f.fieldName] !== false; // true by default
-      
-      const label = document.createElement('label');
-      label.style.display = 'flex';
-      label.style.alignItems = 'center';
-      label.style.gap = '8px';
-      label.style.cursor = 'pointer';
-      label.style.fontSize = '13px';
-      
-      const cb = document.createElement('input');
-      cb.type = 'checkbox';
-      cb.id = `col_${f.fieldName}`;
-      cb.checked = isChecked;
-      
-      label.appendChild(cb);
-      label.appendChild(document.createTextNode(f.fieldLabel));
-      container.appendChild(label);
-    });
-    
-    const modal = new bootstrap.Modal(document.getElementById('tableSettingsModal'));
-    modal.show();
-  }
-
-  function toggleAllColumns(state) {
-    moduleFields.forEach(f => {
-      const cb = document.getElementById(`col_${f.fieldName}`);
-      if (cb) cb.checked = state;
-    });
-  }
-
-  function saveColumnSettings() {
-    moduleFields.forEach(f => {
-      const cb = document.getElementById(`col_${f.fieldName}`);
-      if (cb) columnVisibility[f.fieldName] = cb.checked;
-    });
-    localStorage.setItem(`moduleColumnVisibility_${moduleName}`, JSON.stringify(columnVisibility));
-    updateColumnStyles();
-    
-    const modalInstance = bootstrap.Modal.getInstance(document.getElementById('tableSettingsModal'));
-    if (modalInstance) modalInstance.hide();
-  }
-
-  function enableColumnResizing() {
-    const table = document.querySelector('.data-table');
-    if (!table) return;
-    const headers = table.querySelectorAll('th');
-    
-    headers.forEach((th, index) => {
-      if (th.querySelector('.resizer')) return;
-      
-      const resizer = document.createElement('div');
-      resizer.classList.add('resizer');
-      th.appendChild(resizer);
-      
-      resizer.addEventListener('click', e => e.stopPropagation());
-      
-      let startX, startWidth;
-      resizer.addEventListener('mousedown', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        startX = e.pageX;
-        startWidth = th.offsetWidth;
-        resizer.classList.add('resizing');
-        
-        function onMouseMove(moveEvent) {
-          const newWidth = startWidth + (moveEvent.pageX - startX);
-          if (newWidth > 30) {
-            th.style.width = newWidth + 'px';
-            th.style.minWidth = newWidth + 'px';
-          }
+            setTimeout(() => {
+                enableColumnResizing();
+                loadColumnWidths();
+            }, 0);
         }
-        
-        function onMouseUp() {
-          resizer.classList.remove('resizing');
-          document.removeEventListener('mousemove', onMouseMove);
-          document.removeEventListener('mouseup', onMouseUp);
-          saveColumnWidths();
+
+        // ─────────────────────────────────────────────────────────
+        // 5a. Settings and Resizing Logic
+        // ─────────────────────────────────────────────────────────
+        function updateColumnStyles() {
+            let style = document.getElementById('dynamicColumnStyles');
+            if (!style) {
+                style = document.createElement('style');
+                style.id = 'dynamicColumnStyles';
+                document.head.appendChild(style);
+            }
+            let css = '';
+            moduleFields.forEach((f, i) => {
+                if (columnVisibility[f.fieldName] === false) {
+                    css += `.data-table th:nth-child(${i + 2}), .data-table td:nth-child(${i + 2}) { display: none !important; }\n`;
+                }
+            });
+            style.textContent = css;
         }
-        
-        document.addEventListener('mousemove', onMouseMove);
-        document.addEventListener('mouseup', onMouseUp);
-      });
-    });
-  }
 
-  function saveColumnWidths() {
-    const widths = [];
-    const headers = document.querySelectorAll('.data-table th');
-    headers.forEach(th => {
-      widths.push(th.style.width);
-    });
-    localStorage.setItem(`moduleColumnWidths_${moduleName}`, JSON.stringify(widths));
-  }
+        function openTableSettingsModal() {
+            const container = document.getElementById('columnToggles');
+            container.innerHTML = '';
 
-  function loadColumnWidths() {
-    const savedWidths = JSON.parse(localStorage.getItem(`moduleColumnWidths_${moduleName}`));
-    if (savedWidths && Array.isArray(savedWidths)) {
-      const headers = document.querySelectorAll('.data-table th');
-      headers.forEach((th, index) => {
-        if (savedWidths[index]) {
-          th.style.width = savedWidths[index];
-          th.style.minWidth = savedWidths[index];
+            moduleFields.forEach(f => {
+                const isChecked = columnVisibility[f.fieldName] !== false; // true by default
+
+                const label = document.createElement('label');
+                label.style.display = 'flex';
+                label.style.alignItems = 'center';
+                label.style.gap = '8px';
+                label.style.cursor = 'pointer';
+                label.style.fontSize = '13px';
+
+                const cb = document.createElement('input');
+                cb.type = 'checkbox';
+                cb.id = `col_${f.fieldName}`;
+                cb.checked = isChecked;
+
+                label.appendChild(cb);
+                label.appendChild(document.createTextNode(f.fieldLabel));
+                container.appendChild(label);
+            });
+
+            const modal = new bootstrap.Modal(document.getElementById('tableSettingsModal'));
+            modal.show();
         }
-      });
-    }
-  }
 
-  // ─────────────────────────────────────────────────────────
-  // 6. Fetch data from API (falls back to localStorage)
-  // ─────────────────────────────────────────────────────────
-  async function fetchData() {
-    document.getElementById('tableBody').innerHTML =
-      `<tr><td colspan="100%">${skeletonRows(5, moduleFields.length + 2)}</td></tr>`;
+        function toggleAllColumns(state) {
+            moduleFields.forEach(f => {
+                const cb = document.getElementById(`col_${f.fieldName}`);
+                if (cb) cb.checked = state;
+            });
+        }
 
-    try {
-      const res    = await fetch(`http://localhost:5000/api/custom-records/${moduleName}`);
-      const result = await res.json();
-      if (result.success) {
-        moduleData = result.data;
-      }
-    } catch (e) {
-      console.warn('API unavailable — using empty dataset', e);
-      moduleData = [];
-    }
+        function saveColumnSettings() {
+            moduleFields.forEach(f => {
+                const cb = document.getElementById(`col_${f.fieldName}`);
+                if (cb) columnVisibility[f.fieldName] = cb.checked;
+            });
+            localStorage.setItem(`moduleColumnVisibility_${moduleName}`, JSON.stringify(columnVisibility));
+            updateColumnStyles();
 
-    applyFilters();
-    updateStats();
-  }
+            const modalInstance = bootstrap.Modal.getInstance(document.getElementById('tableSettingsModal'));
+            if (modalInstance) modalInstance.hide();
+        }
 
-  function skeletonRows(rows, cols) {
-    let html = '';
-    for (let r = 0; r < rows; r++) {
-      html += '<tr>';
-      for (let c = 0; c < cols; c++) {
-        html += `<td><div class="skeleton" style="height:14px;width:${60+Math.random()*30}%;"></div></td>`;
-      }
-      html += '</tr>';
-    }
-    return html; // wrapping <table> not needed — we replace tbody only
-  }
+        function enableColumnResizing() {
+            const table = document.querySelector('.data-table');
+            if (!table) return;
+            const headers = table.querySelectorAll('th');
 
-  // ─────────────────────────────────────────────────────────
-  // 7. Filtering, searching, sorting, pagination
-  // ─────────────────────────────────────────────────────────
-  function applyFilters() {
-    const query      = document.getElementById('searchInput').value.trim().toLowerCase();
-    const filterFld  = document.getElementById('filterField').value;
+            headers.forEach((th, index) => {
+                if (th.querySelector('.resizer')) return;
 
-    filteredData = moduleData.filter(row => {
-      if (!query) return true;
-      const fieldNames = filterFld ? [filterFld] : moduleFields.map(f => f.fieldName);
-      return fieldNames.some(fn => {
-        const v = String(row[fn] ?? '').toLowerCase();
-        return v.includes(query);
-      });
-    });
+                const resizer = document.createElement('div');
+                resizer.classList.add('resizer');
+                th.appendChild(resizer);
 
-    if (sortCol) {
-      filteredData.sort((a, b) => {
-        let av = a[sortCol] ?? '', bv = b[sortCol] ?? '';
-        if (!isNaN(av) && !isNaN(bv)) { av = +av; bv = +bv; }
-        if (av < bv) return sortAsc ? -1 : 1;
-        if (av > bv) return sortAsc ?  1 : -1;
-        return 0;
-      });
-    }
+                resizer.addEventListener('click', e => e.stopPropagation());
 
-    currentPage = 1;
-    renderPage();
-    updateStats();
-  }
+                let startX, startWidth;
+                resizer.addEventListener('mousedown', function (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    startX = e.pageX;
+                    startWidth = th.offsetWidth;
+                    resizer.classList.add('resizing');
 
-  function sortBy(col) {
-    if (sortCol === col) sortAsc = !sortAsc;
-    else { sortCol = col; sortAsc = true; }
+                    function onMouseMove(moveEvent) {
+                        const newWidth = startWidth + (moveEvent.pageX - startX);
+                        if (newWidth > 30) {
+                            th.style.width = newWidth + 'px';
+                            th.style.minWidth = newWidth + 'px';
+                        }
+                    }
 
-    // Update header icons
-    document.querySelectorAll('.data-table thead th').forEach(th => th.classList.remove('sorted'));
-    applyFilters();
-  }
+                    function onMouseUp() {
+                        resizer.classList.remove('resizing');
+                        document.removeEventListener('mousemove', onMouseMove);
+                        document.removeEventListener('mouseup', onMouseUp);
+                        saveColumnWidths();
+                    }
 
-  function renderPage() {
-    const pageSize = parseInt(document.getElementById('pageSizeSelect').value);
-    const start    = (currentPage - 1) * pageSize;
-    const pageRows = filteredData.slice(start, start + pageSize);
+                    document.addEventListener('mousemove', onMouseMove);
+                    document.addEventListener('mouseup', onMouseUp);
+                });
+            });
+        }
 
-    const tbody = document.getElementById('tableBody');
-    tbody.innerHTML = '';
+        function saveColumnWidths() {
+            const widths = [];
+            const headers = document.querySelectorAll('.data-table th');
+            headers.forEach(th => {
+                widths.push(th.style.width);
+            });
+            localStorage.setItem(`moduleColumnWidths_${moduleName}`, JSON.stringify(widths));
+        }
 
-    if (pageRows.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="${moduleFields.length + 2}">
+        function loadColumnWidths() {
+            const savedWidths = JSON.parse(localStorage.getItem(`moduleColumnWidths_${moduleName}`));
+            if (savedWidths && Array.isArray(savedWidths)) {
+                const headers = document.querySelectorAll('.data-table th');
+                headers.forEach((th, index) => {
+                    if (savedWidths[index]) {
+                        th.style.width = savedWidths[index];
+                        th.style.minWidth = savedWidths[index];
+                    }
+                });
+            }
+        }
+
+        // ─────────────────────────────────────────────────────────
+        // 6. Fetch data from API (falls back to localStorage)
+        // ─────────────────────────────────────────────────────────
+        async function fetchData() {
+            document.getElementById('tableBody').innerHTML =
+                `<tr><td colspan="100%">${skeletonRows(5, moduleFields.length + 2)}</td></tr>`;
+
+            try {
+                if (typeof apiClient !== 'undefined' && apiClient.getCustomRecords) {
+                    moduleData = await apiClient.getCustomRecords(moduleName);
+                } else {
+                    const res = await fetch(`http://localhost:5000/api/custom-records/${moduleName}`);
+                    const result = await res.json();
+                    if (result.success) moduleData = result.data;
+                }
+                localStorage.setItem(`CUSTOM_RECORDS_${moduleName}`, JSON.stringify(moduleData));
+            } catch (e) {
+                console.warn('API unavailable — using empty dataset', e);
+                moduleData = JSON.parse(localStorage.getItem(`CUSTOM_RECORDS_${moduleName}`)) || [];
+            }
+
+            applyFilters();
+            updateStats();
+        }
+
+        function skeletonRows(rows, cols) {
+            let html = '';
+            for (let r = 0; r < rows; r++) {
+                html += '<tr>';
+                for (let c = 0; c < cols; c++) {
+                    html += `<td><div class="skeleton" style="height:14px;width:${60 + Math.random() * 30}%;"></div></td>`;
+                }
+                html += '</tr>';
+            }
+            return html; // wrapping <table> not needed — we replace tbody only
+        }
+
+        // ─────────────────────────────────────────────────────────
+        // 7. Filtering, searching, sorting, pagination
+        // ─────────────────────────────────────────────────────────
+        function applyFilters() {
+            const query = document.getElementById('searchInput').value.trim().toLowerCase();
+            const filterFld = document.getElementById('filterField').value;
+
+            filteredData = moduleData.filter(row => {
+                if (!query) return true;
+                const fieldNames = filterFld ? [filterFld] : moduleFields.map(f => f.fieldName);
+                return fieldNames.some(fn => {
+                    const v = String(row[fn] ?? '').toLowerCase();
+                    return v.includes(query);
+                });
+            });
+
+            if (sortCol) {
+                filteredData.sort((a, b) => {
+                    let av = a[sortCol] ?? '', bv = b[sortCol] ?? '';
+                    if (!isNaN(av) && !isNaN(bv)) { av = +av; bv = +bv; }
+                    if (av < bv) return sortAsc ? -1 : 1;
+                    if (av > bv) return sortAsc ? 1 : -1;
+                    return 0;
+                });
+            }
+
+            currentPage = 1;
+            renderPage();
+            updateStats();
+        }
+
+        function sortBy(col) {
+            if (sortCol === col) sortAsc = !sortAsc;
+            else { sortCol = col; sortAsc = true; }
+
+            // Update header icons
+            document.querySelectorAll('.data-table thead th').forEach(th => th.classList.remove('sorted'));
+            applyFilters();
+        }
+
+        function renderPage() {
+            const pageSize = parseInt(document.getElementById('pageSizeSelect').value);
+            const start = (currentPage - 1) * pageSize;
+            const pageRows = filteredData.slice(start, start + pageSize);
+
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
+
+            if (pageRows.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="${moduleFields.length + 2}">
         <div class="empty-state">
           <i class="fas fa-inbox"></i>
           <p>No records found.</p>
         </div>
       </td></tr>`;
-      renderPagination(0, pageSize);
-      return;
-    }
+                renderPagination(0, pageSize);
+                return;
+            }
 
-    pageRows.forEach((row, i) => {
-      const tr = document.createElement('tr');
-      let html = `<td class="record-meta">${start + i + 1}</td>`;
+            pageRows.forEach((row, i) => {
+                const tr = document.createElement('tr');
+                let html = `<td class="record-meta">${start + i + 1}</td>`;
 
-      moduleFields.forEach(field => {
-        let val = row[field.fieldName];
-        if (val === undefined || val === null || val === '') {
-          html += `<td><span class="cell-empty">—</span></td>`;
-        } else if (field.fieldType === 'boolean') {
-          html += `<td>${val
-            ? '<span class="badge-yes"><i class="fas fa-check fa-xs me-1"></i>Yes</span>'
-            : '<span class="badge-no"><i class="fas fa-xmark fa-xs me-1"></i>No</span>'}</td>`;
-        } else {
-          let display = val;
-          if (field.prefix) display = `${field.prefix} ${display}`;
-          if (field.suffix) display = `${display} ${field.suffix}`;
-          html += `<td>${display}</td>`;
-        }
-      });
+                moduleFields.forEach(field => {
+                    let val = row[field.fieldName];
+                    if (val === undefined || val === null || val === '') {
+                        html += `<td><span class="cell-empty">—</span></td>`;
+                    } else if (field.fieldType === 'boolean') {
+                        html += `<td>${val
+                            ? '<span class="badge-yes"><i class="fas fa-check fa-xs me-1"></i>Yes</span>'
+                            : '<span class="badge-no"><i class="fas fa-xmark fa-xs me-1"></i>No</span>'}</td>`;
+                    } else if (field.fieldType === 'multiselect' && Array.isArray(val)) {
+                        html += `<td>${val.join(', ')}</td>`;
+                    } else {
+                        let display = val;
+                        if (field.prefix || field.currencySymbol) display = `${field.prefix || field.currencySymbol} ${display}`;
+                        if (field.suffix) display = `${display} ${field.suffix}`;
+                        html += `<td>${display}</td>`;
+                    }
+                });
 
-      html += `<td>
+                html += `<td>
         <div class="action-cell">
           <button class="btn btn-info-custom btn-sm" onclick="printRecord('${row._id}')" title="Print">
             <i class="fas fa-print"></i>
@@ -1178,343 +1419,407 @@
         </div>
       </td>`;
 
-      tr.innerHTML = html;
-      tbody.appendChild(tr);
-    });
+                tr.innerHTML = html;
+                tbody.appendChild(tr);
+            });
 
-    renderPagination(filteredData.length, pageSize);
-  }
-
-  function renderPagination(total, pageSize) {
-    const pages   = Math.ceil(total / pageSize) || 1;
-    const start   = (currentPage - 1) * pageSize + 1;
-    const end     = Math.min(currentPage * pageSize, total);
-
-    document.getElementById('pageInfo').textContent =
-      total === 0 ? 'No results' : `${start}–${end} of ${total}`;
-
-    const btns = document.getElementById('pageButtons');
-    btns.innerHTML = '';
-
-    const prev = document.createElement('button');
-    prev.className = 'page-btn';
-    prev.innerHTML = '<i class="fas fa-chevron-left"></i>';
-    prev.disabled  = currentPage === 1;
-    prev.onclick   = () => { currentPage--; renderPage(); };
-    btns.appendChild(prev);
-
-    for (let p = 1; p <= pages; p++) {
-      if (pages > 7 && p > 2 && p < pages - 1 && Math.abs(p - currentPage) > 1) {
-        if (p === 3 || p === pages - 2) {
-          const dots = document.createElement('span');
-          dots.style.cssText = 'padding:0 4px;color:var(--neutral-400);';
-          dots.textContent = '…';
-          btns.appendChild(dots);
+            renderTableFooter();
+            renderPagination(filteredData.length, pageSize);
         }
-        continue;
-      }
-      const btn = document.createElement('button');
-      btn.className = 'page-btn' + (p === currentPage ? ' active' : '');
-      btn.textContent = p;
-      btn.onclick = () => { currentPage = p; renderPage(); };
-      btns.appendChild(btn);
-    }
 
-    const next = document.createElement('button');
-    next.className = 'page-btn';
-    next.innerHTML = '<i class="fas fa-chevron-right"></i>';
-    next.disabled  = currentPage === pages;
-    next.onclick   = () => { currentPage++; renderPage(); };
-    btns.appendChild(next);
-  }
+        function renderTableFooter() {
+            const tfoot = document.getElementById('tableFooter');
+            tfoot.innerHTML = '';
+            if (filteredData.length === 0) return;
 
-  function updateStats() {
-    document.getElementById('statTotal').textContent    = moduleData.length;
-    document.getElementById('statFiltered').textContent = filteredData.length;
-  }
+            let hasTotals = false;
+            const totals = {};
 
-  function populateFilterField() {
-    const sel = document.getElementById('filterField');
-    moduleFields.forEach(f => {
-      const opt = document.createElement('option');
-      opt.value       = f.fieldName;
-      opt.textContent = f.fieldLabel;
-      sel.appendChild(opt);
-    });
-  }
+            moduleFields.forEach(f => {
+                if (['number', 'currency', 'calculated'].includes(f.fieldType)) {
+                    hasTotals = true;
+                    totals[f.fieldName] = filteredData.reduce((sum, row) => sum + (parseFloat(row[f.fieldName]) || 0), 0);
+                }
+            });
 
-  // ─────────────────────────────────────────────────────────
-  // 8. Save / Edit / Delete / Clear
-  // ─────────────────────────────────────────────────────────
-  async function saveRecord() {
-    const payload = { moduleName };
-    const id      = document.getElementById('recordId').value;
-    if (id) payload._id = id;
+            if (!hasTotals) return;
 
-    let valid = true;
-    document.querySelectorAll('.dynamic-input').forEach(input => {
-      const key = input.dataset.fieldName;
-      payload[key] = input.type === 'checkbox' ? input.checked : input.value;
-      if (input.hasAttribute('required') && !input.value) {
-        input.classList.add('is-invalid');
-        valid = false;
-      } else {
-        input.classList.remove('is-invalid');
-      }
-    });
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td style="color:var(--primary);text-align:right;">Total:</td>`;
 
-    if (!valid) {
-      showToast('Please fill in all required fields.', 'error');
-      return;
-    }
+            moduleFields.forEach(field => {
+                if (totals[field.fieldName] !== undefined) {
+                    let display = Number(totals[field.fieldName].toFixed(2));
+                    if (field.prefix || field.currencySymbol) display = `${field.prefix || field.currencySymbol} ${display}`;
+                    if (field.suffix) display = `${display} ${field.suffix}`;
+                    tr.innerHTML += `<td>${display}</td>`;
+                } else {
+                    tr.innerHTML += `<td></td>`;
+                }
+            });
+            tr.innerHTML += `<td></td>`; // Action Column alignment
+            tfoot.appendChild(tr);
+        }
 
-    showSaving(true);
+        function renderPagination(total, pageSize) {
+            const pages = Math.ceil(total / pageSize) || 1;
+            const start = (currentPage - 1) * pageSize + 1;
+            const end = Math.min(currentPage * pageSize, total);
 
-    try {
-      const res    = await fetch('http://localhost:5000/api/custom-records', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      const result = await res.json();
-      if (result.success) {
-        showToast(id ? 'Record updated.' : 'Record saved.', 'success');
-        clearForm();
-        fetchData();
-      } else {
-        showToast(result.message || 'Failed to save.', 'error');
-      }
-    } catch (e) {
-      showToast('API unavailable — record not saved.', 'error');
-      console.error(e);
-    }
+            document.getElementById('pageInfo').textContent =
+                total === 0 ? 'No results' : `${start}–${end} of ${total}`;
 
-    showSaving(false);
-  }
+            const btns = document.getElementById('pageButtons');
+            btns.innerHTML = '';
 
-  function editRecord(id) {
-    const record = moduleData.find(r => r._id === id);
-    if (!record) return;
+            const prev = document.createElement('button');
+            prev.className = 'page-btn';
+            prev.innerHTML = '<i class="fas fa-chevron-left"></i>';
+            prev.disabled = currentPage === 1;
+            prev.onclick = () => { currentPage--; renderPage(); };
+            btns.appendChild(prev);
 
-    document.getElementById('recordId').value = record._id;
-    document.getElementById('formCardTitle').textContent = 'Edit Record';
-    document.getElementById('saveLabel').textContent     = 'Update Record';
-    document.getElementById('editingIdLabel').textContent = `ID: ${record._id}`;
+            for (let p = 1; p <= pages; p++) {
+                if (pages > 7 && p > 2 && p < pages - 1 && Math.abs(p - currentPage) > 1) {
+                    if (p === 3 || p === pages - 2) {
+                        const dots = document.createElement('span');
+                        dots.style.cssText = 'padding:0 4px;color:var(--neutral-400);';
+                        dots.textContent = '…';
+                        btns.appendChild(dots);
+                    }
+                    continue;
+                }
+                const btn = document.createElement('button');
+                btn.className = 'page-btn' + (p === currentPage ? ' active' : '');
+                btn.textContent = p;
+                btn.onclick = () => { currentPage = p; renderPage(); };
+                btns.appendChild(btn);
+            }
 
-    document.querySelectorAll('.dynamic-input').forEach(input => {
-      const key = input.dataset.fieldName;
-      if (input.type === 'checkbox') input.checked = record[key] === true;
-      else input.value = record[key] ?? '';
-    });
+            const next = document.createElement('button');
+            next.className = 'page-btn';
+            next.innerHTML = '<i class="fas fa-chevron-right"></i>';
+            next.disabled = currentPage === pages;
+            next.onclick = () => { currentPage++; renderPage(); };
+            btns.appendChild(next);
+        }
 
-    applyVisibilityRules();
+        function updateStats() {
+            document.getElementById('statTotal').textContent = moduleData.length;
+            document.getElementById('statFiltered').textContent = filteredData.length;
+        }
 
-    // Expand form if collapsed
-    if (!formVisible) toggleForm();
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }
+        function populateFilterField() {
+            const sel = document.getElementById('filterField');
+            moduleFields.forEach(f => {
+                const opt = document.createElement('option');
+                opt.value = f.fieldName;
+                opt.textContent = f.fieldLabel;
+                sel.appendChild(opt);
+            });
+        }
 
-  async function deleteRecord(id) {
-    if (!confirm('Delete this record? This action cannot be undone.')) return;
-    showSaving(true);
-    try {
-      await fetch(`http://localhost:5000/api/custom-records/${id}`, { method: 'DELETE' });
-      showToast('Record deleted.', 'success');
-      fetchData();
-    } catch (e) {
-      showToast('Failed to delete record.', 'error');
-    }
-    showSaving(false);
-  }
+        // ─────────────────────────────────────────────────────────
+        // 8. Save / Edit / Delete / Clear
+        // ─────────────────────────────────────────────────────────
+        async function saveRecord() {
+            const payload = { moduleName };
+            const id = document.getElementById('recordId').value;
+            if (id) payload._id = id;
+            else payload._id = 'cr_' + Date.now();
 
-  function clearForm() {
-    document.getElementById('recordId').value    = '';
-    document.getElementById('formCardTitle').textContent = 'Add New Record';
-    document.getElementById('saveLabel').textContent     = 'Save Record';
-    document.getElementById('editingIdLabel').textContent = '';
+            let valid = true;
+            document.querySelectorAll('.dynamic-input').forEach(input => {
+                const key = input.dataset.fieldName;
+                if (input.type === 'checkbox') {
+                    payload[key] = input.checked;
+                } else if (input.multiple) {
+                    payload[key] = Array.from(input.selectedOptions).map(o => o.value);
+                } else {
+                    payload[key] = input.value;
+                }
 
-    document.querySelectorAll('.dynamic-input').forEach(input => {
-      if (input.type === 'checkbox') input.checked = false;
-      else input.value = '';
-      input.classList.remove('is-invalid');
-    });
+                if (input.hasAttribute('required') && !input.value) {
+                    input.classList.add('is-invalid');
+                    valid = false;
+                } else {
+                    input.classList.remove('is-invalid');
+                }
+            });
 
-    applyVisibilityRules();
-  }
+            if (!valid) {
+                showToast('Please fill in all required fields.', 'error');
+                return;
+            }
 
-  // ─────────────────────────────────────────────────────────
-  // 9. Toggle form panel
-  // ─────────────────────────────────────────────────────────
-  function toggleForm() {
-    const body = document.getElementById('formBody');
-    const icon = document.getElementById('toggleFormIcon');
-    formVisible = !formVisible;
-    body.style.display  = formVisible ? '' : 'none';
-    icon.className      = formVisible ? 'fas fa-chevron-up' : 'fas fa-chevron-down';
-  }
+            showSaving(true);
 
-  // ─────────────────────────────────────────────────────────
-  // 10. SortableJS field order modal + Firestore save
-  // ─────────────────────────────────────────────────────────
-  let sortableInstance = null;
+            try {
+                let result;
+                if (typeof apiClient !== 'undefined' && apiClient.saveCustomRecord) {
+                    result = await apiClient.saveCustomRecord(payload);
+                } else {
+                    const res = await fetch('http://localhost:5000/api/custom-records', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    result = await res.json();
+                }
 
-  function openFieldOrderModal() {
-    const list = document.getElementById('fieldOrderList');
-    list.innerHTML = '';
+                if (result.success) {
+                    showToast(id ? 'Record updated.' : 'Record saved.', 'success');
+                    if (result.data && result.data._id) payload._id = result.data._id;
+                } else {
+                    showToast(result.message || 'Failed to save.', 'error');
+                }
+            } catch (e) {
+                showToast('API unavailable — record not saved.', 'error');
+                console.error(e);
+            }
 
-    moduleFields.forEach(field => {
-      const li = document.createElement('li');
-      li.dataset.fieldId = field._id || field.fieldName;
-      li.innerHTML = `
+            // Local offline storage fallback to secure cloud backups sync
+            const localData = JSON.parse(localStorage.getItem(`CUSTOM_RECORDS_${moduleName}`)) || [];
+            const idx = localData.findIndex(r => r._id === payload._id);
+            if (idx > -1) localData[idx] = payload;
+            else localData.push(payload);
+            localStorage.setItem(`CUSTOM_RECORDS_${moduleName}`, JSON.stringify(localData));
+
+            clearForm();
+            await fetchData();
+
+            showSaving(false);
+        }
+
+        function editRecord(id) {
+            const record = moduleData.find(r => r._id === id);
+            if (!record) return;
+
+            document.getElementById('recordId').value = record._id;
+            document.getElementById('formCardTitle').textContent = 'Edit Record';
+            document.getElementById('saveLabel').textContent = 'Update Record';
+            document.getElementById('editingIdLabel').textContent = `ID: ${record._id}`;
+
+            document.querySelectorAll('.dynamic-input').forEach(input => {
+                const key = input.dataset.fieldName;
+                if (input.type === 'checkbox') {
+                    input.checked = record[key] === true;
+                } else if (input.multiple) {
+                    const vals = Array.isArray(record[key]) ? record[key] : [record[key]];
+                    Array.from(input.options).forEach(opt => opt.selected = vals.includes(opt.value));
+                } else {
+                    input.value = record[key] ?? '';
+                }
+            });
+
+            applyVisibilityRules();
+
+            // Expand form if collapsed
+            if (!formVisible) toggleForm();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        async function deleteRecord(id) {
+            if (!confirm('Delete this record? This action cannot be undone.')) return;
+            showSaving(true);
+            try {
+                if (typeof apiClient !== 'undefined' && apiClient.deleteCustomRecord) {
+                    await apiClient.deleteCustomRecord(id);
+                } else {
+                    await fetch(`http://localhost:5000/api/custom-records/${id}`, { method: 'DELETE' });
+                }
+                showToast('Record deleted.', 'success');
+            } catch (e) {
+                showToast('Deleted locally.', 'info');
+            }
+
+            let localData = JSON.parse(localStorage.getItem(`CUSTOM_RECORDS_${moduleName}`)) || [];
+            localData = localData.filter(r => r._id !== id);
+            localStorage.setItem(`CUSTOM_RECORDS_${moduleName}`, JSON.stringify(localData));
+
+            fetchData();
+            showSaving(false);
+        }
+
+        function clearForm() {
+            document.getElementById('recordId').value = '';
+            document.getElementById('formCardTitle').textContent = 'Add New Record';
+            document.getElementById('saveLabel').textContent = 'Save Record';
+            document.getElementById('editingIdLabel').textContent = '';
+
+            document.querySelectorAll('.dynamic-input').forEach(input => {
+                if (input.type === 'checkbox') input.checked = false;
+                else if (input.multiple) Array.from(input.options).forEach(opt => opt.selected = false);
+                else input.value = '';
+                input.classList.remove('is-invalid');
+            });
+
+            applyVisibilityRules();
+        }
+
+        // ─────────────────────────────────────────────────────────
+        // 9. Toggle form panel
+        // ─────────────────────────────────────────────────────────
+        function toggleForm() {
+            const body = document.getElementById('formBody');
+            const icon = document.getElementById('toggleFormIcon');
+            formVisible = !formVisible;
+            body.style.display = formVisible ? '' : 'none';
+            icon.className = formVisible ? 'fas fa-chevron-up' : 'fas fa-chevron-down';
+        }
+
+        // ─────────────────────────────────────────────────────────
+        // 10. SortableJS field order modal + Firestore save
+        // ─────────────────────────────────────────────────────────
+        let sortableInstance = null;
+
+        function openFieldOrderModal() {
+            const list = document.getElementById('fieldOrderList');
+            list.innerHTML = '';
+
+            moduleFields.forEach(field => {
+                const li = document.createElement('li');
+                li.dataset.fieldId = field._id || field.fieldName;
+                li.innerHTML = `
         <span class="drag-handle"><i class="fas fa-grip-vertical"></i></span>
         <i class="fas fa-tag fa-xs" style="color:var(--primary);opacity:.6;"></i>
         <span style="flex:1;">${field.fieldLabel}</span>
         <code style="font-size:11px;color:var(--neutral-400);font-family:var(--font-mono);">${field.fieldName}</code>
       `;
-      list.appendChild(li);
-    });
+                list.appendChild(li);
+            });
 
-    if (sortableInstance) sortableInstance.destroy();
-    sortableInstance = Sortable.create(list, {
-      animation:     180,
-      handle:        '.drag-handle',
-      ghostClass:    'sortable-ghost',
-      chosenClass:   'sortable-chosen',
-      dragClass:     'sortable-drag',
-      onEnd:         onFieldOrderChange
-    });
+            if (sortableInstance) sortableInstance.destroy();
+            sortableInstance = Sortable.create(list, {
+                animation: 180,
+                handle: '.drag-handle',
+                ghostClass: 'sortable-ghost',
+                chosenClass: 'sortable-chosen',
+                dragClass: 'sortable-drag',
+                onEnd: onFieldOrderChange
+            });
 
-    const modal = new bootstrap.Modal(document.getElementById('fieldOrderModal'));
-    modal.show();
-  }
+            const modal = new bootstrap.Modal(document.getElementById('fieldOrderModal'));
+            modal.show();
+        }
 
-  function onFieldOrderChange() {
-    // Update in-memory moduleFields order from DOM
-    const lis = document.querySelectorAll('#fieldOrderList li');
-    const newOrder = [];
-    lis.forEach((li, idx) => {
-      const fid = li.dataset.fieldId;
-      const field = moduleFields.find(f => (f._id || f.fieldName) === fid);
-      if (field) { field.order = idx; newOrder.push(field); }
-    });
-    moduleFields = newOrder;
-  }
+        function onFieldOrderChange() {
+            // Update in-memory moduleFields order from DOM
+            const lis = document.querySelectorAll('#fieldOrderList li');
+            const newOrder = [];
+            lis.forEach((li, idx) => {
+                const fid = li.dataset.fieldId;
+                const field = moduleFields.find(f => (f._id || f.fieldName) === fid);
+                if (field) { field.order = idx; newOrder.push(field); }
+            });
+            moduleFields = newOrder;
+        }
 
-  async function saveFieldOrderToFirestore() {
-    onFieldOrderChange(); // ensure sync
+        async function saveFieldOrder() {
+            onFieldOrderChange(); // ensure sync
 
-    showSaving(true);
-    showToast('Saving field order…', 'info');
+            showSaving(true);
+            showToast('Saving field order…', 'info');
 
-    try {
-      // Save each field's order to Firestore under: customFieldOrder/{moduleName}/fields/{fieldId}
-      const batch = db.batch();
+            try {
+                // Also persist to localStorage + attempt API
+                const allFields = JSON.parse(localStorage.getItem('CUSTOM_FIELDS')) || [];
+                moduleFields.forEach(f => {
+                    const idx = allFields.findIndex(af => (af._id || af.fieldName) === (f._id || f.fieldName) && af.moduleName === moduleName);
+                    if (idx > -1) allFields[idx].order = f.order;
+                });
+                localStorage.setItem('CUSTOM_FIELDS', JSON.stringify(allFields));
 
-      moduleFields.forEach((field, idx) => {
-        const docRef = db
-          .collection('customFieldOrder')
-          .doc(moduleName)
-          .collection('fields')
-          .doc(field._id || field.fieldName);
-        batch.set(docRef, { order: idx, fieldName: field.fieldName, fieldLabel: field.fieldLabel }, { merge: true });
-      });
+                // Attempt API reorder
+                try {
+                    const orderPayload = moduleFields.map((f, i) => ({ _id: f._id, order: i }));
+                    if (typeof apiClient !== 'undefined' && apiClient.reorderCustomFields) {
+                        await apiClient.reorderCustomFields(orderPayload);
+                    } else {
+                        await fetch('http://localhost:5000/api/custom-fields/reorder', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(orderPayload)
+                        });
+                    }
+                } catch (_) { /* API optional */ }
 
-      await batch.commit();
+                showToast('Field order saved ✓', 'success');
 
-      // Also persist to localStorage + attempt API
-      const allFields = JSON.parse(localStorage.getItem('CUSTOM_FIELDS')) || [];
-      moduleFields.forEach(f => {
-        const idx = allFields.findIndex(af => af.fieldName === f.fieldName && af.moduleName === moduleName);
-        if (idx > -1) allFields[idx].order = f.order;
-      });
-      localStorage.setItem('CUSTOM_FIELDS', JSON.stringify(allFields));
+                // Re-render with new order
+                renderForm();
+                renderTableHeaders();
+                applyFilters();
 
-      // Attempt API reorder
-      try {
-        const orderPayload = moduleFields.map((f, i) => ({ _id: f._id, order: i }));
-        await fetch('http://localhost:5000/api/custom-fields/reorder', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(orderPayload)
-        });
-      } catch (_) { /* API optional */ }
+                bootstrap.Modal.getInstance(document.getElementById('fieldOrderModal')).hide();
+            } catch (e) {
+                console.error('Reorder error:', e);
+                showToast('Failed to save order.', 'error');
+            }
 
-      showToast('Field order saved to Firestore ✓', 'success');
+            showSaving(false);
+        }
 
-      // Re-render with new order
-      renderForm();
-      renderTableHeaders();
-      applyFilters();
+        // ─────────────────────────────────────────────────────────
+        // 11. CSV Export
+        // ─────────────────────────────────────────────────────────
+        function exportCSV() {
+            if (filteredData.length === 0) { showToast('No data to export.', 'info'); return; }
 
-      bootstrap.Modal.getInstance(document.getElementById('fieldOrderModal')).hide();
-    } catch (e) {
-      console.error('Firestore error:', e);
-      showToast('Failed to save order to Firestore.', 'error');
-    }
+            const headers = moduleFields.map(f => `"${f.fieldLabel}"`).join(',');
+            const rows = filteredData.map(row =>
+                moduleFields.map(f => {
+                    let v = row[f.fieldName] ?? '';
+                    if (f.fieldType === 'boolean') v = v ? 'Yes' : 'No';
+                    return `"${String(v).replace(/"/g, '""')}"`;
+                }).join(',')
+            );
 
-    showSaving(false);
-  }
+            const csv = [headers, ...rows].join('\n');
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${moduleName}_${new Date().toISOString().slice(0, 10)}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast(`Exported ${filteredData.length} records.`, 'success');
+        }
 
-  // ─────────────────────────────────────────────────────────
-  // 11. CSV Export
-  // ─────────────────────────────────────────────────────────
-  function exportCSV() {
-    if (filteredData.length === 0) { showToast('No data to export.', 'info'); return; }
+        // ─────────────────────────────────────────────────────────
+        // 12. Print
+        // ─────────────────────────────────────────────────────────
+        function printRecord(id) {
+            const record = moduleData.find(r => r._id === id);
+            if (!record) return;
 
-    const headers = moduleFields.map(f => `"${f.fieldLabel}"`).join(',');
-    const rows    = filteredData.map(row =>
-      moduleFields.map(f => {
-        let v = row[f.fieldName] ?? '';
-        if (f.fieldType === 'boolean') v = v ? 'Yes' : 'No';
-        return `"${String(v).replace(/"/g, '""')}"`;
-      }).join(',')
-    );
+            let companyName = 'Your Company', companyAddress = '', logoHtml = '';
 
-    const csv  = [headers, ...rows].join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url  = URL.createObjectURL(blob);
-    const a    = document.createElement('a');
-    a.href     = url;
-    a.download = `${moduleName}_${new Date().toISOString().slice(0,10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-    showToast(`Exported ${filteredData.length} records.`, 'success');
-  }
+            if (typeof getBrandSettings === 'function') {
+                const brand = getBrandSettings() || {};
+                companyName = brand.companyName || companyName;
+                const parts = [];
+                if (brand.addressLine1) parts.push(brand.addressLine1);
+                if (brand.addressLine2) parts.push(brand.addressLine2);
+                if (brand.contactNumber) parts.push('Ph: ' + brand.contactNumber);
+                if (brand.companyGstin) parts.push('GSTIN: ' + brand.companyGstin);
+                companyAddress = parts.join(' | ');
+                if (brand.logoPath) logoHtml = `<img src="${brand.logoPath}" style="max-height:60px;max-width:150px;display:block;margin:0 auto 10px;">`;
+            }
 
-  // ─────────────────────────────────────────────────────────
-  // 12. Print
-  // ─────────────────────────────────────────────────────────
-  function printRecord(id) {
-    const record = moduleData.find(r => r._id === id);
-    if (!record) return;
+            let rows = '';
+            moduleFields.forEach(field => {
+                let val = record[field.fieldName];
+                if (val === undefined || val === null || val === '') val = '—';
+                else if (field.fieldType === 'boolean') val = val ? '✅ Yes' : '❌ No';
+                else {
+                    if (field.prefix) val = field.prefix + ' ' + val;
+                    if (field.suffix) val += ' ' + field.suffix;
+                }
+                rows += `<tr><th>${field.fieldLabel}</th><td>${val}</td></tr>`;
+            });
 
-    let companyName = 'Your Company', companyAddress = '', logoHtml = '';
-
-    if (typeof getBrandSettings === 'function') {
-      const brand = getBrandSettings() || {};
-      companyName = brand.companyName || companyName;
-      const parts = [];
-      if (brand.addressLine1) parts.push(brand.addressLine1);
-      if (brand.addressLine2) parts.push(brand.addressLine2);
-      if (brand.contactNumber) parts.push('Ph: ' + brand.contactNumber);
-      if (brand.companyGstin) parts.push('GSTIN: ' + brand.companyGstin);
-      companyAddress = parts.join(' | ');
-      if (brand.logoPath) logoHtml = `<img src="${brand.logoPath}" style="max-height:60px;max-width:150px;display:block;margin:0 auto 10px;">`;
-    }
-
-    let rows = '';
-    moduleFields.forEach(field => {
-      let val = record[field.fieldName];
-      if (val === undefined || val === null || val === '') val = '—';
-      else if (field.fieldType === 'boolean') val = val ? '✅ Yes' : '❌ No';
-      else {
-        if (field.prefix) val = field.prefix + ' ' + val;
-        if (field.suffix) val += ' ' + field.suffix;
-      }
-      rows += `<tr><th>${field.fieldLabel}</th><td>${val}</td></tr>`;
-    });
-
-    const html = `<!DOCTYPE html><html><head><title>Print — ${moduleName}</title>
+            const html = `<!DOCTYPE html><html><head><title>Print — ${moduleName}</title>
     <style>
       body { font-family: 'Segoe UI', sans-serif; padding: 30px; color: #333; max-width: 800px; margin: auto; }
       .brand-header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #333; padding-bottom: 15px; }
@@ -1535,32 +1840,33 @@
       </button>
     </div></body></html>`;
 
-    const win = window.open('', '', 'width=820,height=820');
-    win.document.write(html);
-    win.document.close();
-    win.focus();
-  }
+            const win = window.open('', '', 'width=820,height=820');
+            win.document.write(html);
+            win.document.close();
+            win.focus();
+        }
 
-  // ─────────────────────────────────────────────────────────
-  // 13. UI helpers
-  // ─────────────────────────────────────────────────────────
-  function showToast(message, type = 'info') {
-    const icon  = { success: 'fa-circle-check', error: 'fa-circle-xmark', info: 'fa-circle-info' }[type] || 'fa-info-circle';
-    const toast = document.createElement('div');
-    toast.className = `toast-item ${type}`;
-    toast.innerHTML = `<i class="fas ${icon}"></i><span>${message}</span>`;
-    document.getElementById('toast-container').appendChild(toast);
-    setTimeout(() => toast.remove(), 3500);
-  }
+        // ─────────────────────────────────────────────────────────
+        // 13. UI helpers
+        // ─────────────────────────────────────────────────────────
+        function showToast(message, type = 'info') {
+            const icon = { success: 'fa-circle-check', error: 'fa-circle-xmark', info: 'fa-circle-info' }[type] || 'fa-info-circle';
+            const toast = document.createElement('div');
+            toast.className = `toast-item ${type}`;
+            toast.innerHTML = `<i class="fas ${icon}"></i><span>${message}</span>`;
+            document.getElementById('toast-container').appendChild(toast);
+            setTimeout(() => toast.remove(), 3500);
+        }
 
-  function showSaving(show) {
-    document.getElementById('savingIndicator').classList.toggle('show', show);
-  }
+        function showSaving(show) {
+            document.getElementById('savingIndicator').classList.toggle('show', show);
+        }
 
-  // ─────────────────────────────────────────────────────────
-  // 14. Boot
-  // ─────────────────────────────────────────────────────────
-  init();
-  </script>
+        // ─────────────────────────────────────────────────────────
+        // 14. Boot
+        // ─────────────────────────────────────────────────────────
+        init();
+    </script>
 </body>
+
 </html>
